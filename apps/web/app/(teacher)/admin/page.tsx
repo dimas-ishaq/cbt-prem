@@ -20,6 +20,7 @@ import {
   Icon,
   Badge,
   HStack,
+  Spinner,
 } from '@chakra-ui/react';
 
 import { useTranslation } from 'react-i18next';
@@ -27,11 +28,27 @@ import { useTranslation } from 'react-i18next';
 export default function AdminDashboard() {
   const { t } = useTranslation();
 
+  const { data: dashboardData, isLoading } = useQuery({
+    queryKey: ['dashboard-stats'],
+    queryFn: async () => {
+      const response = await api.get('/dashboard/stats');
+      return response.data;
+    },
+  });
+
+  if (isLoading) {
+    return (
+      <Flex justify="center" align="center" py={16}>
+        <Spinner size="lg" color="indigo.600" />
+      </Flex>
+    );
+  }
+
   const stats = [
-    { name: t('totalStudents'), value: '1,234', icon: Users, change: '+12%', changeType: 'increase' },
-    { name: t('activeExams'), value: '8', icon: FileText, change: '0%', changeType: 'neutral' },
-    { name: t('subjectsLabel'), value: '24', icon: BookOpen, change: '+2', changeType: 'increase' },
-    { name: t('avgScore'), value: '78.5', icon: Activity, change: '-2.4%', changeType: 'decrease' },
+    { name: t('totalStudents'), value: dashboardData?.totalStudents ?? 0, icon: Users },
+    { name: t('activeExams'), value: dashboardData?.activeExams ?? 0, icon: FileText },
+    { name: t('subjectsLabel'), value: dashboardData?.totalSubjects ?? 0, icon: BookOpen },
+    { name: t('avgScore'), value: `${dashboardData?.avgScore ?? 0}/100`, icon: Activity },
   ];
 
   return (
@@ -62,25 +79,6 @@ export default function AdminDashboard() {
               <Box p={2} bg="indigo.50" borderRadius="lg" color="indigo.600">
                 <stat.icon size={24} />
               </Box>
-              <HStack
-                gap={1}
-                fontSize="sm"
-                fontWeight="medium"
-                color={
-                  stat.changeType === 'increase'
-                    ? 'green.600'
-                    : stat.changeType === 'decrease'
-                    ? 'red.600'
-                    : 'gray.500'
-                }
-              >
-                <Text>{stat.change}</Text>
-                {stat.changeType === 'increase' ? (
-                  <ArrowUpRight size={16} />
-                ) : stat.changeType === 'decrease' ? (
-                  <ArrowDownRight size={16} />
-                ) : null}
-              </HStack>
             </Flex>
             <Box mt={4}>
               <Text color="gray.500" fontSize="sm" fontWeight="medium">
@@ -100,9 +98,9 @@ export default function AdminDashboard() {
             {t('recentExams')}
           </Heading>
           <Stack gap={4}>
-            {[1, 2, 3].map((i) => (
+            {dashboardData?.recentExams?.map((exam: any) => (
               <Flex
-                key={i}
+                key={exam.id}
                 align="center"
                 justify="space-between"
                 p={4}
@@ -114,25 +112,29 @@ export default function AdminDashboard() {
               >
                 <Box>
                   <Text fontWeight="semibold" color="gray.900">
-                    Ujian Tengah Semester Matematika
+                    {exam.title}
                   </Text>
                   <Text fontSize="sm" color="gray.500">
-                    Subject: Mathematics • 120 Students
+                    Subject: {exam.subjectName} • {exam.sessionsCount} Students
                   </Text>
                 </Box>
                 <Badge
                   px={3}
                   py={1}
-                  bg="green.100"
-                  color="green.700"
+                  colorPalette={exam.status === 'PUBLISHED' || exam.status === 'ONGOING' ? 'green' : 'gray'}
                   fontSize="xs"
                   fontWeight="bold"
                   borderRadius="full"
                 >
-                  {t('completedStatus')}
+                  {exam.status}
                 </Badge>
               </Flex>
             ))}
+            {dashboardData?.recentExams?.length === 0 && (
+              <Text fontStyle="italic" color="gray.500" p={4} textAlign="center">
+                Belum ada data ujian terbaru.
+              </Text>
+            )}
           </Stack>
         </Box>
 
@@ -141,33 +143,42 @@ export default function AdminDashboard() {
             {t('liveAlerts')}
           </Heading>
           <Stack gap={4}>
-            {[1, 2, 3].map((i) => (
+            {dashboardData?.liveAlerts?.map((alert: any) => (
               <Flex
-                key={i}
+                key={alert.id}
                 align="flex-start"
                 gap={4}
                 p={4}
                 borderWidth="1px"
                 borderColor="red.100"
-                bg="red.50"
+                bg="red.50/30"
                 borderRadius="lg"
               >
-                <Box p={2} bg="red.100" color="red.600" borderRadius="full">
+                <Box p={2} bg="red.100" color="red.600" borderRadius="full" flexShrink={0}>
                   <Activity size={16} />
                 </Box>
                 <Box>
                   <Text fontWeight="semibold" color="red.900">
-                    {t('violationDetected')}
+                    {alert.studentName}
                   </Text>
                   <Text fontSize="sm" color="red.700">
-                    Student: John Doe • Type: Tab Switching
-                  </Text>
-                  <Text fontSize="xs" color="red.500" mt={1}>
-                    2 {t('minutesAgo')}
+                    Type: {alert.type} &bull; {new Date(alert.timestamp).toLocaleTimeString()}
                   </Text>
                 </Box>
+                <Badge
+                  colorPalette={alert.level === 'KRITIS' || alert.level === 'BERAT' ? 'red' : 'yellow'}
+                  variant="subtle"
+                  ml="auto"
+                >
+                  {alert.level}
+                </Badge>
               </Flex>
             ))}
+            {dashboardData?.liveAlerts?.length === 0 && (
+              <Text fontStyle="italic" color="gray.500" p={4} textAlign="center">
+                Tidak ada peringatan pelanggaran terbaru.
+              </Text>
+            )}
           </Stack>
         </Box>
       </SimpleGrid>
