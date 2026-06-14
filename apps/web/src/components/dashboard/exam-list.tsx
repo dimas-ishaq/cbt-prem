@@ -3,6 +3,17 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import Link from 'next/link';
+import {
+  SimpleGrid,
+  Box,
+  Flex,
+  Badge,
+  Text,
+  Heading,
+  Stack,
+  Button,
+  Spinner,
+} from '@chakra-ui/react';
 
 interface Exam {
   id: string;
@@ -25,38 +36,87 @@ export function ExamList() {
     },
   });
 
-  if (isLoading) return <div className="text-center">Loading exams...</div>;
-  if (error) return <div className="text-red-500 text-center">Failed to load exams</div>;
+  if (isLoading) {
+    return (
+      <Flex justify="center" align="center" py={12}>
+        <Spinner size="lg" color="indigo.600" />
+        <Text ml={3} color="gray.600" fontWeight="medium">Memuat daftar ujian...</Text>
+      </Flex>
+    );
+  }
+
+  if (error) {
+    return (
+      <Flex justify="center" align="center" py={12}>
+        <Text color="red.500" fontWeight="bold">Gagal memuat daftar ujian</Text>
+      </Flex>
+    );
+  }
 
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+    <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} gap={6}>
       {exams?.map((exam) => (
-        <div key={exam.id} className="p-6 bg-white rounded-lg shadow-md border border-gray-200">
-          <div className="flex justify-between items-start mb-4">
-            <span className="px-2 py-1 text-xs font-semibold text-blue-700 bg-blue-100 rounded">
-              {exam.subject.name}
-            </span>
-            <span className="text-sm text-gray-500">{exam.duration} mins</span>
-          </div>
-          <h3 className="text-xl font-bold text-gray-900 mb-2">{exam.title}</h3>
-          <p className="text-gray-600 text-sm mb-4 line-clamp-2">{exam.description}</p>
-          <div className="text-sm text-gray-500 mb-6">
-            <p>Start: {new Date(exam.startTime).toLocaleString()}</p>
-            <p>End: {new Date(exam.endTime).toLocaleString()}</p>
-          </div>
-          <Link
-            href={`/exams/${exam.id}`}
-            className="block w-full text-center py-2 text-white bg-blue-600 rounded hover:bg-blue-700 transition-colors"
-          >
-            Ikuti Ujian
+        <Box
+          key={exam.id}
+          p={6}
+          bg="white"
+          borderRadius="2xl"
+          boxShadow="md"
+          border="1px solid"
+          borderColor="gray.100"
+          display="flex"
+          flexDirection="column"
+          justifyContent="space-between"
+          transition="all 0.2s"
+          _hover={{ translateY: '-4px', boxShadow: 'lg', borderColor: 'indigo.100' }}
+        >
+          <Box>
+            <Flex justify="between" align="start" mb={4}>
+              <Badge colorPalette="blue" px={2.5} py={1} borderRadius="lg" textTransform="uppercase" fontWeight="bold" fontSize="2xs">
+                {exam.subject.name}
+              </Badge>
+              <Text fontSize="sm" color="gray.450" fontWeight="semibold">
+                {exam.duration} Menit
+              </Text>
+            </Flex>
+            
+            <Heading size="md" fontWeight="bold" color="gray.800" mb={2} lineClamp={1}>
+              {exam.title}
+            </Heading>
+            
+            <Text color="gray.600" fontSize="sm" mb={4} lineClamp={2}>
+              {exam.description}
+            </Text>
+            
+            <Stack gap={1} fontSize="xs" color="gray.450" fontWeight="semibold" mb={6}>
+              <Text>Mulai: {new Date(exam.startTime).toLocaleString('id-ID')}</Text>
+              <Text>Selesai: {new Date(exam.endTime).toLocaleString('id-ID')}</Text>
+            </Stack>
+          </Box>
+
+          <Link href={`/exams/${exam.id}`} passHref style={{ width: '100%' }}>
+            <Button
+              w="full"
+              py={5}
+              bg="indigo.600"
+              color="white"
+              borderRadius="xl"
+              fontWeight="bold"
+              _hover={{ bg: 'indigo.700', textDecoration: 'none' }}
+              textAlign="center"
+              display="block"
+              cursor="pointer"
+            >
+              Ikuti Ujian
+            </Button>
           </Link>
-        </div>
+        </Box>
       ))}
       {exams?.length === 0 && (
-        <div className="col-span-full text-center py-12 text-gray-500">
+        <Box gridColumn="1 / -1" textAlign="center" py={12} color="gray.500" fontStyle="italic">
           Belum ada ujian yang tersedia.
-        </div>
+        </Box>
       )}
-    </div>
+    </SimpleGrid>
   );
 }

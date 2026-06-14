@@ -4,6 +4,8 @@ import { AdminSidebar } from '@/components/admin/sidebar';
 import { useAuthStore } from '@/store/auth.store';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { Box, Flex, Heading } from '@chakra-ui/react';
+import { ColorModeToggle } from '@/components/ui/color-mode-toggle';
 
 export default function AdminLayout({
   children,
@@ -24,19 +26,32 @@ export default function AdminLayout({
   if (!user || user.role === 'SISWA') return null;
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <Flex minH="screen" bg="gray.50">
       <AdminSidebar />
-      <main className="flex-1 overflow-x-hidden">
-        <header className="bg-white border-b px-8 py-4 sticky top-0 z-10">
-          <h2 className="text-xl font-semibold text-gray-800 capitalize">
-            {/* We can dynamically set title based on route if needed */}
+      <Box as="main" flex={1} overflowX="hidden" display="flex" flexDirection="column">
+        <Box
+          as="header"
+          bg="bg.surface"
+          borderBottom="1px solid"
+          borderColor="border.default"
+          px={8}
+          py={4}
+          position="sticky"
+          top={0}
+          zIndex={10}
+          display="flex"
+          alignItems="center"
+          justifyContent="space-between"
+        >
+          <Heading size="md" fontWeight="bold" color="text.primary" textTransform="capitalize">
             Admin Management
-          </h2>
-        </header>
-        <div className="p-8">
+          </Heading>
+          <ColorModeToggle size="md" />
+        </Box>
+        <Box p={8} flex={1}>
           {children}
-        </div>
-      </main>
-    </div>
+        </Box>
+      </Box>
+    </Flex>
   );
 }

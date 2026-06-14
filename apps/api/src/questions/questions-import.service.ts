@@ -18,7 +18,7 @@ export class QuestionsImportService {
     }
 
     return this.prisma.$transaction(async (tx) => {
-      const createdQuestions = [];
+      const createdQuestions: any[] = [];
       for (const q of questions) {
         const created = await tx.question.create({
           data: {
@@ -42,7 +42,7 @@ export class QuestionsImportService {
     const sqEqPattern = /<p[^>]*>\s*SQ\s*<\/p>(.*?)<p[^>]*>\s*EQ\s*<\/p>/gsi;
     const matches = [...html.matchAll(sqEqPattern)];
     
-    const parsed = [];
+    const parsed: any[] = [];
     for (const match of matches) {
       const content = match[1];
       
@@ -54,9 +54,9 @@ export class QuestionsImportService {
       let questionHtml = content.replace(/<p[^>]*>\s*(?:ANS|ANSWER)\s*:\s*[A-Z]\s*<\/p>/gi, '').trim();
       
       // Extract options (A., B., C., D.)
-      const options = [];
+      const options: any[] = [];
       const pBlocks = questionHtml.match(/<p[^>]*>.*?<\/p>/gi) || [];
-      const questionTextParts = [];
+      const questionTextParts: string[] = [];
       
       for (const p of pBlocks) {
         const plainText = p.replace(/<[^>]*>/g, '').trim();

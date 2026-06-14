@@ -60,7 +60,7 @@ export default function MonitoringListPage() {
               <div className="mt-6 space-y-2">
                 <div className="flex items-center text-sm text-gray-500">
                   <Users size={16} className="mr-2" />
-                  <span>{exam._count.examSessions} Students Enrolled</span>
+                  <span>{exam._count?.examSessions ?? 0} Students Enrolled</span>
                 </div>
                 <div className="flex items-center text-sm text-gray-500">
                   <Calendar size={16} className="mr-2" />

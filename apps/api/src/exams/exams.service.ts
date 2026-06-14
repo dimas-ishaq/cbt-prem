@@ -26,7 +26,13 @@ export class ExamsService {
 
   async findAll() {
     return this.prisma.exam.findMany({
-      include: { subject: true, teacher: { include: { user: true } } },
+      include: { 
+        subject: true, 
+        teacher: { include: { user: true } },
+        _count: {
+          select: { examSessions: true }
+        }
+      },
     });
   }
 

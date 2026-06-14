@@ -4,8 +4,20 @@ import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useSocket } from '@/hooks/useSocket';
 import { useEffect, useState, use } from 'react';
-import { ChevronLeft, Users, AlertTriangle, CheckCircle2, Monitor } from 'lucide-react';
+import { ChevronLeft, Users, AlertTriangle, CheckCircle2, Monitor, Award } from 'lucide-react';
 import Link from 'next/link';
+import {
+  Box,
+  Flex,
+  Heading,
+  Text,
+  Button,
+  Badge,
+  Stack,
+  SimpleGrid,
+  Progress,
+  HStack,
+} from '@chakra-ui/react';
 
 interface Student {
   userId: string;
@@ -51,7 +63,7 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
           ...prev[data.userId],
           userId: data.userId,
           username: data.username,
-          fullName: data.username, // Fallback if name not in event
+          fullName: data.username,
           status: 'Online',
           progress: prev[data.userId]?.progress || 0,
           lastActive: new Date().toISOString(),
@@ -78,8 +90,6 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
         if (!student) return prev;
         
         const totalQuestions = exam?.examQuestions.length || 1;
-        // Keep track of answered questions in a Set or similar for true progress
-        // For now, we increment based on activity
         return {
           ...prev,
           [data.studentId]: {
@@ -124,127 +134,169 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
     };
   }, [socket, id, exam]);
 
-  if (isLoading) return <div>Loading monitor...</div>;
+  if (isLoading) {
+    return (
+      <Flex direction="column" align="center" justify="center" minH="50vh">
+        <Text color="gray.600" fontWeight="semibold">Loading monitor...</Text>
+      </Flex>
+    );
+  }
 
   const activeStudentCount = Object.keys(students).length;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <Link href="/admin/monitoring" className="p-2 hover:bg-gray-100 rounded-full">
-            <ChevronLeft size={24} />
+    <Stack gap={6}>
+      <Flex justify="between" align="center" direction={{ base: 'column', md: 'row' }} gap={4}>
+        <Flex align="center" gap={4}>
+          <Link href="/admin/monitoring" passHref>
+            <Button variant="ghost" p={2} borderRadius="full" cursor="pointer">
+              <ChevronLeft size={24} />
+            </Button>
           </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Proctor View: {exam?.title}</h1>
-            <p className="text-sm text-gray-500">{exam?.subject.name} • {exam?.examQuestions.length} Questions</p>
-          </div>
-        </div>
-        <div className="flex space-x-4">
-          <Link
-            href={`/admin/results/${id}`}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
-          >
-            <Award size={18} />
-            <span>View Final Results</span>
+          <Box>
+            <Heading size="lg" fontWeight="bold" color="gray.900">
+              Proctor View: {exam?.title}
+            </Heading>
+            <Text fontSize="sm" color="gray.500">
+              {exam?.subject.name} • {exam?.examQuestions.length} Soal
+            </Text>
+          </Box>
+        </Flex>
+        <HStack gap={4}>
+          <Link href={`/admin/results/${id}`} passHref>
+            <Button
+              colorPalette="indigo"
+              borderRadius="xl"
+              fontWeight="bold"
+              fontSize="sm"
+              px={4}
+              py={5}
+              cursor="pointer"
+            >
+              <Award size={18} />
+              <Text>View Final Results</Text>
+            </Button>
           </Link>
-          <div className="px-4 py-2 bg-white rounded-lg border flex items-center space-x-2">
-            <Users size={18} className="text-blue-600" />
-            <span className="font-bold">{activeStudentCount}</span>
-            <span className="text-sm text-gray-500">Students Active</span>
-          </div>
-          <div className="px-4 py-2 bg-red-50 text-red-700 rounded-lg border border-red-100 flex items-center space-x-2">
+          <HStack bg="white" border="1px solid" borderColor="gray.150" borderRadius="xl" px={4} py={2} shadow="xs">
+            <Users size={18} className="text-indigo-600" />
+            <Text fontWeight="bold" color="gray.800">{activeStudentCount}</Text>
+            <Text fontSize="xs" color="gray.500">Siswa Aktif</Text>
+          </HStack>
+          <HStack bg="red.50" border="1px solid" borderColor="red.100" borderRadius="xl" px={4} py={2} color="red.700">
             <AlertTriangle size={18} />
-            <span className="font-bold">{violations.length}</span>
-            <span className="text-sm">Alerts</span>
-          </div>
-        </div>
-      </div>
+            <Text fontWeight="bold">{violations.length}</Text>
+            <Text fontSize="xs">Peringatan</Text>
+          </HStack>
+        </HStack>
+      </Flex>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <h2 className="text-lg font-bold text-gray-900 mb-6 flex items-center">
-              <Monitor size={20} className="mr-2" /> Student Progress
-            </h2>
+      <SimpleGrid columns={{ base: 1, lg: 3 }} gap={8}>
+        <Box gridColumn={{ lg: 'span 2' }}>
+          <Box bg="white" p={6} borderRadius="2xl" shadow="sm" border="1px solid" borderColor="gray.100">
+            <Heading size="md" fontWeight="bold" color="gray.900" mb={6} display="flex" alignItems="center">
+              <Monitor size={20} className="mr-2" /> Progres Siswa
+            </Heading>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {Object.values(students).map((student) => (
-                <div key={student.userId} className={`p-4 border rounded-xl transition-colors ${
-                  student.status === 'Offline' ? 'bg-gray-50 opacity-75' : 'hover:bg-gray-50'
-                }`}>
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex items-center space-x-2">
-                      <div className={`w-2 h-2 rounded-full ${
-                        student.status === 'Offline' ? 'bg-gray-400' : 'bg-green-500 animate-pulse'
-                      }`} />
-                      <div>
-                        <h3 className="font-bold text-gray-900">{student.username}</h3>
-                        <p className="text-xs text-gray-500">Last active: {new Date(student.lastActive).toLocaleTimeString()}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      {student.violationCount && student.violationCount > 0 && (
-                        <span className="px-2 py-0.5 bg-red-100 text-red-700 text-[10px] font-bold rounded-full">
-                          {student.violationCount} Alerts
-                        </span>
-                      )}
-                      <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${
-                        student.status === 'Offline' ? 'bg-gray-200 text-gray-600' : 'bg-green-100 text-green-700'
-                      }`}>
-                        {student.status === 'Offline' ? 'OFFLINE' : 'LIVE'}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-xs text-gray-500">
-                      <span>Progress</span>
-                      <span>{Math.round(student.progress)}%</span>
-                    </div>
-                    <div className="w-full bg-gray-100 rounded-full h-1.5">
-                      <div 
-                        className="bg-blue-600 h-1.5 rounded-full transition-all duration-500" 
-                        style={{ width: `${student.progress}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
+            <SimpleGrid columns={{ base: 1, md: 2 }} gap={4}>
+              {Object.values(students).map((student) => {
+                const isOffline = student.status === 'Offline';
+                return (
+                  <Box
+                    key={student.userId}
+                    p={4}
+                    border="1px solid"
+                    borderColor="gray.200"
+                    borderRadius="xl"
+                    transition="all 0.2s"
+                    bg={isOffline ? 'gray.50' : 'white'}
+                    opacity={isOffline ? 0.75 : 1}
+                    _hover={isOffline ? {} : { bg: 'gray.50/50' }}
+                  >
+                    <Flex justify="between" align="start" mb={2}>
+                      <Flex align="center" gap={2}>
+                        <Box
+                          w={2}
+                          h={2}
+                          borderRadius="full"
+                          bg={isOffline ? 'gray.400' : 'green.500'}
+                          className={isOffline ? '' : 'animate-pulse'}
+                        />
+                        <Box>
+                          <Text fontWeight="bold" color="gray.900" fontSize="sm">{student.username}</Text>
+                          <Text fontSize="3xs" color="gray.450" fontWeight="medium">
+                            Aktif: {new Date(student.lastActive).toLocaleTimeString('id-ID')}
+                          </Text>
+                        </Box>
+                      </Flex>
+                      <HStack gap={2}>
+                        {student.violationCount && student.violationCount > 0 ? (
+                          <Badge colorPalette="red" px={2} py={0.5} borderRadius="full" fontSize="3xs" fontWeight="bold">
+                            {student.violationCount} Alert
+                          </Badge>
+                        ) : null}
+                        <Badge
+                          colorPalette={isOffline ? 'gray' : 'green'}
+                          px={2}
+                          py={0.5}
+                          borderRadius="full"
+                          fontSize="3xs"
+                          fontWeight="bold"
+                        >
+                          {isOffline ? 'OFFLINE' : 'LIVE'}
+                        </Badge>
+                      </HStack>
+                    </Flex>
+                    <Stack gap={1} mt={3}>
+                      <Flex justify="between" fontSize="3xs" fontWeight="semibold" color="gray.450">
+                        <Text>Progres Jawaban</Text>
+                        <Text>{Math.round(student.progress)}%</Text>
+                      </Flex>
+                      <Progress.Root value={student.progress} colorPalette="indigo" size="xs" borderRadius="full">
+                        <Progress.Track bg="gray.100">
+                          <Progress.Range />
+                        </Progress.Track>
+                      </Progress.Root>
+                    </Stack>
+                  </Box>
+                );
+              })}
               {activeStudentCount === 0 && (
-                <div className="col-span-full py-12 text-center text-gray-400 italic">
-                  Waiting for students to join the exam...
-                </div>
+                <Box gridColumn="1 / -1" py={12} textAlign="center" color="gray.400" fontStyle="italic" fontSize="sm">
+                  Menunggu siswa masuk dan memulai ujian...
+                </Box>
               )}
-            </div>
-          </div>
-        </div>
+            </SimpleGrid>
+          </Box>
+        </Box>
 
-        <div className="space-y-6">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-[600px] flex flex-col">
-            <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+        <Box>
+          <Box bg="white" p={6} borderRadius="2xl" shadow="sm" border="1px solid" borderColor="gray.100" h={600} display="flex" flexDirection="column">
+            <Heading size="md" fontWeight="bold" color="gray.900" mb={4} display="flex" alignItems="center">
               <AlertTriangle size={20} className="mr-2 text-red-600" /> Live Logs
-            </h2>
-            <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
-              {violations.map((v) => (
-                <div key={v.id} className="p-3 bg-red-50 border border-red-100 rounded-lg animate-in slide-in-from-right duration-300">
-                  <div className="flex justify-between items-start mb-1">
-                    <span className="font-bold text-red-900 text-sm">{v.username}</span>
-                    <span className="text-[10px] text-red-500">{new Date(v.timestamp).toLocaleTimeString()}</span>
-                  </div>
-                  <p className="text-xs font-bold text-red-700 uppercase">{v.type}</p>
-                  <p className="text-xs text-red-600 mt-0.5">{v.description}</p>
-                </div>
-              ))}
-              {violations.length === 0 && (
-                <div className="h-full flex flex-col items-center justify-center text-gray-400 space-y-2">
-                  <CheckCircle2 size={32} className="text-green-500" />
-                  <p className="text-sm">No violations detected</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+            </Heading>
+            <Box flex={1} overflowY="auto" className="custom-scrollbar" pr={2}>
+              <Stack gap={3}>
+                {violations.map((v) => (
+                  <Box key={v.id} p={3} bg="red.50" border="1px solid" borderColor="red.100" borderRadius="xl">
+                    <Flex justify="between" align="start" mb={1}>
+                      <Text fontWeight="bold" color="red.900" fontSize="sm">{v.username}</Text>
+                      <Text fontSize="3xs" color="red.500">{new Date(v.timestamp).toLocaleTimeString('id-ID')}</Text>
+                    </Flex>
+                    <Text fontSize="3xs" fontWeight="extrabold" color="red.700" textTransform="uppercase" letterSpacing="wider">{v.type}</Text>
+                    <Text fontSize="xs" color="red.650" mt={0.5}>{v.description}</Text>
+                  </Box>
+                ))}
+                {violations.length === 0 && (
+                  <Flex direction="column" align="center" justify="center" h="400px" color="gray.400" gap={2}>
+                    <CheckCircle2 size={32} className="text-green-500" />
+                    <Text fontSize="sm" fontWeight="medium">Tidak ada pelanggaran terdeteksi</Text>
+                  </Flex>
+                )}
+              </Stack>
+            </Box>
+          </Box>
+        </Box>
+      </SimpleGrid>
+    </Stack>
   );
 }

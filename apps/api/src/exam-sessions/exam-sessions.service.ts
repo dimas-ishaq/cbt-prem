@@ -325,7 +325,7 @@ export class ExamSessionsService {
         no: index + 1,
         fullName: session.student.user.fullName,
         username: session.student.user.username,
-        nisn: session.student.nisn,
+        nisn: session.student.nis,
         status: session.status,
         score: session.score ?? 0,
         timeSpent,

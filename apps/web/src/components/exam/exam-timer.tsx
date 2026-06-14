@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Timer } from 'lucide-react';
+import { Flex, Text } from '@chakra-ui/react';
 
 interface Props {
   startTime: string;
@@ -10,7 +11,11 @@ interface Props {
 }
 
 export function ExamTimer({ startTime, duration, onTimeUp }: Props) {
-  const [timeLeft, setTimeLeft] = useState<number>(0);
+  const [timeLeft, setTimeLeft] = useState<number>(() => {
+    const start = new Date(startTime).getTime();
+    const end = start + duration * 60 * 1000;
+    return Math.max(0, Math.floor((end - Date.now()) / 1000));
+  });
 
   useEffect(() => {
     const start = new Date(startTime).getTime();
@@ -37,14 +42,27 @@ export function ExamTimer({ startTime, duration, onTimeUp }: Props) {
 
   const format = (num: number) => num.toString().padStart(2, '0');
 
+  const isCritical = timeLeft < 300;
+
   return (
-    <div className={`flex items-center space-x-2 px-4 py-2 rounded-full font-mono font-bold border ${
-      timeLeft < 300 ? 'text-red-600 border-red-200 bg-red-50 animate-pulse' : 'text-gray-700 border-gray-200 bg-gray-50'
-    }`}>
+    <Flex
+      align="center"
+      gap={2}
+      px={4}
+      py={2}
+      borderRadius="full"
+      fontFamily="mono"
+      fontWeight="bold"
+      border="1px solid"
+      className={isCritical ? 'animate-pulse' : ''}
+      color={isCritical ? 'red.600' : 'gray.700'}
+      borderColor={isCritical ? 'red.200' : 'gray.200'}
+      bg={isCritical ? 'red.50' : 'gray.50'}
+    >
       <Timer size={18} />
-      <span>
+      <Text>
         {format(hours)}:{format(minutes)}:{format(seconds)}
-      </span>
-    </div>
+      </Text>
+    </Flex>
   );
 }

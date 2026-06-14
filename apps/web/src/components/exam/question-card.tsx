@@ -1,6 +1,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Bookmark } from 'lucide-react';
+import {
+  Box,
+  Flex,
+  Text,
+  Button,
+  Stack,
+  Badge,
+  Textarea,
+  Image,
+} from '@chakra-ui/react';
 
 interface Option {
   id: string;
@@ -20,13 +31,14 @@ interface Props {
   question: Question;
   index: number;
   onAnswer: (answer: string) => void;
-  selectedAnswer?: string; // This can be a single ID, comma-separated IDs, or essay text
+  selectedAnswer?: string;
+  isFlagged: boolean;
+  onToggleFlag: () => void;
 }
 
-export function QuestionCard({ question, index, onAnswer, selectedAnswer }: Props) {
+export function QuestionCard({ question, index, onAnswer, selectedAnswer, isFlagged, onToggleFlag }: Props) {
   const [essayText, setEssayText] = useState(selectedAnswer || '');
 
-  // Update local essay state when selectedAnswer changes (e.g., navigating back to an essay question)
   useEffect(() => {
     if (question.type === 'ESSAY') {
       setEssayText(selectedAnswer || '');
@@ -52,32 +64,36 @@ export function QuestionCard({ question, index, onAnswer, selectedAnswer }: Prop
     switch (question.mediaType) {
       case 'image':
         return (
-          <div className="mb-6 rounded-lg overflow-hidden border border-gray-100 max-w-2xl">
-            <img 
+          <Box mb={6} borderRadius="2xl" overflow="hidden" border="1px solid" borderColor="gray.150" maxW="2xl" bg="white" boxShadow="xs">
+            <Image 
               src={question.mediaUrl} 
               alt="Question media" 
-              className="w-full h-auto object-contain"
+              w="full"
+              h="auto"
+              objectFit="contain"
             />
-          </div>
+          </Box>
         );
       case 'audio':
         return (
-          <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-100">
-            <p className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wider">Audio attachment:</p>
+          <Box mb={6} p={4} bg="gray.50/50" borderRadius="2xl" border="1px solid" borderColor="gray.150" maxW="2xl">
+            <Text fontSize="2xs" fontWeight="bold" color="gray.400" mb={2.5} textTransform="uppercase" letterSpacing="wider">
+              Lampiran Audio:
+            </Text>
             <audio controls className="w-full">
               <source src={question.mediaUrl} />
-              Your browser does not support the audio element.
+              Browser Anda tidak mendukung pemutar audio.
             </audio>
-          </div>
+          </Box>
         );
       case 'video':
         return (
-          <div className="mb-6 rounded-lg overflow-hidden border border-gray-100 bg-black aspect-video max-w-2xl">
+          <Box mb={6} borderRadius="2xl" overflow="hidden" border="1px solid" borderColor="gray.150" bg="black" aspectRatio={16/9} maxW="2xl" boxShadow="sm">
             <video controls className="w-full h-full">
               <source src={question.mediaUrl} />
-              Your browser does not support the video element.
+              Browser Anda tidak mendukung pemutar video.
             </video>
-          </div>
+          </Box>
         );
       default:
         return null;
@@ -89,18 +105,25 @@ export function QuestionCard({ question, index, onAnswer, selectedAnswer }: Prop
       case 'PILIHAN_GANDA':
       case 'BENAR_SALAH':
         return (
-          <div className="space-y-3">
+          <Stack gap={3.5}>
             {question.options.map((option, idx) => {
               const label = String.fromCharCode(65 + idx);
               const isSelected = selectedAnswer === option.id;
               return (
-                <label
+                <Box
                   key={option.id}
-                  className={`flex items-center p-4 border rounded-lg cursor-pointer transition-all ${
-                    isSelected
-                      ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500'
-                      : 'border-gray-200 hover:bg-gray-50'
-                  }`}
+                  as="label"
+                  display="flex"
+                  alignItems="center"
+                  p={4}
+                  border="1px solid"
+                  borderRadius="xl"
+                  cursor="pointer"
+                  transition="all 0.2s"
+                  borderColor={isSelected ? 'indigo.650' : 'gray.200'}
+                  bg={isSelected ? 'indigo.50/40' : 'white'}
+                  _hover={isSelected ? {} : { bg: 'gray.50/60', borderColor: 'gray.300' }}
+                  boxShadow={isSelected ? '0 0 0 2px rgba(79, 70, 229, 0.1)' : 'none'}
                 >
                   <input
                     type="radio"
@@ -109,38 +132,62 @@ export function QuestionCard({ question, index, onAnswer, selectedAnswer }: Prop
                     checked={isSelected}
                     onChange={() => onAnswer(option.id)}
                   />
-                  <span className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full border mr-4 font-semibold ${
-                    isSelected
-                      ? 'bg-blue-600 border-blue-600 text-white'
-                      : 'bg-white border-gray-300 text-gray-600'
-                  }`}>
+                  <Flex
+                    flexShrink={0}
+                    w={8.5}
+                    h={8.5}
+                    align="center"
+                    justify="center"
+                    borderRadius="xl"
+                    border="1px solid"
+                    mr={4}
+                    fontWeight="bold"
+                    fontSize="sm"
+                    transition="all 0.2s"
+                    bg={isSelected ? 'indigo.600' : 'white'}
+                    color={isSelected ? 'white' : 'gray.500'}
+                    borderColor={isSelected ? 'indigo.650' : 'gray.250'}
+                    boxShadow={isSelected ? 'md' : 'none'}
+                  >
                     {label}
-                  </span>
-                  <div 
-                    className="text-gray-700"
+                  </Flex>
+                  <Box 
+                    color="gray.700"
+                    fontSize="sm"
+                    fontWeight="semibold"
+                    lineHeight="relaxed"
                     dangerouslySetInnerHTML={{ __html: option.content }}
                   />
-                </label>
+                </Box>
               );
             })}
-          </div>
+          </Stack>
         );
 
       case 'MULTIPLE_RESPONSE':
         return (
-          <div className="space-y-3">
-            <p className="text-xs text-gray-500 mb-2 font-medium uppercase">Pilih satu atau lebih jawaban:</p>
+          <Stack gap={3.5}>
+            <Text fontSize="2xs" fontWeight="bold" color="gray.400" mb={2.5} textTransform="uppercase" letterSpacing="wider">
+              Pilih satu atau lebih jawaban:
+            </Text>
             {question.options.map((option, idx) => {
               const label = String.fromCharCode(65 + idx);
               const isSelected = selectedAnswer?.split(',').includes(option.id);
               return (
-                <label
+                <Box
                   key={option.id}
-                  className={`flex items-center p-4 border rounded-lg cursor-pointer transition-all ${
-                    isSelected
-                      ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500'
-                      : 'border-gray-200 hover:bg-gray-50'
-                  }`}
+                  as="label"
+                  display="flex"
+                  alignItems="center"
+                  p={4}
+                  border="1px solid"
+                  borderRadius="xl"
+                  cursor="pointer"
+                  transition="all 0.2s"
+                  borderColor={isSelected ? 'indigo.650' : 'gray.200'}
+                  bg={isSelected ? 'indigo.50/40' : 'white'}
+                  _hover={isSelected ? {} : { bg: 'gray.50/60', borderColor: 'gray.300' }}
+                  boxShadow={isSelected ? '0 0 0 2px rgba(79, 70, 229, 0.1)' : 'none'}
                 >
                   <input
                     type="checkbox"
@@ -148,64 +195,116 @@ export function QuestionCard({ question, index, onAnswer, selectedAnswer }: Prop
                     checked={isSelected}
                     onChange={() => handleMultipleResponseChange(option.id)}
                   />
-                  <span className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg border mr-4 font-semibold ${
-                    isSelected
-                      ? 'bg-blue-600 border-blue-600 text-white'
-                      : 'bg-white border-gray-300 text-gray-600'
-                  }`}>
+                  <Flex
+                    flexShrink={0}
+                    w={8.5}
+                    h={8.5}
+                    align="center"
+                    justify="center"
+                    borderRadius="xl"
+                    border="1px solid"
+                    mr={4}
+                    fontWeight="bold"
+                    fontSize="sm"
+                    transition="all 0.2s"
+                    bg={isSelected ? 'indigo.600' : 'white'}
+                    color={isSelected ? 'white' : 'gray.500'}
+                    borderColor={isSelected ? 'indigo.650' : 'gray.250'}
+                    boxShadow={isSelected ? 'md' : 'none'}
+                  >
                     {label}
-                  </span>
-                  <div 
-                    className="text-gray-700"
+                  </Flex>
+                  <Box 
+                    color="gray.700"
+                    fontSize="sm"
+                    fontWeight="semibold"
+                    lineHeight="relaxed"
                     dangerouslySetInnerHTML={{ __html: option.content }}
                   />
-                </label>
+                </Box>
               );
             })}
-          </div>
+          </Stack>
         );
 
       case 'ESSAY':
         return (
-          <div className="space-y-4">
-            <textarea
-              className="w-full h-64 p-4 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none text-gray-700 leading-relaxed"
-              placeholder="Tuliskan jawaban Anda di sini..."
+          <Stack gap={4}>
+            <Textarea
+              w="full"
+              h={64}
+              p={4}
+              border="1px solid"
+              borderColor="gray.200"
+              borderRadius="xl"
+              outline="none"
+              resize="none"
+              color="gray.700"
+              lineHeight="relaxed"
+              fontSize="sm"
+              fontWeight="medium"
+              bg="gray.50/20"
+              _focus={{ ring: '4px', ringColor: 'indigo.50', borderColor: 'indigo.650' }}
+              placeholder="Tuliskan lembar jawaban esai Anda di sini secara lengkap..."
               value={essayText}
               onChange={(e) => setEssayText(e.target.value)}
               onBlur={() => onAnswer(essayText)}
             />
-            <div className="flex justify-between items-center text-xs text-gray-500">
-              <span>Jawaban akan disimpan otomatis saat Anda pindah soal atau klik di luar area teks.</span>
-              <span>{essayText.length} karakter</span>
-            </div>
-          </div>
+            <Flex justify="between" align="center" fontSize="2xs" color="gray.400" fontWeight="semibold" px={1}>
+              <Text>Jawaban disimpan otomatis saat Anda beralih nomor atau mengklik area luar.</Text>
+              <Text>{essayText.length} karakter</Text>
+            </Flex>
+          </Stack>
         );
 
       default:
-        return <p className="text-red-500">Tipe soal tidak didukung: {question.type}</p>;
+        return <Text color="red.500" fontWeight="bold">Tipe soal tidak didukung: {question.type}</Text>;
     }
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-      <div className="mb-6">
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-sm font-semibold text-blue-600 uppercase tracking-wider">
-            Soal No. {index + 1}
-          </span>
-          <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-[10px] font-bold rounded uppercase">
+    <Box bg="white" p={8} borderRadius="2xl" boxShadow="sm" border="1px solid" borderColor="gray.100" position="relative">
+      {/* Question Header Status */}
+      <Flex justify="between" align="center" mb={6}>
+        <Badge colorPalette="indigo" px={3} py={1.5} borderRadius="lg" variant="subtle" fontWeight="bold" fontSize="2xs" textTransform="uppercase" letterSpacing="wider">
+          Soal No. {index + 1}
+        </Badge>
+        <Flex align="center" gap={3}>
+          <Badge bg="gray.100" color="gray.600" px={2.5} py={1} borderRadius="md" fontSize="2xs" fontWeight="extrabold" textTransform="uppercase" letterSpacing="wider">
             {question.type.replace('_', ' ')}
-          </span>
-        </div>
+          </Badge>
+          <Button
+            onClick={onToggleFlag}
+            size="sm"
+            variant={isFlagged ? 'subtle' : 'outline'}
+            colorPalette={isFlagged ? 'amber' : 'gray'}
+            fontWeight="bold"
+            fontSize="xs"
+            borderRadius="lg"
+            px={3}
+            py={1.5}
+            cursor="pointer"
+          >
+            <Bookmark size={14} className={isFlagged ? 'fill-amber-500 text-amber-600' : 'text-gray-450'} />
+            <Text color={isFlagged ? 'amber.700' : 'gray.600'}>Ragu-Ragu</Text>
+          </Button>
+        </Flex>
+      </Flex>
+
+      {/* Question Content */}
+      <Box mb={8}>
         {renderMedia()}
-        <div 
-          className="mt-2 text-lg text-gray-800 leading-relaxed"
+        <Text 
+          fontSize="md"
+          color="gray.850"
+          fontWeight="semibold"
+          lineHeight="relaxed"
           dangerouslySetInnerHTML={{ __html: question.content }}
         />
-      </div>
+      </Box>
 
+      {/* Answer Options */}
       {renderOptions()}
-    </div>
+    </Box>
   );
 }

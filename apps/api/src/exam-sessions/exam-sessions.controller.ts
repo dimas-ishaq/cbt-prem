@@ -1,5 +1,5 @@
 import { Controller, Post, Body, Param, Get, UseGuards, Request, Patch, Res } from '@nestjs/common';
-import { Response } from 'express';
+import * as express from 'express';
 import { ExamSessionsService } from './exam-sessions.service';
 import { StartSessionDto } from './dto/start-session.dto';
 import { SubmitAnswerDto } from './dto/submit-answer.dto';
@@ -54,14 +54,14 @@ export class ExamSessionsController {
   @Roles(Role.GURU, Role.SUPER_ADMIN)
   async exportResults(
     @Param('examId') examId: string,
-    @Res() res: Response,
+    @Res() res: express.Response,
   ) {
     const buffer = await this.examSessionsService.exportToExcel(examId);
     
     res.set({
       'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'Content-Disposition': `attachment; filename="results-${examId}.xlsx"`,
-      'Content-Length': (buffer as Buffer).length,
+      'Content-Length': (buffer as any).length,
     });
 
     res.end(buffer);

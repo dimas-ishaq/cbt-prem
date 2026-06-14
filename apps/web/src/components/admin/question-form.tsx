@@ -3,6 +3,17 @@
 import { useState } from 'react';
 import { Plus, Trash2, CheckCircle2 } from 'lucide-react';
 import { RichTextEditor } from './rich-text-editor';
+import {
+  Box,
+  Flex,
+  Text,
+  Button,
+  Stack,
+  Input,
+  SimpleGrid,
+  HStack,
+  IconButton,
+} from '@chakra-ui/react';
 
 interface Option {
   content: string;
@@ -59,7 +70,7 @@ export function QuestionForm({ onSubmit, onCancel, isSubmitting }: QuestionFormP
       ]);
     } else if (newType === 'ESSAY') {
       setOptions([]);
-    } else if (options.length === 0 || (options.length === 2 && options[0].content === 'Benar')) {
+    } else if (options.length === 0 || (options.length === 2 && options[0]?.content === 'Benar')) {
       // Re-initialize for choice types if it was essay or true/false
       setOptions([
         { content: '', isCorrect: true },
@@ -82,156 +93,228 @@ export function QuestionForm({ onSubmit, onCancel, isSubmitting }: QuestionFormP
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Question Content</label>
-          <RichTextEditor
-            value={content}
-            onChange={setContent}
-            placeholder="Type your question here..."
-          />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg border border-gray-100">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Media URL (Optional)</label>
-            <input
-              type="url"
-              value={mediaUrl}
-              onChange={(e) => setMediaUrl(e.target.value)}
-              placeholder="https://example.com/image.jpg"
-              className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+    <form onSubmit={handleSubmit}>
+      <Stack gap={6}>
+        <Stack gap={4}>
+          <Box>
+            <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>
+              Question Content
+            </Text>
+            <RichTextEditor
+              value={content}
+              onChange={setContent}
+              placeholder="Type your question here..."
             />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Media Type</label>
-            <select
-              value={mediaType}
-              onChange={(e) => setMediaType(e.target.value)}
-              disabled={!mediaUrl}
-              className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:opacity-50"
-            >
-              <option value="image">Image</option>
-              <option value="audio">Audio</option>
-              <option value="video">Video</option>
-            </select>
-          </div>
-        </div>
+          </Box>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-            <select
-              value={type}
-              onChange={(e) => handleTypeChange(e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-            >
-              <option value="PILIHAN_GANDA">Pilihan Ganda</option>
-              <option value="MULTIPLE_RESPONSE">Multiple Response</option>
-              <option value="ESSAY">Essay</option>
-              <option value="BENAR_SALAH">Benar / Salah</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Difficulty</label>
-            <select
-              value={difficulty}
-              onChange={(e) => setDifficulty(e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-            >
-              <option value="MUDAH">Mudah</option>
-              <option value="SEDANG">Sedang</option>
-              <option value="SULIT">Sulit</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Points</label>
-            <input
-              type="number"
-              value={points}
-              onChange={(e) => setPoints(parseInt(e.target.value))}
-              className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-        </div>
-      </div>
-
-      {type !== 'ESSAY' && (
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Options</h3>
-            {type !== 'BENAR_SALAH' && (
-              <button
-                type="button"
-                onClick={addOption}
-                className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center"
+          <SimpleGrid columns={{ base: 1, md: 2 }} gap={4} p={4} bg="gray.50" borderRadius="lg" borderWidth="1px" borderColor="gray.100">
+            <Box>
+              <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>
+                Media URL (Optional)
+              </Text>
+              <Input
+                type="url"
+                value={mediaUrl}
+                onChange={(e) => setMediaUrl(e.target.value)}
+                placeholder="https://example.com/image.jpg"
+                borderRadius="lg"
+                borderColor="gray.200"
+                _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
+              />
+            </Box>
+            <Box>
+              <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>
+                Media Type
+              </Text>
+              <select
+                value={mediaType}
+                onChange={(e) => setMediaType(e.target.value)}
+                disabled={!mediaUrl}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  backgroundColor: 'white',
+                  outline: 'none',
+                  fontSize: '14px',
+                  opacity: !mediaUrl ? 0.5 : 1,
+                }}
               >
-                <Plus size={16} className="mr-1" /> Add Option
-              </button>
-            )}
-          </div>
-          
-          <div className="space-y-3">
-            {options.map((option, idx) => (
-              <div key={idx} className="flex items-start space-x-3">
-                <button
-                  type="button"
-                  onClick={() => updateOption(idx, 'isCorrect', !option.isCorrect)}
-                  className={`mt-2 p-1 rounded-full transition-colors ${
-                    option.isCorrect ? 'text-green-600 bg-green-50' : 'text-gray-300 hover:text-gray-400'
-                  }`}
-                >
-                  <CheckCircle2 size={24} />
-                </button>
-                <div className="flex-1">
-                  {type === 'BENAR_SALAH' ? (
-                    <input
-                      type="text"
-                      readOnly
-                      value={option.content}
-                      className="w-full px-3 py-2 border rounded-lg bg-gray-50 outline-none"
-                    />
-                  ) : (
-                    <RichTextEditor
-                      value={option.content}
-                      onChange={(val) => updateOption(idx, 'content', val)}
-                      placeholder={`Option ${String.fromCharCode(65 + idx)}`}
-                      className="min-h-[100px]"
-                    />
-                  )}
-                </div>
-                {options.length > 2 && type !== 'BENAR_SALAH' && (
-                  <button
-                    type="button"
-                    onClick={() => removeOption(idx)}
-                    className="mt-2 p-2 text-red-500 hover:bg-red-50 rounded-lg"
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+                <option value="image">Image</option>
+                <option value="audio">Audio</option>
+                <option value="video">Video</option>
+              </select>
+            </Box>
+          </SimpleGrid>
 
-      <div className="flex space-x-3 pt-6 border-t">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="flex-1 py-2 border rounded-lg hover:bg-gray-50 font-medium"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50"
-        >
-          {isSubmitting ? 'Saving...' : 'Save Question'}
-        </button>
-      </div>
+          <SimpleGrid columns={{ base: 1, md: 3 }} gap={4}>
+            <Box>
+              <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Type</Text>
+              <select
+                value={type}
+                onChange={(e) => handleTypeChange(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  backgroundColor: 'white',
+                  outline: 'none',
+                  fontSize: '14px',
+                }}
+              >
+                <option value="PILIHAN_GANDA">Pilihan Ganda</option>
+                <option value="MULTIPLE_RESPONSE">Multiple Response</option>
+                <option value="ESSAY">Essay</option>
+                <option value="BENAR_SALAH">Benar / Salah</option>
+              </select>
+            </Box>
+            <Box>
+              <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Difficulty</Text>
+              <select
+                value={difficulty}
+                onChange={(e) => setDifficulty(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  backgroundColor: 'white',
+                  outline: 'none',
+                  fontSize: '14px',
+                }}
+              >
+                <option value="MUDAH">Mudah</option>
+                <option value="SEDANG">Sedang</option>
+                <option value="SULIT">Sulit</option>
+              </select>
+            </Box>
+            <Box>
+              <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Points</Text>
+              <Input
+                type="number"
+                value={points}
+                onChange={(e) => setPoints(parseInt(e.target.value))}
+                borderRadius="lg"
+                borderColor="gray.200"
+                _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
+              />
+            </Box>
+          </SimpleGrid>
+        </Stack>
+
+        {type !== 'ESSAY' && (
+          <Stack gap={4}>
+            <Flex justify="space-between" align="center">
+              <Text fontSize="sm" fontWeight="bold" color="gray.900" textTransform="uppercase" letterSpacing="wider">
+                Options
+              </Text>
+              {type !== 'BENAR_SALAH' && (
+                <Button
+                  type="button"
+                  onClick={addOption}
+                  variant="ghost"
+                  fontSize="xs"
+                  fontWeight="semibold"
+                  color="indigo.600"
+                  _hover={{ color: 'indigo.700' }}
+                  size="sm"
+                  cursor="pointer"
+                >
+                  <Plus size={16} />
+                  Add Option
+                </Button>
+              )}
+            </Flex>
+
+            <Stack gap={3}>
+              {options.map((option, idx) => (
+                <Flex key={idx} align="flex-start" gap={3}>
+                  <Flex
+                    as="button"
+                    onClick={() => updateOption(idx, 'isCorrect', !option.isCorrect)}
+                    mt={2}
+                    p={1}
+                    borderRadius="full"
+                    transition="all 0.15s"
+                    color={option.isCorrect ? 'green.600' : 'gray.300'}
+                    bg={option.isCorrect ? 'green.50' : 'transparent'}
+                    _hover={{ color: option.isCorrect ? 'green.700' : 'gray.400' }}
+                    cursor="pointer"
+                    align="center"
+                    justify="center"
+                  >
+                    <CheckCircle2 size={24} />
+                  </Flex>
+                  <Box flex={1}>
+                    {type === 'BENAR_SALAH' ? (
+                      <Input
+                        type="text"
+                        readOnly
+                        value={option.content}
+                        bg="gray.50"
+                        borderRadius="lg"
+                        borderColor="gray.200"
+                      />
+                    ) : (
+                      <RichTextEditor
+                        value={option.content}
+                        onChange={(val) => updateOption(idx, 'content', val)}
+                        placeholder={`Option ${String.fromCharCode(65 + idx)}`}
+                        className="min-h-[100px]"
+                      />
+                    )}
+                  </Box>
+                  {options.length > 2 && type !== 'BENAR_SALAH' && (
+                    <IconButton
+                      type="button"
+                      onClick={() => removeOption(idx)}
+                      variant="ghost"
+                      color="red.500"
+                      _hover={{ bg: 'red.50' }}
+                      size="sm"
+                      borderRadius="lg"
+                      mt={2}
+                      aria-label="Remove option"
+                      cursor="pointer"
+                    >
+                      <Trash2 size={18} />
+                    </IconButton>
+                  )}
+                </Flex>
+              ))}
+            </Stack>
+          </Stack>
+        )}
+
+        <Flex gap={3} pt={6} borderTop="1px solid" borderColor="gray.100">
+          <Button
+            type="button"
+            onClick={onCancel}
+            flex={1}
+            variant="outline"
+            borderRadius="lg"
+            fontWeight="medium"
+            cursor="pointer"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            flex={1}
+            bg="indigo.600"
+            color="white"
+            _hover={{ bg: 'indigo.700' }}
+            borderRadius="lg"
+            fontWeight="medium"
+            cursor="pointer"
+          >
+            {isSubmitting ? 'Saving...' : 'Save Question'}
+          </Button>
+        </Flex>
+      </Stack>
     </form>
   );
 }

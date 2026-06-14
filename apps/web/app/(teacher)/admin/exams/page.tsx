@@ -2,9 +2,21 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { Plus, FileText, Trash2, Search, Calendar, Clock, Lock } from 'lucide-react';
-import { useState } from 'react';
+import { Plus, FileText, Trash2, Calendar, Clock, Lock } from 'lucide-react';
 import Link from 'next/link';
+import {
+  Box,
+  Flex,
+  Heading,
+  Text,
+  Button,
+  Table,
+  Badge,
+  HStack,
+  Stack,
+  Spinner,
+  IconButton,
+} from '@chakra-ui/react';
 
 interface Exam {
   id: string;
@@ -18,6 +30,13 @@ interface Exam {
   status: string;
   token?: string;
 }
+
+const statusColorMap: Record<string, { bg: string; color: string }> = {
+  PUBLISHED: { bg: 'green.100', color: 'green.700' },
+  ONGOING: { bg: 'blue.100', color: 'blue.700' },
+  COMPLETED: { bg: 'gray.100', color: 'gray.700' },
+  DRAFT: { bg: 'yellow.100', color: 'yellow.700' },
+};
 
 export default function ExamsPage() {
   const queryClient = useQueryClient();
@@ -37,101 +56,149 @@ export default function ExamsPage() {
     },
   });
 
-  if (isLoading) return <div>Loading exams...</div>;
+  if (isLoading) {
+    return (
+      <Flex justify="center" align="center" py={16}>
+        <Spinner size="lg" color="indigo.600" />
+        <Text ml={3} color="gray.500">Loading exams...</Text>
+      </Flex>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Exams</h1>
-          <p className="text-gray-500">Schedule and manage your examinations.</p>
-        </div>
-        <Link
-          href="/admin/exams/create"
-          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+    <Stack gap={6}>
+      <Flex justify="space-between" align="center">
+        <Box>
+          <Heading size="xl" fontWeight="bold" color="gray.900">
+            Exams
+          </Heading>
+          <Text color="gray.500" mt={1}>
+            Schedule and manage your examinations.
+          </Text>
+        </Box>
+        <Button
+          asChild
+          bg="indigo.600"
+          color="white"
+          _hover={{ bg: 'indigo.700' }}
+          borderRadius="lg"
+          px={4}
+          py={2}
+          fontWeight="medium"
+          cursor="pointer"
         >
-          <Plus size={20} />
-          <span>Schedule Exam</span>
-        </Link>
-      </div>
+          <Link href="/admin/exams/create">
+            <Plus size={20} />
+            Schedule Exam
+          </Link>
+        </Button>
+      </Flex>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-gray-50 text-gray-600 text-sm uppercase">
-            <tr>
-              <th className="px-6 py-4 font-semibold">Exam Title</th>
-              <th className="px-6 py-4 font-semibold">Subject</th>
-              <th className="px-6 py-4 font-semibold">Schedule</th>
-              <th className="px-6 py-4 font-semibold">Status</th>
-              <th className="px-6 py-4 font-semibold text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y text-gray-700">
-            {exams?.map((exam) => (
-              <tr key={exam.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-6 py-4">
-                  <div className="font-medium text-gray-900">{exam.title}</div>
-                  {exam.token && (
-                    <div className="flex items-center text-xs text-gray-400 mt-1">
-                      <Lock size={12} className="mr-1" />
-                      Token: {exam.token}
-                    </div>
-                  )}
-                </td>
-                <td className="px-6 py-4 text-sm">{exam.subject.name}</td>
-                <td className="px-6 py-4 text-sm">
-                  <div className="flex items-center space-x-1">
-                    <Calendar size={14} className="text-gray-400" />
-                    <span>{new Date(exam.startTime).toLocaleDateString()}</span>
-                  </div>
-                  <div className="flex items-center space-x-1 mt-1 text-gray-500">
-                    <Clock size={14} className="text-gray-400" />
-                    <span>{exam.duration} mins</span>
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <span className={`px-2 py-1 text-xs font-bold rounded-full ${
-                    exam.status === 'PUBLISHED' ? 'bg-green-100 text-green-700' :
-                    exam.status === 'ONGOING' ? 'bg-blue-100 text-blue-700' :
-                    exam.status === 'COMPLETED' ? 'bg-gray-100 text-gray-700' :
-                    'bg-yellow-100 text-yellow-700'
-                  }`}>
-                    {exam.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <div className="flex justify-end space-x-2">
-                    <Link
-                      href={`/admin/results/${exam.id}`}
-                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                      title="View Results"
+      <Box bg="white" borderRadius="xl" shadow="sm" borderWidth="1px" borderColor="gray.100" overflow="hidden">
+        <Table.Root size="md">
+          <Table.Header>
+            <Table.Row bg="gray.50">
+              <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600" fontSize="xs" textTransform="uppercase">
+                Exam Title
+              </Table.ColumnHeader>
+              <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600" fontSize="xs" textTransform="uppercase">
+                Subject
+              </Table.ColumnHeader>
+              <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600" fontSize="xs" textTransform="uppercase">
+                Schedule
+              </Table.ColumnHeader>
+              <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600" fontSize="xs" textTransform="uppercase">
+                Status
+              </Table.ColumnHeader>
+              <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600" fontSize="xs" textTransform="uppercase" textAlign="end">
+                Actions
+              </Table.ColumnHeader>
+            </Table.Row>
+          </Table.Header>
+          <Table.Body>
+            {exams?.map((exam) => {
+              const sc = statusColorMap[exam.status] ?? { bg: 'yellow.100', color: 'yellow.700' };
+              return (
+                <Table.Row key={exam.id} _hover={{ bg: 'gray.50' }} transition="background 0.15s">
+                  <Table.Cell px={6} py={4}>
+                    <Text fontWeight="medium" color="gray.900">{exam.title}</Text>
+                    {exam.token && (
+                      <HStack gap={1} mt={1} color="gray.400" fontSize="xs">
+                        <Lock size={12} />
+                        <Text>Token: {exam.token}</Text>
+                      </HStack>
+                    )}
+                  </Table.Cell>
+                  <Table.Cell px={6} py={4} fontSize="sm">{exam.subject.name}</Table.Cell>
+                  <Table.Cell px={6} py={4} fontSize="sm">
+                    <HStack gap={1}>
+                      <Calendar size={14} style={{ color: '#9ca3af' }} />
+                      <Text>{new Date(exam.startTime).toLocaleDateString()}</Text>
+                    </HStack>
+                    <HStack gap={1} mt={1} color="gray.500">
+                      <Clock size={14} style={{ color: '#9ca3af' }} />
+                      <Text>{exam.duration} mins</Text>
+                    </HStack>
+                  </Table.Cell>
+                  <Table.Cell px={6} py={4}>
+                    <Badge
+                      px={2}
+                      py={1}
+                      fontSize="xs"
+                      fontWeight="bold"
+                      borderRadius="full"
+                      bg={sc.bg}
+                      color={sc.color}
                     >
-                      <FileText size={18} />
-                    </Link>
-                    <button 
-                      onClick={() => {
-                        if (confirm('Are you sure you want to delete this exam?')) {
-                          deleteMutation.mutate(exam.id);
-                        }
-                      }}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+                      {exam.status}
+                    </Badge>
+                  </Table.Cell>
+                  <Table.Cell px={6} py={4} textAlign="end">
+                    <HStack gap={2} justify="flex-end">
+                      <IconButton
+                        asChild
+                        variant="ghost"
+                        color="indigo.600"
+                        _hover={{ bg: 'indigo.50' }}
+                        size="sm"
+                        borderRadius="lg"
+                        aria-label="View Results"
+                      >
+                        <Link href={`/admin/results/${exam.id}`}>
+                          <FileText size={18} />
+                        </Link>
+                      </IconButton>
+                      <IconButton
+                        variant="ghost"
+                        color="red.600"
+                        _hover={{ bg: 'red.50' }}
+                        size="sm"
+                        borderRadius="lg"
+                        aria-label="Delete Exam"
+                        onClick={() => {
+                          if (confirm('Are you sure you want to delete this exam?')) {
+                            deleteMutation.mutate(exam.id);
+                          }
+                        }}
+                        cursor="pointer"
+                      >
+                        <Trash2 size={18} />
+                      </IconButton>
+                    </HStack>
+                  </Table.Cell>
+                </Table.Row>
+              );
+            })}
             {exams?.length === 0 && (
-              <tr>
-                <td colSpan={5} className="px-6 py-12 text-center text-gray-500 italic">
+              <Table.Row>
+                <Table.Cell colSpan={5} px={6} py={12} textAlign="center" color="gray.500" fontStyle="italic">
                   No exams scheduled yet.
-                </td>
-              </tr>
+                </Table.Cell>
+              </Table.Row>
             )}
-          </tbody>
-        </table>
-      </div>
-    </div>
+          </Table.Body>
+        </Table.Root>
+      </Box>
+    </Stack>
   );
 }

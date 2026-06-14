@@ -2,14 +2,25 @@
 
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { 
-  Users, 
-  FileText, 
-  BookOpen, 
+import {
+  Users,
+  FileText,
+  BookOpen,
   Activity,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
 } from 'lucide-react';
+import {
+  Box,
+  Flex,
+  Heading,
+  Text,
+  SimpleGrid,
+  Stack,
+  Icon,
+  Badge,
+  HStack,
+} from '@chakra-ui/react';
 
 const stats = [
   { name: 'Total Students', value: '1,234', icon: Users, change: '+12%', changeType: 'increase' },
@@ -20,70 +31,142 @@ const stats = [
 
 export default function AdminDashboard() {
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard Overview</h1>
-        <p className="text-gray-500">Welcome back to the CBT management panel.</p>
-      </div>
+    <Stack gap={8}>
+      <Box>
+        <Heading size="xl" fontWeight="bold" color="gray.900">
+          Dashboard Overview
+        </Heading>
+        <Text color="gray.500" mt={1}>
+          Welcome back to the CBT management panel.
+        </Text>
+      </Box>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} gap={6}>
         {stats.map((stat) => (
-          <div key={stat.name} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <div className="flex justify-between items-start">
-              <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
+          <Box
+            key={stat.name}
+            bg="white"
+            p={6}
+            borderRadius="xl"
+            shadow="sm"
+            borderWidth="1px"
+            borderColor="gray.100"
+            transition="all 0.2s"
+            _hover={{ shadow: 'md', transform: 'translateY(-2px)' }}
+          >
+            <Flex justify="space-between" align="flex-start">
+              <Box p={2} bg="indigo.50" borderRadius="lg" color="indigo.600">
                 <stat.icon size={24} />
-              </div>
-              <span className={`flex items-center text-sm font-medium ${
-                stat.changeType === 'increase' ? 'text-green-600' : 
-                stat.changeType === 'decrease' ? 'text-red-600' : 'text-gray-500'
-              }`}>
-                {stat.change}
-                {stat.changeType === 'increase' ? <ArrowUpRight size={16} /> : 
-                 stat.changeType === 'decrease' ? <ArrowDownRight size={16} /> : null}
-              </span>
-            </div>
-            <div className="mt-4">
-              <h3 className="text-gray-500 text-sm font-medium">{stat.name}</h3>
-              <p className="text-3xl font-bold text-gray-900 mt-1">{stat.value}</p>
-            </div>
-          </div>
+              </Box>
+              <HStack
+                gap={1}
+                fontSize="sm"
+                fontWeight="medium"
+                color={
+                  stat.changeType === 'increase'
+                    ? 'green.600'
+                    : stat.changeType === 'decrease'
+                    ? 'red.600'
+                    : 'gray.500'
+                }
+              >
+                <Text>{stat.change}</Text>
+                {stat.changeType === 'increase' ? (
+                  <ArrowUpRight size={16} />
+                ) : stat.changeType === 'decrease' ? (
+                  <ArrowDownRight size={16} />
+                ) : null}
+              </HStack>
+            </Flex>
+            <Box mt={4}>
+              <Text color="gray.500" fontSize="sm" fontWeight="medium">
+                {stat.name}
+              </Text>
+              <Text fontSize="3xl" fontWeight="bold" color="gray.900" mt={1}>
+                {stat.value}
+              </Text>
+            </Box>
+          </Box>
         ))}
-      </div>
+      </SimpleGrid>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">Recent Exams</h3>
-          <div className="space-y-4">
+      <SimpleGrid columns={{ base: 1, lg: 2 }} gap={8}>
+        <Box bg="white" p={6} borderRadius="xl" shadow="sm" borderWidth="1px" borderColor="gray.100">
+          <Heading size="md" fontWeight="bold" color="gray.900" mb={4}>
+            Recent Exams
+          </Heading>
+          <Stack gap={4}>
             {[1, 2, 3].map((i) => (
-              <div key={i} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
-                <div>
-                  <h4 className="font-semibold text-gray-900">Ujian Tengah Semester Matematika</h4>
-                  <p className="text-sm text-gray-500">Subject: Mathematics • 120 Students</p>
-                </div>
-                <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">Completed</span>
-              </div>
+              <Flex
+                key={i}
+                align="center"
+                justify="space-between"
+                p={4}
+                borderWidth="1px"
+                borderColor="gray.100"
+                borderRadius="lg"
+                _hover={{ bg: 'gray.50' }}
+                transition="background 0.15s"
+              >
+                <Box>
+                  <Text fontWeight="semibold" color="gray.900">
+                    Ujian Tengah Semester Matematika
+                  </Text>
+                  <Text fontSize="sm" color="gray.500">
+                    Subject: Mathematics • 120 Students
+                  </Text>
+                </Box>
+                <Badge
+                  px={3}
+                  py={1}
+                  bg="green.100"
+                  color="green.700"
+                  fontSize="xs"
+                  fontWeight="bold"
+                  borderRadius="full"
+                >
+                  Completed
+                </Badge>
+              </Flex>
             ))}
-          </div>
-        </div>
+          </Stack>
+        </Box>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">Live Monitoring Alerts</h3>
-          <div className="space-y-4">
+        <Box bg="white" p={6} borderRadius="xl" shadow="sm" borderWidth="1px" borderColor="gray.100">
+          <Heading size="md" fontWeight="bold" color="gray.900" mb={4}>
+            Live Monitoring Alerts
+          </Heading>
+          <Stack gap={4}>
             {[1, 2, 3].map((i) => (
-              <div key={i} className="flex items-start space-x-4 p-4 border border-red-100 bg-red-50 rounded-lg">
-                <div className="p-2 bg-red-100 text-red-600 rounded-full">
+              <Flex
+                key={i}
+                align="flex-start"
+                gap={4}
+                p={4}
+                borderWidth="1px"
+                borderColor="red.100"
+                bg="red.50"
+                borderRadius="lg"
+              >
+                <Box p={2} bg="red.100" color="red.600" borderRadius="full">
                   <Activity size={16} />
-                </div>
-                <div>
-                  <h4 className="font-semibold text-red-900">Violation Detected</h4>
-                  <p className="text-sm text-red-700">Student: John Doe • Type: Tab Switching</p>
-                  <p className="text-xs text-red-500 mt-1">2 minutes ago</p>
-                </div>
-              </div>
+                </Box>
+                <Box>
+                  <Text fontWeight="semibold" color="red.900">
+                    Violation Detected
+                  </Text>
+                  <Text fontSize="sm" color="red.700">
+                    Student: John Doe • Type: Tab Switching
+                  </Text>
+                  <Text fontSize="xs" color="red.500" mt={1}>
+                    2 minutes ago
+                  </Text>
+                </Box>
+              </Flex>
             ))}
-          </div>
-        </div>
-      </div>
-    </div>
+          </Stack>
+        </Box>
+      </SimpleGrid>
+    </Stack>
   );
 }

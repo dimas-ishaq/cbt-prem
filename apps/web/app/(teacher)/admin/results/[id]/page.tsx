@@ -3,8 +3,20 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { use } from 'react';
-import { ChevronLeft, User, Award, Clock, FileText, CheckCircle, XCircle, AlertCircle, FileDown } from 'lucide-react';
+import { ChevronLeft, User, Award, Clock, FileText, FileDown } from 'lucide-react';
 import Link from 'next/link';
+import {
+  Box,
+  Flex,
+  Heading,
+  Text,
+  Button,
+  Badge,
+  Stack,
+  Table,
+  HStack,
+  Spinner,
+} from '@chakra-ui/react';
 
 interface Student {
   user: {
@@ -64,96 +76,131 @@ export default function ExamResultsPage({ params }: { params: Promise<{ id: stri
     },
   });
 
-  if (isLoading) return <div className="p-8">Loading results...</div>;
+  if (isLoading) {
+    return (
+      <Flex direction="column" align="center" justify="center" minH="50vh">
+        <Spinner size="lg" color="indigo.600" />
+        <Text color="gray.600" mt={3} fontWeight="semibold">Loading results...</Text>
+      </Flex>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <Link href="/admin/exams" className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-            <ChevronLeft size={24} />
+    <Stack gap={6}>
+      <Flex justify="between" align="center" direction={{ base: 'column', md: 'row' }} gap={4}>
+        <Flex align="center" gap={4}>
+          <Link href="/admin/exams" passHref>
+            <Button variant="ghost" p={2} borderRadius="full" cursor="pointer">
+              <ChevronLeft size={24} />
+            </Button>
           </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Exam Results: {exam?.title}</h1>
-            <p className="text-gray-500">{exam?.subject.name} • {sessions?.length} Submissions</p>
-          </div>
-        </div>
-        <button
+          <Box>
+            <Heading size="lg" fontWeight="bold" color="gray.900">
+              Hasil Ujian: {exam?.title}
+            </Heading>
+            <Text fontSize="sm" color="gray.500">
+              {exam?.subject.name} • {sessions?.length} Lembar Jawaban
+            </Text>
+          </Box>
+        </Flex>
+        <Button
           onClick={() => exportMutation.mutate()}
           disabled={exportMutation.isPending}
-          className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+          colorPalette="green"
+          borderRadius="xl"
+          fontWeight="bold"
+          fontSize="sm"
+          px={4}
+          py={5}
+          cursor="pointer"
         >
           <FileDown size={20} />
-          <span>{exportMutation.isPending ? 'Exporting...' : 'Export Excel'}</span>
-        </button>
-      </div>
+          <Text>{exportMutation.isPending ? 'Mengekspor...' : 'Ekspor Excel'}</Text>
+        </Button>
+      </Flex>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-gray-50 text-gray-600 text-sm uppercase">
-            <tr>
-              <th className="px-6 py-4 font-semibold">Student</th>
-              <th className="px-6 py-4 font-semibold">Time Spent</th>
-              <th className="px-6 py-4 font-semibold">Status</th>
-              <th className="px-6 py-4 font-semibold">Score</th>
-              <th className="px-6 py-4 font-semibold text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y text-gray-700">
+      <Box bg="white" borderRadius="2xl" shadow="sm" border="1px solid" borderColor="gray.100" overflow="hidden">
+        <Table.Root interactive>
+          <Table.Header bg="gray.50">
+            <Table.Row>
+              <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600">Siswa</Table.ColumnHeader>
+              <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600">Durasi Pengerjaan</Table.ColumnHeader>
+              <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600">Status</Table.ColumnHeader>
+              <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600">Nilai Akhir</Table.ColumnHeader>
+              <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600" textAlign="right">Aksi</Table.ColumnHeader>
+            </Table.Row>
+          </Table.Header>
+          <Table.Body color="gray.700">
             {sessions?.map((session) => {
               const start = new Date(session.startTime);
               const end = session.endTime ? new Date(session.endTime) : null;
               const diff = end ? Math.round((end.getTime() - start.getTime()) / 60000) : '-';
 
               return (
-                <tr key={session.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                <Table.Row key={session.id} _hover={{ bg: 'gray.50/40' }} transition="all 0.2s">
+                  <Table.Cell px={6} py={4}>
+                    <HStack gap={3}>
+                      <Flex w={8} h={8} borderRadius="full" bg="blue.50" align="center" justify="center" color="blue.650">
                         <User size={16} />
-                      </div>
-                      <div>
-                        <div className="font-medium text-gray-900">{session.student.user.fullName}</div>
-                        <div className="text-xs text-gray-400">@{session.student.user.username}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm">
-                    <div className="flex items-center space-x-1">
+                      </Flex>
+                      <Box>
+                        <Text fontWeight="bold" color="gray.900" fontSize="sm">{session.student.user.fullName}</Text>
+                        <Text fontSize="3xs" color="gray.400" fontWeight="medium">@{session.student.user.username}</Text>
+                      </Box>
+                    </HStack>
+                  </Table.Cell>
+                  <Table.Cell px={6} py={4} fontSize="sm">
+                    <HStack gap={1}>
                       <Clock size={14} className="text-gray-400" />
-                      <span>{diff} mins</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-1 text-[10px] font-bold rounded-full uppercase ${
-                      session.status === 'FINISHED' || session.status === 'SUBMITTED' ? 'bg-green-100 text-green-700' :
-                      session.status === 'ONGOING' || session.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-700' :
-                      'bg-gray-100 text-gray-700'
-                    }`}>
-                      {session.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center space-x-1">
-                      <Award size={16} className={session.score !== null ? 'text-yellow-500' : 'text-gray-300'} />
-                      <span className="font-bold">{session.score ?? '--'}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <Link
-                      href={`/admin/results/sessions/${session.id}`}
-                      className="inline-flex items-center space-x-1 text-sm font-semibold text-blue-600 hover:text-blue-700"
+                      <Text fontWeight="medium">{diff} menit</Text>
+                    </HStack>
+                  </Table.Cell>
+                  <Table.Cell px={6} py={4}>
+                    <Badge
+                      colorPalette={
+                        session.status === 'FINISHED' || session.status === 'SUBMITTED' ? 'green' :
+                        session.status === 'ONGOING' || session.status === 'IN_PROGRESS' ? 'blue' : 'gray'
+                      }
+                      px={2.5}
+                      py={1}
+                      borderRadius="full"
+                      fontSize="3xs"
+                      fontWeight="bold"
+                      textTransform="uppercase"
                     >
-                      <FileText size={16} />
-                      <span>Details & Grade</span>
+                      {session.status}
+                    </Badge>
+                  </Table.Cell>
+                  <Table.Cell px={6} py={4}>
+                    <HStack gap={1}>
+                      <Award size={16} className={session.score !== null ? 'text-amber-500' : 'text-gray-300'} />
+                      <Text fontWeight="bold" color="gray.800">{session.score ?? '--'}</Text>
+                    </HStack>
+                  </Table.Cell>
+                  <Table.Cell px={6} py={4} textAlign="right">
+                    <Link href={`/admin/results/sessions/${session.id}`} passHref>
+                      <Button
+                        as="span"
+                        variant="ghost"
+                        size="sm"
+                        color="indigo.650"
+                        _hover={{ bg: 'indigo.50', color: 'indigo.700' }}
+                        borderRadius="lg"
+                        fontWeight="bold"
+                        fontSize="xs"
+                        cursor="pointer"
+                      >
+                        <FileText size={16} />
+                        <Text>Detail & Nilai</Text>
+                      </Button>
                     </Link>
-                  </td>
-                </tr>
+                  </Table.Cell>
+                </Table.Row>
               );
             })}
-          </tbody>
-        </table>
-      </div>
-    </div>
+          </Table.Body>
+        </Table.Root>
+      </Box>
+    </Stack>
   );
 }

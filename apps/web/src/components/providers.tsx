@@ -2,13 +2,25 @@
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState } from 'react';
+import { ChakraProvider } from '@chakra-ui/react';
+import { ThemeProvider } from 'next-themes';
+import { system } from '@/lib/theme';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient());
 
   return (
     <QueryClientProvider client={queryClient}>
-      {children}
+      <ChakraProvider value={system}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          enableSystem={false}
+          disableTransitionOnChange={false}
+        >
+          {children}
+        </ThemeProvider>
+      </ChakraProvider>
     </QueryClientProvider>
   );
 }

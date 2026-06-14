@@ -2,8 +2,21 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { Plus, User, Mail, Trash2, Search, UserCheck, Shield } from 'lucide-react';
+import { Plus, User, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import {
+  Box,
+  Flex,
+  Heading,
+  Text,
+  Button,
+  Table,
+  Stack,
+  Input,
+  Spinner,
+  IconButton,
+  HStack,
+} from '@chakra-ui/react';
 
 interface UserData {
   id: string;
@@ -15,9 +28,110 @@ interface UserData {
 
 export default function UsersManagementPage() {
   const queryClient = useQueryClient();
+  const handleExport = async () => {
+    try {
+      const response = await api.get('/users/export', { responseType: 'blob' });
+      const blob = new Blob([response.data], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'cbt_users_export.csv');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error: any) {
+      alert('Gagal mengekspor data: ' + (error.response?.data?.message || error.message));
+    }
+  };
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const text = event.target?.result as string;
+      if (!text) return;
+
+      try {
+        const lines = text.split(/\r?\n/);
+        const firstLine = lines[0];
+        if (!firstLine) {
+          alert('File CSV tidak valid.');
+          return;
+        }
+        const rawHeaders = firstLine.split(',');
+        const headers = rawHeaders.map(h => h.trim().replace(/^["']|["']$/g, ''));
+
+        const parsedUsers: any[] = [];
+        for (let i = 1; i < lines.length; i++) {
+          const lineVal = lines[i];
+          if (!lineVal) continue;
+          const line = lineVal.trim();
+          if (!line) continue;
+
+          const values: string[] = [];
+          let current = '';
+          let inQuotes = false;
+          for (let charIndex = 0; charIndex < line.length; charIndex++) {
+            const char = line[charIndex];
+            if (char === '"') {
+              inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+              values.push(current.trim());
+              current = '';
+            } else {
+              current += char;
+            }
+          }
+          values.push(current.trim());
+
+          const userObj: any = {};
+          headers.forEach((header, index) => {
+            let val = values[index] || '';
+            val = val.replace(/^["']|["']$/g, '');
+            userObj[header] = val;
+          });
+
+          if (userObj.nisn && !userObj.nis) {
+            userObj.nis = userObj.nisn;
+          }
+          if (userObj.nis && !userObj.nisn) {
+            userObj.nisn = userObj.nis;
+          }
+
+          parsedUsers.push(userObj);
+        }
+
+        if (parsedUsers.length === 0) {
+          alert('Tidak ada data pengguna yang valid untuk diimpor.');
+          return;
+        }
+
+        const response = await api.post('/users/import', { users: parsedUsers });
+        const { created, updated, errors } = response.data;
+
+        let message = `Impor selesai!\n- Baru dibuat: ${created}\n- Diperbarui: ${updated}`;
+        if (errors && errors.length > 0) {
+          message += `\n\nAda ${errors.length} error:\n` + errors.slice(0, 5).join('\n');
+          if (errors.length > 5) {
+            message += `\n...dan ${errors.length - 5} error lainnya.`;
+          }
+        }
+        alert(message);
+
+        queryClient.invalidateQueries({ queryKey: ['students'] });
+        queryClient.invalidateQueries({ queryKey: ['teachers'] });
+      } catch (err: any) {
+        alert('Gagal memproses file CSV: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
   const [activeTab, setActiveTab] = useState<'STUDENT' | 'TEACHER'>('STUDENT');
   const [isAdding, setIsAdding] = useState(false);
-  
+
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -85,162 +199,328 @@ export default function UsersManagementPage() {
   const isLoading = activeTab === 'STUDENT' ? loadingStudents : loadingTeachers;
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
-          <p className="text-gray-500">Manage student and teacher accounts.</p>
-        </div>
-        <button
-          onClick={() => setIsAdding(true)}
-          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <Plus size={20} />
-          <span>Add {activeTab === 'STUDENT' ? 'Student' : 'Teacher'}</span>
-        </button>
-      </div>
+    <Stack gap={6}>
+      <Flex justify="space-between" align="center">
+        <Box>
+          <Heading size="xl" fontWeight="bold" color="gray.900">
+            User Management
+          </Heading>
+          <Text color="gray.500" mt={1}>
+            Manage student and teacher accounts.
+          </Text>
+        </Box>
+        <HStack gap={3}>
+          <Button
+            variant="outline"
+            color="indigo.600"
+            borderColor="indigo.200"
+            _hover={{ bg: 'indigo.50' }}
+            borderRadius="lg"
+            px={4}
+            py={2}
+            fontWeight="medium"
+            onClick={handleExport}
+            cursor="pointer"
+          >
+            Ekspor CSV
+          </Button>
+          <Button
+            variant="outline"
+            color="indigo.600"
+            borderColor="indigo.200"
+            _hover={{ bg: 'indigo.50' }}
+            borderRadius="lg"
+            px={4}
+            py={2}
+            fontWeight="medium"
+            onClick={() => document.getElementById('csv-import-input')?.click()}
+            cursor="pointer"
+          >
+            Impor CSV
+          </Button>
+          <input
+            id="csv-import-input"
+            type="file"
+            accept=".csv"
+            style={{ display: 'none' }}
+            onChange={handleImport}
+          />
+          <Button
+            bg="indigo.600"
+            color="white"
+            _hover={{ bg: 'indigo.700' }}
+            borderRadius="lg"
+            px={4}
+            py={2}
+            fontWeight="medium"
+            onClick={() => setIsAdding(true)}
+            cursor="pointer"
+          >
+            <Plus size={20} />
+            Add {activeTab === 'STUDENT' ? 'Student' : 'Teacher'}
+          </Button>
+        </HStack>
+      </Flex>
 
-      <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
-        <button
+      {/* Tab Switcher */}
+      <Flex gap={1} bg="gray.100" p={1} borderRadius="lg" w="fit-content">
+        <Button
           onClick={() => setActiveTab('STUDENT')}
-          className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-            activeTab === 'STUDENT' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'
-          }`}
+          px={4}
+          py={2}
+          borderRadius="md"
+          fontSize="sm"
+          fontWeight="medium"
+          bg={activeTab === 'STUDENT' ? 'white' : 'transparent'}
+          shadow={activeTab === 'STUDENT' ? 'sm' : 'none'}
+          color={activeTab === 'STUDENT' ? 'indigo.600' : 'gray.500'}
+          _hover={{ color: activeTab !== 'STUDENT' ? 'gray.700' : undefined }}
+          cursor="pointer"
+          variant="ghost"
         >
           Students
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={() => setActiveTab('TEACHER')}
-          className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-            activeTab === 'TEACHER' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'
-          }`}
+          px={4}
+          py={2}
+          borderRadius="md"
+          fontSize="sm"
+          fontWeight="medium"
+          bg={activeTab === 'TEACHER' ? 'white' : 'transparent'}
+          shadow={activeTab === 'TEACHER' ? 'sm' : 'none'}
+          color={activeTab === 'TEACHER' ? 'indigo.600' : 'gray.500'}
+          _hover={{ color: activeTab !== 'TEACHER' ? 'gray.700' : undefined }}
+          cursor="pointer"
+          variant="ghost"
         >
           Teachers
-        </button>
-      </div>
+        </Button>
+      </Flex>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <table className="w-full text-left">
-          <thead className="bg-gray-50 text-gray-600 text-sm uppercase font-semibold">
-            <tr>
-              <th className="px-6 py-4">Full Name</th>
-              <th className="px-6 py-4">Username</th>
-              <th className="px-6 py-4">{activeTab === 'STUDENT' ? 'NISN' : 'NIP'}</th>
-              <th className="px-6 py-4 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y text-gray-700">
-            {users?.map((u) => (
-              <tr key={u.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-6 py-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500">
-                      <User size={16} />
-                    </div>
-                    <span className="font-medium text-gray-900">{u.user?.fullName || u.fullName}</span>
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-sm font-mono text-gray-500">{u.user?.username || u.username}</td>
-                <td className="px-6 py-4 text-sm">{activeTab === 'STUDENT' ? u.nisn : u.nip}</td>
-                <td className="px-6 py-4 text-right">
-                  <button 
-                    onClick={() => {
-                      if (confirm('Are you sure you want to delete this user?')) {
-                        deleteMutation.mutate(u.id);
-                      }
-                    }}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {!isLoading && users?.length === 0 && (
-              <tr>
-                <td colSpan={4} className="px-6 py-12 text-center text-gray-500 italic">
-                  No {activeTab.toLowerCase()}s found.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {isAdding && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="px-6 py-4 border-b flex justify-between items-center bg-gray-50">
-              <h2 className="text-lg font-bold text-gray-900">Add New {activeTab === 'STUDENT' ? 'Student' : 'Teacher'}</h2>
-              <button onClick={() => setIsAdding(false)} className="text-gray-400 hover:text-gray-600">×</button>
-            </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                <input
-                  required
-                  type="text"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="e.g. John Doe"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
-                <input
-                  required
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500 font-mono"
-                  placeholder="johndoe123"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                <input
-                  required
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="••••••••"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+      {/* Users Table */}
+      <Box bg="white" borderRadius="xl" shadow="sm" borderWidth="1px" borderColor="gray.100" overflow="hidden">
+        {isLoading ? (
+          <Flex justify="center" align="center" py={16}>
+            <Spinner size="lg" color="indigo.600" />
+          </Flex>
+        ) : (
+          <Table.Root size="md">
+            <Table.Header>
+              <Table.Row bg="gray.50">
+                <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600" fontSize="xs" textTransform="uppercase">
+                  Full Name
+                </Table.ColumnHeader>
+                <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600" fontSize="xs" textTransform="uppercase">
+                  Username
+                </Table.ColumnHeader>
+                <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600" fontSize="xs" textTransform="uppercase">
                   {activeTab === 'STUDENT' ? 'NISN' : 'NIP'}
-                </label>
-                <input
-                  required
-                  type="text"
-                  value={activeTab === 'STUDENT' ? nisn : nip}
-                  onChange={(e) => activeTab === 'STUDENT' ? setNisn(e.target.value) : setNip(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder={activeTab === 'STUDENT' ? "1234567890" : "1980...001"}
-                />
-              </div>
-              <div className="flex space-x-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setIsAdding(false)}
-                  className="flex-1 py-2 border rounded-lg hover:bg-gray-50 font-medium"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={createMutation.isPending}
-                  className="flex-1 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50"
-                >
-                  {createMutation.isPending ? 'Saving...' : 'Create User'}
-                </button>
-              </div>
+                </Table.ColumnHeader>
+                <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600" fontSize="xs" textTransform="uppercase" textAlign="end">
+                  Actions
+                </Table.ColumnHeader>
+              </Table.Row>
+            </Table.Header>
+            <Table.Body>
+              {users?.map((u) => (
+                <Table.Row key={u.id} _hover={{ bg: 'gray.50' }} transition="background 0.15s">
+                  <Table.Cell px={6} py={4}>
+                    <HStack gap={3}>
+                      <Flex
+                        w={8}
+                        h={8}
+                        borderRadius="full"
+                        bg="gray.100"
+                        align="center"
+                        justify="center"
+                        color="gray.500"
+                      >
+                        <User size={16} />
+                      </Flex>
+                      <Text fontWeight="medium" color="gray.900">
+                        {u.user?.fullName || u.fullName}
+                      </Text>
+                    </HStack>
+                  </Table.Cell>
+                  <Table.Cell px={6} py={4} fontSize="sm" fontFamily="mono" color="gray.500">
+                    {u.user?.username || u.username}
+                  </Table.Cell>
+                  <Table.Cell px={6} py={4} fontSize="sm">
+                    {activeTab === 'STUDENT' ? u.nisn : u.nip}
+                  </Table.Cell>
+                  <Table.Cell px={6} py={4} textAlign="end">
+                    <IconButton
+                      variant="ghost"
+                      color="red.600"
+                      _hover={{ bg: 'red.50' }}
+                      size="sm"
+                      borderRadius="lg"
+                      aria-label="Delete User"
+                      onClick={() => {
+                        if (confirm('Are you sure you want to delete this user?')) {
+                          deleteMutation.mutate(u.id);
+                        }
+                      }}
+                      cursor="pointer"
+                    >
+                      <Trash2 size={18} />
+                    </IconButton>
+                  </Table.Cell>
+                </Table.Row>
+              ))}
+              {!isLoading && users?.length === 0 && (
+                <Table.Row>
+                  <Table.Cell colSpan={4} px={6} py={12} textAlign="center" color="gray.500" fontStyle="italic">
+                    No {activeTab.toLowerCase()}s found.
+                  </Table.Cell>
+                </Table.Row>
+              )}
+            </Table.Body>
+          </Table.Root>
+        )}
+      </Box>
+
+      {/* Add User Modal */}
+      {isAdding && (
+        <Box
+          position="fixed"
+          inset={0}
+          bg="blackAlpha.600"
+          backdropFilter="blur(4px)"
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          zIndex={50}
+          p={4}
+        >
+          <Box
+            bg="white"
+            borderRadius="2xl"
+            shadow="xl"
+            w="full"
+            maxW="md"
+            overflow="hidden"
+          >
+            <Flex
+              px={6}
+              py={4}
+              borderBottom="1px solid"
+              borderColor="gray.100"
+              justify="space-between"
+              align="center"
+              bg="gray.50"
+            >
+              <Heading size="md" fontWeight="bold" color="gray.900">
+                Add New {activeTab === 'STUDENT' ? 'Student' : 'Teacher'}
+              </Heading>
+              <Button
+                variant="ghost"
+                color="gray.400"
+                _hover={{ color: 'gray.600' }}
+                onClick={() => setIsAdding(false)}
+                fontSize="xl"
+                p={0}
+                minW={0}
+                cursor="pointer"
+              >
+                ×
+              </Button>
+            </Flex>
+            <form onSubmit={handleSubmit}>
+              <Stack gap={4} p={6}>
+                <Box>
+                  <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>
+                    Full Name
+                  </Text>
+                  <Input
+                    required
+                    type="text"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="e.g. John Doe"
+                    borderRadius="lg"
+                    borderColor="gray.200"
+                    _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
+                  />
+                </Box>
+                <Box>
+                  <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>
+                    Username
+                  </Text>
+                  <Input
+                    required
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="johndoe123"
+                    fontFamily="mono"
+                    borderRadius="lg"
+                    borderColor="gray.200"
+                    _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
+                  />
+                </Box>
+                <Box>
+                  <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>
+                    Password
+                  </Text>
+                  <Input
+                    required
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    borderRadius="lg"
+                    borderColor="gray.200"
+                    _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
+                  />
+                </Box>
+                <Box>
+                  <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>
+                    {activeTab === 'STUDENT' ? 'NISN' : 'NIP'}
+                  </Text>
+                  <Input
+                    required
+                    type="text"
+                    value={activeTab === 'STUDENT' ? nisn : nip}
+                    onChange={(e) => activeTab === 'STUDENT' ? setNisn(e.target.value) : setNip(e.target.value)}
+                    placeholder={activeTab === 'STUDENT' ? '1234567890' : '1980...001'}
+                    borderRadius="lg"
+                    borderColor="gray.200"
+                    _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
+                  />
+                </Box>
+                <Flex gap={3} pt={4}>
+                  <Button
+                    type="button"
+                    onClick={() => setIsAdding(false)}
+                    flex={1}
+                    variant="outline"
+                    borderRadius="lg"
+                    fontWeight="medium"
+                    cursor="pointer"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={createMutation.isPending}
+                    flex={1}
+                    bg="indigo.600"
+                    color="white"
+                    _hover={{ bg: 'indigo.700' }}
+                    borderRadius="lg"
+                    fontWeight="medium"
+                    cursor="pointer"
+                  >
+                    {createMutation.isPending ? 'Saving...' : 'Create User'}
+                  </Button>
+                </Flex>
+              </Stack>
             </form>
-          </div>
-        </div>
+          </Box>
+        </Box>
       )}
-    </div>
+    </Stack>
   );
 }
