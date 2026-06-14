@@ -6,6 +6,9 @@ import { Shield, Zap, BookOpen, Clock, CheckCircle2 } from 'lucide-react';
 import { Box, Flex, Heading, Text, Stack, Image } from '@chakra-ui/react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/store/auth.store';
 
 const features = [
   {
@@ -35,6 +38,19 @@ const trustBadges = [
 ];
 
 export default function LoginPage() {
+  const { user, access_token } = useAuthStore();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (access_token && user) {
+      if (user.role === 'SISWA') {
+        router.push('/dashboard');
+      } else {
+        router.push('/admin');
+      }
+    }
+  }, [user, access_token, router]);
+
   const { data: settings } = useQuery({
     queryKey: ['settings'],
     queryFn: async () => {

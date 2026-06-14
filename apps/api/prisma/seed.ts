@@ -30,6 +30,7 @@ async function main() {
   await prisma.question.deleteMany({});
   await prisma.questionBank.deleteMany({});
   await prisma.student.deleteMany({});
+  await prisma.major.deleteMany({});
   await prisma.teacher.deleteMany({});
   await prisma.subject.deleteMany({});
   await prisma.user.deleteMany({});
@@ -135,6 +136,17 @@ async function main() {
             { name: 'students:create', action: 'create', description: 'Membuat akun siswa', securityRiskLevel: 'MEDIUM' },
             { name: 'students:update', action: 'update', description: 'Mengubah data siswa', securityRiskLevel: 'MEDIUM' },
             { name: 'students:delete', action: 'delete', description: 'Menghapus akun siswa', securityRiskLevel: 'HIGH' },
+          ],
+        },
+        {
+          name: 'Konsentrasi Keahlian',
+          url: '/admin/majors',
+          orderIndex: 4,
+          permissions: [
+            { name: 'majors:view', action: 'view', description: 'Melihat daftar jurusan', securityRiskLevel: 'LOW' },
+            { name: 'majors:create', action: 'create', description: 'Membuat jurusan baru', securityRiskLevel: 'MEDIUM' },
+            { name: 'majors:update', action: 'update', description: 'Mengubah data jurusan', securityRiskLevel: 'MEDIUM' },
+            { name: 'majors:delete', action: 'delete', description: 'Menghapus jurusan', securityRiskLevel: 'HIGH' },
           ],
         },
       ],
@@ -291,7 +303,8 @@ async function main() {
     p.name.startsWith('sessions:') ||
     p.name === 'subjects:view' ||
     p.name === 'teachers:view' ||
-    p.name === 'students:view'
+    p.name === 'students:view' ||
+    p.name === 'majors:view'
   );
   for (const perm of guruPerms) {
     await prisma.rolePermission.create({
@@ -336,6 +349,24 @@ async function main() {
     },
   });
 
+  // 4.5. Seed Default Majors
+  console.log('Seeding default majors...');
+  const rplMajor = await prisma.major.create({
+    data: {
+      name: 'Rekayasa Perangkat Lunak',
+      code: 'RPL',
+      description: 'Konsentrasi keahlian pengembangan perangkat lunak dan pemrograman.',
+    },
+  });
+
+  await prisma.major.create({
+    data: {
+      name: 'Teknik Komputer dan Jaringan',
+      code: 'TKJ',
+      description: 'Konsentrasi keahlian infrastruktur jaringan, hardware, dan sistem operasi.',
+    },
+  });
+
   // 5. Create Teacher & Student profiles
   const teacher = await prisma.teacher.create({
     data: {
@@ -352,6 +383,7 @@ async function main() {
       userId: studentUser.id,
       nis: '202310452',
       class: 'X-MIPA-1',
+      majorId: rplMajor.id,
     },
   });
 

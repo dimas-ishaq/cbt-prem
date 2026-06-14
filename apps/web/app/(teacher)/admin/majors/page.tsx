@@ -2,8 +2,9 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { Plus, Pencil, Trash2, Search } from 'lucide-react';
-import { useState } from 'react';
+import { useAuthStore } from '@/store/auth.store';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import {
   Box,
   Flex,
@@ -17,118 +18,139 @@ import {
   Spinner,
   IconButton,
   HStack,
+  Grid,
+  Badge,
 } from '@chakra-ui/react';
-import { useTranslation } from 'react-i18next';
+import { Plus, Pencil, Trash2, Search, GraduationCap } from 'lucide-react';
 
-interface Subject {
+interface Major {
   id: string;
   name: string;
   code: string;
-  description: string;
+  description: string | null;
+  _count?: {
+    students: number;
+  };
 }
 
-export default function SubjectsPage() {
-  const { t } = useTranslation();
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
-  const [formData, setFormData] = useState({ name: '', code: '', description: '' });
-  const [searchTerm, setSearchTerm] = useState('');
+export default function MajorsPage() {
+  const { user } = useAuthStore();
+  const router = useRouter();
   const queryClient = useQueryClient();
 
-  const { data: subjects, isLoading } = useQuery<Subject[]>({
-    queryKey: ['subjects'],
+  // Redirect if not SUPER_ADMIN
+  useEffect(() => {
+    if (user && user.role !== 'SUPER_ADMIN') {
+      router.push('/admin');
+    }
+  }, [user, router]);
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingMajor, setEditingMajor] = useState<Major | null>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    code: '',
+    description: '',
+  });
+
+  // Fetch majors
+  const { data: majors, isLoading } = useQuery<Major[]>({
+    queryKey: ['majors'],
     queryFn: async () => {
-      const response = await api.get('/subjects');
+      const response = await api.get('/majors');
       return response.data;
     },
   });
 
+  // Create mutation
   const createMutation = useMutation({
-    mutationFn: (newSubject: typeof formData) => api.post('/subjects', newSubject),
+    mutationFn: (newMajor: typeof formData) => api.post('/majors', newMajor),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['subjects'] });
+      queryClient.invalidateQueries({ queryKey: ['majors'] });
       setIsModalOpen(false);
       resetForm();
-      alert('Mata pelajaran berhasil ditambahkan!');
+      alert('Jurusan berhasil ditambahkan!');
     },
     onError: (err: any) => {
-      alert(err.response?.data?.message || 'Gagal menambahkan mata pelajaran');
+      alert(err.response?.data?.message || 'Gagal menambahkan jurusan');
     },
   });
 
+  // Update mutation
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: typeof formData }) =>
-      api.put(`/subjects/${id}`, data),
+      api.put(`/majors/${id}`, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['subjects'] });
+      queryClient.invalidateQueries({ queryKey: ['majors'] });
       setIsModalOpen(false);
       resetForm();
-      alert('Mata pelajaran berhasil diperbarui!');
+      alert('Jurusan berhasil diperbarui!');
     },
     onError: (err: any) => {
-      alert(err.response?.data?.message || 'Gagal memperbarui mata pelajaran');
+      alert(err.response?.data?.message || 'Gagal memperbarui jurusan');
     },
   });
 
+  // Delete mutation
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.delete(`/subjects/${id}`),
+    mutationFn: (id: string) => api.delete(`/majors/${id}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['subjects'] });
-      alert('Mata pelajaran berhasil dihapus!');
+      queryClient.invalidateQueries({ queryKey: ['majors'] });
+      alert('Jurusan berhasil dihapus!');
     },
     onError: (err: any) => {
-      alert(err.response?.data?.message || 'Gagal menghapus mata pelajaran');
+      alert(err.response?.data?.message || 'Gagal menghapus jurusan');
     },
   });
 
   const resetForm = () => {
     setFormData({ name: '', code: '', description: '' });
-    setEditingSubject(null);
+    setEditingMajor(null);
   };
 
-  const handleEdit = (subject: Subject) => {
-    setEditingSubject(subject);
+  const handleEdit = (major: Major) => {
+    setEditingMajor(major);
     setFormData({
-      name: subject.name,
-      code: subject.code,
-      description: subject.description || '',
+      name: major.name,
+      code: major.code,
+      description: major.description || '',
     });
     setIsModalOpen(true);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingSubject) {
-      updateMutation.mutate({ id: editingSubject.id, data: formData });
+    if (editingMajor) {
+      updateMutation.mutate({ id: editingMajor.id, data: formData });
     } else {
       createMutation.mutate(formData);
     }
   };
 
+  const filteredMajors = majors?.filter((m) =>
+    m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    m.code.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   if (isLoading) {
     return (
       <Flex justify="center" align="center" py={16}>
         <Spinner size="lg" color="indigo.600" />
-        <Text ml={3} color="gray.500">Loading subjects...</Text>
+        <Text ml={3} color="gray.500">Memuat data jurusan...</Text>
       </Flex>
     );
   }
-
-  const filteredSubjects = subjects?.filter(
-    (s) =>
-      s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.code.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   return (
     <Stack gap={6}>
       <Flex justify="space-between" align="center">
         <Box>
           <Heading size="xl" fontWeight="bold" color="gray.900">
-            {t('subjectsTitle')}
+            Konsentrasi Keahlian (Jurusan)
           </Heading>
           <Text color="gray.500" mt={1}>
-            {t('subjectsDesc')}
+            Kelola daftar jurusan dan konsentrasi keahlian akademik sekolah.
           </Text>
         </Box>
         <Button
@@ -146,7 +168,7 @@ export default function SubjectsPage() {
           cursor="pointer"
         >
           <Plus size={20} style={{ marginRight: '6px' }} />
-          {t('addSubject')}
+          Tambah Jurusan
         </Button>
       </Flex>
 
@@ -158,9 +180,7 @@ export default function SubjectsPage() {
             </Box>
             <Input
               pl={10}
-              pr={4}
-              py={2}
-              placeholder={t('searchSubjects')}
+              placeholder="Cari jurusan berdasarkan nama atau kode..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               borderRadius="lg"
@@ -174,30 +194,38 @@ export default function SubjectsPage() {
           <Table.Header>
             <Table.Row bg="gray.50">
               <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600" fontSize="xs" textTransform="uppercase">
-                {t('colCode')}
+                Kode Jurusan
               </Table.ColumnHeader>
               <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600" fontSize="xs" textTransform="uppercase">
-                {t('colName')}
+                Nama Konsentrasi Keahlian
               </Table.ColumnHeader>
               <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600" fontSize="xs" textTransform="uppercase">
-                {t('colDesc')}
+                Deskripsi
+              </Table.ColumnHeader>
+              <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600" fontSize="xs" textTransform="uppercase">
+                Total Siswa
               </Table.ColumnHeader>
               <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600" fontSize="xs" textTransform="uppercase" textAlign="end">
-                {t('colActions')}
+                Aksi
               </Table.ColumnHeader>
             </Table.Row>
           </Table.Header>
           <Table.Body>
-            {filteredSubjects?.map((subject) => (
-              <Table.Row key={subject.id} _hover={{ bg: 'gray.50' }} transition="background 0.15s">
-                <Table.Cell px={6} py={4} fontFamily="mono" fontSize="sm">
-                  {subject.code}
+            {filteredMajors?.map((major) => (
+              <Table.Row key={major.id} _hover={{ bg: 'gray.50' }} transition="background 0.15s">
+                <Table.Cell px={6} py={4} fontFamily="mono" fontSize="sm" fontWeight="bold" color="indigo.600">
+                  {major.code}
                 </Table.Cell>
-                <Table.Cell px={6} py={4} fontWeight="medium" color="gray.900">
-                  {subject.name}
+                <Table.Cell px={6} py={4} fontWeight="semibold" color="gray.900">
+                  {major.name}
                 </Table.Cell>
-                <Table.Cell px={6} py={4} fontSize="sm" maxW="xs" truncate>
-                  {subject.description || '-'}
+                <Table.Cell px={6} py={4} fontSize="sm" color="gray.500" maxW="xs" truncate>
+                  {major.description || '-'}
+                </Table.Cell>
+                <Table.Cell px={6} py={4}>
+                  <Badge colorPalette="blue" variant="subtle" borderRadius="md" px={2} py={0.5}>
+                    {major._count?.students || 0} Siswa
+                  </Badge>
                 </Table.Cell>
                 <Table.Cell px={6} py={4} textAlign="end">
                   <HStack gap={2} justify="flex-end">
@@ -207,8 +235,8 @@ export default function SubjectsPage() {
                       _hover={{ bg: 'indigo.50' }}
                       size="sm"
                       borderRadius="lg"
-                      aria-label="Edit Subject"
-                      onClick={() => handleEdit(subject)}
+                      aria-label="Edit Jurusan"
+                      onClick={() => handleEdit(major)}
                       cursor="pointer"
                     >
                       <Pencil size={18} />
@@ -219,10 +247,10 @@ export default function SubjectsPage() {
                       _hover={{ bg: 'red.50' }}
                       size="sm"
                       borderRadius="lg"
-                      aria-label="Delete Subject"
+                      aria-label="Delete Jurusan"
                       onClick={() => {
-                        if (confirm(t('confirmDeleteSubject'))) {
-                          deleteMutation.mutate(subject.id);
+                        if (confirm(`Apakah Anda yakin ingin menghapus jurusan "${major.name}"? Siswa yang terikat akan kehilangan asosiasi jurusan.`)) {
+                          deleteMutation.mutate(major.id);
                         }
                       }}
                       cursor="pointer"
@@ -233,10 +261,10 @@ export default function SubjectsPage() {
                 </Table.Cell>
               </Table.Row>
             ))}
-            {filteredSubjects?.length === 0 && (
+            {filteredMajors?.length === 0 && (
               <Table.Row>
-                <Table.Cell colSpan={4} px={6} py={12} textAlign="center" color="gray.500" fontStyle="italic">
-                  {t('noSubjects')}
+                <Table.Cell colSpan={5} px={6} py={12} textAlign="center" color="gray.500" fontStyle="italic">
+                  Tidak ada data jurusan yang ditemukan.
                 </Table.Cell>
               </Table.Row>
             )}
@@ -244,12 +272,12 @@ export default function SubjectsPage() {
         </Table.Root>
       </Box>
 
-      {/* Create/Edit Subject Modal */}
+      {/* CREATE / EDIT MODAL */}
       {isModalOpen && (
         <Box
           position="fixed"
           inset={0}
-          bg="blackAlpha.500"
+          bg="blackAlpha.600"
           display="flex"
           alignItems="center"
           justifyContent="center"
@@ -264,77 +292,69 @@ export default function SubjectsPage() {
             shadow="2xl"
           >
             <Heading size="lg" fontWeight="bold" mb={6}>
-              {editingSubject ? t('editSubjectModal') : t('addSubjectModal')}
+              {editingMajor ? 'Ubah Konsentrasi Keahlian' : 'Tambah Jurusan Baru'}
             </Heading>
-            <form
-              onSubmit={handleSubmit}
-            >
+            <form onSubmit={handleSubmit}>
               <Stack gap={4}>
                 <Box>
                   <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>
-                    {t('subjectCodeLabel')} <span style={{ color: 'red' }}>*</span>
+                    Kode Jurusan <span style={{ color: 'red' }}>*</span>
                   </Text>
                   <Input
                     required
                     value={formData.code}
                     onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                    placeholder="e.g. MATH-101"
+                    placeholder="e.g. RPL, TKJ, MM"
                     borderRadius="lg"
-                    borderColor="gray.200"
-                    _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
                   />
                 </Box>
                 <Box>
                   <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>
-                    {t('subjectNameLabel')} <span style={{ color: 'red' }}>*</span>
+                    Nama Jurusan <span style={{ color: 'red' }}>*</span>
                   </Text>
                   <Input
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="e.g. Mathematics"
+                    placeholder="e.g. Rekayasa Perangkat Lunak"
                     borderRadius="lg"
-                    borderColor="gray.200"
-                    _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
                   />
                 </Box>
                 <Box>
                   <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>
-                    {t('colDesc')}
+                    Deskripsi Ringkas
                   </Text>
                   <Textarea
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    rows={3}
+                    placeholder="Keterangan mengenai konsentrasi keahlian..."
                     borderRadius="lg"
-                    borderColor="gray.200"
-                    _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
+                    rows={3}
                   />
                 </Box>
-                <Flex gap={3} pt={4}>
+
+                <Flex justify="flex-end" gap={3} pt={4}>
                   <Button
-                    type="button"
-                    onClick={() => setIsModalOpen(false)}
-                    flex={1}
                     variant="outline"
+                    onClick={() => {
+                      setIsModalOpen(false);
+                      resetForm();
+                    }}
                     borderRadius="lg"
-                    fontWeight="medium"
                     cursor="pointer"
                   >
-                    {t('cancelBtn')}
+                    Batal
                   </Button>
                   <Button
                     type="submit"
-                    flex={1}
                     bg="indigo.600"
                     color="white"
                     _hover={{ bg: 'indigo.700' }}
                     borderRadius="lg"
-                    fontWeight="medium"
-                    cursor="pointer"
                     loading={createMutation.isPending || updateMutation.isPending}
+                    cursor="pointer"
                   >
-                    {t('saveBtn')}
+                    Simpan
                   </Button>
                 </Flex>
               </Stack>

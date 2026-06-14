@@ -13,6 +13,7 @@ import { RealtimeModule } from './realtime/realtime.module';
 import { ExamSessionsModule } from './exam-sessions/exam-sessions.module';
 import { SettingsModule } from './settings/settings.module';
 import { RolesModule } from './roles/roles.module';
+import { MajorsModule } from './majors/majors.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { RolesModule } from './roles/roles.module';
     ExamSessionsModule,
     SettingsModule,
     RolesModule,
+    MajorsModule,
   ],
 })
 export class AppModule {}

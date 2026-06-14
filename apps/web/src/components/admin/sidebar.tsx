@@ -12,6 +12,7 @@ import {
   GraduationCap,
   Settings,
   Key,
+  Award,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
 import { useRouter } from 'next/navigation';
@@ -29,15 +30,36 @@ import api from '@/lib/api';
 
 import { useTranslation } from 'react-i18next';
 
-const menuItems = [
-  { name: 'Dashboard',      href: '/admin',                icon: LayoutDashboard, key: 'dashboard' },
-  { name: 'Mata Pelajaran', href: '/admin/subjects',       icon: BookOpen,        key: 'subjects' },
-  { name: 'Bank Soal',      href: '/admin/question-banks', icon: FileText,        key: 'questionBanks' },
-  { name: 'Ujian',          href: '/admin/exams',          icon: GraduationCap,   key: 'exams' },
-  { name: 'Monitoring',     href: '/admin/monitoring',     icon: Activity,        key: 'monitoring' },
-  { name: 'Pengguna',       href: '/admin/users',          icon: Users,           key: 'users' },
-  { name: 'Manajemen Akses', href: '/admin/roles',         icon: Key,             key: 'roles' },
-  { name: 'Pengaturan',     href: '/admin/settings',       icon: Settings,        key: 'settings' },
+const menuGroups = [
+  {
+    titleKey: 'groupGeneral',
+    items: [
+      { name: 'Dashboard', href: '/admin', icon: LayoutDashboard, key: 'dashboard' },
+    ],
+  },
+  {
+    titleKey: 'groupAcademic',
+    items: [
+      { name: 'Mata Pelajaran', href: '/admin/subjects', icon: BookOpen, key: 'subjects' },
+      { name: 'Konsentrasi Keahlian', href: '/admin/majors', icon: Award, key: 'majors' },
+      { name: 'Pengguna', href: '/admin/users', icon: Users, key: 'users' },
+    ],
+  },
+  {
+    titleKey: 'groupCbt',
+    items: [
+      { name: 'Bank Soal', href: '/admin/question-banks', icon: FileText, key: 'questionBanks' },
+      { name: 'Ujian', href: '/admin/exams', icon: GraduationCap, key: 'exams' },
+      { name: 'Monitoring', href: '/admin/monitoring', icon: Activity, key: 'monitoring' },
+    ],
+  },
+  {
+    titleKey: 'groupSystem',
+    items: [
+      { name: 'Manajemen Akses', href: '/admin/roles', icon: Key, key: 'roles' },
+      { name: 'Pengaturan', href: '/admin/settings', icon: Settings, key: 'settings' },
+    ],
+  },
 ];
 
 export function AdminSidebar() {
@@ -59,12 +81,15 @@ export function AdminSidebar() {
     router.push('/login');
   };
 
-  const visibleMenuItems = menuItems.filter((item) => {
-    if (item.href === '/admin/settings' || item.href === '/admin/roles') {
-      return user?.role === 'SUPER_ADMIN';
-    }
-    return true;
-  });
+  const visibleMenuGroups = menuGroups.map((group) => {
+    const visibleItems = group.items.filter((item) => {
+      if (item.href === '/admin/settings' || item.href === '/admin/roles' || item.href === '/admin/majors') {
+        return user?.role === 'SUPER_ADMIN';
+      }
+      return true;
+    });
+    return { ...group, items: visibleItems };
+  }).filter((group) => group.items.length > 0);
 
   return (
     <Box
@@ -120,81 +145,96 @@ export function AdminSidebar() {
           </Box>
         </Flex>
       </Box>
-
+      
       {/* ── Navigation ─────────────────────────────── */}
-      <Stack flex={1} px={3} pt={4} gap={0.5} as="nav" overflowY="auto">
-        {visibleMenuItems.map((item) => {
-          const isActive =
-            item.href === '/admin'
-              ? pathname === '/admin'
-              : pathname.startsWith(item.href);
+      <Stack flex={1} px={3} pt={4} gap={4} as="nav" overflowY="auto" pb={4}>
+        {visibleMenuGroups.map((group) => (
+          <Stack key={group.titleKey} gap={1}>
+            <Text
+              fontSize="2xs"
+              fontWeight="semibold"
+              color="#526484"
+              letterSpacing="wider"
+              textTransform="uppercase"
+              px={3}
+              mb={1}
+            >
+              {t(group.titleKey)}
+            </Text>
+            {group.items.map((item) => {
+              const isActive =
+                item.href === '/admin'
+                  ? pathname === '/admin'
+                  : pathname.startsWith(item.href);
 
-          return (
-            <Link key={item.name} href={item.href} passHref style={{ width: '100%' }}>
-              <Flex
-                as="span"
-                align="center"
-                gap={3}
-                px={3}
-                py={2.5}
-                borderRadius="xl"
-                cursor="pointer"
-                transition="all 0.15s"
-                position="relative"
-                style={
-                  isActive
-                    ? {
-                        background: 'rgba(99,102,241,0.18)',
-                        border: '1px solid rgba(99,102,241,0.25)',
-                      }
-                    : {
-                        background: 'transparent',
-                        border: '1px solid transparent',
-                      }
-                }
-                _hover={
-                  !isActive
-                    ? {
-                        bg: 'rgba(255,255,255,0.04)',
-                        border: '1px solid rgba(255,255,255,0.05)',
-                      }
-                    : {}
-                }
-              >
-                {/* Active indicator */}
-                {isActive && (
-                  <Box
-                    position="absolute"
-                    left={0}
-                    top="20%"
-                    bottom="20%"
-                    w={0.5}
-                    borderRadius="full"
-                    style={{
-                      background: 'linear-gradient(to bottom, #6366f1, #818cf8)',
-                    }}
-                  />
-                )}
+              return (
+                <Link key={item.name} href={item.href} passHref style={{ width: '100%' }}>
+                  <Flex
+                    as="span"
+                    align="center"
+                    gap={3}
+                    px={3}
+                    py={2}
+                    borderRadius="xl"
+                    cursor="pointer"
+                    transition="all 0.15s"
+                    position="relative"
+                    style={
+                      isActive
+                        ? {
+                            background: 'rgba(99,102,241,0.18)',
+                            border: '1px solid rgba(99,102,241,0.25)',
+                          }
+                        : {
+                            background: 'transparent',
+                            border: '1px solid transparent',
+                          }
+                    }
+                    _hover={
+                      !isActive
+                        ? {
+                            bg: 'rgba(255,255,255,0.04)',
+                            border: '1px solid rgba(255,255,255,0.05)',
+                          }
+                        : {}
+                    }
+                  >
+                    {/* Active indicator */}
+                    {isActive && (
+                      <Box
+                        position="absolute"
+                        left={0}
+                        top="20%"
+                        bottom="20%"
+                        w={0.5}
+                        borderRadius="full"
+                        style={{
+                          background: 'linear-gradient(to bottom, #6366f1, #818cf8)',
+                        }}
+                      />
+                    )}
 
-                <Box
-                  color={isActive ? '#818cf8' : '#6b7fa0'}
-                  transition="color 0.15s"
-                >
-                  <item.icon size={18} />
-                </Box>
+                    <Box
+                      color={isActive ? '#818cf8' : '#6b7fa0'}
+                      transition="color 0.15s"
+                    >
+                      <item.icon size={17} />
+                    </Box>
 
-                <Text
-                  fontSize="sm"
-                  fontWeight={isActive ? 'bold' : 'medium'}
-                  color={isActive ? '#c7d2fe' : '#7a8fab'}
-                  transition="color 0.15s"
-                >
-                  {t(item.key)}
-                </Text>
-              </Flex>
-            </Link>
-          );
-        })}
+                    <Text
+                      fontSize="xs"
+                      fontWeight={isActive ? 'bold' : 'medium'}
+                      color={isActive ? '#c7d2fe' : '#7a8fab'}
+                      transition="color 0.15s"
+                    >
+                      {t(item.key)}
+                    </Text>
+                  </Flex>
+                </Link>
+              );
+            })}
+          </Stack>
+        ))}
       </Stack>
 
       {/* ── Bottom: User + Controls ─────────────────── */}

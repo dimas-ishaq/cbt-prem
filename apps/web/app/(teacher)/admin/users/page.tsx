@@ -17,6 +17,7 @@ import {
   IconButton,
   HStack,
 } from '@chakra-ui/react';
+import { useTranslation } from 'react-i18next';
 
 interface UserData {
   id: string;
@@ -27,6 +28,7 @@ interface UserData {
 }
 
 export default function UsersManagementPage() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const handleExport = async () => {
     try {
@@ -129,6 +131,7 @@ export default function UsersManagementPage() {
     reader.readAsText(file);
     e.target.value = '';
   };
+
   const [activeTab, setActiveTab] = useState<'STUDENT' | 'TEACHER'>('STUDENT');
   const [isAdding, setIsAdding] = useState(false);
 
@@ -155,18 +158,19 @@ export default function UsersManagementPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (newUser: any) => {
       const endpoint = activeTab === 'STUDENT' ? '/students' : '/teachers';
-      return api.post(endpoint, data);
+      return api.post(endpoint, newUser);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [activeTab === 'STUDENT' ? 'students' : 'teachers'] });
       setIsAdding(false);
       resetForm();
+      alert('Pengguna berhasil ditambahkan!');
     },
     onError: (error: any) => {
-      alert(error.response?.data?.message || 'Failed to create user');
-    }
+      alert(error.response?.data?.message || 'Gagal menambahkan pengguna.');
+    },
   });
 
   const deleteMutation = useMutation({
@@ -176,7 +180,11 @@ export default function UsersManagementPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [activeTab === 'STUDENT' ? 'students' : 'teachers'] });
-    }
+      alert('Pengguna berhasil dihapus.');
+    },
+    onError: (error: any) => {
+      alert(error.response?.data?.message || 'Gagal menghapus pengguna.');
+    },
   });
 
   const resetForm = () => {
@@ -189,24 +197,24 @@ export default function UsersManagementPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const payload: any = { username, password, fullName };
-    if (activeTab === 'STUDENT') payload.nisn = nisn;
-    else payload.nip = nip;
+    const payload = activeTab === 'STUDENT' 
+      ? { username, password, fullName, nisn, class: 'X' }
+      : { username, password, fullName, nip };
     createMutation.mutate(payload);
   };
 
-  const users = activeTab === 'STUDENT' ? students : teachers;
   const isLoading = activeTab === 'STUDENT' ? loadingStudents : loadingTeachers;
+  const users = activeTab === 'STUDENT' ? students : teachers;
 
   return (
     <Stack gap={6}>
       <Flex justify="space-between" align="center">
         <Box>
           <Heading size="xl" fontWeight="bold" color="gray.900">
-            User Management
+            {t('usersTitle')}
           </Heading>
           <Text color="gray.500" mt={1}>
-            Manage student and teacher accounts.
+            {t('usersDesc')}
           </Text>
         </Box>
         <HStack gap={3}>
@@ -222,7 +230,7 @@ export default function UsersManagementPage() {
             onClick={handleExport}
             cursor="pointer"
           >
-            Ekspor CSV
+            {t('exportCsv')}
           </Button>
           <Button
             variant="outline"
@@ -236,7 +244,7 @@ export default function UsersManagementPage() {
             onClick={() => document.getElementById('csv-import-input')?.click()}
             cursor="pointer"
           >
-            Impor CSV
+            {t('importCsv')}
           </Button>
           <input
             id="csv-import-input"
@@ -256,8 +264,8 @@ export default function UsersManagementPage() {
             onClick={() => setIsAdding(true)}
             cursor="pointer"
           >
-            <Plus size={20} />
-            Add {activeTab === 'STUDENT' ? 'Student' : 'Teacher'}
+            <Plus size={20} style={{ marginRight: '6px' }} />
+            {activeTab === 'STUDENT' ? t('addStudent') : t('addTeacher')}
           </Button>
         </HStack>
       </Flex>
@@ -278,7 +286,7 @@ export default function UsersManagementPage() {
           cursor="pointer"
           variant="ghost"
         >
-          Students
+          {t('studentsTab')}
         </Button>
         <Button
           onClick={() => setActiveTab('TEACHER')}
@@ -294,7 +302,7 @@ export default function UsersManagementPage() {
           cursor="pointer"
           variant="ghost"
         >
-          Teachers
+          {t('teachersTab')}
         </Button>
       </Flex>
 
@@ -309,16 +317,16 @@ export default function UsersManagementPage() {
             <Table.Header>
               <Table.Row bg="gray.50">
                 <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600" fontSize="xs" textTransform="uppercase">
-                  Full Name
+                  {t('fullNameLabel')}
                 </Table.ColumnHeader>
                 <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600" fontSize="xs" textTransform="uppercase">
-                  Username
+                  {t('usernameLabel')}
                 </Table.ColumnHeader>
                 <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600" fontSize="xs" textTransform="uppercase">
-                  {activeTab === 'STUDENT' ? 'NISN' : 'NIP'}
+                  {activeTab === 'STUDENT' ? t('nisnLabel') : t('nipLabel')}
                 </Table.ColumnHeader>
                 <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600" fontSize="xs" textTransform="uppercase" textAlign="end">
-                  Actions
+                  {t('actionsLabel')}
                 </Table.ColumnHeader>
               </Table.Row>
             </Table.Header>
@@ -358,7 +366,7 @@ export default function UsersManagementPage() {
                       borderRadius="lg"
                       aria-label="Delete User"
                       onClick={() => {
-                        if (confirm('Are you sure you want to delete this user?')) {
+                        if (confirm(t('confirmDeleteUser'))) {
                           deleteMutation.mutate(u.id);
                         }
                       }}
@@ -372,7 +380,7 @@ export default function UsersManagementPage() {
               {!isLoading && users?.length === 0 && (
                 <Table.Row>
                   <Table.Cell colSpan={4} px={6} py={12} textAlign="center" color="gray.500" fontStyle="italic">
-                    No {activeTab.toLowerCase()}s found.
+                    {t('noUsersFound')}
                   </Table.Cell>
                 </Table.Row>
               )}
@@ -412,7 +420,7 @@ export default function UsersManagementPage() {
               bg="gray.50"
             >
               <Heading size="md" fontWeight="bold" color="gray.900">
-                Add New {activeTab === 'STUDENT' ? 'Student' : 'Teacher'}
+                {activeTab === 'STUDENT' ? t('addStudent') : t('addTeacher')}
               </Heading>
               <Button
                 variant="ghost"
@@ -431,7 +439,7 @@ export default function UsersManagementPage() {
               <Stack gap={4} p={6}>
                 <Box>
                   <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>
-                    Full Name
+                    {t('fullNameLabel')} <span style={{ color: 'red' }}>*</span>
                   </Text>
                   <Input
                     required
@@ -446,7 +454,7 @@ export default function UsersManagementPage() {
                 </Box>
                 <Box>
                   <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>
-                    Username
+                    {t('usernameLabel')} <span style={{ color: 'red' }}>*</span>
                   </Text>
                   <Input
                     required
@@ -462,7 +470,7 @@ export default function UsersManagementPage() {
                 </Box>
                 <Box>
                   <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>
-                    Password
+                    Password <span style={{ color: 'red' }}>*</span>
                   </Text>
                   <Input
                     required
@@ -477,7 +485,7 @@ export default function UsersManagementPage() {
                 </Box>
                 <Box>
                   <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>
-                    {activeTab === 'STUDENT' ? 'NISN' : 'NIP'}
+                    {activeTab === 'STUDENT' ? t('nisnLabel') : t('nipLabel')} <span style={{ color: 'red' }}>*</span>
                   </Text>
                   <Input
                     required
@@ -500,11 +508,10 @@ export default function UsersManagementPage() {
                     fontWeight="medium"
                     cursor="pointer"
                   >
-                    Cancel
+                    {t('cancelBtn')}
                   </Button>
                   <Button
                     type="submit"
-                    disabled={createMutation.isPending}
                     flex={1}
                     bg="indigo.600"
                     color="white"
@@ -512,8 +519,9 @@ export default function UsersManagementPage() {
                     borderRadius="lg"
                     fontWeight="medium"
                     cursor="pointer"
+                    loading={createMutation.isPending}
                   >
-                    {createMutation.isPending ? 'Saving...' : 'Create User'}
+                    {t('saveBtn')}
                   </Button>
                 </Flex>
               </Stack>

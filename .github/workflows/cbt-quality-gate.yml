@@ -1,0 +1,120 @@
+name: CBT Quality Gate
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  quality-gate:
+    name: Quality Gate
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: cbt_test
+        ports: [5432:5432]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        run: bun install --frozen-lockfile
+        working-directory: apps/api
+
+      - name: Typecheck
+        run: bun run typecheck
+        working-directory: apps/api
+        continue-on-error: false
+
+      - name: Lint
+        run: bun run lint:check
+        working-directory: apps/api
+        continue-on-error: false
+
+      - name: Unit Tests
+        run: bun run test:coverage
+        working-directory: apps/api
+        continue-on-error: false
+
+      - name: Upload Coverage
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./apps/api/coverage/lcov.info
+          fail_ci_if_error: false
+
+      - name: Security Audit
+        run: bun audit --audit-level=high || echo "⚠️ High vulnerabilities found"
+        working-directory: apps/api
+        continue-on-error: true
+
+      - name: Migrations Check
+        run: bunx prisma migrate diff --from-url "${{ secrets.DATABASE_URL }}" --to-schema-datamodel apps/api/prisma/schema.prisma --script
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cbt_test
+        working-directory: apps/api
+        continue-on-error: true
+
+  e2e-tests:
+    name: E2E Tests
+    needs: quality-gate
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: cbt_test
+        ports: [5432:5432]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:alpine
+        ports: [6379:6379]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        run: bun install --frozen-lockfile
+        working-directory: apps/api
+
+      - name: Run E2E Tests
+        run: bun run test:e2e
+        working-directory: apps/api
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cbt_test
+          JWT_SECRET: test-jwt-secret-key
+          JWT_REFRESH_SECRET: test-refresh-secret-key
+          REDIS_URL: redis://localhost:6379
+          NODE_ENV: test
