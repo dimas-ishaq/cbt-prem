@@ -21,6 +21,9 @@
   /* Border */
   --border-default: #dde1ea;
   --border-strong:  #b8c0d0;
+
+  /* Glassmorphism Header */
+  --header-bg: rgba(255, 255, 255, 0.75);
 }
 
 /* ── Dark Mode (toggled by next-themes via .dark class) ───── */
@@ -40,6 +43,9 @@
 
   --border-default: #1c2d4a;
   --border-strong:  #243550;
+
+  /* Glassmorphism Header */
+  --header-bg: rgba(13, 21, 38, 0.75);
 }
 
 /* ── Base Reset ────────────────────────────────────────────── */

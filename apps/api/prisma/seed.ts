@@ -11,6 +11,14 @@ async function main() {
   console.log('Start seeding...');
 
   // 1. Clean existing data
+  await prisma.roleAuditLog.deleteMany({});
+  await prisma.userRole.deleteMany({});
+  await prisma.rolePermission.deleteMany({});
+  await prisma.permission.deleteMany({});
+  await prisma.subMenu.deleteMany({});
+  await prisma.menu.deleteMany({});
+  await prisma.customRole.deleteMany({});
+
   await prisma.auditLog.deleteMany({});
   await prisma.notification.deleteMany({});
   await prisma.violation.deleteMany({});
@@ -25,6 +33,7 @@ async function main() {
   await prisma.teacher.deleteMany({});
   await prisma.subject.deleteMany({});
   await prisma.user.deleteMany({});
+  await prisma.setting.deleteMany({});
 
   console.log('Database cleaned.');
 
@@ -66,6 +75,257 @@ async function main() {
   });
 
   console.log('Users created.');
+
+  // 3.5. Seed Menus, SubMenus, and Permissions
+  console.log('Seeding menus, submenus, and permissions...');
+  const menuData = [
+    {
+      name: 'User Management',
+      icon: 'FiUsers',
+      orderIndex: 1,
+      subMenus: [
+        {
+          name: 'Daftar Pengguna',
+          url: '/admin/users',
+          orderIndex: 1,
+          permissions: [
+            { name: 'users:view', action: 'view', description: 'Melihat daftar pengguna', securityRiskLevel: 'LOW' },
+            { name: 'users:create', action: 'create', description: 'Membuat pengguna baru', securityRiskLevel: 'MEDIUM' },
+            { name: 'users:update', action: 'update', description: 'Mengubah data pengguna', securityRiskLevel: 'MEDIUM' },
+            { name: 'users:delete', action: 'delete', description: 'Menghapus pengguna secara permanen', securityRiskLevel: 'CRITICAL' },
+            { name: 'users:export', action: 'export', description: 'Mengekspor data pengguna', securityRiskLevel: 'MEDIUM' },
+            { name: 'users:import', action: 'import', description: 'Mengimpor data pengguna', securityRiskLevel: 'HIGH' },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'Akademik',
+      icon: 'FiBookOpen',
+      orderIndex: 2,
+      subMenus: [
+        {
+          name: 'Mata Pelajaran',
+          url: '/admin/subjects',
+          orderIndex: 1,
+          permissions: [
+            { name: 'subjects:view', action: 'view', description: 'Melihat mata pelajaran', securityRiskLevel: 'LOW' },
+            { name: 'subjects:create', action: 'create', description: 'Membuat mata pelajaran', securityRiskLevel: 'LOW' },
+            { name: 'subjects:update', action: 'update', description: 'Mengubah mata pelajaran', securityRiskLevel: 'LOW' },
+            { name: 'subjects:delete', action: 'delete', description: 'Menghapus mata pelajaran', securityRiskLevel: 'MEDIUM' },
+          ],
+        },
+        {
+          name: 'Data Guru',
+          url: '/admin/teachers',
+          orderIndex: 2,
+          permissions: [
+            { name: 'teachers:view', action: 'view', description: 'Melihat profil guru', securityRiskLevel: 'LOW' },
+            { name: 'teachers:create', action: 'create', description: 'Membuat akun guru', securityRiskLevel: 'MEDIUM' },
+            { name: 'teachers:update', action: 'update', description: 'Mengubah data guru', securityRiskLevel: 'MEDIUM' },
+            { name: 'teachers:delete', action: 'delete', description: 'Menghapus akun guru', securityRiskLevel: 'HIGH' },
+          ],
+        },
+        {
+          name: 'Data Siswa',
+          url: '/admin/students',
+          orderIndex: 3,
+          permissions: [
+            { name: 'students:view', action: 'view', description: 'Melihat profil siswa', securityRiskLevel: 'LOW' },
+            { name: 'students:create', action: 'create', description: 'Membuat akun siswa', securityRiskLevel: 'MEDIUM' },
+            { name: 'students:update', action: 'update', description: 'Mengubah data siswa', securityRiskLevel: 'MEDIUM' },
+            { name: 'students:delete', action: 'delete', description: 'Menghapus akun siswa', securityRiskLevel: 'HIGH' },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'CBT Management',
+      icon: 'FiCpu',
+      orderIndex: 3,
+      subMenus: [
+        {
+          name: 'Bank Soal',
+          url: '/admin/questions',
+          orderIndex: 1,
+          permissions: [
+            { name: 'questions:view', action: 'view', description: 'Melihat bank soal', securityRiskLevel: 'LOW' },
+            { name: 'questions:create', action: 'create', description: 'Membuat soal ujian', securityRiskLevel: 'MEDIUM' },
+            { name: 'questions:update', action: 'update', description: 'Mengubah soal ujian', securityRiskLevel: 'HIGH' },
+            { name: 'questions:delete', action: 'delete', description: 'Menghapus soal ujian', securityRiskLevel: 'MEDIUM' },
+          ],
+        },
+        {
+          name: 'Jadwal Ujian',
+          url: '/admin/exams',
+          orderIndex: 2,
+          permissions: [
+            { name: 'exams:view', action: 'view', description: 'Melihat jadwal ujian', securityRiskLevel: 'LOW' },
+            { name: 'exams:create', action: 'create', description: 'Membuat jadwal ujian baru', securityRiskLevel: 'MEDIUM' },
+            { name: 'exams:update', action: 'update', description: 'Mengubah jadwal ujian', securityRiskLevel: 'MEDIUM' },
+            { name: 'exams:delete', action: 'delete', description: 'Menghapus jadwal ujian', securityRiskLevel: 'HIGH' },
+            { name: 'exams:approve', action: 'approve', description: 'Menyetujui rilis ujian', securityRiskLevel: 'HIGH' },
+          ],
+        },
+        {
+          name: 'Sesi Ujian',
+          url: '/admin/sessions',
+          orderIndex: 3,
+          permissions: [
+            { name: 'sessions:view', action: 'view', description: 'Melihat sesi aktif siswa', securityRiskLevel: 'LOW' },
+            { name: 'sessions:create', action: 'create', description: 'Membuat sesi ujian manual', securityRiskLevel: 'MEDIUM' },
+            { name: 'sessions:update', action: 'update', description: 'Mengatur ulang sesi siswa (reset)', securityRiskLevel: 'MEDIUM' },
+            { name: 'sessions:delete', action: 'delete', description: 'Menghapus sesi ujian', securityRiskLevel: 'HIGH' },
+            { name: 'sessions:monitor', action: 'monitor', description: 'Memantau aktivitas ujian / anti-cheat', securityRiskLevel: 'MEDIUM' },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'Pengaturan',
+      icon: 'FiSettings',
+      orderIndex: 4,
+      subMenus: [
+        {
+          name: 'Pengaturan Umum',
+          url: '/admin/settings',
+          orderIndex: 1,
+          permissions: [
+            { name: 'settings:view', action: 'view', description: 'Melihat konfigurasi aplikasi', securityRiskLevel: 'LOW' },
+            { name: 'settings:update', action: 'update', description: 'Mengubah konfigurasi umum', securityRiskLevel: 'HIGH' },
+          ],
+        },
+        {
+          name: 'Manajemen Akses',
+          url: '/admin/roles',
+          orderIndex: 2,
+          permissions: [
+            { name: 'roles:view', action: 'view', description: 'Melihat daftar role', securityRiskLevel: 'LOW' },
+            { name: 'roles:create', action: 'create', description: 'Membuat role baru', securityRiskLevel: 'HIGH' },
+            { name: 'roles:update', action: 'update', description: 'Mengubah hak akses role', securityRiskLevel: 'HIGH' },
+            { name: 'roles:delete', action: 'delete', description: 'Menghapus role kustom', securityRiskLevel: 'HIGH' },
+          ],
+        },
+      ],
+    },
+  ];
+
+  const allPermissions: any[] = [];
+  for (const m of menuData) {
+    const createdMenu = await prisma.menu.create({
+      data: {
+        name: m.name,
+        icon: m.icon,
+        orderIndex: m.orderIndex,
+      },
+    });
+
+    for (const sm of m.subMenus) {
+      const createdSubMenu = await prisma.subMenu.create({
+        data: {
+          menuId: createdMenu.id,
+          name: sm.name,
+          url: sm.url,
+          orderIndex: sm.orderIndex,
+        },
+      });
+
+      for (const p of sm.permissions) {
+        const createdPerm = await prisma.permission.create({
+          data: {
+            subMenuId: createdSubMenu.id,
+            name: p.name,
+            action: p.action,
+            description: p.description,
+            securityRiskLevel: p.securityRiskLevel,
+          },
+        });
+        allPermissions.push(createdPerm);
+      }
+    }
+  }
+
+  // Create Roles
+  console.log('Seeding custom roles...');
+  const superAdminRole = await prisma.customRole.create({
+    data: {
+      name: 'Super Admin',
+      slug: 'super-admin',
+      description: 'Akses penuh ke semua modul sistem',
+      isSystem: true,
+    },
+  });
+
+  const guruRole = await prisma.customRole.create({
+    data: {
+      name: 'Guru',
+      slug: 'guru',
+      description: 'Akses pengelolaan bank soal dan ujian',
+      isSystem: true,
+    },
+  });
+
+  const siswaRole = await prisma.customRole.create({
+    data: {
+      name: 'Siswa',
+      slug: 'siswa',
+      description: 'Akses mengerjakan ujian saja',
+      isSystem: true,
+    },
+  });
+
+  // Assign permissions to Super Admin (all)
+  for (const perm of allPermissions) {
+    await prisma.rolePermission.create({
+      data: {
+        roleId: superAdminRole.id,
+        permissionId: perm.id,
+      },
+    });
+  }
+
+  // Assign permissions to Guru
+  const guruPerms = allPermissions.filter((p) =>
+    p.name.startsWith('questions:') ||
+    p.name.startsWith('exams:') ||
+    p.name.startsWith('sessions:') ||
+    p.name === 'subjects:view' ||
+    p.name === 'teachers:view' ||
+    p.name === 'students:view'
+  );
+  for (const perm of guruPerms) {
+    await prisma.rolePermission.create({
+      data: {
+        roleId: guruRole.id,
+        permissionId: perm.id,
+      },
+    });
+  }
+
+  // Assign user roles
+  await prisma.userRole.create({
+    data: {
+      userId: superAdmin.id,
+      roleId: superAdminRole.id,
+    },
+  });
+
+  await prisma.userRole.create({
+    data: {
+      userId: teacherUser.id,
+      roleId: guruRole.id,
+    },
+  });
+
+  await prisma.userRole.create({
+    data: {
+      userId: studentUser.id,
+      roleId: siswaRole.id,
+    },
+  });
+
+  console.log('Role assignments completed.');
+
 
   // 4. Create Subjects
   const mathSubject = await prisma.subject.create({
@@ -206,6 +466,17 @@ async function main() {
   });
 
   console.log('Exam created.');
+
+  // 9. Create Default Settings
+  await prisma.setting.createMany({
+    data: [
+      { key: 'appName', value: 'CBT Enterprise' },
+      { key: 'logoUrl', value: '' },
+      { key: 'timezone', value: 'Asia/Jakarta' },
+      { key: 'language', value: 'id' },
+    ],
+  });
+  console.log('Default settings created.');
   console.log('Seeding completed successfully!');
 }
 

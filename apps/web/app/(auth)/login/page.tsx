@@ -3,7 +3,9 @@
 import { LoginForm } from '@/components/auth/login-form';
 import { ColorModeToggle } from '@/components/ui/color-mode-toggle';
 import { Shield, Zap, BookOpen, Clock, CheckCircle2 } from 'lucide-react';
-import { Box, Flex, Heading, Text, Stack } from '@chakra-ui/react';
+import { Box, Flex, Heading, Text, Stack, Image } from '@chakra-ui/react';
+import { useQuery } from '@tanstack/react-query';
+import api from '@/lib/api';
 
 const features = [
   {
@@ -33,6 +35,13 @@ const trustBadges = [
 ];
 
 export default function LoginPage() {
+  const { data: settings } = useQuery({
+    queryKey: ['settings'],
+    queryFn: async () => {
+      const response = await api.get('/settings');
+      return response.data;
+    },
+  });
   return (
     <Flex minH="100vh" direction={{ base: 'column', lg: 'row' }}>
 
@@ -106,12 +115,18 @@ export default function LoginPage() {
               h={10}
               borderRadius="xl"
               flexShrink={0}
-              style={{
+              overflow="hidden"
+              bg={settings?.logoUrl ? 'white' : 'transparent'}
+              style={settings?.logoUrl ? {} : {
                 background: 'linear-gradient(135deg, #4f46e5 0%, #2563eb 100%)',
                 boxShadow: '0 4px 14px rgba(79,70,229,0.45)',
               }}
             >
-              <BookOpen size={20} color="white" />
+              {settings?.logoUrl ? (
+                <Image src={settings.logoUrl} alt="Logo" maxW="80%" maxH="80%" objectFit="contain" />
+              ) : (
+                <BookOpen size={20} color="white" />
+              )}
             </Flex>
             <Box>
               <Text
@@ -122,7 +137,7 @@ export default function LoginPage() {
                 textTransform="uppercase"
                 lineHeight="1"
               >
-                CBT Enterprise
+                {settings?.appName || 'CBT Enterprise'}
               </Text>
               <Text fontSize="2xs" color="blue.400" fontWeight="bold" letterSpacing="wider" textTransform="uppercase">
                 Secure Platform
@@ -320,11 +335,17 @@ export default function LoginPage() {
               w={7}
               h={7}
               borderRadius="lg"
-              style={{
+              overflow="hidden"
+              bg={settings?.logoUrl ? 'white' : 'transparent'}
+              style={settings?.logoUrl ? {} : {
                 background: 'linear-gradient(135deg, #4f46e5, #2563eb)',
               }}
             >
-              <BookOpen size={14} color="white" />
+              {settings?.logoUrl ? (
+                <Image src={settings.logoUrl} alt="Logo" maxW="80%" maxH="80%" objectFit="contain" />
+              ) : (
+                <BookOpen size={14} color="white" />
+              )}
             </Flex>
             <Text
               fontWeight="extrabold"
@@ -333,7 +354,7 @@ export default function LoginPage() {
               letterSpacing="wide"
               textTransform="uppercase"
             >
-              CBT Enterprise
+              {settings?.appName || 'CBT Enterprise'}
             </Text>
           </Flex>
         </Box>

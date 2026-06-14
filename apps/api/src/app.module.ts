@@ -11,6 +11,8 @@ import { QuestionsModule } from './questions/questions.module';
 import { ExamsModule } from './exams/exams.module';
 import { RealtimeModule } from './realtime/realtime.module';
 import { ExamSessionsModule } from './exam-sessions/exam-sessions.module';
+import { SettingsModule } from './settings/settings.module';
+import { RolesModule } from './roles/roles.module';
 
 @Module({
   imports: [
@@ -28,6 +30,8 @@ import { ExamSessionsModule } from './exam-sessions/exam-sessions.module';
     ExamsModule,
     RealtimeModule,
     ExamSessionsModule,
+    SettingsModule,
+    RolesModule,
   ],
 })
 export class AppModule {}

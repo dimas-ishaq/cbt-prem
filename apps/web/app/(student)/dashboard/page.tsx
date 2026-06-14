@@ -13,13 +13,24 @@ import {
   Container,
   HStack,
   Stack,
+  Image,
 } from '@chakra-ui/react';
 import { BookOpen, LogOut, GraduationCap } from 'lucide-react';
 import { ColorModeToggle } from '@/components/ui/color-mode-toggle';
+import { useQuery } from '@tanstack/react-query';
+import api from '@/lib/api';
 
 export default function DashboardPage() {
   const { user, logout } = useAuthStore();
   const router = useRouter();
+
+  const { data: settings } = useQuery({
+    queryKey: ['settings'],
+    queryFn: async () => {
+      const response = await api.get('/settings');
+      return response.data;
+    },
+  });
 
   useEffect(() => {
     if (!user) {
@@ -52,12 +63,18 @@ export default function DashboardPage() {
                 w={9}
                 h={9}
                 borderRadius="xl"
-                style={{
+                overflow="hidden"
+                bg={settings?.logoUrl ? 'white' : 'transparent'}
+                style={settings?.logoUrl ? {} : {
                   background: 'linear-gradient(135deg, #4f46e5, #2563eb)',
                   boxShadow: '0 4px 12px rgba(79,70,229,0.35)',
                 }}
               >
-                <BookOpen size={18} color="white" />
+                {settings?.logoUrl ? (
+                  <Image src={settings.logoUrl} alt="Logo" maxW="80%" maxH="80%" objectFit="contain" />
+                ) : (
+                  <BookOpen size={18} color="white" />
+                )}
               </Flex>
               <Box>
                 <Text
@@ -68,7 +85,7 @@ export default function DashboardPage() {
                   textTransform="uppercase"
                   lineHeight="1"
                 >
-                  CBT Enterprise
+                  {settings?.appName || 'CBT Enterprise'}
                 </Text>
                 <Text fontSize="2xs" color="text.muted" fontWeight="semibold" letterSpacing="wider" textTransform="uppercase">
                   Portal Siswa

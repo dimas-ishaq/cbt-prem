@@ -22,22 +22,26 @@ import {
   HStack,
 } from '@chakra-ui/react';
 
-const stats = [
-  { name: 'Total Students', value: '1,234', icon: Users, change: '+12%', changeType: 'increase' },
-  { name: 'Active Exams', value: '8', icon: FileText, change: '0%', changeType: 'neutral' },
-  { name: 'Subjects', value: '24', icon: BookOpen, change: '+2', changeType: 'increase' },
-  { name: 'Average Score', value: '78.5', icon: Activity, change: '-2.4%', changeType: 'decrease' },
-];
+import { useTranslation } from 'react-i18next';
 
 export default function AdminDashboard() {
+  const { t } = useTranslation();
+
+  const stats = [
+    { name: t('totalStudents'), value: '1,234', icon: Users, change: '+12%', changeType: 'increase' },
+    { name: t('activeExams'), value: '8', icon: FileText, change: '0%', changeType: 'neutral' },
+    { name: t('subjectsLabel'), value: '24', icon: BookOpen, change: '+2', changeType: 'increase' },
+    { name: t('avgScore'), value: '78.5', icon: Activity, change: '-2.4%', changeType: 'decrease' },
+  ];
+
   return (
     <Stack gap={8}>
       <Box>
         <Heading size="xl" fontWeight="bold" color="gray.900">
-          Dashboard Overview
+          {t('dashboardOverview')}
         </Heading>
         <Text color="gray.500" mt={1}>
-          Welcome back to the CBT management panel.
+          {t('welcomeCbt')}
         </Text>
       </Box>
 
@@ -93,7 +97,7 @@ export default function AdminDashboard() {
       <SimpleGrid columns={{ base: 1, lg: 2 }} gap={8}>
         <Box bg="white" p={6} borderRadius="xl" shadow="sm" borderWidth="1px" borderColor="gray.100">
           <Heading size="md" fontWeight="bold" color="gray.900" mb={4}>
-            Recent Exams
+            {t('recentExams')}
           </Heading>
           <Stack gap={4}>
             {[1, 2, 3].map((i) => (
@@ -125,7 +129,7 @@ export default function AdminDashboard() {
                   fontWeight="bold"
                   borderRadius="full"
                 >
-                  Completed
+                  {t('completedStatus')}
                 </Badge>
               </Flex>
             ))}
@@ -134,7 +138,7 @@ export default function AdminDashboard() {
 
         <Box bg="white" p={6} borderRadius="xl" shadow="sm" borderWidth="1px" borderColor="gray.100">
           <Heading size="md" fontWeight="bold" color="gray.900" mb={4}>
-            Live Monitoring Alerts
+            {t('liveAlerts')}
           </Heading>
           <Stack gap={4}>
             {[1, 2, 3].map((i) => (
@@ -153,13 +157,13 @@ export default function AdminDashboard() {
                 </Box>
                 <Box>
                   <Text fontWeight="semibold" color="red.900">
-                    Violation Detected
+                    {t('violationDetected')}
                   </Text>
                   <Text fontSize="sm" color="red.700">
                     Student: John Doe • Type: Tab Switching
                   </Text>
                   <Text fontSize="xs" color="red.500" mt={1}>
-                    2 minutes ago
+                    2 {t('minutesAgo')}
                   </Text>
                 </Box>
               </Flex>

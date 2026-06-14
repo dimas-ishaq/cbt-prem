@@ -65,7 +65,9 @@ model User {
   teacher       Teacher?
   auditLogs     AuditLog[]
   notifications Notification[]
+  roles         UserRole[]
 }
+
 
 model Teacher {
   id        String   @id @default(uuid())
@@ -251,3 +253,93 @@ model Setting {
   key   String @unique
   value String @db.Text
 }
+
+model CustomRole {
+  id          String           @id @default(uuid())
+  name        String           @unique
+  slug        String           @unique
+  description String?
+  isSystem    Boolean          @default(false)
+  isActive    Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  users       UserRole[]
+  permissions RolePermission[]
+  auditLogs   RoleAuditLog[]
+
+  @@map("roles")
+}
+
+model Menu {
+  id         String    @id @default(uuid())
+  name       String
+  icon       String?
+  orderIndex Int       @default(0)
+  createdAt  DateTime  @default(now())
+  subMenus   SubMenu[]
+
+  @@map("menus")
+}
+
+model SubMenu {
+  id          String       @id @default(uuid())
+  menuId      String
+  menu        Menu         @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  name        String
+  url         String
+  orderIndex  Int          @default(0)
+  createdAt   DateTime     @default(now())
+  permissions Permission[]
+
+  @@map("sub_menus")
+}
+
+model Permission {
+  id                String           @id @default(uuid())
+  subMenuId         String
+  subMenu           SubMenu          @relation(fields: [subMenuId], references: [id], onDelete: Cascade)
+  name              String           @unique
+  description       String?
+  action            String
+  securityRiskLevel String           @default("LOW")
+  createdAt         DateTime         @default(now())
+  roles             RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String
+  role         CustomRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model UserRole {
+  userId String
+  user   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roleId String
+  role   CustomRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+model RoleAuditLog {
+  id            String      @id @default(uuid())
+  roleId        String?
+  role          CustomRole? @relation(fields: [roleId], references: [id], onDelete: SetNull)
+  actorId       String
+  actionType    String
+  payloadBefore Json?
+  payloadAfter  Json?
+  ipAddress     String?
+  userAgent     String?
+  createdAt     DateTime    @default(now())
+
+  @@map("role_audit_logs")
+}
+

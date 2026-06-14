@@ -10,6 +10,8 @@ import {
   Activity,
   LogOut,
   GraduationCap,
+  Settings,
+  Key,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
 import { useRouter } from 'next/navigation';
@@ -20,26 +22,49 @@ import {
   Button,
   Stack,
   HStack,
+  Image,
 } from '@chakra-ui/react';
+import { useQuery } from '@tanstack/react-query';
+import api from '@/lib/api';
+
+import { useTranslation } from 'react-i18next';
 
 const menuItems = [
-  { name: 'Dashboard',      href: '/admin',                icon: LayoutDashboard },
-  { name: 'Mata Pelajaran', href: '/admin/subjects',       icon: BookOpen },
-  { name: 'Bank Soal',      href: '/admin/question-banks', icon: FileText },
-  { name: 'Ujian',          href: '/admin/exams',          icon: GraduationCap },
-  { name: 'Monitoring',     href: '/admin/monitoring',     icon: Activity },
-  { name: 'Pengguna',       href: '/admin/users',          icon: Users },
+  { name: 'Dashboard',      href: '/admin',                icon: LayoutDashboard, key: 'dashboard' },
+  { name: 'Mata Pelajaran', href: '/admin/subjects',       icon: BookOpen,        key: 'subjects' },
+  { name: 'Bank Soal',      href: '/admin/question-banks', icon: FileText,        key: 'questionBanks' },
+  { name: 'Ujian',          href: '/admin/exams',          icon: GraduationCap,   key: 'exams' },
+  { name: 'Monitoring',     href: '/admin/monitoring',     icon: Activity,        key: 'monitoring' },
+  { name: 'Pengguna',       href: '/admin/users',          icon: Users,           key: 'users' },
+  { name: 'Manajemen Akses', href: '/admin/roles',         icon: Key,             key: 'roles' },
+  { name: 'Pengaturan',     href: '/admin/settings',       icon: Settings,        key: 'settings' },
 ];
 
 export function AdminSidebar() {
   const pathname = usePathname();
   const { logout, user } = useAuthStore();
   const router = useRouter();
+  const { t } = useTranslation();
+
+  const { data: settings } = useQuery({
+    queryKey: ['settings'],
+    queryFn: async () => {
+      const response = await api.get('/settings');
+      return response.data;
+    },
+  });
 
   const handleLogout = () => {
     logout();
     router.push('/login');
   };
+
+  const visibleMenuItems = menuItems.filter((item) => {
+    if (item.href === '/admin/settings' || item.href === '/admin/roles') {
+      return user?.role === 'SUPER_ADMIN';
+    }
+    return true;
+  });
 
   return (
     <Box
@@ -65,12 +90,18 @@ export function AdminSidebar() {
             h={9}
             borderRadius="xl"
             flexShrink={0}
-            style={{
+            overflow="hidden"
+            bg={settings?.logoUrl ? 'white' : 'transparent'}
+            style={settings?.logoUrl ? {} : {
               background: 'linear-gradient(135deg, #4f46e5 0%, #2563eb 100%)',
               boxShadow: '0 4px 12px rgba(79,70,229,0.4)',
             }}
           >
-            <BookOpen size={17} color="white" />
+            {settings?.logoUrl ? (
+              <Image src={settings.logoUrl} alt="Logo" maxW="80%" maxH="80%" objectFit="contain" />
+            ) : (
+              <BookOpen size={17} color="white" />
+            )}
           </Flex>
           <Box>
             <Text
@@ -81,7 +112,7 @@ export function AdminSidebar() {
               textTransform="uppercase"
               lineHeight="1"
             >
-              CBT Enterprise
+              {settings?.appName || 'CBT Enterprise'}
             </Text>
             <Text fontSize="2xs" color="blue.500" fontWeight="bold" letterSpacing="widest" textTransform="uppercase" mt={0.5}>
               Admin Panel
@@ -92,7 +123,7 @@ export function AdminSidebar() {
 
       {/* ── Navigation ─────────────────────────────── */}
       <Stack flex={1} px={3} pt={4} gap={0.5} as="nav" overflowY="auto">
-        {menuItems.map((item) => {
+        {visibleMenuItems.map((item) => {
           const isActive =
             item.href === '/admin'
               ? pathname === '/admin'
@@ -158,7 +189,7 @@ export function AdminSidebar() {
                   color={isActive ? '#c7d2fe' : '#7a8fab'}
                   transition="color 0.15s"
                 >
-                  {item.name}
+                  {t(item.key)}
                 </Text>
               </Flex>
             </Link>
@@ -220,7 +251,7 @@ export function AdminSidebar() {
           size="sm"
         >
           <LogOut size={16} />
-          <Text fontWeight="semibold" ml={2.5} fontSize="sm">Keluar</Text>
+          <Text fontWeight="semibold" ml={2.5} fontSize="sm">{t('logout')}</Text>
         </Button>
       </Box>
     </Box>
