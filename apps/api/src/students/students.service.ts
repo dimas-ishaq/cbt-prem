@@ -20,7 +20,7 @@ export class StudentsService {
         student: {
           create: {
             nis: dto.nis,
-            class: dto.class,
+            ...(dto.rombelId ? { rombel: { connect: { id: dto.rombelId } } } : {}),
           },
         },
       },
@@ -30,8 +30,20 @@ export class StudentsService {
     });
   }
 
-  async findAll() {
+  async findAll(majorId?: string, rombelId?: string) {
+    const where: any = {};
+    if (majorId) {
+      where.majorId = majorId;
+    }
+    if (rombelId) {
+      if (rombelId === 'no-class') {
+        where.rombelId = null;
+      } else {
+        where.rombelId = rombelId;
+      }
+    }
     return this.prisma.student.findMany({
+      where,
       include: { user: true },
     });
   }

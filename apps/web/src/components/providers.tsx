@@ -6,6 +6,8 @@ import { ChakraProvider } from '@chakra-ui/react';
 import { ThemeProvider } from 'next-themes';
 import { system } from '@/lib/theme';
 import '@/lib/i18n';
+import { Toaster } from 'react-hot-toast';
+import { ConfirmationProvider } from './ui/confirmation-dialog';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient());
@@ -19,7 +21,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
           enableSystem={false}
           disableTransitionOnChange={false}
         >
-          {children}
+          <ConfirmationProvider>
+            {children}
+            <Toaster position="top-right" />
+          </ConfirmationProvider>
         </ThemeProvider>
       </ChakraProvider>
     </QueryClientProvider>

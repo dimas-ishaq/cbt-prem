@@ -2,8 +2,11 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { Plus, User, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import toast from 'react-hot-toast';
+import { useConfirm } from '@/components/ui/confirmation-dialog';
+import { useAuthStore } from '@/store/auth.store';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import {
   Box,
   Flex,
@@ -16,20 +19,272 @@ import {
   Spinner,
   IconButton,
   HStack,
+  Badge,
 } from '@chakra-ui/react';
-import { useTranslation } from 'react-i18next';
+import {
+  Plus,
+  Search,
+  Pencil,
+  Trash2,
+  KeyRound,
+  ToggleLeft,
+  ToggleRight,
+  Users,
+  GraduationCap,
+  ShieldCheck,
+  BookOpen,
+  Download,
+  Upload,
+} from 'lucide-react';
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+type UserRole = 'SUPER_ADMIN' | 'GURU' | 'SISWA' | 'ADMIN_SEKOLAH' | 'PENGAWAS';
 
 interface UserData {
   id: string;
   username: string;
+  email: string;
   fullName: string;
-  email?: string;
-  role: string;
+  role: UserRole;
+  isActive: boolean;
+  createdAt: string;
+  student?: {
+    id: string;
+    nis: string;
+    rombel?: { id: string; name: string } | null;
+    major?: { name: string; code: string } | null;
+  } | null;
+  teacher?: {
+    id: string;
+    nip: string | null;
+    subjects: { id: string; name: string }[];
+  } | null;
 }
 
+type ActiveTab = 'ALL' | 'SUPER_ADMIN' | 'GURU' | 'SISWA';
+
+// ── Role helpers ──────────────────────────────────────────────────────────────
+
+const ROLE_OPTIONS: { label: string; value: UserRole }[] = [
+  { label: 'Super Admin', value: 'SUPER_ADMIN' },
+  { label: 'Guru', value: 'GURU' },
+  { label: 'Siswa', value: 'SISWA' },
+];
+
+const ROLE_BADGE: Record<UserRole, { label: string; color: string; bg: string }> = {
+  SUPER_ADMIN: { label: 'Super Admin', color: 'text-violet-700', bg: 'bg-violet-100' },
+  GURU:        { label: 'Guru',        color: 'text-blue-700',   bg: 'bg-blue-100' },
+  SISWA:       { label: 'Siswa',       color: 'text-green-700',  bg: 'bg-green-100' },
+  ADMIN_SEKOLAH: { label: 'Admin Sekolah', color: 'text-orange-700', bg: 'bg-orange-100' },
+  PENGAWAS:    { label: 'Pengawas',    color: 'text-teal-700',   bg: 'bg-teal-100' },
+};
+
+function RoleBadge({ role }: { role: UserRole }) {
+  const cfg = ROLE_BADGE[role] ?? { label: role, color: 'text-gray-700', bg: 'bg-gray-100' };
+  return (
+    <span
+      style={{
+        padding: '2px 10px',
+        borderRadius: '999px',
+        fontSize: '0.72rem',
+        fontWeight: 600,
+        letterSpacing: '0.02em',
+        background: cfg.bg.replace('bg-', '#').replace('-100', ''),
+        color: cfg.color.replace('text-', '#').replace('-700', ''),
+      }}
+      className={`${cfg.bg} ${cfg.color}`}
+    >
+      {cfg.label}
+    </span>
+  );
+}
+
+// ── Avatar initials ───────────────────────────────────────────────────────────
+const AVATAR_COLORS: Record<UserRole, string> = {
+  SUPER_ADMIN: '#7c3aed',
+  GURU:        '#2563eb',
+  SISWA:       '#059669',
+  ADMIN_SEKOLAH: '#d97706',
+  PENGAWAS:    '#0d9488',
+};
+
+function Avatar({ name, role }: { name: string; role: UserRole }) {
+  const initials = name
+    .split(' ')
+    .slice(0, 2)
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase();
+  return (
+    <Flex
+      w={9}
+      h={9}
+      borderRadius="full"
+      align="center"
+      justify="center"
+      fontWeight="bold"
+      fontSize="xs"
+      color="white"
+      flexShrink={0}
+      style={{ background: AVATAR_COLORS[role] ?? '#6b7280' }}
+    >
+      {initials}
+    </Flex>
+  );
+}
+
+// ── Tab config ────────────────────────────────────────────────────────────────
+const TABS: { key: ActiveTab; label: string; icon: any }[] = [
+  { key: 'ALL',        label: 'Semua Pengguna', icon: Users },
+  { key: 'SUPER_ADMIN', label: 'Super Admin',   icon: ShieldCheck },
+  { key: 'GURU',       label: 'Guru',           icon: BookOpen },
+  { key: 'SISWA',      label: 'Siswa',          icon: GraduationCap },
+];
+
+// ── Main Page ─────────────────────────────────────────────────────────────────
+
 export default function UsersManagementPage() {
-  const { t } = useTranslation();
+  const { user } = useAuthStore();
+  const router = useRouter();
   const queryClient = useQueryClient();
+  const confirmDialog = useConfirm();
+
+  // Redirect non-SUPER_ADMIN
+  useEffect(() => {
+    if (user && user.role !== 'SUPER_ADMIN') router.push('/admin');
+  }, [user, router]);
+
+  const [activeTab, setActiveTab] = useState<ActiveTab>('ALL');
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Modal state
+  type ModalMode = 'create' | 'edit' | 'reset-password' | null;
+  const [modalMode, setModalMode] = useState<ModalMode>(null);
+  const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
+
+  // Create / Edit form
+  const [form, setForm] = useState({
+    username: '', email: '', password: '', fullName: '', role: 'SISWA' as UserRole, rombelId: '', nis: '',
+  });
+  // Reset password form
+  const [newPassword, setNewPassword] = useState('');
+
+  // ── Fetch ──────────────────────────────────────────────────────────────────
+  const { data: users = [], isLoading } = useQuery<UserData[]>({
+    queryKey: ['users-all'],
+    queryFn: async () => {
+      const res = await api.get('/users');
+      return res.data;
+    },
+  });
+
+  const { data: rombels = [] } = useQuery<any[]>({
+    queryKey: ['rombels-list'],
+    queryFn: async () => {
+      const res = await api.get('/rombels');
+      return res.data;
+    },
+  });
+
+  // ── Mutations ──────────────────────────────────────────────────────────────
+  const createMutation = useMutation({
+    mutationFn: (data: typeof form) => api.post('/users', data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users-all'] });
+      closeModal();
+      toast.success('Pengguna berhasil dibuat!');
+    },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Gagal membuat pengguna'),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: { fullName: string; email: string } }) =>
+      api.put(`/users/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users-all'] });
+      closeModal();
+      toast.success('Data pengguna berhasil diperbarui!');
+    },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Gagal memperbarui pengguna'),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/users/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users-all'] });
+      toast.success('Pengguna berhasil dihapus');
+    },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Gagal menghapus pengguna'),
+  });
+
+  const toggleActiveMutation = useMutation({
+    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) => api.patch(`/users/${id}/toggle-active`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users-all'] });
+      toast.success('Status pengguna berhasil diubah');
+    },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Gagal mengubah status'),
+  });
+
+  const resetPasswordMutation = useMutation({
+    mutationFn: ({ id, newPassword }: { id: string; newPassword: string }) =>
+      api.patch(`/users/${id}/reset-password`, { newPassword }),
+    onSuccess: () => {
+      closeModal();
+      toast.success('Password berhasil direset!');
+    },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Gagal mereset password'),
+  });
+
+  // ── Modal helpers ──────────────────────────────────────────────────────────
+  const openCreateModal = () => {
+    setModalMode('create');
+    setForm({ username: '', email: '', password: '', fullName: '', role: 'SISWA', rombelId: '', nis: '' });
+    setSelectedUser(null);
+  };
+
+  const openEditModal = (u: UserData) => {
+    setModalMode('edit');
+    setSelectedUser(u);
+    setForm({
+      username: u.username,
+      email: u.email || '',
+      password: '',
+      fullName: u.fullName,
+      role: u.role,
+      rombelId: u.student?.rombel?.id || '',
+      nis: u.student?.nis || '',
+    });
+  };
+
+  const openResetPassword = (u: UserData) => {
+    setSelectedUser(u);
+    setNewPassword('');
+    setModalMode('reset-password');
+  };
+
+  const closeModal = () => {
+    setModalMode(null);
+    setSelectedUser(null);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (modalMode === 'create') {
+      createMutation.mutate(form);
+    } else if (modalMode === 'edit' && selectedUser) {
+      updateMutation.mutate({ id: selectedUser.id, data: { fullName: form.fullName, email: form.email } });
+    }
+  };
+
+  const handleResetPassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedUser) return;
+    resetPasswordMutation.mutate({ id: selectedUser.id, newPassword });
+  };
+
+  // ── Export ─────────────────────────────────────────────────────────────────
   const handleExport = async () => {
     try {
       const response = await api.get('/users/export', { responseType: 'blob' });
@@ -40,347 +295,353 @@ export default function UsersManagementPage() {
       link.setAttribute('download', 'cbt_users_export.csv');
       document.body.appendChild(link);
       link.click();
-      link.remove();
+      document.body.removeChild(link);
+      toast.success('Data pengguna berhasil diekspor');
     } catch (error: any) {
-      alert('Gagal mengekspor data: ' + (error.response?.data?.message || error.message));
+      toast.error('Gagal mengekspor: ' + (error.response?.data?.message || error.message));
     }
   };
 
-  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // ── Filter ─────────────────────────────────────────────────────────────────
+  const filtered = users
+    .filter((u) => {
+      if (activeTab !== 'ALL' && u.role !== activeTab) return false;
+      if (!searchTerm) return true;
+      const q = searchTerm.toLowerCase();
+      return (
+        u.fullName.toLowerCase().includes(q) ||
+        u.username.toLowerCase().includes(q) ||
+        u.email.toLowerCase().includes(q)
+      );
+    });
 
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      const text = event.target?.result as string;
-      if (!text) return;
-
-      try {
-        const lines = text.split(/\r?\n/);
-        const firstLine = lines[0];
-        if (!firstLine) {
-          alert('File CSV tidak valid.');
-          return;
-        }
-        const rawHeaders = firstLine.split(',');
-        const headers = rawHeaders.map(h => h.trim().replace(/^["']|["']$/g, ''));
-
-        const parsedUsers: any[] = [];
-        for (let i = 1; i < lines.length; i++) {
-          const lineVal = lines[i];
-          if (!lineVal) continue;
-          const line = lineVal.trim();
-          if (!line) continue;
-
-          const values: string[] = [];
-          let current = '';
-          let inQuotes = false;
-          for (let charIndex = 0; charIndex < line.length; charIndex++) {
-            const char = line[charIndex];
-            if (char === '"') {
-              inQuotes = !inQuotes;
-            } else if (char === ',' && !inQuotes) {
-              values.push(current.trim());
-              current = '';
-            } else {
-              current += char;
-            }
-          }
-          values.push(current.trim());
-
-          const userObj: any = {};
-          headers.forEach((header, index) => {
-            let val = values[index] || '';
-            val = val.replace(/^["']|["']$/g, '');
-            userObj[header] = val;
-          });
-
-          if (userObj.nisn && !userObj.nis) {
-            userObj.nis = userObj.nisn;
-          }
-          if (userObj.nis && !userObj.nisn) {
-            userObj.nisn = userObj.nis;
-          }
-
-          parsedUsers.push(userObj);
-        }
-
-        if (parsedUsers.length === 0) {
-          alert('Tidak ada data pengguna yang valid untuk diimpor.');
-          return;
-        }
-
-        const response = await api.post('/users/import', { users: parsedUsers });
-        const { created, updated, errors } = response.data;
-
-        let message = `Impor selesai!\n- Baru dibuat: ${created}\n- Diperbarui: ${updated}`;
-        if (errors && errors.length > 0) {
-          message += `\n\nAda ${errors.length} error:\n` + errors.slice(0, 5).join('\n');
-          if (errors.length > 5) {
-            message += `\n...dan ${errors.length - 5} error lainnya.`;
-          }
-        }
-        alert(message);
-
-        queryClient.invalidateQueries({ queryKey: ['students'] });
-        queryClient.invalidateQueries({ queryKey: ['teachers'] });
-      } catch (err: any) {
-        alert('Gagal memproses file CSV: ' + err.message);
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = '';
+  // ── Tab counts ─────────────────────────────────────────────────────────────
+  const counts: Record<ActiveTab, number> = {
+    ALL: users.length,
+    SUPER_ADMIN: users.filter((u) => u.role === 'SUPER_ADMIN').length,
+    GURU:        users.filter((u) => u.role === 'GURU').length,
+    SISWA:       users.filter((u) => u.role === 'SISWA').length,
   };
 
-  const [activeTab, setActiveTab] = useState<'STUDENT' | 'TEACHER'>('STUDENT');
-  const [isAdding, setIsAdding] = useState(false);
-
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [nisn, setNisn] = useState(''); // Only for students
-  const [nip, setNip] = useState('');   // Only for teachers
-
-  const { data: students, isLoading: loadingStudents } = useQuery<any[]>({
-    queryKey: ['students'],
-    queryFn: async () => {
-      const response = await api.get('/students');
-      return response.data;
-    },
-  });
-
-  const { data: teachers, isLoading: loadingTeachers } = useQuery<any[]>({
-    queryKey: ['teachers'],
-    queryFn: async () => {
-      const response = await api.get('/teachers');
-      return response.data;
-    },
-  });
-
-  const createMutation = useMutation({
-    mutationFn: async (newUser: any) => {
-      const endpoint = activeTab === 'STUDENT' ? '/students' : '/teachers';
-      return api.post(endpoint, newUser);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [activeTab === 'STUDENT' ? 'students' : 'teachers'] });
-      setIsAdding(false);
-      resetForm();
-      alert('Pengguna berhasil ditambahkan!');
-    },
-    onError: (error: any) => {
-      alert(error.response?.data?.message || 'Gagal menambahkan pengguna.');
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const endpoint = activeTab === 'STUDENT' ? `/students/${id}` : `/teachers/${id}`;
-      return api.delete(endpoint);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [activeTab === 'STUDENT' ? 'students' : 'teachers'] });
-      alert('Pengguna berhasil dihapus.');
-    },
-    onError: (error: any) => {
-      alert(error.response?.data?.message || 'Gagal menghapus pengguna.');
-    },
-  });
-
-  const resetForm = () => {
-    setUsername('');
-    setPassword('');
-    setFullName('');
-    setNisn('');
-    setNip('');
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const payload = activeTab === 'STUDENT' 
-      ? { username, password, fullName, nisn, class: 'X' }
-      : { username, password, fullName, nip };
-    createMutation.mutate(payload);
-  };
-
-  const isLoading = activeTab === 'STUDENT' ? loadingStudents : loadingTeachers;
-  const users = activeTab === 'STUDENT' ? students : teachers;
-
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <Stack gap={6}>
-      <Flex justify="space-between" align="center">
+      {/* Header */}
+      <Flex justify="space-between" align="center" wrap="wrap" gap={4}>
         <Box>
           <Heading size="xl" fontWeight="bold" color="gray.900">
-            {t('usersTitle')}
+            Manajemen Akun Pengguna
           </Heading>
-          <Text color="gray.500" mt={1}>
-            {t('usersDesc')}
+          <Text color="gray.500" mt={1} fontSize="sm">
+            Kelola semua akun pengguna sistem — Super Admin, Guru, dan Siswa
           </Text>
         </Box>
-        <HStack gap={3}>
+        <HStack gap={3} flexWrap="wrap">
           <Button
             variant="outline"
-            color="indigo.600"
-            borderColor="indigo.200"
-            _hover={{ bg: 'indigo.50' }}
+            borderColor="gray.200"
+            color="gray.600"
+            _hover={{ bg: 'gray.50' }}
             borderRadius="lg"
-            px={4}
-            py={2}
-            fontWeight="medium"
+            size="sm"
             onClick={handleExport}
             cursor="pointer"
           >
-            {t('exportCsv')}
+            <Download size={16} style={{ marginRight: 6 }} />
+            Export CSV
           </Button>
-          <Button
-            variant="outline"
-            color="indigo.600"
-            borderColor="indigo.200"
-            _hover={{ bg: 'indigo.50' }}
-            borderRadius="lg"
-            px={4}
-            py={2}
-            fontWeight="medium"
-            onClick={() => document.getElementById('csv-import-input')?.click()}
-            cursor="pointer"
-          >
-            {t('importCsv')}
-          </Button>
-          <input
-            id="csv-import-input"
-            type="file"
-            accept=".csv"
-            style={{ display: 'none' }}
-            onChange={handleImport}
-          />
           <Button
             bg="indigo.600"
             color="white"
             _hover={{ bg: 'indigo.700' }}
             borderRadius="lg"
-            px={4}
-            py={2}
-            fontWeight="medium"
-            onClick={() => setIsAdding(true)}
+            size="sm"
+            onClick={openCreateModal}
             cursor="pointer"
           >
-            <Plus size={20} style={{ marginRight: '6px' }} />
-            {activeTab === 'STUDENT' ? t('addStudent') : t('addTeacher')}
+            <Plus size={16} style={{ marginRight: 6 }} />
+            Tambah Pengguna
           </Button>
         </HStack>
       </Flex>
 
-      {/* Tab Switcher */}
-      <Flex gap={1} bg="gray.100" p={1} borderRadius="lg" w="fit-content">
-        <Button
-          onClick={() => setActiveTab('STUDENT')}
-          px={4}
-          py={2}
-          borderRadius="md"
-          fontSize="sm"
-          fontWeight="medium"
-          bg={activeTab === 'STUDENT' ? 'white' : 'transparent'}
-          shadow={activeTab === 'STUDENT' ? 'sm' : 'none'}
-          color={activeTab === 'STUDENT' ? 'indigo.600' : 'gray.500'}
-          _hover={{ color: activeTab !== 'STUDENT' ? 'gray.700' : undefined }}
-          cursor="pointer"
-          variant="ghost"
-        >
-          {t('studentsTab')}
-        </Button>
-        <Button
-          onClick={() => setActiveTab('TEACHER')}
-          px={4}
-          py={2}
-          borderRadius="md"
-          fontSize="sm"
-          fontWeight="medium"
-          bg={activeTab === 'TEACHER' ? 'white' : 'transparent'}
-          shadow={activeTab === 'TEACHER' ? 'sm' : 'none'}
-          color={activeTab === 'TEACHER' ? 'indigo.600' : 'gray.500'}
-          _hover={{ color: activeTab !== 'TEACHER' ? 'gray.700' : undefined }}
-          cursor="pointer"
-          variant="ghost"
-        >
-          {t('teachersTab')}
-        </Button>
+      {/* Stats Cards */}
+      <Flex gap={4} wrap="wrap">
+        {TABS.slice(1).map(({ key, label, icon: Icon }) => (
+          <Box
+            key={key}
+            flex="1"
+            minW="140px"
+            bg="white"
+            borderRadius="xl"
+            borderWidth="1px"
+            borderColor="gray.100"
+            p={4}
+            shadow="sm"
+            cursor="pointer"
+            onClick={() => setActiveTab(key)}
+            transition="all 0.2s"
+            _hover={{ shadow: 'md', borderColor: 'indigo.200' }}
+            borderBottomWidth={activeTab === key ? '3px' : '1px'}
+            borderBottomColor={activeTab === key ? 'indigo.500' : 'gray.100'}
+          >
+            <Flex align="center" gap={3}>
+              <Box
+                p={2}
+                borderRadius="lg"
+                bg={key === 'SUPER_ADMIN' ? 'violet.50' : key === 'GURU' ? 'blue.50' : 'green.50'}
+                color={key === 'SUPER_ADMIN' ? 'violet.600' : key === 'GURU' ? 'blue.600' : 'green.600'}
+              >
+                <Icon size={18} />
+              </Box>
+              <Box>
+                <Text fontSize="2xl" fontWeight="bold" color="gray.900" lineHeight="1">
+                  {counts[key]}
+                </Text>
+                <Text fontSize="xs" color="gray.500" mt={0.5}>
+                  {label}
+                </Text>
+              </Box>
+            </Flex>
+          </Box>
+        ))}
       </Flex>
 
-      {/* Users Table */}
+      {/* Table Card */}
       <Box bg="white" borderRadius="xl" shadow="sm" borderWidth="1px" borderColor="gray.100" overflow="hidden">
+        {/* Toolbar */}
+        <Flex p={4} borderBottom="1px solid" borderColor="gray.100" align="center" gap={3} bg="gray.50" wrap="wrap">
+          {/* Tab pills */}
+          <Flex gap={1} bg="gray.200" p={1} borderRadius="lg">
+            {TABS.map(({ key, label }) => (
+              <Button
+                key={key}
+                onClick={() => setActiveTab(key)}
+                size="xs"
+                px={3}
+                py={1.5}
+                borderRadius="md"
+                fontSize="xs"
+                fontWeight="medium"
+                bg={activeTab === key ? 'white' : 'transparent'}
+                shadow={activeTab === key ? 'sm' : 'none'}
+                color={activeTab === key ? 'indigo.700' : 'gray.500'}
+                _hover={{ color: 'gray.700' }}
+                cursor="pointer"
+                variant="ghost"
+              >
+                {label}
+                <Box
+                  as="span"
+                  ml={1}
+                  px={1.5}
+                  py={0.5}
+                  borderRadius="full"
+                  fontSize="10px"
+                  bg={activeTab === key ? 'indigo.100' : 'gray.300'}
+                  color={activeTab === key ? 'indigo.700' : 'gray.500'}
+                >
+                  {counts[key]}
+                </Box>
+              </Button>
+            ))}
+          </Flex>
+
+          {/* Search */}
+          <Box position="relative" flex={1} minW="200px" maxW="360px">
+            <Box position="absolute" left={3} top="50%" transform="translateY(-50%)" color="gray.400">
+              <Search size={15} />
+            </Box>
+            <Input
+              pl={9}
+              placeholder="Cari nama, username, atau email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              size="sm"
+              borderRadius="lg"
+              borderColor="gray.200"
+              _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
+            />
+          </Box>
+        </Flex>
+
+        {/* Table */}
         {isLoading ? (
           <Flex justify="center" align="center" py={16}>
             <Spinner size="lg" color="indigo.600" />
           </Flex>
         ) : (
-          <Table.Root size="md">
+          <Table.Root size="sm">
             <Table.Header>
               <Table.Row bg="gray.50">
-                <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600" fontSize="xs" textTransform="uppercase">
-                  {t('fullNameLabel')}
+                <Table.ColumnHeader px={5} py={3} fontWeight="semibold" color="gray.500" fontSize="xs" textTransform="uppercase">
+                  Pengguna
                 </Table.ColumnHeader>
-                <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600" fontSize="xs" textTransform="uppercase">
-                  {t('usernameLabel')}
+                <Table.ColumnHeader px={5} py={3} fontWeight="semibold" color="gray.500" fontSize="xs" textTransform="uppercase">
+                  Username
                 </Table.ColumnHeader>
-                <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600" fontSize="xs" textTransform="uppercase">
-                  {activeTab === 'STUDENT' ? t('nisnLabel') : t('nipLabel')}
+                <Table.ColumnHeader px={5} py={3} fontWeight="semibold" color="gray.500" fontSize="xs" textTransform="uppercase">
+                  Role
                 </Table.ColumnHeader>
-                <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600" fontSize="xs" textTransform="uppercase" textAlign="end">
-                  {t('actionsLabel')}
+                <Table.ColumnHeader px={5} py={3} fontWeight="semibold" color="gray.500" fontSize="xs" textTransform="uppercase">
+                  Info Profil
+                </Table.ColumnHeader>
+                <Table.ColumnHeader px={5} py={3} fontWeight="semibold" color="gray.500" fontSize="xs" textTransform="uppercase">
+                  Status
+                </Table.ColumnHeader>
+                <Table.ColumnHeader px={5} py={3} fontWeight="semibold" color="gray.500" fontSize="xs" textTransform="uppercase" textAlign="end">
+                  Aksi
                 </Table.ColumnHeader>
               </Table.Row>
             </Table.Header>
             <Table.Body>
-              {users?.map((u) => (
-                <Table.Row key={u.id} _hover={{ bg: 'gray.50' }} transition="background 0.15s">
-                  <Table.Cell px={6} py={4}>
+              {filtered.map((u) => (
+                <Table.Row key={u.id} _hover={{ bg: 'gray.50/60' }} transition="background 0.1s">
+                  {/* Pengguna */}
+                  <Table.Cell px={5} py={3}>
                     <HStack gap={3}>
-                      <Flex
-                        w={8}
-                        h={8}
-                        borderRadius="full"
-                        bg="gray.100"
-                        align="center"
-                        justify="center"
-                        color="gray.500"
-                      >
-                        <User size={16} />
-                      </Flex>
-                      <Text fontWeight="medium" color="gray.900">
-                        {u.user?.fullName || u.fullName}
-                      </Text>
+                      <Avatar name={u.fullName} role={u.role} />
+                      <Box>
+                        <Text fontWeight="semibold" fontSize="sm" color="gray.900">
+                          {u.fullName}
+                        </Text>
+                        <Text fontSize="xs" color="gray.400">
+                          {u.email}
+                        </Text>
+                      </Box>
                     </HStack>
                   </Table.Cell>
-                  <Table.Cell px={6} py={4} fontSize="sm" fontFamily="mono" color="gray.500">
-                    {u.user?.username || u.username}
+
+                  {/* Username */}
+                  <Table.Cell px={5} py={3}>
+                    <Text fontSize="sm" fontFamily="mono" color="gray.600">
+                      {u.username}
+                    </Text>
                   </Table.Cell>
-                  <Table.Cell px={6} py={4} fontSize="sm">
-                    {activeTab === 'STUDENT' ? u.nisn : u.nip}
+
+                  {/* Role */}
+                  <Table.Cell px={5} py={3}>
+                    <RoleBadge role={u.role} />
                   </Table.Cell>
-                  <Table.Cell px={6} py={4} textAlign="end">
+
+                  {/* Profile Info */}
+                  <Table.Cell px={5} py={3}>
+                    {u.role === 'SISWA' && u.student ? (
+                      <Box>
+                        <Text fontSize="xs" color="gray.700" fontWeight="medium">
+                          NIS: {u.student.nis || '-'}
+                        </Text>
+                        <Text fontSize="xs" color="gray.400">
+                          {u.student.rombel?.name || 'Belum ada rombel'} · {u.student.major?.code || 'Belum ada jurusan'}
+                        </Text>
+                      </Box>
+                    ) : u.role === 'GURU' && u.teacher ? (
+                      <Box>
+                        <Text fontSize="xs" color="gray.700" fontWeight="medium">
+                          NIP: {u.teacher.nip || '-'}
+                        </Text>
+                        <Text fontSize="xs" color="gray.400">
+                          {u.teacher.subjects.length > 0
+                            ? u.teacher.subjects.map((s) => s.name).join(', ')
+                            : 'Belum ada mapel'}
+                        </Text>
+                      </Box>
+                    ) : (
+                      <Text fontSize="xs" color="gray.400">—</Text>
+                    )}
+                  </Table.Cell>
+
+                  {/* Status */}
+                  <Table.Cell px={5} py={3}>
                     <IconButton
                       variant="ghost"
-                      color="red.600"
-                      _hover={{ bg: 'red.50' }}
-                      size="sm"
+                      size="xs"
+                      color={u.isActive ? 'green.600' : 'gray.400'}
+                      _hover={{ bg: u.isActive ? 'green.50' : 'gray.100' }}
                       borderRadius="lg"
-                      aria-label="Delete User"
-                      onClick={() => {
-                        if (confirm(t('confirmDeleteUser'))) {
-                          deleteMutation.mutate(u.id);
+                      aria-label={u.isActive ? 'Nonaktifkan' : 'Aktifkan'}
+                      onClick={async () => {
+                        const confirmed = await confirmDialog({
+                          title: 'Konfirmasi',
+                          description: `${u.isActive ? 'Nonaktifkan' : 'Aktifkan'} akun ${u.fullName}?`,
+                          confirmText: u.isActive ? 'Ya, Nonaktifkan' : 'Ya, Aktifkan'
+                        });
+                        if (confirmed) {
+                          toggleActiveMutation.mutate({ id: u.id, isActive: !u.isActive });
                         }
                       }}
                       cursor="pointer"
+                      title={u.isActive ? 'Nonaktifkan' : 'Aktifkan'}
                     >
-                      <Trash2 size={18} />
+                      {u.isActive ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
                     </IconButton>
+                  </Table.Cell>
+
+                  {/* Actions */}
+                  <Table.Cell px={5} py={3} textAlign="end">
+                    <HStack gap={1} justify="flex-end">
+                      {/* Edit */}
+                      <IconButton
+                        variant="ghost"
+                        size="xs"
+                        color="indigo.600"
+                        _hover={{ bg: 'indigo.50' }}
+                        borderRadius="lg"
+                        aria-label="Edit"
+                        onClick={() => openEditModal(u)}
+                        cursor="pointer"
+                        title="Edit profil"
+                      >
+                        <Pencil size={14} />
+                      </IconButton>
+
+                      {/* Reset Password */}
+                      <IconButton
+                        variant="ghost"
+                        size="xs"
+                        color="amber.600"
+                        _hover={{ bg: 'yellow.50' }}
+                        borderRadius="lg"
+                        aria-label="Reset Password"
+                        onClick={() => openResetPassword(u)}
+                        cursor="pointer"
+                        title="Reset password"
+                      >
+                        <KeyRound size={14} />
+                      </IconButton>
+
+                      {/* Delete */}
+                      <IconButton
+                        variant="ghost"
+                        size="xs"
+                        color="red.600"
+                        _hover={{ bg: 'red.50' }}
+                        borderRadius="lg"
+                        aria-label="Hapus"
+                        onClick={() => {
+                          if (confirm(`Hapus akun "${u.fullName}"? Tindakan ini tidak dapat dibatalkan.`)) {
+                            deleteMutation.mutate(u.id);
+                          }
+                        }}
+                        cursor="pointer"
+                        title="Hapus pengguna"
+                      >
+                        <Trash2 size={14} />
+                      </IconButton>
+                    </HStack>
                   </Table.Cell>
                 </Table.Row>
               ))}
-              {!isLoading && users?.length === 0 && (
+
+              {filtered.length === 0 && !isLoading && (
                 <Table.Row>
-                  <Table.Cell colSpan={4} px={6} py={12} textAlign="center" color="gray.500" fontStyle="italic">
-                    {t('noUsersFound')}
+                  <Table.Cell colSpan={6} px={6} py={16} textAlign="center">
+                    <Stack align="center" gap={2}>
+                      <Users size={32} color="#d1d5db" />
+                      <Text color="gray.400" fontStyle="italic" fontSize="sm">
+                        {searchTerm ? 'Tidak ada pengguna yang cocok dengan pencarian' : 'Belum ada data pengguna'}
+                      </Text>
+                    </Stack>
                   </Table.Cell>
                 </Table.Row>
               )}
@@ -389,27 +650,27 @@ export default function UsersManagementPage() {
         )}
       </Box>
 
-      {/* Add User Modal */}
-      {isAdding && (
+      {/* ── Modal: Create / Edit ─────────────────────────────────────────── */}
+      {(modalMode === 'create' || modalMode === 'edit') && (
         <Box
           position="fixed"
           inset={0}
-          bg="blackAlpha.600"
-          backdropFilter="blur(4px)"
           display="flex"
           alignItems="center"
           justifyContent="center"
           zIndex={50}
           p={4}
+          style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}
         >
           <Box
             bg="white"
             borderRadius="2xl"
-            shadow="xl"
+            shadow="2xl"
             w="full"
-            maxW="md"
+            maxW="lg"
             overflow="hidden"
           >
+            {/* Modal Header */}
             <Flex
               px={6}
               py={4}
@@ -417,98 +678,180 @@ export default function UsersManagementPage() {
               borderColor="gray.100"
               justify="space-between"
               align="center"
-              bg="gray.50"
             >
               <Heading size="md" fontWeight="bold" color="gray.900">
-                {activeTab === 'STUDENT' ? t('addStudent') : t('addTeacher')}
+                {modalMode === 'create' ? '+ Tambah Pengguna Baru' : `Edit: ${selectedUser?.fullName}`}
               </Heading>
-              <Button
-                variant="ghost"
-                color="gray.400"
-                _hover={{ color: 'gray.600' }}
-                onClick={() => setIsAdding(false)}
-                fontSize="xl"
-                p={0}
-                minW={0}
-                cursor="pointer"
-              >
-                ×
-              </Button>
+              <IconButton variant="ghost" aria-label="Close" onClick={closeModal} cursor="pointer" size="sm">
+                <Text fontSize="xl" color="gray.400">×</Text>
+              </IconButton>
             </Flex>
+
+            {/* Modal Body */}
             <form onSubmit={handleSubmit}>
               <Stack gap={4} p={6}>
+                {/* Role selector (create only) */}
+                {modalMode === 'create' && (
+                  <Box>
+                    <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={2}>
+                      Role <span style={{ color: 'red' }}>*</span>
+                    </Text>
+                    <Flex gap={2}>
+                      {ROLE_OPTIONS.map(({ label, value }) => (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() => setForm({ ...form, role: value })}
+                          style={{
+                            flex: 1,
+                            padding: '10px 8px',
+                            borderRadius: '8px',
+                            borderWidth: '2px',
+                            borderStyle: 'solid',
+                            borderColor: form.role === value ? '#6366f1' : '#e5e7eb',
+                            background: form.role === value ? '#eef2ff' : 'white',
+                            color: form.role === value ? '#4338ca' : '#6b7280',
+                            fontWeight: 600,
+                            fontSize: '0.875rem',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s',
+                          }}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </Flex>
+                  </Box>
+                )}
+
+                {/* Full Name */}
                 <Box>
                   <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>
-                    {t('fullNameLabel')} <span style={{ color: 'red' }}>*</span>
+                    Nama Lengkap <span style={{ color: 'red' }}>*</span>
                   </Text>
                   <Input
                     required
-                    type="text"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="e.g. John Doe"
+                    value={form.fullName}
+                    onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+                    placeholder="cth. Budi Santoso, S.Pd"
                     borderRadius="lg"
                     borderColor="gray.200"
                     _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
                   />
                 </Box>
-                <Box>
-                  <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>
-                    {t('usernameLabel')} <span style={{ color: 'red' }}>*</span>
-                  </Text>
-                  <Input
-                    required
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="johndoe123"
-                    fontFamily="mono"
-                    borderRadius="lg"
-                    borderColor="gray.200"
-                    _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
-                  />
-                </Box>
-                <Box>
-                  <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>
-                    Password <span style={{ color: 'red' }}>*</span>
-                  </Text>
-                  <Input
-                    required
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    borderRadius="lg"
-                    borderColor="gray.200"
-                    _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
-                  />
-                </Box>
-                <Box>
-                  <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>
-                    {activeTab === 'STUDENT' ? t('nisnLabel') : t('nipLabel')} <span style={{ color: 'red' }}>*</span>
-                  </Text>
-                  <Input
-                    required
-                    type="text"
-                    value={activeTab === 'STUDENT' ? nisn : nip}
-                    onChange={(e) => activeTab === 'STUDENT' ? setNisn(e.target.value) : setNip(e.target.value)}
-                    placeholder={activeTab === 'STUDENT' ? '1234567890' : '1980...001'}
-                    borderRadius="lg"
-                    borderColor="gray.200"
-                    _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
-                  />
-                </Box>
-                <Flex gap={3} pt={4}>
+
+                <Flex gap={3}>
+                  {/* Username (create only) */}
+                  {modalMode === 'create' && (
+                    <Box flex={1}>
+                      <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>
+                        Username <span style={{ color: 'red' }}>*</span>
+                      </Text>
+                      <Input
+                        required
+                        value={form.username}
+                        onChange={(e) => setForm({ ...form, username: e.target.value.toLowerCase().replace(/\s/g, '') })}
+                        placeholder="johndoe123"
+                        fontFamily="mono"
+                        borderRadius="lg"
+                        borderColor="gray.200"
+                        _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
+                      />
+                    </Box>
+                  )}
+
+                  {/* Email */}
+                  <Box flex={1}>
+                    <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>
+                      Email
+                    </Text>
+                    <Input
+                      type="email"
+                      value={form.email}
+                      onChange={(e) => setForm({ ...form, email: e.target.value })}
+                      placeholder="user@sekolah.sch.id"
+                      borderRadius="lg"
+                      borderColor="gray.200"
+                      _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
+                    />
+                  </Box>
+                </Flex>
+
+                {/* Password (create only) */}
+                {modalMode === 'create' && (
+                  <Box>
+                    <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>
+                      Password <span style={{ color: 'red' }}>*</span>
+                    </Text>
+                    <Input
+                      required
+                      type="password"
+                      value={form.password}
+                      onChange={(e) => setForm({ ...form, password: e.target.value })}
+                      placeholder="Min. 6 karakter"
+                      borderRadius="lg"
+                      borderColor="gray.200"
+                      _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
+                    />
+                  </Box>
+                )}
+
+                {/* Siswa: Pilih Rombel */}
+                {form.role === 'SISWA' && (
+                  <Flex gap={3}>
+                    <Box flex={1}>
+                      <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>
+                        NIS (Opsional)
+                      </Text>
+                      <Input
+                        value={form.nis}
+                        onChange={(e) => setForm({ ...form, nis: e.target.value })}
+                        placeholder="cth. 100234"
+                        borderRadius="lg"
+                        borderColor="gray.200"
+                        _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
+                      />
+                    </Box>
+                    <Box flex={1}>
+                      <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>
+                        Rombel / Kelas
+                      </Text>
+                      <select
+                        value={form.rombelId}
+                        onChange={(e) => setForm({ ...form, rombelId: e.target.value })}
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          borderRadius: '8px',
+                          border: '1px solid var(--chakra-colors-gray-200)',
+                          backgroundColor: 'white',
+                          color: 'var(--chakra-colors-gray-800)',
+                          fontSize: '14px',
+                          outline: 'none',
+                        }}
+                      >
+                        <option value="">-- Pilih Rombel --</option>
+                        {rombels?.map((r) => (
+                          <option key={r.id} value={r.id}>
+                            {r.name}
+                          </option>
+                        ))}
+                      </select>
+                    </Box>
+                  </Flex>
+                )}
+
+                {/* Actions */}
+                <Flex gap={3} pt={2}>
                   <Button
                     type="button"
-                    onClick={() => setIsAdding(false)}
+                    onClick={closeModal}
                     flex={1}
                     variant="outline"
                     borderRadius="lg"
-                    fontWeight="medium"
                     cursor="pointer"
                   >
-                    {t('cancelBtn')}
+                    Batal
                   </Button>
                   <Button
                     type="submit"
@@ -517,11 +860,88 @@ export default function UsersManagementPage() {
                     color="white"
                     _hover={{ bg: 'indigo.700' }}
                     borderRadius="lg"
-                    fontWeight="medium"
                     cursor="pointer"
-                    loading={createMutation.isPending}
+                    loading={createMutation.isPending || updateMutation.isPending}
                   >
-                    {t('saveBtn')}
+                    {modalMode === 'create' ? 'Buat Akun' : 'Simpan Perubahan'}
+                  </Button>
+                </Flex>
+              </Stack>
+            </form>
+          </Box>
+        </Box>
+      )}
+
+      {/* ── Modal: Reset Password ────────────────────────────────────────── */}
+      {modalMode === 'reset-password' && selectedUser && (
+        <Box
+          position="fixed"
+          inset={0}
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+          zIndex={50}
+          p={4}
+          style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}
+        >
+          <Box bg="white" borderRadius="2xl" shadow="2xl" w="full" maxW="sm" overflow="hidden">
+            <Flex px={6} py={4} borderBottom="1px solid" borderColor="gray.100" justify="space-between" align="center">
+              <Box>
+                <Heading size="md" fontWeight="bold" color="gray.900">
+                  Reset Password
+                </Heading>
+                <Text fontSize="sm" color="gray.500" mt={0.5}>
+                  {selectedUser.fullName}
+                </Text>
+              </Box>
+              <IconButton variant="ghost" aria-label="Close" onClick={closeModal} cursor="pointer" size="sm">
+                <Text fontSize="xl" color="gray.400">×</Text>
+              </IconButton>
+            </Flex>
+            <form onSubmit={handleResetPassword}>
+              <Stack gap={4} p={6}>
+                <Box
+                  bg="amber.50"
+                  borderRadius="lg"
+                  p={3}
+                  borderWidth="1px"
+                  borderColor="amber.200"
+                >
+                  <Text fontSize="xs" color="amber.800" fontWeight="medium">
+                    ⚠️ Password baru akan langsung aktif. Infokan kepada pengguna terkait.
+                  </Text>
+                </Box>
+                <Box>
+                  <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>
+                    Password Baru <span style={{ color: 'red' }}>*</span>
+                  </Text>
+                  <Input
+                    required
+                    type="password"
+                    minLength={6}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Min. 6 karakter"
+                    borderRadius="lg"
+                    borderColor="gray.200"
+                    _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
+                  />
+                </Box>
+                <Flex gap={3} pt={2}>
+                  <Button type="button" onClick={closeModal} flex={1} variant="outline" borderRadius="lg" cursor="pointer">
+                    Batal
+                  </Button>
+                  <Button
+                    type="submit"
+                    flex={1}
+                    bg="amber.500"
+                    color="white"
+                    _hover={{ bg: 'amber.600' }}
+                    borderRadius="lg"
+                    cursor="pointer"
+                    loading={resetPasswordMutation.isPending}
+                  >
+                    Reset Password
                   </Button>
                 </Flex>
               </Stack>

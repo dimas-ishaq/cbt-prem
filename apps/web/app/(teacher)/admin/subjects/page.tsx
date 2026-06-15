@@ -19,6 +19,8 @@ import {
   HStack,
 } from '@chakra-ui/react';
 import { useTranslation } from 'react-i18next';
+import toast from 'react-hot-toast';
+import { useConfirm } from '@/components/ui/confirmation-dialog';
 
 interface Subject {
   id: string;
@@ -34,6 +36,7 @@ export default function SubjectsPage() {
   const [formData, setFormData] = useState({ name: '', code: '', description: '' });
   const [searchTerm, setSearchTerm] = useState('');
   const queryClient = useQueryClient();
+  const confirmDialog = useConfirm();
 
   const { data: subjects, isLoading } = useQuery<Subject[]>({
     queryKey: ['subjects'],
@@ -49,10 +52,10 @@ export default function SubjectsPage() {
       queryClient.invalidateQueries({ queryKey: ['subjects'] });
       setIsModalOpen(false);
       resetForm();
-      alert('Mata pelajaran berhasil ditambahkan!');
+      toast.success('Mata pelajaran berhasil ditambahkan!');
     },
     onError: (err: any) => {
-      alert(err.response?.data?.message || 'Gagal menambahkan mata pelajaran');
+      toast.error(err.response?.data?.message || 'Gagal menambahkan mata pelajaran');
     },
   });
 
@@ -63,10 +66,10 @@ export default function SubjectsPage() {
       queryClient.invalidateQueries({ queryKey: ['subjects'] });
       setIsModalOpen(false);
       resetForm();
-      alert('Mata pelajaran berhasil diperbarui!');
+      toast.success('Mata pelajaran berhasil diperbarui!');
     },
     onError: (err: any) => {
-      alert(err.response?.data?.message || 'Gagal memperbarui mata pelajaran');
+      toast.error(err.response?.data?.message || 'Gagal memperbarui mata pelajaran');
     },
   });
 
@@ -74,10 +77,10 @@ export default function SubjectsPage() {
     mutationFn: (id: string) => api.delete(`/subjects/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subjects'] });
-      alert('Mata pelajaran berhasil dihapus!');
+      toast.success('Mata pelajaran berhasil dihapus!');
     },
     onError: (err: any) => {
-      alert(err.response?.data?.message || 'Gagal menghapus mata pelajaran');
+      toast.error(err.response?.data?.message || 'Gagal menghapus mata pelajaran');
     },
   });
 
@@ -109,7 +112,7 @@ export default function SubjectsPage() {
     return (
       <Flex justify="center" align="center" py={16}>
         <Spinner size="lg" color="indigo.600" />
-        <Text ml={3} color="gray.500">Loading subjects...</Text>
+        <Text ml={3} color="gray.500">Memuat mata pelajaran...</Text>
       </Flex>
     );
   }
@@ -215,13 +218,18 @@ export default function SubjectsPage() {
                     </IconButton>
                     <IconButton
                       variant="ghost"
-                      color="red.600"
+                      color="red.500"
                       _hover={{ bg: 'red.50' }}
                       size="sm"
                       borderRadius="lg"
                       aria-label="Delete Subject"
-                      onClick={() => {
-                        if (confirm(t('confirmDeleteSubject'))) {
+                      onClick={async () => {
+                        const confirmed = await confirmDialog({
+                          title: 'Hapus Mata Pelajaran',
+                          description: t('confirmDeleteSubject'),
+                          confirmText: 'Hapus',
+                        });
+                        if (confirmed) {
                           deleteMutation.mutate(subject.id);
                         }
                       }}
@@ -278,7 +286,7 @@ export default function SubjectsPage() {
                     required
                     value={formData.code}
                     onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                    placeholder="e.g. MATH-101"
+                    placeholder="Cth. MATH-101"
                     borderRadius="lg"
                     borderColor="gray.200"
                     _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
@@ -292,7 +300,7 @@ export default function SubjectsPage() {
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="e.g. Mathematics"
+                    placeholder="Cth. Matematika"
                     borderRadius="lg"
                     borderColor="gray.200"
                     _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}

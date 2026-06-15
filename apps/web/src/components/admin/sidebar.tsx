@@ -13,6 +13,7 @@ import {
   Settings,
   Key,
   Award,
+  Bookmark,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
 import { useRouter } from 'next/navigation';
@@ -42,12 +43,14 @@ const menuGroups = [
     items: [
       { name: 'Mata Pelajaran', href: '/admin/subjects', icon: BookOpen, key: 'subjects' },
       { name: 'Konsentrasi Keahlian', href: '/admin/majors', icon: Award, key: 'majors' },
+      { name: 'Rombongan Belajar', href: '/admin/rombels', icon: Users, key: 'rombels' },
       { name: 'Pengguna', href: '/admin/users', icon: Users, key: 'users' },
     ],
   },
   {
     titleKey: 'groupCbt',
     items: [
+      { name: 'Event Ujian', href: '/admin/exam-groups', icon: Bookmark, key: 'examGroups' },
       { name: 'Bank Soal', href: '/admin/question-banks', icon: FileText, key: 'questionBanks' },
       { name: 'Ujian', href: '/admin/exams', icon: GraduationCap, key: 'exams' },
       { name: 'Monitoring', href: '/admin/monitoring', icon: Activity, key: 'monitoring' },
@@ -83,7 +86,7 @@ export function AdminSidebar() {
 
   const visibleMenuGroups = menuGroups.map((group) => {
     const visibleItems = group.items.filter((item) => {
-      if (item.href === '/admin/settings' || item.href === '/admin/roles' || item.href === '/admin/majors') {
+      if (item.href === '/admin/settings' || item.href === '/admin/roles' || item.href === '/admin/majors' || item.href === '/admin/rombels') {
         return user?.role === 'SUPER_ADMIN';
       }
       return true;

@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
@@ -14,7 +16,8 @@ import { ExamSessionsModule } from './exam-sessions/exam-sessions.module';
 import { SettingsModule } from './settings/settings.module';
 import { RolesModule } from './roles/roles.module';
 import { MajorsModule } from './majors/majors.module';
-
+import { ExamGroupsModule } from './exam-groups/exam-groups.module';
+import { RombelsModule } from './rombels/rombels.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -34,6 +37,10 @@ import { MajorsModule } from './majors/majors.module';
     SettingsModule,
     RolesModule,
     MajorsModule,
+    ExamGroupsModule,
+    RombelsModule,
   ],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule {}

@@ -115,7 +115,7 @@ export default function AdminDashboard() {
                     {exam.title}
                   </Text>
                   <Text fontSize="sm" color="gray.500">
-                    Subject: {exam.subjectName} • {exam.sessionsCount} Students
+                    Mata Pelajaran: {exam.subjectName} • {exam.sessionsCount} Siswa
                   </Text>
                 </Box>
                 <Badge
@@ -162,7 +162,7 @@ export default function AdminDashboard() {
                     {alert.studentName}
                   </Text>
                   <Text fontSize="sm" color="red.700">
-                    Type: {alert.type} &bull; {new Date(alert.timestamp).toLocaleTimeString()}
+                    Tipe: {alert.type} &bull; {new Date(alert.timestamp).toLocaleTimeString()}
                   </Text>
                 </Box>
                 <Badge

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateQuestionBankDto } from './dto/create-question-bank.dto';
+import { UpdateQuestionBankDto } from './dto/update-question-bank.dto';
 
 @Injectable()
 export class QuestionBankService {
@@ -31,6 +32,14 @@ export class QuestionBankService {
           include: { options: true }
         }
       },
+    });
+  }
+
+  async update(id: string, dto: UpdateQuestionBankDto) {
+    return this.prisma.questionBank.update({
+      where: { id },
+      data: dto,
+      include: { subject: true },
     });
   }
 

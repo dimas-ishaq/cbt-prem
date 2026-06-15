@@ -21,6 +21,8 @@ import {
   Badge,
   Grid,
 } from '@chakra-ui/react';
+import toast from 'react-hot-toast';
+import { useConfirm } from '@/components/ui/confirmation-dialog';
 import {
   Plus,
   Pencil,
@@ -81,6 +83,7 @@ export default function RolesPage() {
   const { user } = useAuthStore();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const confirmDialog = useConfirm();
 
   // Redirect if not SUPER_ADMIN
   useEffect(() => {
@@ -146,10 +149,10 @@ export default function RolesPage() {
       queryClient.invalidateQueries({ queryKey: ['roles'] });
       setIsModalOpen(false);
       resetForm();
-      alert('Role berhasil dibuat!');
+      toast.success('Role berhasil dibuat!');
     },
     onError: (err: any) => {
-      alert(err.response?.data?.message || 'Gagal membuat role');
+      toast.error(err.response?.data?.message || 'Gagal membuat role');
     },
   });
 
@@ -159,10 +162,10 @@ export default function RolesPage() {
       queryClient.invalidateQueries({ queryKey: ['roles'] });
       setIsModalOpen(false);
       resetForm();
-      alert('Role berhasil diperbarui!');
+      toast.success('Role berhasil diperbarui!');
     },
     onError: (err: any) => {
-      alert(err.response?.data?.message || 'Gagal memperbarui role');
+      toast.error(err.response?.data?.message || 'Gagal memperbarui role');
     },
   });
 
@@ -172,10 +175,10 @@ export default function RolesPage() {
       queryClient.invalidateQueries({ queryKey: ['roles'] });
       setIsModalOpen(false);
       resetForm();
-      alert('Role berhasil diduplikasi!');
+      toast.success('Role berhasil diduplikasi!');
     },
     onError: (err: any) => {
-      alert(err.response?.data?.message || 'Gagal menduplikasi role');
+      toast.error(err.response?.data?.message || 'Gagal menduplikasi role');
     },
   });
 
@@ -183,10 +186,10 @@ export default function RolesPage() {
     mutationFn: (id: string) => api.delete(`/roles/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['roles'] });
-      alert('Role berhasil dihapus!');
+      toast.success('Role berhasil dihapus!');
     },
     onError: (err: any) => {
-      alert(err.response?.data?.message || 'Gagal menghapus role');
+      toast.error(err.response?.data?.message || 'Gagal menghapus role');
     },
   });
 
@@ -212,11 +215,11 @@ export default function RolesPage() {
         description: detail.description || '',
         isActive: detail.isActive,
       });
-      setSelectedPermissionIds(detail.permissionIds);
+      setSelectedPermissionIds(res.data.permissionIds);
       setModalMode('edit');
       setIsModalOpen(true);
     } catch (err) {
-      alert('Gagal mengambil detail role');
+      toast.error('Gagal mengambil detail role');
     }
   };
 
@@ -443,13 +446,18 @@ export default function RolesPage() {
                         {!role.isSystem && (
                           <IconButton
                             variant="ghost"
-                            color="red.600"
+                            color="red.500"
                             _hover={{ bg: 'red.50' }}
                             size="sm"
                             borderRadius="lg"
-                            aria-label="Hapus Role"
-                            onClick={() => {
-                              if (confirm(`Apakah Anda yakin ingin menghapus role "${role.name}" secara permanen?`)) {
+                            aria-label="Delete Role"
+                            onClick={async () => {
+                              const confirmed = await confirmDialog({
+                                title: 'Hapus Role',
+                                description: `Apakah Anda yakin ingin menghapus role "${role.name}" secara permanen?`,
+                                confirmText: 'Hapus'
+                              });
+                              if (confirmed) {
                                 deleteMutation.mutate(role.id);
                               }
                             }}

@@ -18,6 +18,7 @@ import {
   Spinner,
   IconButton,
 } from '@chakra-ui/react';
+import toast from 'react-hot-toast';
 
 export default function SessionDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -38,8 +39,11 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['session-detail', id] });
-      alert('Skor berhasil diperbarui');
+      toast.success('Skor berhasil diperbarui');
     },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || 'Gagal memperbarui skor');
+    }
   });
 
   if (isLoading) {

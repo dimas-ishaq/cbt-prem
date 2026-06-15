@@ -85,7 +85,8 @@ model Student {
   userId    String   @unique
   user      User     @relation(fields: [userId], references: [id])
   nis       String   @unique
-  class     String?
+  rombelId  String?
+  rombel    Rombel?  @relation(fields: [rombelId], references: [id], onDelete: SetNull)
   majorId   String?
   major     Major?   @relation(fields: [majorId], references: [id], onDelete: SetNull)
   
@@ -145,6 +146,20 @@ model QuestionOption {
   order       Int      @default(0)
 }
 
+model ExamGroup {
+  id           String   @id @default(uuid())
+  name         String   // e.g., "ASAT 2024", "ASTS Genap 2025"
+  description  String?
+  academicYear String?  // e.g., "2024/2025"
+  semester     String?  // e.g., "Ganjil", "Genap"
+  startDate    DateTime? // Penanda mulai event
+  endDate      DateTime? // Penanda berakhir event
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  exams        Exam[]
+}
+
 model Exam {
   id                String      @id @default(uuid())
   title             String
@@ -153,11 +168,12 @@ model Exam {
   subject           Subject     @relation(fields: [subjectId], references: [id])
   teacherId         String
   teacher           Teacher     @relation(fields: [teacherId], references: [id])
+  examGroupId       String?
+  examGroup         ExamGroup?  @relation(fields: [examGroupId], references: [id], onDelete: SetNull)
   startTime         DateTime
   endTime           DateTime
   duration          Int         // in minutes
   token             String?
-  password          String?
   maxAttempts       Int         @default(1)
   randomizeSoal     Boolean     @default(true)
   randomizeOpsi     Boolean     @default(true)
@@ -353,8 +369,22 @@ model Major {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   students    Student[]
+  rombels     Rombel[]
 
   @@map("majors")
+}
+
+model Rombel {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  majorId     String
+  major       Major    @relation(fields: [majorId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  students    Student[]
+
+  @@map("rombels")
 }
 
 

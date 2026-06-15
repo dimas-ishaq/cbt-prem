@@ -15,8 +15,10 @@ import {
   Stack,
   Spinner,
   Image,
+  Card,
   HStack,
 } from '@chakra-ui/react';
+import toast from 'react-hot-toast';
 import { Settings, Save, ShieldAlert, Upload, Trash2, Globe, Heart, Languages } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -75,10 +77,10 @@ export default function SettingsPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settings'] });
-      alert('Pengaturan berhasil disimpan!');
+      toast.success('Pengaturan berhasil disimpan!');
     },
     onError: (error: any) => {
-      alert(error.response?.data?.message || 'Gagal menyimpan pengaturan.');
+      toast.error(error.response?.data?.message || 'Gagal menyimpan pengaturan.');
     },
   });
 
@@ -88,12 +90,12 @@ export default function SettingsPage() {
 
   const processFile = (file: File) => {
     if (!file.type.startsWith('image/')) {
-      alert('File harus berupa gambar (PNG, JPG, JPEG, SVG, WebP).');
+      toast.error('File harus berupa gambar (PNG, JPG, JPEG, SVG, WebP).');
       return;
     }
 
     if (file.size > 1024 * 1024) {
-      alert('Ukuran file maksimal 1 MB.');
+      toast.error('Ukuran file maksimal 1 MB.');
       return;
     }
 

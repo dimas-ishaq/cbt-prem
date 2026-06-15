@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateQuestionDto } from './dto/create-question.dto';
+import { UpdateQuestionDto } from './dto/update-question.dto';
 
 @Injectable()
 export class QuestionsService {
@@ -11,9 +12,7 @@ export class QuestionsService {
     return this.prisma.question.create({
       data: {
         ...questionData,
-        options: {
-          create: options,
-        },
+        options: { create: options },
       },
       include: { options: true },
     });
@@ -26,9 +25,30 @@ export class QuestionsService {
     });
   }
 
-  async remove(id: string) {
-    return this.prisma.question.delete({
-      where: { id },
+  async update(id: string, dto: UpdateQuestionDto) {
+    const { options, ...questionData } = dto;
+    return this.prisma.$transaction(async (tx) => {
+      if (options) {
+        await tx.questionOption.deleteMany({
+          where: { questionId: id },
+        });
+      }
+      return tx.question.update({
+        where: { id },
+        data: {
+          ...questionData,
+          ...(options ? { options: { create: options } } : {}),
+        },
+        include: { options: true },
+      });
     });
+  }
+
+  async remove(id: string) {
+    return this.prisma.question.delete({ where: { id } });
+  }
+
+  async removeBank(id: string) {
+    return this.prisma.questionBank.delete({ where: { id } });
   }
 }

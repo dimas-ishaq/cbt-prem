@@ -1,6 +1,7 @@
-import { Controller, Get, Post, Body, Param, Delete, UseGuards, Request, UnauthorizedException } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, Delete, UseGuards, Request, UnauthorizedException } from '@nestjs/common';
 import { QuestionBankService } from './question-bank.service';
 import { CreateQuestionBankDto } from './dto/create-question-bank.dto';
+import { UpdateQuestionBankDto } from './dto/update-question-bank.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -38,6 +39,12 @@ export class QuestionBankController {
   @Roles(Role.GURU, Role.SUPER_ADMIN)
   findOne(@Param('id') id: string) {
     return this.questionBankService.findOne(id);
+  }
+
+  @Patch(':id')
+  @Roles(Role.GURU, Role.SUPER_ADMIN)
+  update(@Param('id') id: string, @Body() dto: UpdateQuestionBankDto) {
+    return this.questionBankService.update(id, dto);
   }
 
   @Delete(':id')

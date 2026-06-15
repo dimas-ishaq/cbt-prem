@@ -1,90 +1,342 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as mammoth from 'mammoth';
-import { QuestionType } from '@prisma/client';
+import { QuestionType, Difficulty } from '@prisma/client';
+import { join } from 'path';
+import { promises as fs } from 'fs';
+import { randomUUID } from 'crypto';
+
+interface ParsedOption {
+  content: string;
+  isCorrect: boolean;
+  order: number;
+}
+
+interface ParsedQuestion {
+  content: string;
+  type: QuestionType;
+  difficulty: Difficulty;
+  points: number;
+  options: ParsedOption[];
+}
+
+export interface ImportPreviewResult {
+  success: ParsedQuestion[];
+  warnings: { line: string; reason: string }[];
+  totalParsed: number;
+  totalWarnings: number;
+}
+
+const DIFFICULTY_MAP: Record<string, Difficulty> = {
+  MUDAH: Difficulty.MUDAH,
+  SEDANG: Difficulty.SEDANG,
+  SULIT: Difficulty.SULIT,
+};
+
+const TYPE_MAP: Record<string, QuestionType> = {
+  PILIHAN_GANDA: QuestionType.PILIHAN_GANDA,
+  BENAR_SALAH: QuestionType.BENAR_SALAH,
+  MULTIPLE_RESPONSE: QuestionType.MULTIPLE_RESPONSE,
+  ESSAY: QuestionType.ESSAY,
+};
 
 @Injectable()
 export class QuestionsImportService {
   constructor(private prisma: PrismaService) {}
 
+  // ─── Public API ────────────────────────────────────────────────────────────
+
+  /** Parse only — no DB write. Returns preview of what will be imported. */
+  async previewFromDocx(file: Express.Multer.File): Promise<ImportPreviewResult> {
+    const html = await this.convertDocxToHtml(file.buffer);
+    return this.parseQuestions(html);
+  }
+
+  /** Full import: parse then save to DB inside a transaction. */
   async importFromDocx(bankId: string, file: Express.Multer.File) {
-    const { value: html } = await mammoth.convertToHtml({ buffer: file.buffer });
-    
-    // Simple parsing logic based on moodle-converter
-    const questions = this.parseQuestions(html);
-    
+    const html = await this.convertDocxToHtml(file.buffer);
+    const { success: questions, warnings } = this.parseQuestions(html);
+
     if (questions.length === 0) {
-      throw new BadRequestException('No questions found in the document. Ensure you use SQ and EQ markers.');
+      throw new BadRequestException(
+        'Tidak ada soal yang berhasil di-parse dari dokumen. ' +
+        'Pastikan Anda menggunakan template yang benar dan format [soal nomor X] sudah ada. ' +
+        (warnings.length > 0 ? `Detail error: ${warnings.map(w => w.reason).join('; ')}` : ''),
+      );
     }
 
-    return this.prisma.$transaction(async (tx) => {
-      const createdQuestions: any[] = [];
+    const created = await this.prisma.$transaction(async (tx) => {
+      const results: any[] = [];
       for (const q of questions) {
         const created = await tx.question.create({
           data: {
             questionBankId: bankId,
             content: q.content,
             type: q.type,
-            options: {
-              create: q.options,
-            },
+            difficulty: q.difficulty,
+            points: q.points,
+            tags: [],
+            options:
+              q.options.length > 0
+                ? {
+                    create: q.options.map((o) => ({
+                      content: o.content,
+                      isCorrect: o.isCorrect,
+                      order: o.order,
+                    })),
+                  }
+                : undefined,
           },
+          include: { options: true },
         });
-        createdQuestions.push(created);
+        results.push(created);
       }
-      return createdQuestions;
+      return results;
     });
+
+    return {
+      imported: created.length,
+      warnings,
+      questions: created,
+    };
   }
 
-  private parseQuestions(html: string) {
-    // Basic regex-based parsing similar to convert.py
-    // Look for <p>SQ</p>...<p>EQ</p>
-    const sqEqPattern = /<p[^>]*>\s*SQ\s*<\/p>(.*?)<p[^>]*>\s*EQ\s*<\/p>/gsi;
-    const matches = [...html.matchAll(sqEqPattern)];
-    
-    const parsed: any[] = [];
-    for (const match of matches) {
-      const content = match[1];
-      
-      // Detect correct answer ANS: X
-      const ansMatch = content.match(/(?:ANS|ANSWER)\s*:\s*([A-Z])/i);
-      const correctLetter = ansMatch ? ansMatch[1].toUpperCase() : null;
-      
-      // Remove answer line from content
-      let questionHtml = content.replace(/<p[^>]*>\s*(?:ANS|ANSWER)\s*:\s*[A-Z]\s*<\/p>/gi, '').trim();
-      
-      // Extract options (A., B., C., D.)
-      const options: any[] = [];
-      const pBlocks = questionHtml.match(/<p[^>]*>.*?<\/p>/gi) || [];
-      const questionTextParts: string[] = [];
-      
-      for (const p of pBlocks) {
-        const plainText = p.replace(/<[^>]*>/g, '').trim();
-        const optMatch = plainText.match(/^([A-Z])\s*\.\s*(.*)/i);
-        
-        if (optMatch) {
-          const letter = optMatch[1].toUpperCase();
-          const optContent = p.replace(/<p[^>]*>\s*[A-Z]\s*\.\s*/i, '').replace(/<\/p>/, '').trim();
-          options.push({
-            content: optContent,
-            isCorrect: letter === correctLetter,
-            order: letter.charCodeAt(0) - 65,
-          });
-        } else {
-          questionTextParts.push(p);
-        }
+  // ─── Image Extraction ──────────────────────────────────────────────────────
+
+  /**
+   * Converts .docx buffer to HTML with images saved to disk and replaced by public URLs.
+   * All embedded images are extracted to /uploads/questions/images/<uuid>.<ext>.
+   */
+  private async convertDocxToHtml(buffer: Buffer): Promise<string> {
+    const uploadDir = join(process.cwd(), 'uploads', 'questions', 'images');
+    await fs.mkdir(uploadDir, { recursive: true });
+
+    const { value: html } = await mammoth.convertToHtml(
+      { buffer },
+      {
+        convertImage: mammoth.images.imgElement(async (image) => {
+          const ext = (image.contentType.split('/')[1] || 'png').replace('jpeg', 'jpg');
+          const filename = `${randomUUID()}.${ext}`;
+          const filePath = join(uploadDir, filename);
+          const imageBuffer = await image.read();
+          await fs.writeFile(filePath, imageBuffer);
+          return { src: `/uploads/questions/images/${filename}` };
+        }),
+      },
+    );
+    return html;
+  }
+
+  // ─── Parser ────────────────────────────────────────────────────────────────
+
+  /**
+   * Splits HTML into paragraph blocks and parses them using a state machine
+   * based on SQ/EQ boundaries and MULTIPLE CHOICE / ESSAY block wrappers.
+   */
+  private parseQuestions(html: string): ImportPreviewResult {
+    const success: ParsedQuestion[] = [];
+    const warnings: { line: string; reason: string }[] = [];
+
+    // Extract all paragraphs or elements from mammoth's HTML output.
+    // Mammoth puts block elements inside <p>, <table>, etc.
+    // We match <p> tags, table blocks, and other block-level elements.
+    const blockRegex = /<(p|h\d|li|table|ol|ul)[^>]*>([\s\S]*?)<\/\1>/gi;
+    const blocks = [...html.matchAll(blockRegex)];
+
+    let currentType: QuestionType | null = null;
+    let isAccumulating = false;
+    let accumulatedParagraphs: string[] = [];
+    let questionIndex = 1;
+
+    for (let i = 0; i < blocks.length; i++) {
+      const fullTag = blocks[i][0];
+      const innerHtml = blocks[i][2] ?? '';
+      const plainText = this.stripHtml(innerHtml).toUpperCase().trim();
+
+      // State boundaries for question types
+      if (plainText === 'MULTIPLE CHOICE' || plainText === 'PILIHAN GANDA') {
+        currentType = QuestionType.PILIHAN_GANDA;
+        continue;
       }
-      
-      // Final question text is the paragraphs that aren't options
-      const finalQuestionHtml = questionTextParts.join('\n');
-      
-      parsed.push({
-        content: finalQuestionHtml,
-        type: options.length > 0 ? QuestionType.PILIHAN_GANDA : QuestionType.ESSAY,
-        options,
+      if (plainText === 'END MULTIPLE CHOICE' || plainText === 'END PILIHAN GANDA') {
+        currentType = null;
+        continue;
+      }
+      if (plainText === 'ESSAY') {
+        currentType = QuestionType.ESSAY;
+        continue;
+      }
+      if (plainText === 'END ESSAY') {
+        currentType = null;
+        continue;
+      }
+      if (plainText === 'BENAR SALAH' || plainText === 'TRUE FALSE' || plainText === 'BENAR_SALAH') {
+        currentType = QuestionType.BENAR_SALAH;
+        continue;
+      }
+      if (plainText === 'END BENAR SALAH' || plainText === 'END TRUE FALSE') {
+        currentType = null;
+        continue;
+      }
+      if (plainText === 'MULTIPLE RESPONSE' || plainText === 'JAWABAN GANDA' || plainText === 'MULTIPLE_RESPONSE') {
+        currentType = QuestionType.MULTIPLE_RESPONSE;
+        continue;
+      }
+      if (plainText === 'END MULTIPLE RESPONSE' || plainText === 'END JAWABAN GANDA') {
+        currentType = null;
+        continue;
+      }
+
+      // Question markers
+      if (plainText === 'SQ') {
+        isAccumulating = true;
+        accumulatedParagraphs = [];
+        continue;
+      }
+
+      if (plainText === 'EQ') {
+        if (!isAccumulating) {
+          warnings.push({ line: `Baris ${i + 1}`, reason: 'Menemukan penanda EQ tanpa SQ sebelumnya.' });
+          continue;
+        }
+        isAccumulating = false;
+
+        const activeType = currentType || QuestionType.PILIHAN_GANDA; // Default fallback
+        try {
+          const parsed = this.parseQuestionBlock(accumulatedParagraphs, activeType, questionIndex);
+          success.push(parsed);
+          questionIndex++;
+        } catch (err: any) {
+          warnings.push({
+            line: `Soal #${questionIndex} (${activeType})`,
+            reason: err.message || 'Gagal memproses detail soal',
+          });
+          questionIndex++;
+        }
+        continue;
+      }
+
+      // If we are between SQ and EQ, accumulate the paragraph
+      if (isAccumulating) {
+        accumulatedParagraphs.push(fullTag);
+      }
+    }
+
+    if (success.length === 0 && warnings.length === 0) {
+      warnings.push({
+        line: '(Dokumen)',
+        reason:
+          'Tidak ditemukan format penanda SQ/EQ yang valid. ' +
+          'Pastikan dokumen memiliki penanda SQ & EQ serta pembungkus tipe soal (seperti MULTIPLE CHOICE / ESSAY).',
       });
     }
-    
-    return parsed;
+
+    return { success, warnings, totalParsed: success.length, totalWarnings: warnings.length };
+  }
+
+  /**
+   * Parses the HTML paragraph elements gathered inside SQ...EQ boundaries.
+   */
+  private parseQuestionBlock(paragraphs: string[], type: QuestionType, index: number): ParsedQuestion {
+    let difficulty: Difficulty = Difficulty.SEDANG;
+    let points = 10;
+    let answerRaw: string | null = null;
+    const options: ParsedOption[] = [];
+    const questionTextParts: string[] = [];
+
+    // Temporary storage for metadata parsing
+    const cleanParagraphs: string[] = [];
+
+    for (const p of paragraphs) {
+      const plainText = this.stripHtml(p).trim();
+      const plainTextUpper = plainText.toUpperCase();
+
+      if (plainTextUpper.startsWith('TINGKAT:')) {
+        const val = plainText.split(':')[1]?.trim().toUpperCase();
+        if (val === 'MUDAH') difficulty = Difficulty.MUDAH;
+        else if (val === 'SULIT') difficulty = Difficulty.SULIT;
+        else difficulty = Difficulty.SEDANG;
+        continue;
+      }
+
+      if (plainTextUpper.startsWith('BOBOT:')) {
+        const val = plainText.split(':')[1]?.trim();
+        points = val ? parseInt(val, 10) : 10;
+        if (isNaN(points)) points = 10;
+        continue;
+      }
+
+      if (plainTextUpper.startsWith('JAWABAN:') || plainTextUpper.startsWith('KUNCI:')) {
+        answerRaw = plainText.split(':')[1]?.trim().toUpperCase() || null;
+        continue;
+      }
+
+      cleanParagraphs.push(p);
+    }
+
+    // Process the remaining clean paragraphs (question content & options)
+    for (const p of cleanParagraphs) {
+      const plainText = this.stripHtml(p).trim();
+      const optMatch = plainText.match(/^([A-Z])\.\s*(.*)/s);
+
+      if (optMatch && type !== QuestionType.ESSAY) {
+        const letter = optMatch[1].toUpperCase();
+        // Extract inner HTML of option, stripping the "A. " prefix
+        // Find matching inner text to strip
+        const innerMatch = p.match(/>([\s\S]*?)</);
+        let innerHtml = p;
+        if (innerMatch) {
+          innerHtml = p.replace(/>\s*[A-Z]\.\s*/i, '>');
+        } else {
+          innerHtml = p.replace(/^[A-Z]\.\s*/i, '');
+        }
+
+        const isCorrect = answerRaw
+          ? answerRaw.split(',').map(a => a.trim()).includes(letter)
+          : false;
+
+        options.push({
+          content: innerHtml.trim(),
+          isCorrect,
+          order: letter.charCodeAt(0) - 65,
+        });
+      } else {
+        questionTextParts.push(p);
+      }
+    }
+
+    // Handle True/False defaults if options not specified
+    if (type === QuestionType.BENAR_SALAH && options.length === 0) {
+      options.push(
+        { content: '<p>Benar</p>', isCorrect: answerRaw === 'BENAR', order: 0 },
+        { content: '<p>Salah</p>', isCorrect: answerRaw === 'SALAH', order: 1 },
+      );
+    }
+
+    // Validation
+    const markerLabel = `Soal #${index}`;
+    if (type === QuestionType.PILIHAN_GANDA && options.length < 2) {
+      throw new Error(`Soal pilihan ganda butuh minimal 2 pilihan jawaban.`);
+    }
+    if (type === QuestionType.PILIHAN_GANDA && !options.some(o => o.isCorrect)) {
+      throw new Error(`Soal pilihan ganda tidak memiliki kunci jawaban yang valid.`);
+    }
+    if (type === QuestionType.MULTIPLE_RESPONSE && !options.some(o => o.isCorrect)) {
+      throw new Error(`Soal jawaban ganda (multiple response) harus memiliki minimal 1 jawaban benar.`);
+    }
+
+    const finalContent = questionTextParts.join('\n').trim();
+
+    return {
+      content: finalContent,
+      type,
+      difficulty,
+      points,
+      options,
+    };
+  }
+
+  private stripHtml(html: string): string {
+    return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
   }
 }

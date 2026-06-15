@@ -33,6 +33,11 @@ interface QuestionBank {
   subjectId: string;
 }
 
+interface ExamGroup {
+  id: string;
+  name: string;
+}
+
 interface Question {
   id: string;
   content: string;
@@ -47,16 +52,18 @@ export default function CreateExamPage() {
     title: '',
     description: '',
     subjectId: '',
-    startTime: '',
-    endTime: '',
+    startDate: '',
+    startTimeField: '00:00',
+    endDate: '',
+    endTimeField: '23:49',
     duration: 60,
     token: '',
-    password: '',
     maxAttempts: 1,
     randomizeSoal: true,
     randomizeOpsi: true,
     passingGrade: 0,
     status: 'DRAFT',
+    examGroupId: '',
   });
 
   const [selectedQuestionIds, setSelectedQuestionIds] = useState<string[]>([]);
@@ -66,6 +73,14 @@ export default function CreateExamPage() {
     queryKey: ['subjects'],
     queryFn: async () => {
       const response = await api.get('/subjects');
+      return response.data;
+    },
+  });
+
+  const { data: examGroups } = useQuery<ExamGroup[]>({
+    queryKey: ['exam-groups'],
+    queryFn: async () => {
+      const response = await api.get('/exam-groups');
       return response.data;
     },
   });
@@ -105,13 +120,27 @@ export default function CreateExamPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedQuestionIds.length === 0) {
-      alert('Please select at least one question.');
+      alert('Pilih minimal satu soal.');
       return;
     }
-    createMutation.mutate({
+    
+    // Clean up empty optional fields
+    const payload = {
       ...formData,
       questionIds: selectedQuestionIds,
-    });
+      startTime: `${formData.startDate}T${formData.startTimeField}:00`,
+      endTime: `${formData.endDate}T${formData.endTimeField}:00`,
+    };
+    
+    // Remove UI-only fields
+    delete (payload as any).startDate;
+    delete (payload as any).startTimeField;
+    delete (payload as any).endDate;
+    delete (payload as any).endTimeField;
+    
+    if (!payload.examGroupId) delete (payload as any).examGroupId;
+    
+    createMutation.mutate(payload);
   };
 
   return (
@@ -123,7 +152,7 @@ export default function CreateExamPage() {
             variant="ghost"
             _hover={{ bg: 'gray.100' }}
             borderRadius="full"
-            aria-label="Back to Exams"
+            aria-label="Kembali ke Daftar Ujian"
             size="sm"
           >
             <Link href="/admin/exams">
@@ -131,7 +160,7 @@ export default function CreateExamPage() {
             </Link>
           </IconButton>
           <Heading size="xl" fontWeight="bold" color="gray.900">
-            Schedule New Exam
+            Jadwalkan Ujian Baru
           </Heading>
         </HStack>
       </Flex>
@@ -144,36 +173,63 @@ export default function CreateExamPage() {
               {/* Exam Information Card */}
               <Box bg="white" p={6} borderRadius="xl" shadow="sm" borderWidth="1px" borderColor="gray.100">
                 <Heading size="md" fontWeight="bold" color="gray.900" borderBottom="1px solid" borderColor="gray.100" pb={2} mb={4}>
-                  Exam Information
+                  Informasi Ujian
                 </Heading>
                 <Stack gap={4}>
                   <Box>
-                    <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Exam Title</Text>
+                    <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Judul Ujian</Text>
                     <Input
                       required
                       value={formData.title}
                       onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      placeholder="e.g. Mathematics Midterm"
+                      placeholder="Cth. Ujian Tengah Semester Matematika"
                       borderRadius="lg"
                       borderColor="gray.200"
                       _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
                     />
                   </Box>
                   <Box>
-                    <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Description</Text>
+                    <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Deskripsi</Text>
                     <Textarea
                       value={formData.description}
                       onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                       rows={3}
-                      placeholder="Optional description..."
+                      placeholder="Deskripsi opsional..."
                       borderRadius="lg"
                       borderColor="gray.200"
                       _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
                     />
                   </Box>
+                  <Box>
+                    <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Event / Kelompok Ujian <span style={{ color: 'red' }}>*</span></Text>
+                    <select
+                      required
+                      value={formData.examGroupId}
+                      onChange={(e) => setFormData({ ...formData, examGroupId: e.target.value })}
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '8px',
+                        backgroundColor: 'white',
+                        outline: 'none',
+                        fontSize: '14px',
+                      }}
+                    >
+                      <option value="">-- Pilih Event Ujian --</option>
+                      {examGroups?.map((g) => (
+                        <option key={g.id} value={g.id}>{g.name}</option>
+                      ))}
+                    </select>
+                    {examGroups?.length === 0 && (
+                      <Text fontSize="xs" color="red.500" mt={1}>
+                        Anda belum memiliki Event Ujian. Silakan buat di menu Event Ujian terlebih dahulu.
+                      </Text>
+                    )}
+                  </Box>
                   <SimpleGrid columns={2} gap={4}>
                     <Box>
-                      <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Subject</Text>
+                      <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Mata Pelajaran</Text>
                       <select
                         required
                         value={formData.subjectId}
@@ -188,14 +244,14 @@ export default function CreateExamPage() {
                           fontSize: '14px',
                         }}
                       >
-                        <option value="">Select Subject</option>
+                        <option value="">Pilih Mata Pelajaran</option>
                         {subjects?.map((s) => (
                           <option key={s.id} value={s.id}>{s.name}</option>
                         ))}
                       </select>
                     </Box>
                     <Box>
-                      <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Duration (Minutes)</Text>
+                      <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Durasi (Menit)</Text>
                       <Input
                         type="number"
                         required
@@ -209,24 +265,50 @@ export default function CreateExamPage() {
                   </SimpleGrid>
                   <SimpleGrid columns={2} gap={4}>
                     <Box>
-                      <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Start Time</Text>
+                      <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Tanggal Mulai</Text>
                       <Input
-                        type="datetime-local"
+                        type="date"
                         required
-                        value={formData.startTime}
-                        onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                        value={formData.startDate}
+                        onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                         borderRadius="lg"
                         borderColor="gray.200"
                         _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
                       />
                     </Box>
                     <Box>
-                      <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>End Time</Text>
+                      <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Waktu Mulai</Text>
                       <Input
-                        type="datetime-local"
+                        type="time"
                         required
-                        value={formData.endTime}
-                        onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                        value={formData.startTimeField}
+                        onChange={(e) => setFormData({ ...formData, startTimeField: e.target.value })}
+                        borderRadius="lg"
+                        borderColor="gray.200"
+                        _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
+                      />
+                    </Box>
+                  </SimpleGrid>
+                  <SimpleGrid columns={2} gap={4}>
+                    <Box>
+                      <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Tanggal Berakhir</Text>
+                      <Input
+                        type="date"
+                        required
+                        value={formData.endDate}
+                        onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                        borderRadius="lg"
+                        borderColor="gray.200"
+                        _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
+                      />
+                    </Box>
+                    <Box>
+                      <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Waktu Berakhir</Text>
+                      <Input
+                        type="time"
+                        required
+                        value={formData.endTimeField}
+                        onChange={(e) => setFormData({ ...formData, endTimeField: e.target.value })}
                         borderRadius="lg"
                         borderColor="gray.200"
                         _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
@@ -239,17 +321,17 @@ export default function CreateExamPage() {
               {/* Select Questions Card */}
               <Box bg="white" p={6} borderRadius="xl" shadow="sm" borderWidth="1px" borderColor="gray.100">
                 <Heading size="md" fontWeight="bold" color="gray.900" borderBottom="1px solid" borderColor="gray.100" pb={2} mb={4}>
-                  Select Questions
+                  Pilih Soal
                 </Heading>
 
                 {!formData.subjectId ? (
                   <Flex justify="center" py={8}>
-                    <Text color="gray.500">Please select a subject first to browse questions.</Text>
+                    <Text color="gray.500">Pilih mata pelajaran terlebih dahulu untuk melihat soal.</Text>
                   </Flex>
                 ) : (
                   <Stack gap={4}>
                     <Box>
-                      <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Question Bank</Text>
+                      <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Bank Soal</Text>
                       <select
                         value={selectedBankId}
                         onChange={(e) => setSelectedBankId(e.target.value)}
@@ -263,7 +345,7 @@ export default function CreateExamPage() {
                           fontSize: '14px',
                         }}
                       >
-                        <option value="">Select Bank</option>
+                        <option value="">Pilih Bank Soal</option>
                         {questionBanks?.map((b) => (
                           <option key={b.id} value={b.id}>{b.name}</option>
                         ))}
@@ -318,7 +400,7 @@ export default function CreateExamPage() {
                         ))}
                         {questions?.length === 0 && (
                           <Flex justify="center" p={8}>
-                            <Text color="gray.500">No questions found in this bank.</Text>
+                            <Text color="gray.500">Tidak ada soal di bank ini.</Text>
                           </Flex>
                         )}
                       </Box>
@@ -342,12 +424,12 @@ export default function CreateExamPage() {
               top="6rem"
             >
               <Heading size="md" fontWeight="bold" color="gray.900" borderBottom="1px solid" borderColor="gray.100" pb={2} mb={4}>
-                Exam Settings
+                Pengaturan Ujian
               </Heading>
 
               <Stack gap={4}>
                 <Box>
-                  <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Exam Token (Optional)</Text>
+                  <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Token Ujian (Opsional)</Text>
                   <Input
                     value={formData.token}
                     onChange={(e) => setFormData({ ...formData, token: e.target.value })}
@@ -358,18 +440,6 @@ export default function CreateExamPage() {
                   />
                 </Box>
 
-                <Box>
-                  <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Exam Password (Optional)</Text>
-                  <Input
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    placeholder="********"
-                    borderRadius="lg"
-                    borderColor="gray.200"
-                    _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
-                  />
-                </Box>
 
                 <Stack gap={3}>
                   <Flex
@@ -384,7 +454,7 @@ export default function CreateExamPage() {
                       onChange={(e) => setFormData({ ...formData, randomizeSoal: e.target.checked })}
                       style={{ width: '16px', height: '16px', accentColor: '#4f46e5' }}
                     />
-                    <Text fontSize="sm" color="gray.700">Randomize Question Order</Text>
+                    <Text fontSize="sm" color="gray.700">Acak Urutan Soal</Text>
                   </Flex>
                   <Flex
                     as="label"
@@ -398,13 +468,13 @@ export default function CreateExamPage() {
                       onChange={(e) => setFormData({ ...formData, randomizeOpsi: e.target.checked })}
                       style={{ width: '16px', height: '16px', accentColor: '#4f46e5' }}
                     />
-                    <Text fontSize="sm" color="gray.700">Randomize Options Order</Text>
+                    <Text fontSize="sm" color="gray.700">Acak Urutan Opsi</Text>
                   </Flex>
                 </Stack>
 
                 <Box pt={4} borderTop="1px solid" borderColor="gray.100">
                   <Flex justify="space-between" fontSize="sm" mb={4}>
-                    <Text color="gray.500">Selected Questions:</Text>
+                    <Text color="gray.500">Soal Terpilih:</Text>
                     <Text fontWeight="bold" color="gray.900">{selectedQuestionIds.length}</Text>
                   </Flex>
                   <Button
@@ -420,7 +490,7 @@ export default function CreateExamPage() {
                     cursor="pointer"
                   >
                     <Save size={20} />
-                    {createMutation.isPending ? 'Scheduling...' : 'Schedule Exam'}
+                    {createMutation.isPending ? 'Menyimpan...' : 'Jadwalkan Ujian'}
                   </Button>
                 </Box>
               </Stack>

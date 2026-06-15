@@ -45,10 +45,6 @@ export class ExamSessionsService {
       throw new BadRequestException('Invalid exam token');
     }
 
-    // Validate password
-    if (exam.password && exam.password !== dto.password) {
-      throw new BadRequestException('Invalid exam password');
-    }
 
     // Check for existing session
     const existingSession = await this.prisma.examSession.findUnique({

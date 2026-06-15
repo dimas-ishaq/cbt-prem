@@ -19,6 +19,7 @@ import {
   SimpleGrid,
   Stack,
 } from '@chakra-ui/react';
+import { useConfirm } from '@/components/ui/confirmation-dialog';
 
 interface Props {
   examId: string;
@@ -34,6 +35,7 @@ export function ExamContainer({ examId }: Props) {
   
   const router = useRouter();
   const socket = useSocket();
+  const confirmDialog = useConfirm();
 
   // Fetch exam details
   const { data: exam, isLoading: isLoadingExam } = useQuery({
@@ -193,8 +195,13 @@ export function ExamContainer({ examId }: Props) {
 
         {/* Action Button */}
         <Button
-          onClick={() => {
-            if (confirm('Apakah Anda yakin ingin menyelesaikan ujian? Nilai Anda akan langsung diproses.')) {
+          onClick={async () => {
+            const confirmed = await confirmDialog({
+              title: 'Selesai Ujian',
+              description: 'Apakah Anda yakin ingin menyelesaikan ujian? Nilai Anda akan langsung diproses.',
+              confirmText: 'Ya, Selesai'
+            });
+            if (confirmed) {
               finishExamMutation.mutate();
             }
           }}

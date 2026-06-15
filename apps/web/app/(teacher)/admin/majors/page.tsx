@@ -21,6 +21,8 @@ import {
   Grid,
   Badge,
 } from '@chakra-ui/react';
+import toast from 'react-hot-toast';
+import { useConfirm } from '@/components/ui/confirmation-dialog';
 import { Plus, Pencil, Trash2, Search, GraduationCap } from 'lucide-react';
 
 interface Major {
@@ -37,6 +39,7 @@ export default function MajorsPage() {
   const { user } = useAuthStore();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const confirmDialog = useConfirm();
 
   // Redirect if not SUPER_ADMIN
   useEffect(() => {
@@ -70,10 +73,10 @@ export default function MajorsPage() {
       queryClient.invalidateQueries({ queryKey: ['majors'] });
       setIsModalOpen(false);
       resetForm();
-      alert('Jurusan berhasil ditambahkan!');
+      toast.success('Jurusan berhasil ditambahkan!');
     },
     onError: (err: any) => {
-      alert(err.response?.data?.message || 'Gagal menambahkan jurusan');
+      toast.error(err.response?.data?.message || 'Gagal menambahkan jurusan');
     },
   });
 
@@ -85,10 +88,10 @@ export default function MajorsPage() {
       queryClient.invalidateQueries({ queryKey: ['majors'] });
       setIsModalOpen(false);
       resetForm();
-      alert('Jurusan berhasil diperbarui!');
+      toast.success('Jurusan berhasil diperbarui!');
     },
     onError: (err: any) => {
-      alert(err.response?.data?.message || 'Gagal memperbarui jurusan');
+      toast.error(err.response?.data?.message || 'Gagal memperbarui jurusan');
     },
   });
 
@@ -97,10 +100,10 @@ export default function MajorsPage() {
     mutationFn: (id: string) => api.delete(`/majors/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['majors'] });
-      alert('Jurusan berhasil dihapus!');
+      toast.success('Jurusan berhasil dihapus!');
     },
     onError: (err: any) => {
-      alert(err.response?.data?.message || 'Gagal menghapus jurusan');
+      toast.error(err.response?.data?.message || 'Gagal menghapus jurusan');
     },
   });
 
@@ -248,8 +251,13 @@ export default function MajorsPage() {
                       size="sm"
                       borderRadius="lg"
                       aria-label="Delete Jurusan"
-                      onClick={() => {
-                        if (confirm(`Apakah Anda yakin ingin menghapus jurusan "${major.name}"? Siswa yang terikat akan kehilangan asosiasi jurusan.`)) {
+                      onClick={async () => {
+                        const confirmed = await confirmDialog({
+                          title: 'Hapus Jurusan',
+                          description: `Apakah Anda yakin ingin menghapus jurusan "${major.name}"? Siswa yang terikat akan kehilangan asosiasi jurusan.`,
+                          confirmText: 'Hapus'
+                        });
+                        if (confirmed) {
                           deleteMutation.mutate(major.id);
                         }
                       }}

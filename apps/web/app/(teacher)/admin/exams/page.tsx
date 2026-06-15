@@ -17,11 +17,16 @@ import {
   Spinner,
   IconButton,
 } from '@chakra-ui/react';
+import toast from 'react-hot-toast';
+import { useConfirm } from '@/components/ui/confirmation-dialog';
 
 interface Exam {
   id: string;
   title: string;
   subject: {
+    name: string;
+  };
+  examGroup?: {
     name: string;
   };
   startTime: string;
@@ -40,6 +45,7 @@ const statusColorMap: Record<string, { bg: string; color: string }> = {
 
 export default function ExamsPage() {
   const queryClient = useQueryClient();
+  const confirmDialog = useConfirm();
 
   const { data: exams, isLoading } = useQuery<Exam[]>({
     queryKey: ['exams'],
@@ -53,6 +59,10 @@ export default function ExamsPage() {
     mutationFn: (id: string) => api.delete(`/exams/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['exams'] });
+      toast.success('Ujian berhasil dihapus!');
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || 'Gagal menghapus ujian');
     },
   });
 
@@ -60,7 +70,7 @@ export default function ExamsPage() {
     return (
       <Flex justify="center" align="center" py={16}>
         <Spinner size="lg" color="indigo.600" />
-        <Text ml={3} color="gray.500">Loading exams...</Text>
+        <Text ml={3} color="gray.500">Memuat data ujian...</Text>
       </Flex>
     );
   }
@@ -70,10 +80,10 @@ export default function ExamsPage() {
       <Flex justify="space-between" align="center">
         <Box>
           <Heading size="xl" fontWeight="bold" color="gray.900">
-            Exams
+            Ujian
           </Heading>
           <Text color="gray.500" mt={1}>
-            Schedule and manage your examinations.
+            Jadwalkan dan kelola ujian mata pelajaran.
           </Text>
         </Box>
         <Button
@@ -89,7 +99,7 @@ export default function ExamsPage() {
         >
           <Link href="/admin/exams/create">
             <Plus size={20} />
-            Schedule Exam
+            Jadwalkan Ujian
           </Link>
         </Button>
       </Flex>
@@ -99,19 +109,19 @@ export default function ExamsPage() {
           <Table.Header>
             <Table.Row bg="gray.50">
               <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600" fontSize="xs" textTransform="uppercase">
-                Exam Title
+                Judul Ujian
               </Table.ColumnHeader>
               <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600" fontSize="xs" textTransform="uppercase">
-                Subject
+                Mata Pelajaran
               </Table.ColumnHeader>
               <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600" fontSize="xs" textTransform="uppercase">
-                Schedule
+                Jadwal
               </Table.ColumnHeader>
               <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600" fontSize="xs" textTransform="uppercase">
                 Status
               </Table.ColumnHeader>
               <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600" fontSize="xs" textTransform="uppercase" textAlign="end">
-                Actions
+                Aksi
               </Table.ColumnHeader>
             </Table.Row>
           </Table.Header>
@@ -122,8 +132,13 @@ export default function ExamsPage() {
                 <Table.Row key={exam.id} _hover={{ bg: 'gray.50' }} transition="background 0.15s">
                   <Table.Cell px={6} py={4}>
                     <Text fontWeight="medium" color="gray.900">{exam.title}</Text>
+                    {exam.examGroup && (
+                      <Badge bg="indigo.50" color="indigo.700" fontSize="2xs" mt={1} mr={2}>
+                        {exam.examGroup.name}
+                      </Badge>
+                    )}
                     {exam.token && (
-                      <HStack gap={1} mt={1} color="gray.400" fontSize="xs">
+                      <HStack gap={1} mt={1} color="gray.400" fontSize="xs" display="inline-flex">
                         <Lock size={12} />
                         <Text>Token: {exam.token}</Text>
                       </HStack>
@@ -137,7 +152,7 @@ export default function ExamsPage() {
                     </HStack>
                     <HStack gap={1} mt={1} color="gray.500">
                       <Clock size={14} style={{ color: '#9ca3af' }} />
-                      <Text>{exam.duration} mins</Text>
+                      <Text>{exam.duration} menit</Text>
                     </HStack>
                   </Table.Cell>
                   <Table.Cell px={6} py={4}>
@@ -162,7 +177,7 @@ export default function ExamsPage() {
                         _hover={{ bg: 'indigo.50' }}
                         size="sm"
                         borderRadius="lg"
-                        aria-label="View Results"
+                        aria-label="Lihat Hasil"
                       >
                         <Link href={`/admin/results/${exam.id}`}>
                           <FileText size={18} />
@@ -170,17 +185,21 @@ export default function ExamsPage() {
                       </IconButton>
                       <IconButton
                         variant="ghost"
-                        color="red.600"
+                        color="red.500"
                         _hover={{ bg: 'red.50' }}
                         size="sm"
                         borderRadius="lg"
                         aria-label="Delete Exam"
-                        onClick={() => {
-                          if (confirm('Are you sure you want to delete this exam?')) {
+                        onClick={async () => {
+                          const confirmed = await confirmDialog({
+                            title: 'Hapus Ujian',
+                            description: 'Apakah Anda yakin ingin menghapus ujian ini?',
+                            confirmText: 'Hapus'
+                          });
+                          if (confirmed) {
                             deleteMutation.mutate(exam.id);
                           }
                         }}
-                        cursor="pointer"
                       >
                         <Trash2 size={18} />
                       </IconButton>
@@ -192,7 +211,7 @@ export default function ExamsPage() {
             {exams?.length === 0 && (
               <Table.Row>
                 <Table.Cell colSpan={5} px={6} py={12} textAlign="center" color="gray.500" fontStyle="italic">
-                  No exams scheduled yet.
+                  Belum ada ujian yang dijadwalkan.
                 </Table.Cell>
               </Table.Row>
             )}

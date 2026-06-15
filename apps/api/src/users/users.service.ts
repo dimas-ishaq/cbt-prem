@@ -1,67 +1,222 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { User, Prisma } from '@prisma/client';
+import { User, Prisma, Role } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Injectable()
 export class UsersService {
   constructor(private prisma: PrismaService) {}
 
+  // ─── Auth helpers ─────────────────────────────────────────────────────────
   async findOne(username: string): Promise<User | null> {
-    return this.prisma.user.findUnique({
-      where: { username },
-    });
+    return this.prisma.user.findUnique({ where: { username } });
   }
 
   async findById(id: string): Promise<User | null> {
-    return this.prisma.user.findUnique({
-      where: { id },
+    return this.prisma.user.findUnique({ where: { id } });
+  }
+
+  // ─── Admin CRUD ────────────────────────────────────────────────────────────
+
+  /** List all users, optionally filtered by role */
+  async findAll(role?: Role) {
+    return this.prisma.user.findMany({
+      where: role ? { role } : undefined,
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        fullName: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+        student: {
+          select: { id: true, nis: true, rombel: { select: { id: true, name: true } }, major: { select: { name: true, code: true } } },
+        },
+        teacher: {
+          select: { id: true, nip: true, subjects: { select: { id: true, name: true } } },
+        },
+      },
+      orderBy: [{ role: 'asc' }, { createdAt: 'desc' }],
     });
   }
 
-  async create(data: Prisma.UserCreateInput): Promise<User> {
-    const hashedPassword = await bcrypt.hash(data.password, 10);
+  /** Get a single user by id */
+  async findUserById(id: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        fullName: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
+        student: {
+          select: { id: true, nis: true, rombel: { select: { id: true, name: true } }, major: { select: { id: true, name: true, code: true } } },
+        },
+        teacher: {
+          select: { id: true, nip: true, subjects: { select: { id: true, name: true } } },
+        },
+      },
+    });
+    if (!user) throw new NotFoundException('Pengguna tidak ditemukan');
+    return user;
+  }
+
+  /** Create a new user (any role) with profile */
+  async createUser(dto: CreateUserDto) {
+    const existingUsername = await this.prisma.user.findUnique({ where: { username: dto.username } });
+    if (existingUsername) throw new ConflictException('Username sudah digunakan');
+
+    if (dto.email) {
+      const existingEmail = await this.prisma.user.findUnique({ where: { email: dto.email } });
+      if (existingEmail) throw new ConflictException('Email sudah digunakan');
+    }
+
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
+    const role = dto.role ?? Role.SISWA;
+
     return this.prisma.user.create({
       data: {
-        ...data,
+        username: dto.username,
+        email: dto.email || `${dto.username}@cbt.enterprise`,
         password: hashedPassword,
+        fullName: dto.fullName,
+        role,
+        ...(role === Role.SISWA
+          ? {
+              student: {
+                create: {
+                  nis: (dto as any).nis || `NIS-${Date.now()}`,
+                  ...(dto.rombelId ? { rombel: { connect: { id: dto.rombelId } } } : {}),
+                },
+              },
+            }
+          : role === Role.GURU
+            ? { teacher: { create: { nip: null } } }
+            : {}),
+      },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        fullName: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
       },
     });
   }
 
+  /** Update user profile (name, email) */
+  async updateUser(id: string, dto: UpdateUserDto) {
+    const user = await this.findUserById(id);
+
+    if (dto.email) {
+      const existing = await this.prisma.user.findFirst({
+        where: { email: dto.email, id: { not: id } },
+      });
+      if (existing) throw new ConflictException('Email sudah digunakan oleh pengguna lain');
+    }
+
+    return this.prisma.user.update({
+      where: { id },
+      data: {
+        ...(dto.fullName ? { fullName: dto.fullName } : {}),
+        ...(dto.email ? { email: dto.email } : {}),
+        ...(user.role === Role.SISWA && dto.rombelId
+          ? {
+              student: {
+                update: {
+                  rombel: { connect: { id: dto.rombelId } },
+                },
+              },
+            }
+          : {}),
+      },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        fullName: true,
+        role: true,
+        isActive: true,
+      },
+    });
+  }
+
+  /** Toggle user active/inactive */
+  async toggleActive(id: string) {
+    const user = await this.findUserById(id);
+    return this.prisma.user.update({
+      where: { id },
+      data: { isActive: !user.isActive },
+      select: { id: true, isActive: true },
+    });
+  }
+
+  /** Reset password by admin */
+  async resetPassword(id: string, dto: ResetPasswordDto) {
+    await this.findUserById(id);
+    const hashed = await bcrypt.hash(dto.newPassword, 10);
+    await this.prisma.user.update({ where: { id }, data: { password: hashed } });
+    return { success: true, message: 'Password berhasil direset' };
+  }
+
+  /** Delete user and cascading profile */
+  async deleteUser(id: string) {
+    const user = await this.findUserById(id);
+
+    if (user.role === Role.SUPER_ADMIN) {
+      const count = await this.prisma.user.count({ where: { role: Role.SUPER_ADMIN } });
+      if (count <= 1) {
+        throw new BadRequestException('Tidak dapat menghapus Super Admin terakhir dalam sistem');
+      }
+    }
+
+    return this.prisma.user.delete({ where: { id } });
+  }
+
+  // ─── Legacy create for auth service ──────────────────────────────────────
+  async create(data: Prisma.UserCreateInput): Promise<User> {
+    const hashedPassword = await bcrypt.hash(data.password, 10);
+    return this.prisma.user.create({ data: { ...data, password: hashedPassword } });
+  }
+
+  // ─── Export / Import ──────────────────────────────────────────────────────
   async exportAllUsers(): Promise<string> {
     const users = await this.prisma.user.findMany({
-      include: {
-        student: true,
-        teacher: true,
-      },
+      include: { student: true, teacher: true },
       orderBy: { createdAt: 'desc' },
     });
 
-    const headers = ['username', 'email', 'fullName', 'role', 'nis', 'class', 'nip'];
+    const headers = ['username', 'email', 'fullName', 'role', 'nis', 'nip', 'rombel'];
     const escapeCsv = (str: string | null | undefined) => {
       if (str === null || str === undefined) return '';
-      const stringified = String(str);
-      if (stringified.includes(',') || stringified.includes('"') || stringified.includes('\n')) {
-        return `"${stringified.replace(/"/g, '""')}"`;
+      const s = String(str);
+      if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+        return `"${s.replace(/"/g, '""')}"`;
       }
-      return stringified;
+      return s;
     };
 
     const csvRows = [headers.join(',')];
     for (const u of users) {
-      const row = [
+      csvRows.push([
         escapeCsv(u.username),
         escapeCsv(u.email),
         escapeCsv(u.fullName),
         escapeCsv(u.role),
         escapeCsv(u.student?.nis),
-        escapeCsv(u.student?.class),
         escapeCsv(u.teacher?.nip),
-      ];
-      csvRows.push(row.join(','));
+        escapeCsv((u.student as any)?.rombel?.name),
+      ].join(','));
     }
-
     return csvRows.join('\n');
   }
 
@@ -88,9 +243,9 @@ export class UsersService {
           include: { student: true, teacher: true },
         });
 
-        const hashedPassword = u.password 
-          ? await bcrypt.hash(u.password, 10) 
-          : existingUser 
+        const hashedPassword = u.password
+          ? await bcrypt.hash(u.password, 10)
+          : existingUser
             ? undefined
             : await bcrypt.hash(defaultPassword, 10);
 
@@ -104,83 +259,61 @@ export class UsersService {
               ...(hashedPassword ? { password: hashedPassword } : {}),
             },
           });
-
           if (roleValue === 'SISWA') {
+            let rombelConnect = {};
+            if (u.rombel) {
+              const r = await this.prisma.rombel.findFirst({ where: { name: u.rombel } });
+              if (r) rombelConnect = { rombel: { connect: { id: r.id } } };
+            }
+
             if (existingUser.student) {
               await this.prisma.student.update({
                 where: { id: existingUser.student.id },
-                data: {
-                  nis: u.nis || existingUser.student.nis,
-                  class: u.class || existingUser.student.class,
-                },
+                data: { nis: u.nis || existingUser.student.nis, ...rombelConnect },
               });
             } else {
               await this.prisma.student.create({
-                data: {
-                  userId: existingUser.id,
-                  nis: u.nis || `NIS-${Date.now()}`,
-                  class: u.class || '',
-                },
+                data: { userId: existingUser.id, nis: u.nis || `NIS-${Date.now()}`, ...rombelConnect },
               });
             }
           } else {
             if (existingUser.teacher) {
               await this.prisma.teacher.update({
                 where: { id: existingUser.teacher.id },
-                data: {
-                  nip: u.nip || existingUser.teacher.nip,
-                },
+                data: { nip: u.nip || existingUser.teacher.nip },
               });
             } else {
-              await this.prisma.teacher.create({
-                data: {
-                  userId: existingUser.id,
-                  nip: u.nip || null,
-                },
-              });
+              await this.prisma.teacher.create({ data: { userId: existingUser.id, nip: u.nip || null } });
             }
           }
           results.updated++;
         } else {
-          const userCreateData: Prisma.UserCreateInput = {
-            username: u.username,
-            email: u.email || `${u.username}@cbt.enterprise`,
-            fullName: u.fullName,
-            password: hashedPassword!,
-            role: roleValue as any,
-          };
-
-          if (roleValue === 'SISWA') {
-            await this.prisma.user.create({
-              data: {
-                ...userCreateData,
-                student: {
-                  create: {
-                    nis: u.nis || `NIS-${Date.now()}`,
-                    class: u.class || '',
-                  },
-                },
-              },
-            });
-          } else {
-            await this.prisma.user.create({
-              data: {
-                ...userCreateData,
-                teacher: {
-                  create: {
-                    nip: u.nip || null,
-                  },
-                },
-              },
-            });
+          let rombelConnect = {};
+          if (roleValue === 'SISWA' && u.rombel) {
+            const r = await this.prisma.rombel.findFirst({ where: { name: u.rombel } });
+            if (r) rombelConnect = { rombel: { connect: { id: r.id } } };
           }
+
+          await this.prisma.user.create({
+            data: {
+              username: u.username,
+              email: u.email || `${u.username}@cbt.enterprise`,
+              fullName: u.fullName,
+              password: hashedPassword!,
+              role: roleValue as any,
+              ...(roleValue === 'SISWA'
+                ? { student: { create: { nis: u.nis || `NIS-${Date.now()}`, ...rombelConnect } } }
+                : roleValue === 'GURU'
+                  ? { teacher: { create: { nip: u.nip || null } } }
+                  : {}),
+            },
+          });
           results.created++;
         }
       } catch (err: any) {
         results.errors.push(`Gagal memproses user ${u.username || 'unknown'}: ${err.message}`);
       }
     }
-
     return results;
   }
 }

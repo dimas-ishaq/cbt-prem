@@ -32,14 +32,15 @@ export class ExamsController {
   async findOne(
     @Param('id') id: string,
     @Headers('x-seb-config-key') sebConfigKey: string,
-    @Headers('x-seb-browser-key') sebBrowserKey: string
+    @Headers('x-seb-browser-key') sebBrowserKey: string,
+    @Request() req
   ) {
     const isValidSeb = await this.examsService.validateSeb(id, sebConfigKey, sebBrowserKey);
     if (!isValidSeb) {
       // Logic for SEB requirement: if exam requires SEB but keys don't match
       // throw new UnauthorizedException('Safe Exam Browser required');
     }
-    return this.examsService.findOne(id);
+    return this.examsService.findOne(id, req.user);
   }
 
   @Patch(':id')

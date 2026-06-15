@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsUUID, IsDateString, IsInt, IsBoolean, IsEnum, IsArray } from 'class-validator';
+import { IsString, IsOptional, IsUUID, IsDateString, IsInt, IsBoolean, IsEnum, IsArray, IsNotEmpty } from 'class-validator';
 import { ExamStatus } from '@prisma/client';
 
 export class CreateExamDto {
@@ -25,10 +25,6 @@ export class CreateExamDto {
   @IsOptional()
   token?: string;
 
-  @IsString()
-  @IsOptional()
-  password?: string;
-
   @IsInt()
   @IsOptional()
   maxAttempts?: number;
@@ -53,4 +49,8 @@ export class CreateExamDto {
   @IsUUID(undefined, { each: true })
   @IsOptional()
   questionIds?: string[];
+
+  @IsUUID()
+  @IsNotEmpty()
+  examGroupId: string;
 }
