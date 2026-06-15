@@ -16,6 +16,7 @@ export class SettingsService {
     if (!result.timezone) result.timezone = 'Asia/Jakarta';
     if (!result.appName) result.appName = 'CBT Enterprise';
     if (!result.language) result.language = 'id';
+    if (!result.academicYear) result.academicYear = '2024/2025';
     return result;
   }
 

@@ -142,9 +142,26 @@ export function AdminSidebar() {
             >
               {settings?.appName || 'CBT Enterprise'}
             </Text>
-            <Text fontSize="2xs" color="blue.500" fontWeight="bold" letterSpacing="widest" textTransform="uppercase" mt={0.5}>
-              Admin Panel
-            </Text>
+            <Flex align="center" gap={1.5} mt={0.5} wrap="wrap">
+              <Text fontSize="2xs" color="blue.500" fontWeight="bold" letterSpacing="widest" textTransform="uppercase">
+                Admin Panel
+              </Text>
+              {settings?.academicYear && (
+                <Box
+                  fontSize="9px"
+                  bg="indigo.600"
+                  color="indigo.100"
+                  fontWeight="black"
+                  px={1.5}
+                  py={0.2}
+                  borderRadius="md"
+                  textTransform="none"
+                  letterSpacing="normal"
+                >
+                  {settings.academicYear}
+                </Box>
+              )}
+            </Flex>
           </Box>
         </Flex>
       </Box>

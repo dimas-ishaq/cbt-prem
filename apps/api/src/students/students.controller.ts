@@ -22,8 +22,9 @@ export class StudentsController {
   findAll(
     @Query('majorId') majorId?: string,
     @Query('rombelId') rombelId?: string,
+    @Query('grade') grade?: string,
   ) {
-    return this.studentsService.findAll(majorId, rombelId);
+    return this.studentsService.findAll(majorId, rombelId, grade);
   }
 
   @Get(':id')

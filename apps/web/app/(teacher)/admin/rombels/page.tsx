@@ -85,6 +85,7 @@ export default function RombelsPage() {
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [allStudentsSearchTerm, setAllStudentsSearchTerm] = useState('');
   const [filterMajorId, setFilterMajorId] = useState<string>('');
+  const [filterGrade, setFilterGrade] = useState<string>('');
   const [filterRombelId, setFilterRombelId] = useState<string>('');
 
   // Fetch rombels
@@ -118,12 +119,13 @@ export default function RombelsPage() {
 
   // Fetch all students in the school for assignment
   const { data: allStudents, isLoading: isLoadingAllStudents } = useQuery<Student[]>({
-    queryKey: ['all-students', filterMajorId, filterRombelId],
+    queryKey: ['all-students', filterMajorId, filterRombelId, filterGrade],
     queryFn: async () => {
       const response = await api.get('/students', {
         params: {
           majorId: filterMajorId || undefined,
           rombelId: filterRombelId || undefined,
+          grade: filterGrade || undefined,
         },
       });
       return response.data;
@@ -275,6 +277,7 @@ export default function RombelsPage() {
               onClick={() => {
                 setAllStudentsSearchTerm('');
                 setFilterMajorId(rombelDetail?.majorId || '');
+                setFilterGrade('');
                 setFilterRombelId('no-class');
                 setIsManageOpen(true);
               }}
@@ -430,8 +433,8 @@ export default function RombelsPage() {
               ) : (
                 <>
                   {/* Filters block */}
-                  <Stack gap={3} mb={4}>
-                    <SimpleGrid columns={{ base: 1, md: 2 }} gap={3}>
+                   <Stack gap={3} mb={4}>
+                    <SimpleGrid columns={{ base: 1, md: 3 }} gap={3}>
                       {/* Filter by Major */}
                       <Box>
                         <Text fontSize="xs" fontWeight="bold" color="gray.500" mb={1}>Filter Jurusan</Text>
@@ -454,6 +457,31 @@ export default function RombelsPage() {
                           ))}
                         </select>
                       </Box>
+                      {/* Filter by Grade */}
+                      <Box>
+                        <Text fontSize="xs" fontWeight="bold" color="gray.500" mb={1}>Tingkat Kelas</Text>
+                        <select
+                          value={filterGrade}
+                          onChange={(e) => {
+                            setFilterGrade(e.target.value);
+                            setFilterRombelId(''); // Reset rombel selection when grade changes
+                          }}
+                          style={{
+                            width: '100%',
+                            padding: '6px 10px',
+                            borderRadius: '8px',
+                            border: '1px solid #e2e8f0',
+                            fontSize: '13px',
+                            backgroundColor: 'white',
+                            outline: 'none',
+                          }}
+                        >
+                          <option value="">Semua Tingkat</option>
+                          <option value="X">Kelas X</option>
+                          <option value="XI">Kelas XI</option>
+                          <option value="XII">Kelas XII</option>
+                        </select>
+                      </Box>
                       {/* Filter by Rombel */}
                       <Box>
                         <Text fontSize="xs" fontWeight="bold" color="gray.500" mb={1}>Filter Rombel (Kelas)</Text>
@@ -472,9 +500,11 @@ export default function RombelsPage() {
                         >
                           <option value="">Semua Rombel</option>
                           <option value="no-class">Belum Memiliki Rombel</option>
-                          {rombels?.map((r) => (
-                            <option key={r.id} value={r.id}>{r.name}</option>
-                          ))}
+                          {rombels
+                            ?.filter((r) => !filterGrade || r.name.toLowerCase().startsWith(filterGrade.toLowerCase() + ' '))
+                            ?.map((r) => (
+                              <option key={r.id} value={r.id}>{r.name}</option>
+                            ))}
                         </select>
                       </Box>
                     </SimpleGrid>

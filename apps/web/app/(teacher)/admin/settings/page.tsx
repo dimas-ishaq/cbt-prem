@@ -19,7 +19,7 @@ import {
   HStack,
 } from '@chakra-ui/react';
 import toast from 'react-hot-toast';
-import { Settings, Save, ShieldAlert, Upload, Trash2, Globe, Heart, Languages } from 'lucide-react';
+import { Settings, Save, ShieldAlert, Upload, Trash2, Globe, Heart, Languages, Bookmark } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 const timezones = [
@@ -34,6 +34,13 @@ const languages = [
   { value: 'en', label: 'English (English)' },
 ];
 
+const currentYear = new Date().getFullYear();
+const academicYearOptions = Array.from({ length: 7 }, (_, i) => {
+  const startYear = currentYear - 3 + i;
+  const endYear = startYear + 1;
+  return `${startYear}/${endYear}`;
+});
+
 export default function SettingsPage() {
   const { user } = useAuthStore();
   const router = useRouter();
@@ -45,6 +52,7 @@ export default function SettingsPage() {
   const [logoUrl, setLogoUrl] = useState('');
   const [timezone, setTimezone] = useState('Asia/Jakarta');
   const [language, setLanguage] = useState('id');
+  const [academicYear, setAcademicYear] = useState('2024/2025');
   const [dragActive, setDragActive] = useState(false);
 
   // Strict role check
@@ -68,6 +76,7 @@ export default function SettingsPage() {
       setLogoUrl(settings.logoUrl || '');
       setTimezone(settings.timezone || 'Asia/Jakarta');
       setLanguage(settings.language || 'id');
+      setAcademicYear(settings.academicYear || '2024/2025');
     }
   }, [settings]);
 
@@ -85,7 +94,7 @@ export default function SettingsPage() {
   });
 
   const handleSave = () => {
-    saveMutation.mutate({ appName, logoUrl, timezone, language });
+    saveMutation.mutate({ appName, logoUrl, timezone, language, academicYear });
   };
 
   const processFile = (file: File) => {
@@ -470,6 +479,59 @@ export default function SettingsPage() {
                 {languages.map((lang) => (
                   <option key={lang.value} value={lang.value} style={{ background: 'var(--chakra-colors-bg-surface)' }}>
                     {lang.label}
+                  </option>
+                ))}
+              </select>
+            </Stack>
+          </Stack>
+        </Box>
+
+        {/* Academic Year Card */}
+        <Box
+          bg="bg.surface"
+          borderRadius="2xl"
+          border="1px solid"
+          borderColor="border.default"
+          boxShadow="0 10px 30px -10px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.01)"
+          p={8}
+          transition="all 0.25s"
+          _hover={{ borderColor: 'indigo.200', boxShadow: '0 12px 36px -8px rgba(99,102,241,0.06)' }}
+        >
+          <Stack gap={6}>
+            <Box pb={4} borderBottom="1px solid" borderColor="border.default">
+              <Heading size="md" fontWeight="bold" color="text.primary">
+                Periode & Tahun Ajaran
+              </Heading>
+              <Text fontSize="xs" color="text.secondary" mt={0.5}>
+                Tentukan tahun ajaran aktif yang akan menjadi acuan data dan laporan ujian di sistem.
+              </Text>
+            </Box>
+
+            <Stack gap={2}>
+              <Text fontWeight="bold" color="text.primary" fontSize="sm" display="flex" alignItems="center" gap={1.5}>
+                <Bookmark size={15} className="text-indigo-500" />
+                Tahun Ajaran Aktif
+              </Text>
+              <select
+                value={academicYear}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setAcademicYear(e.target.value)}
+                style={{
+                  width: '100%',
+                  height: '48px',
+                  padding: '0 16px',
+                  borderRadius: '12px',
+                  border: '1px solid var(--chakra-colors-border-default)',
+                  backgroundColor: 'var(--chakra-colors-bg-canvas)',
+                  color: 'var(--chakra-colors-text-primary)',
+                  fontSize: '14px',
+                  outline: 'none',
+                  transition: 'border-color 0.15s',
+                  cursor: 'pointer',
+                }}
+              >
+                {academicYearOptions.map((year) => (
+                  <option key={year} value={year} style={{ background: 'var(--chakra-colors-bg-surface)' }}>
+                    Tahun Pelajaran {year}
                   </option>
                 ))}
               </select>

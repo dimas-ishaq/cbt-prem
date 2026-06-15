@@ -30,7 +30,7 @@ export class StudentsService {
     });
   }
 
-  async findAll(majorId?: string, rombelId?: string) {
+  async findAll(majorId?: string, rombelId?: string, grade?: string) {
     const where: any = {};
     if (majorId) {
       where.majorId = majorId;
@@ -41,10 +41,17 @@ export class StudentsService {
       } else {
         where.rombelId = rombelId;
       }
+    } else if (grade) {
+      where.rombel = {
+        name: {
+          startsWith: grade,
+          mode: 'insensitive',
+        },
+      };
     }
     return this.prisma.student.findMany({
       where,
-      include: { user: true },
+      include: { user: true, rombel: true },
     });
   }
 
