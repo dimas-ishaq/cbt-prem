@@ -1,9 +1,20 @@
-'use client';
+"use client";
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import api from '@/lib/api';
-import { Plus, FileText, Trash2, Calendar, Clock, Lock } from 'lucide-react';
-import Link from 'next/link';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import api from "@/lib/api";
+import {
+  Plus,
+  FileText,
+  Trash2,
+  Calendar,
+  Clock,
+  Lock,
+  Pencil,
+  Search,
+  Filter,
+} from "lucide-react";
+import Link from "next/link";
 import {
   Box,
   Flex,
@@ -16,9 +27,11 @@ import {
   Stack,
   Spinner,
   IconButton,
-} from '@chakra-ui/react';
-import toast from 'react-hot-toast';
-import { useConfirm } from '@/components/ui/confirmation-dialog';
+  Input,
+  Select,
+} from "@chakra-ui/react";
+import toast from "react-hot-toast";
+import { useConfirm } from "@/components/ui/confirmation-dialog";
 
 interface Exam {
   id: string;
@@ -37,32 +50,47 @@ interface Exam {
 }
 
 const statusColorMap: Record<string, { bg: string; color: string }> = {
-  PUBLISHED: { bg: 'green.100', color: 'green.700' },
-  ONGOING: { bg: 'blue.100', color: 'blue.700' },
-  COMPLETED: { bg: 'gray.100', color: 'gray.700' },
-  DRAFT: { bg: 'yellow.100', color: 'yellow.700' },
+  PUBLISHED: { bg: "green.100", color: "green.700" },
+  ONGOING: { bg: "blue.100", color: "blue.700" },
+  COMPLETED: { bg: "gray.100", color: "gray.700" },
+  DRAFT: { bg: "yellow.100", color: "yellow.700" },
 };
 
 export default function ExamsPage() {
   const queryClient = useQueryClient();
   const confirmDialog = useConfirm();
 
+  const [searchText, setSearchText] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("");
+
   const { data: exams, isLoading } = useQuery<Exam[]>({
-    queryKey: ['exams'],
+    queryKey: ["exams"],
     queryFn: async () => {
-      const response = await api.get('/exams');
+      const response = await api.get("/exams");
       return response.data;
     },
+  });
+
+  const filteredExams = exams?.filter((exam) => {
+    const matchesSearch = searchText
+      ? `${exam.title} ${exam.subject.name} ${exam.examGroup?.name ?? ""}`
+          .toLowerCase()
+          .includes(searchText.toLowerCase())
+      : true;
+    const matchesStatus = selectedStatus
+      ? exam.status === selectedStatus
+      : true;
+    return matchesSearch && matchesStatus;
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/exams/${id}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['exams'] });
-      toast.success('Ujian berhasil dihapus!');
+      queryClient.invalidateQueries({ queryKey: ["exams"] });
+      toast.success("Ujian berhasil dihapus!");
     },
     onError: (err: any) => {
-      toast.error(err.response?.data?.message || 'Gagal menghapus ujian');
+      toast.error(err.response?.data?.message || "Gagal menghapus ujian");
     },
   });
 
@@ -70,7 +98,9 @@ export default function ExamsPage() {
     return (
       <Flex justify="center" align="center" py={16}>
         <Spinner size="lg" color="indigo.600" />
-        <Text ml={3} color="gray.500">Memuat data ujian...</Text>
+        <Text ml={3} color="gray.500">
+          Memuat data ujian...
+        </Text>
       </Flex>
     );
   }
@@ -86,11 +116,66 @@ export default function ExamsPage() {
             Jadwalkan dan kelola ujian mata pelajaran.
           </Text>
         </Box>
+
+        {/* Search & Filter Controls */}
+        <Flex gap={3} align="center" flexWrap="wrap">
+          <Flex
+            align="center"
+            gap={2}
+            bg="gray.50"
+            px={3}
+            py={2}
+            borderRadius="lg"
+            borderWidth="1px"
+            borderColor="gray.200"
+          >
+            <Search size={16} className="text-gray-500" />
+            <Input
+              placeholder="Cari ujian..."
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              size="sm"
+              variant={"unstyled" as any}
+              flex={1}
+              minW="200px"
+              _placeholder={{ color: "gray.400" }}
+            />
+          </Flex>
+
+          <Flex
+            align="center"
+            gap={2}
+            bg="gray.50"
+            px={3}
+            py={2}
+            borderRadius="lg"
+            borderWidth="1px"
+            borderColor="gray.200"
+          >
+            <Filter size={16} className="text-gray-500" />
+            <Select
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              size="sm"
+              variant={"unstyled" as any}
+              flex={1}
+              pr={6}
+              cursor="pointer"
+            >
+              <option value="">Semua Status</option>
+              <option value="DRAFT">Draft</option>
+              <option value="PUBLISHED">Terpublikasi</option>
+              <option value="ONGOING">Sedang Berjalan</option>
+              <option value="COMPLETED">Selesai</option>
+            </Select>
+          </Flex>
+        </Flex>
+
         <Button
           asChild
           bg="indigo.600"
           color="white"
-          _hover={{ bg: 'indigo.700' }}
+          _hover={{ bg: "indigo.700" }}
           borderRadius="lg"
           px={4}
           py={2}
@@ -104,54 +189,122 @@ export default function ExamsPage() {
         </Button>
       </Flex>
 
-      <Box bg="white" borderRadius="xl" shadow="sm" borderWidth="1px" borderColor="gray.100" overflow="hidden">
+      <Box
+        bg="white"
+        borderRadius="xl"
+        shadow="sm"
+        borderWidth="1px"
+        borderColor="gray.100"
+        overflow="hidden"
+      >
         <Table.Root size="md">
           <Table.Header>
             <Table.Row bg="gray.50">
-              <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600" fontSize="xs" textTransform="uppercase">
+              <Table.ColumnHeader
+                px={6}
+                py={4}
+                fontWeight="semibold"
+                color="gray.600"
+                fontSize="xs"
+                textTransform="uppercase"
+              >
                 Judul Ujian
               </Table.ColumnHeader>
-              <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600" fontSize="xs" textTransform="uppercase">
+              <Table.ColumnHeader
+                px={6}
+                py={4}
+                fontWeight="semibold"
+                color="gray.600"
+                fontSize="xs"
+                textTransform="uppercase"
+              >
                 Mata Pelajaran
               </Table.ColumnHeader>
-              <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600" fontSize="xs" textTransform="uppercase">
+              <Table.ColumnHeader
+                px={6}
+                py={4}
+                fontWeight="semibold"
+                color="gray.600"
+                fontSize="xs"
+                textTransform="uppercase"
+              >
                 Jadwal
               </Table.ColumnHeader>
-              <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600" fontSize="xs" textTransform="uppercase">
+              <Table.ColumnHeader
+                px={6}
+                py={4}
+                fontWeight="semibold"
+                color="gray.600"
+                fontSize="xs"
+                textTransform="uppercase"
+              >
                 Status
               </Table.ColumnHeader>
-              <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600" fontSize="xs" textTransform="uppercase" textAlign="end">
+              <Table.ColumnHeader
+                px={6}
+                py={4}
+                fontWeight="semibold"
+                color="gray.600"
+                fontSize="xs"
+                textTransform="uppercase"
+                textAlign="end"
+              >
                 Aksi
               </Table.ColumnHeader>
             </Table.Row>
           </Table.Header>
           <Table.Body>
-            {exams?.map((exam) => {
-              const sc = statusColorMap[exam.status] ?? { bg: 'yellow.100', color: 'yellow.700' };
+            {filteredExams?.map((exam) => {
+              const sc = statusColorMap[exam.status] ?? {
+                bg: "yellow.100",
+                color: "yellow.700",
+              };
               return (
-                <Table.Row key={exam.id} _hover={{ bg: 'gray.50' }} transition="background 0.15s">
+                <Table.Row
+                  key={exam.id}
+                  _hover={{ bg: "gray.50" }}
+                  transition="background 0.15s"
+                >
                   <Table.Cell px={6} py={4}>
-                    <Text fontWeight="medium" color="gray.900">{exam.title}</Text>
+                    <Text fontWeight="medium" color="gray.900">
+                      {exam.title}
+                    </Text>
                     {exam.examGroup && (
-                      <Badge bg="indigo.50" color="indigo.700" fontSize="2xs" mt={1} mr={2}>
+                      <Badge
+                        bg="indigo.50"
+                        color="indigo.700"
+                        fontSize="2xs"
+                        mt={1}
+                        mr={2}
+                      >
                         {exam.examGroup.name}
                       </Badge>
                     )}
                     {exam.token && (
-                      <HStack gap={1} mt={1} color="gray.400" fontSize="xs" display="inline-flex">
+                      <HStack
+                        gap={1}
+                        mt={1}
+                        color="gray.400"
+                        fontSize="xs"
+                        display="inline-flex"
+                      >
                         <Lock size={12} />
                         <Text>Token: {exam.token}</Text>
                       </HStack>
                     )}
                   </Table.Cell>
-                  <Table.Cell px={6} py={4} fontSize="sm">{exam.subject.name}</Table.Cell>
+                  <Table.Cell px={6} py={4} fontSize="sm">
+                    {exam.subject.name}
+                  </Table.Cell>
                   <Table.Cell px={6} py={4} fontSize="sm">
                     <HStack gap={1}>
-                      <Calendar size={14} style={{ color: '#9ca3af' }} />
-                      <Text>{new Date(exam.startTime).toLocaleDateString()}</Text>
+                      <Calendar size={14} style={{ color: "#9ca3af" }} />
+                      <Text>
+                        {new Date(exam.startTime).toLocaleDateString()}
+                      </Text>
                     </HStack>
                     <HStack gap={1} mt={1} color="gray.500">
-                      <Clock size={14} style={{ color: '#9ca3af' }} />
+                      <Clock size={14} style={{ color: "#9ca3af" }} />
                       <Text>{exam.duration} menit</Text>
                     </HStack>
                   </Table.Cell>
@@ -174,7 +327,7 @@ export default function ExamsPage() {
                         asChild
                         variant="ghost"
                         color="indigo.600"
-                        _hover={{ bg: 'indigo.50' }}
+                        _hover={{ bg: "indigo.50" }}
                         size="sm"
                         borderRadius="lg"
                         aria-label="Lihat Hasil"
@@ -184,17 +337,31 @@ export default function ExamsPage() {
                         </Link>
                       </IconButton>
                       <IconButton
+                        asChild
+                        variant="ghost"
+                        color="amber.600"
+                        _hover={{ bg: "amber.50" }}
+                        size="sm"
+                        borderRadius="lg"
+                        aria-label="Edit Ujian"
+                      >
+                        <Link href={`/admin/exams/edit/${exam.id}`}>
+                          <Pencil size={18} />
+                        </Link>
+                      </IconButton>
+                      <IconButton
                         variant="ghost"
                         color="red.500"
-                        _hover={{ bg: 'red.50' }}
+                        _hover={{ bg: "red.50" }}
                         size="sm"
                         borderRadius="lg"
                         aria-label="Delete Exam"
                         onClick={async () => {
                           const confirmed = await confirmDialog({
-                            title: 'Hapus Ujian',
-                            description: 'Apakah Anda yakin ingin menghapus ujian ini?',
-                            confirmText: 'Hapus'
+                            title: "Hapus Ujian",
+                            description:
+                              "Apakah Anda yakin ingin menghapus ujian ini?",
+                            confirmText: "Hapus",
                           });
                           if (confirmed) {
                             deleteMutation.mutate(exam.id);
@@ -208,9 +375,16 @@ export default function ExamsPage() {
                 </Table.Row>
               );
             })}
-            {exams?.length === 0 && (
+            {filteredExams?.length === 0 && (
               <Table.Row>
-                <Table.Cell colSpan={5} px={6} py={12} textAlign="center" color="gray.500" fontStyle="italic">
+                <Table.Cell
+                  colSpan={5}
+                  px={6}
+                  py={12}
+                  textAlign="center"
+                  color="gray.500"
+                  fontStyle="italic"
+                >
                   Belum ada ujian yang dijadwalkan.
                 </Table.Cell>
               </Table.Row>

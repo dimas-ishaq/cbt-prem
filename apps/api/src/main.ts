@@ -6,8 +6,15 @@ import { ValidationPipe } from '@nestjs/common';
 import { join } from 'path';
 import { json, urlencoded } from 'express';
 
+import { WinstonLogger } from './common/logger/logger.service';
+
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bufferLogs: true,
+  });
+  
+  const logger = app.get(WinstonLogger);
+  app.useLogger(logger);
   
   app.use(json({ limit: '10mb' }));
   app.use(urlencoded({ limit: '10mb', extended: true }));
@@ -22,7 +29,13 @@ async function bootstrap() {
     prefix: '/uploads/',
   });
   
-  app.enableCors();
+  const allowedOrigins = process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : ['http://localhost:3000'];
+  app.enableCors({
+    origin: allowedOrigins,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  });
   app.setGlobalPrefix('api');
   
   await app.listen(process.env.PORT ?? 3001);

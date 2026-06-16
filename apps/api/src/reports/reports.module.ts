@@ -1,0 +1,1 @@
+import { Module } from '@nestjs/common'; import { ReportsController } from './reports.controller'; import { RecommendationsService } from './recommendations.service'; @Module({ controllers: [ReportsController], providers: [RecommendationsService], exports: [RecommendationsService], }) export class ReportsModule {}

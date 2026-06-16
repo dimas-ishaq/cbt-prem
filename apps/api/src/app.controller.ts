@@ -15,6 +15,13 @@ export class AppController {
     return this.appService.getHello();
   }
 
+  @Get('server-time')
+  getServerTime() {
+    return {
+      serverTime: new Date().toISOString(),
+    };
+  }
+
   @Get('dashboard/stats')
   @UseGuards(JwtAuthGuard)
   async getDashboardStats() {

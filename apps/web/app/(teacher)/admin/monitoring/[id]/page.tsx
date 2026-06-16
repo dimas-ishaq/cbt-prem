@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useSocket } from '@/hooks/useSocket';
+import { useSound } from '@/hooks/useSound';
 import { useEffect, useState, use, useCallback } from 'react';
 import {
   ChevronLeft,
@@ -46,6 +47,7 @@ interface Student {
   lastActive: string;
   status: string;
   violationCount?: number;
+  currentQuestionIndex?: number;
 }
 
 interface Violation {
@@ -61,6 +63,7 @@ type SortKey = 'name' | 'progress' | 'violations' | 'status';
 export default function ExamMonitoringPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const socket = useSocket();
+  const { playViolation, playNotification } = useSound();
 
   const [students, setStudents] = useState<Record<string, Student>>({});
   const [violations, setViolations] = useState<Violation[]>([]);
@@ -75,6 +78,11 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
     queryKey: ['exam-monitoring', id],
     queryFn: async () => (await api.get(`/exams/${id}`)).data,
     refetchInterval: 10_000,
+  });
+
+  const { data: settings } = useQuery({
+    queryKey: ['settings'],
+    queryFn: async () => (await api.get('/settings')).data,
   });
 
   const totalQ = exam?.examQuestions?.length || 1;
@@ -96,7 +104,8 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
     socket.emit('join_proctor', { examId: id });
 
     const handlers: Record<string, (d: any) => void> = {
-      student_joined: (d) =>
+      student_joined: (d) => {
+        playNotification();
         setStudents((prev) => ({
           ...prev,
           [d.userId]: {
@@ -106,8 +115,10 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
             status: 'Online',
             progress: prev[d.userId]?.progress || 0,
             lastActive: new Date().toISOString(),
+            currentQuestionIndex: prev[d.userId]?.currentQuestionIndex,
           },
-        })),
+        }));
+      },
       student_offline: (d) =>
         setStudents((prev) =>
           prev[d.userId] ? { ...prev, [d.userId]: { ...prev[d.userId], status: 'Offline' } } : prev,
@@ -118,7 +129,21 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
           if (!s) return prev;
           return { ...prev, [d.studentId]: { ...s, progress: Math.min(100, s.progress + 100 / totalQ), lastActive: new Date().toISOString() } };
         }),
+      student_question_update: (d) =>
+        setStudents((prev) => {
+          const s = prev[d.studentId];
+          if (!s) return prev;
+          return {
+            ...prev,
+            [d.studentId]: {
+              ...s,
+              currentQuestionIndex: d.questionIndex,
+              lastActive: new Date().toISOString(),
+            },
+          };
+        }),
       violation_alert: (d) => {
+        playViolation();
         setViolations((prev) => [
           { id: Date.now().toString() + Math.random().toString(36).slice(2, 11), username: d.username, type: d.type, description: d.description, timestamp: d.timestamp },
           ...prev.slice(0, 99),
@@ -376,7 +401,7 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
                           {s.fullName || s.username}
                         </Text>
                         <Text fontSize="xs" color="gray.500">
-                          {new Date(s.lastActive).toLocaleTimeString('id-ID')}
+                          {new Date(s.lastActive).toLocaleTimeString('id-ID', { timeZone: settings?.timezone || 'Asia/Jakarta' })}
                         </Text>
                       </Box>
                     </Flex>
@@ -398,7 +423,7 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
                       <Text color="gray.500">Progres</Text>
                       <Text color={done ? 'green.600' : 'gray.800'}>{Math.round(s.progress)}%</Text>
                     </Flex>
-                    <Box h="8px" borderRadius="full" bg="gray.200" overflow="hidden">
+                    <Box h="8px" borderRadius="full" bg="gray.200" overflow="hidden" mb={2}>
                       <Box
                         h="full"
                         borderRadius="full"
@@ -407,6 +432,9 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
                         style={{ width: `${s.progress}%` }}
                       />
                     </Box>
+                    <Text fontSize="11px" fontWeight="semibold" color="indigo.650">
+                      Sedang Mengerjakan: Soal #{s.currentQuestionIndex || 1}
+                    </Text>
                   </Box>
                 </Box>
               );
@@ -443,7 +471,7 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
                 <Flex justify="space-between" align="start" mb={1}>
                   <Text fontWeight="semibold" fontSize="sm" color="red.900">{v.username}</Text>
                   <Text fontSize="xs" color="red.500" whiteSpace="nowrap" ml={2}>
-                    {new Date(v.timestamp).toLocaleTimeString('id-ID')}
+                    {new Date(v.timestamp).toLocaleTimeString('id-ID', { timeZone: settings?.timezone || 'Asia/Jakarta' })}
                   </Text>
                 </Flex>
                 <Text fontSize="11px" fontWeight="bold" color="red.700" textTransform="uppercase" letterSpacing="wider" mb={1}>

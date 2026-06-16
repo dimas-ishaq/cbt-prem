@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
   Box,
   Flex,
@@ -21,7 +21,7 @@ import {
 } from '@chakra-ui/react';
 import toast from 'react-hot-toast';
 import { useConfirm } from '@/components/ui/confirmation-dialog';
-import { Plus, Pencil, Trash2, Search, Users, GraduationCap, Mail, ArrowLeft, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Users, GraduationCap, Mail, ArrowLeft, X, Download, Upload } from 'lucide-react';
 
 interface Student {
   id: string;
@@ -60,6 +60,50 @@ export default function RombelsPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const confirmDialog = useConfirm();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleDownloadTemplate = async () => {
+    try {
+      const response = await api.get('/rombels/template/download', { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'template-import-rombel.csv');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      toast.error('Gagal mengunduh template');
+    }
+  };
+
+  const importMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      return api.post('/rombels/import', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+    },
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ['rombels'] });
+      const data = res.data;
+      const warningNote = data.warnings?.length > 0 ? ` dengan ${data.warnings.length} peringatan` : '';
+      toast.success(`Berhasil mengimpor ${data.imported} rombel${warningNote}!`);
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Gagal mengimpor rombel');
+    },
+  });
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      importMutation.mutate(file);
+    }
+    e.target.value = '';
+  };
 
   // Redirect if not SUPER_ADMIN
   useEffect(() => {
@@ -654,23 +698,54 @@ export default function RombelsPage() {
             Kelola daftar kelas dan kelompok belajar yang terintegrasi dengan jurusan.
           </Text>
         </Box>
-        <Button
-          bg="indigo.600"
-          color="white"
-          _hover={{ bg: 'indigo.700' }}
-          borderRadius="lg"
-          px={4}
-          py={2}
-          fontWeight="medium"
-          onClick={() => {
-            resetForm();
-            setIsModalOpen(true);
-          }}
-          cursor="pointer"
-        >
-          <Plus size={20} style={{ marginRight: '6px' }} />
-          Tambah Rombel
-        </Button>
+        <HStack gap={3}>
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            accept=".csv"
+            style={{ display: 'none' }}
+          />
+          <Button
+            variant="outline"
+            borderColor="blue.300"
+            color="blue.600"
+            _hover={{ bg: 'blue.50' }}
+            borderRadius="lg"
+            onClick={handleDownloadTemplate}
+            cursor="pointer"
+          >
+            <Download size={18} />
+            Unduh Template
+          </Button>
+          <Button
+            variant="outline"
+            borderColor="gray.300"
+            color="gray.700"
+            _hover={{ bg: 'gray.50' }}
+            borderRadius="lg"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={importMutation.isPending}
+            cursor="pointer"
+          >
+            <Upload size={18} />
+            {importMutation.isPending ? 'Mengimpor...' : 'Impor CSV'}
+          </Button>
+          <Button
+            bg="indigo.600"
+            color="white"
+            _hover={{ bg: 'indigo.700' }}
+            borderRadius="lg"
+            onClick={() => {
+              resetForm();
+              setIsModalOpen(true);
+            }}
+            cursor="pointer"
+          >
+            <Plus size={20} />
+            Tambah Rombel
+          </Button>
+        </HStack>
       </Flex>
 
       {/* Search Bar */}

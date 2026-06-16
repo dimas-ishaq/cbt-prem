@@ -1,4 +1,9 @@
-import { Injectable, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  ForbiddenException,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { StartSessionDto } from './dto/start-session.dto';
 import { SubmitAnswerDto } from './dto/submit-answer.dto';
@@ -278,6 +283,40 @@ export class ExamSessionsService {
             },
           }
         },
+      },
+    });
+  }
+
+  async getMyHistory(userId: string) {
+    const student = await this.prisma.student.findUnique({
+      where: { userId },
+    });
+
+    if (!student) {
+      throw new NotFoundException('Student not found');
+    }
+
+    return this.prisma.examSession.findMany({
+      where: {
+        studentId: student.id,
+        status: {
+          in: [SessionStatus.SUBMITTED, SessionStatus.FINISHED, SessionStatus.LOCKED]
+        }
+      },
+      include: {
+        exam: {
+          include: {
+            subject: true,
+          }
+        },
+        _count: {
+          select: {
+            answers: true,
+          }
+        }
+      },
+      orderBy: {
+        endTime: 'desc',
       },
     });
   }

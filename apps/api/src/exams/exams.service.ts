@@ -24,16 +24,32 @@ export class ExamsService {
     });
   }
 
-  async findAll() {
-    return this.prisma.exam.findMany({
-      include: { 
-        subject: true, 
-        examGroup: true,
-        teacher: { include: { user: true } },
-        _count: {
-          select: { examSessions: true }
+  async findAll(user?: any) {
+    const include: any = { 
+      subject: true, 
+      examGroup: true,
+      teacher: { include: { user: true } },
+      _count: {
+        select: { examSessions: true }
+      }
+    };
+
+    if (user && user.role === 'SISWA') {
+      include.examSessions = {
+        where: {
+          student: {
+            userId: user.userId
+          }
+        },
+        select: {
+          id: true,
+          status: true,
         }
-      },
+      };
+    }
+
+    return this.prisma.exam.findMany({
+      include,
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -137,9 +153,36 @@ export class ExamsService {
   }
 
   async update(id: string, data: any) {
+    const { questionIds, ...examData } = data;
+    
+    const updateData: any = {
+      ...examData,
+    };
+
+    if (data.startTime) {
+      updateData.startTime = new Date(data.startTime);
+    }
+    if (data.endTime) {
+      updateData.endTime = new Date(data.endTime);
+    }
+
+    if (questionIds) {
+      // Delete existing questions for this exam
+      await this.prisma.examQuestion.deleteMany({
+        where: { examId: id },
+      });
+      // Re-create the relation maps
+      updateData.examQuestions = {
+        create: questionIds.map((qId: string, index: number) => ({
+          questionId: qId,
+          order: index,
+        })),
+      };
+    }
+
     return this.prisma.exam.update({
       where: { id },
-      data,
+      data: updateData,
     });
   }
 
@@ -156,6 +199,9 @@ export class ExamsService {
     // In production, we would compare hashes provided by SEB
     // SEB-Config-Key and SEB-Browser-Exam-Key headers
     if (exam.sebConfigKey && exam.sebConfigKey !== sebConfigKey) {
+      return false;
+    }
+    if (exam.sebBrowserKey && exam.sebBrowserKey !== sebBrowserKey) {
       return false;
     }
     return true;

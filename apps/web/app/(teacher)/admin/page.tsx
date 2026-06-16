@@ -36,6 +36,11 @@ export default function AdminDashboard() {
     },
   });
 
+  const { data: settings } = useQuery({
+    queryKey: ['settings'],
+    queryFn: async () => (await api.get('/settings')).data,
+  });
+
   if (isLoading) {
     return (
       <Flex justify="center" align="center" py={16}>
@@ -162,7 +167,7 @@ export default function AdminDashboard() {
                     {alert.studentName}
                   </Text>
                   <Text fontSize="sm" color="red.700">
-                    Tipe: {alert.type} &bull; {new Date(alert.timestamp).toLocaleTimeString()}
+                    Tipe: {alert.type} &bull; {new Date(alert.timestamp).toLocaleTimeString('id-ID', { timeZone: settings?.timezone || 'Asia/Jakarta' })}
                   </Text>
                 </Box>
                 <Badge

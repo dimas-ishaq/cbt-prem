@@ -48,7 +48,7 @@ export function ExamNav({ questions, currentIndex, onSelect, answeredQuestions, 
             boxShadow={isCurrent ? 'lg' : 'none'}
             transform={isCurrent ? 'scale(1.05)' : 'none'}
             zIndex={isCurrent ? 10 : 1}
-            _hover={{ transform: 'scale(1.05)' }}
+            _hover={{ transform: isCurrent ? 'scale(1.05) translateY(-2px)' : 'translateY(-2px)', shadow: isCurrent ? 'xl' : 'md' }}
             transition="all 0.2s"
           >
             {idx + 1}

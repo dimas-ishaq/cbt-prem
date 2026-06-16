@@ -14,6 +14,8 @@ import {
   Key,
   Award,
   Bookmark,
+  Volume2,
+  BarChart3,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
 import { useRouter } from 'next/navigation';
@@ -45,6 +47,7 @@ const menuGroups = [
       { name: 'Konsentrasi Keahlian', href: '/admin/majors', icon: Award, key: 'majors' },
       { name: 'Rombongan Belajar', href: '/admin/rombels', icon: Users, key: 'rombels' },
       { name: 'Pengguna', href: '/admin/users', icon: Users, key: 'users' },
+      { name: 'Kartu Ujian', href: '/admin/exam-cards', icon: FileText, key: 'examCards' },
     ],
   },
   {
@@ -54,6 +57,7 @@ const menuGroups = [
       { name: 'Bank Soal', href: '/admin/question-banks', icon: FileText, key: 'questionBanks' },
       { name: 'Ujian', href: '/admin/exams', icon: GraduationCap, key: 'exams' },
       { name: 'Monitoring', href: '/admin/monitoring', icon: Activity, key: 'monitoring' },
+      { name: 'Laporan Rekomendasi', href: '/admin/reports', icon: BarChart3, key: 'reports' },
     ],
   },
   {
@@ -61,6 +65,7 @@ const menuGroups = [
     items: [
       { name: 'Manajemen Akses', href: '/admin/roles', icon: Key, key: 'roles' },
       { name: 'Pengaturan', href: '/admin/settings', icon: Settings, key: 'settings' },
+      { name: 'Log Sistem', href: '/admin/logs', icon: Activity, key: 'logs' },
     ],
   },
 ];
@@ -86,7 +91,14 @@ export function AdminSidebar() {
 
   const visibleMenuGroups = menuGroups.map((group) => {
     const visibleItems = group.items.filter((item) => {
-      if (item.href === '/admin/settings' || item.href === '/admin/roles' || item.href === '/admin/majors' || item.href === '/admin/rombels') {
+      if (
+        item.href === '/admin/settings' ||
+        item.href === '/admin/roles' ||
+        item.href === '/admin/logs' ||
+        item.href === '/admin/majors' ||
+        item.href === '/admin/rombels' ||
+        item.href === '/admin/exam-cards'
+      ) {
         return user?.role === 'SUPER_ADMIN';
       }
       return true;

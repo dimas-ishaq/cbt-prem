@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Body, Param, Patch, Delete, UseGuards, Request, Headers, UnauthorizedException } from '@nestjs/common';
 import { ExamsService } from './exams.service';
 import { CreateExamDto } from './dto/create-exam.dto';
+import { UpdateExamDto } from './dto/update-exam.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -24,8 +25,8 @@ export class ExamsController {
   }
 
   @Get()
-  findAll() {
-    return this.examsService.findAll();
+  findAll(@Request() req) {
+    return this.examsService.findAll(req.user);
   }
 
   @Get(':id')
@@ -37,16 +38,15 @@ export class ExamsController {
   ) {
     const isValidSeb = await this.examsService.validateSeb(id, sebConfigKey, sebBrowserKey);
     if (!isValidSeb) {
-      // Logic for SEB requirement: if exam requires SEB but keys don't match
-      // throw new UnauthorizedException('Safe Exam Browser required');
+      throw new UnauthorizedException('Safe Exam Browser required');
     }
     return this.examsService.findOne(id, req.user);
   }
 
   @Patch(':id')
   @Roles(Role.GURU, Role.SUPER_ADMIN)
-  update(@Param('id') id: string, @Body() data: any) {
-    return this.examsService.update(id, data);
+  update(@Param('id') id: string, @Body() dto: UpdateExamDto) {
+    return this.examsService.update(id, dto);
   }
 
   @Delete(':id')

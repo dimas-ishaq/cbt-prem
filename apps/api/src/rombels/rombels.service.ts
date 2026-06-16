@@ -96,4 +96,81 @@ export class RombelsService {
       return { success: true };
     });
   }
+
+  async generateTemplate(): Promise<Buffer> {
+    const csvContent = 'Nama Rombel,Kode Jurusan\n' +
+      'X RPL 1,RPL\n' +
+      'XI TKJ 2,TKJ\n' +
+      'XII AKL 1,AKL\n';
+    return Buffer.from(csvContent, 'utf-8');
+  }
+
+  async importRombels(fileBuffer: Buffer) {
+    const csvString = fileBuffer.toString('utf-8');
+    const lines = csvString.split(/\r?\n/);
+
+    const imported: { name: string; majorId: string }[] = [];
+    const warnings: { row: number; reason: string }[] = [];
+    let totalParsed = 0;
+
+    // Fetch all majors to cache them and make lookup super fast
+    const majors = await this.prisma.major.findMany();
+    const majorMap = new Map<string, string>(); // code (lowercase) -> id
+    majors.forEach((m) => {
+      majorMap.set(m.code.toLowerCase(), m.id);
+    });
+
+    // Start parsing from row 2 (index 1)
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue; // Skip empty lines
+
+      // Split by comma or semicolon
+      const cols = line.includes(';') ? line.split(';') : line.split(',');
+      const name = cols[0] ? cols[0].trim() : '';
+      const majorCode = cols[1] ? cols[1].trim() : '';
+
+      const rowNumber = i + 1;
+
+      if (!name) {
+        warnings.push({ row: rowNumber, reason: 'Nama Rombel kosong' });
+        continue;
+      }
+
+      if (!majorCode) {
+        warnings.push({ row: rowNumber, reason: `Kode Jurusan untuk rombel "${name}" kosong` });
+        continue;
+      }
+
+      const majorId = majorMap.get(majorCode.toLowerCase());
+      if (!majorId) {
+        warnings.push({ row: rowNumber, reason: `Kode Jurusan "${majorCode}" untuk rombel "${name}" tidak ditemukan` });
+        continue;
+      }
+
+      totalParsed++;
+      imported.push({ name, majorId });
+    }
+
+    let successCount = 0;
+    // Process insertions
+    for (const item of imported) {
+      try {
+        await this.prisma.rombel.upsert({
+          where: { name: item.name },
+          update: { majorId: item.majorId },
+          create: { name: item.name, majorId: item.majorId },
+        });
+        successCount++;
+      } catch (err: any) {
+        warnings.push({ row: 0, reason: `Gagal memproses rombel "${item.name}": ${err.message}` });
+      }
+    }
+
+    return {
+      totalParsed,
+      imported: successCount,
+      warnings,
+    };
+  }
 }

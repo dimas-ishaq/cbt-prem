@@ -19,8 +19,11 @@ const resources = {
       users: 'Pengguna',
       roles: 'Manajemen Akses',
       settings: 'Pengaturan',
+      logs: 'Log Sistem',
       logout: 'Keluar',
       cancelBtn: 'Batal',
+      examCards: 'Kartu Ujian',
+      reports: 'Laporan Rekomendasi',
       
       // Subjects
       subjectsTitle: 'Mata Pelajaran',
@@ -162,8 +165,11 @@ const resources = {
       users: 'Users',
       roles: 'Access Control',
       settings: 'Settings',
+      logs: 'System Logs',
       logout: 'Sign Out',
       cancelBtn: 'Cancel',
+      examCards: 'Exam Cards',
+      reports: 'Recommendation Reports',
       
       // Subjects
       subjectsTitle: 'Subjects',

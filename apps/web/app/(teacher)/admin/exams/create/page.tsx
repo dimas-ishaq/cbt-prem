@@ -64,7 +64,14 @@ export default function CreateExamPage() {
     passingGrade: 0,
     status: 'DRAFT',
     examGroupId: '',
+    sebConfigKey: '',
+    sebBrowserKey: '',
+    blockKeyCopyPaste: false,
+    forceFullscreen: false,
+    maxViolations: 0,
   });
+
+  const [requireSeb, setRequireSeb] = useState(false);
 
   const [selectedQuestionIds, setSelectedQuestionIds] = useState<string[]>([]);
   const [selectedBankId, setSelectedBankId] = useState<string>('');
@@ -130,6 +137,9 @@ export default function CreateExamPage() {
       questionIds: selectedQuestionIds,
       startTime: `${formData.startDate}T${formData.startTimeField}:00`,
       endTime: `${formData.endDate}T${formData.endTimeField}:00`,
+      sebConfigKey: requireSeb ? formData.sebConfigKey : null,
+      sebBrowserKey: requireSeb ? formData.sebBrowserKey : null,
+      maxViolations: parseInt(formData.maxViolations as any) || 0,
     };
     
     // Remove UI-only fields
@@ -470,6 +480,83 @@ export default function CreateExamPage() {
                     />
                     <Text fontSize="sm" color="gray.700">Acak Urutan Opsi</Text>
                   </Flex>
+                  <Flex
+                    as="label"
+                    align="center"
+                    gap={3}
+                    cursor="pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={requireSeb}
+                      onChange={(e) => setRequireSeb(e.target.checked)}
+                      style={{ width: '16px', height: '16px', accentColor: '#4f46e5' }}
+                    />
+                    <Text fontSize="sm" fontWeight="bold" color="gray.700">Wajibkan Safe Exam Browser</Text>
+                  </Flex>
+                  {requireSeb && (
+                    <Stack gap={2.5} pl={7} className="animate-fade-in">
+                      <Box>
+                        <Text fontSize="2xs" fontWeight="semibold" color="gray.500" mb={1}>Kunci Konfigurasi SEB (Opsional)</Text>
+                        <Input
+                          size="xs"
+                          value={formData.sebConfigKey}
+                          onChange={(e) => setFormData({ ...formData, sebConfigKey: e.target.value })}
+                          placeholder="Config Key"
+                          borderRadius="md"
+                        />
+                      </Box>
+                      <Box>
+                        <Text fontSize="2xs" fontWeight="semibold" color="gray.500" mb={1}>Kunci Browser SEB (Opsional)</Text>
+                        <Input
+                          size="xs"
+                          value={formData.sebBrowserKey}
+                          onChange={(e) => setFormData({ ...formData, sebBrowserKey: e.target.value })}
+                          placeholder="Browser Key"
+                          borderRadius="md"
+                        />
+                      </Box>
+                    </Stack>
+                  )}
+                  <Flex
+                    as="label"
+                    align="center"
+                    gap={3}
+                    cursor="pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={formData.blockKeyCopyPaste}
+                      onChange={(e) => setFormData({ ...formData, blockKeyCopyPaste: e.target.checked })}
+                      style={{ width: '16px', height: '16px', accentColor: '#4f46e5' }}
+                    />
+                    <Text fontSize="sm" color="gray.700">Proteksi Keyboard & Mouse (Blokir Klik Kanan, Salin-Tempel, DevTools)</Text>
+                  </Flex>
+                  <Flex
+                    as="label"
+                    align="center"
+                    gap={3}
+                    cursor="pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={formData.forceFullscreen}
+                      onChange={(e) => setFormData({ ...formData, forceFullscreen: e.target.checked })}
+                      style={{ width: '16px', height: '16px', accentColor: '#4f46e5' }}
+                    />
+                    <Text fontSize="sm" color="gray.700">Wajibkan Layar Penuh (Forced Fullscreen)</Text>
+                  </Flex>
+                  <Box>
+                    <Text fontSize="xs" fontWeight="semibold" color="gray.700" mb={1}>Batas Maksimum Pelanggaran (0 untuk Tidak Terbatas)</Text>
+                    <Input
+                      type="number"
+                      size="sm"
+                      w="20"
+                      value={formData.maxViolations}
+                      onChange={(e) => setFormData({ ...formData, maxViolations: parseInt(e.target.value) || 0 })}
+                      borderRadius="md"
+                    />
+                  </Box>
                 </Stack>
 
                 <Box pt={4} borderTop="1px solid" borderColor="gray.100">

@@ -45,6 +45,22 @@ export class CreateExamDto {
   @IsOptional()
   sebConfigKey?: string;
 
+  @IsString()
+  @IsOptional()
+  sebBrowserKey?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  blockKeyCopyPaste?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  forceFullscreen?: boolean;
+
+  @IsInt()
+  @IsOptional()
+  maxViolations?: number;
+
   @IsArray()
   @IsUUID(undefined, { each: true })
   @IsOptional()

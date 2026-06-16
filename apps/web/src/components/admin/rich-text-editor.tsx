@@ -24,6 +24,7 @@ import {
   Maximize2,
   Minimize2,
 } from 'lucide-react';
+import { IconButton, Tooltip, Flex, Box } from '@chakra-ui/react';
 
 interface Props {
   value: string;

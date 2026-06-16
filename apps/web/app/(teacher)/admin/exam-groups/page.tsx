@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { Plus, Trash2, Pencil, Calendar, Bookmark, Clock } from 'lucide-react';
+import { Plus, Trash2, Pencil, Calendar, Bookmark, Clock, Search, Filter } from 'lucide-react';
 import { useState, useRef } from 'react';
 import { ChakraDatePicker } from '@/components/ui/chakra-date-picker';
 import {
@@ -20,136 +20,229 @@ import {
   Badge,
   SimpleGrid,
 } from '@chakra-ui/react';
+import toast from 'react-hot-toast';
 
 interface ExamGroup {
   id: string;
   name: string;
   description?: string;
-  academicYear?: string;
-  semester?: string;
+  academicYear: string;
+  semester: string;
   startDate?: string;
   endDate?: string;
+  isActive: boolean;
+  createdAt: string;
   _count: {
     exams: number;
+    classes: number;
   };
 }
 
 export default function ExamGroupsPage() {
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-
-  const [form, setForm] = useState({
+  const [editingGroup, setEditingGroup] = useState<ExamGroup | null>(null);
+  const [formData, setFormData] = useState({
     name: '',
     description: '',
     academicYear: '',
-    semester: '',
-    startDateTime: null as Date | null,
-    endDateTime: null as Date | null,
+    semester: 'Ganjil',
+    startDate: null as Date | null,
+    endDate: null as Date | null,
+    isActive: true,
   });
 
-
+  const [searchText, setSearchText] = useState('');
+  const [selectedYear, setSelectedYear] = useState('');
+  const [selectedSemester, setSelectedSemester] = useState('');
 
   const { data: groups, isLoading } = useQuery<ExamGroup[]>({
     queryKey: ['exam-groups'],
     queryFn: async () => {
-      const response = await api.get('/exam-groups');
-      return response.data;
+      const res = await api.get('/exam-groups');
+      return res.data;
     },
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: typeof form) => api.post('/exam-groups', data),
+    mutationFn: async (data: typeof formData) => api.post('/exam-groups', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['exam-groups'] });
-      alert("Berhasil menyimpan data kelompok ujian!");
-      closeModal();
+      setIsModalOpen(false);
+      resetForm();
+      toast.success('Kelompok ujian berhasil dibuat');
     },
-    onError: (error: any) => {
-      alert("Gagal menyimpan data: " + (error.response?.data?.message || error.message));
-    }
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || 'Gagal membuat kelompok ujian');
+    },
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: typeof form }) => api.patch(`/exam-groups/${id}`, data),
+    mutationFn: async ({ id, data }: { id: string; data: typeof formData }) =>
+      api.patch(`/exam-groups/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['exam-groups'] });
-      alert("Berhasil memperbarui data kelompok ujian!");
-      closeModal();
+      setIsModalOpen(false);
+      resetForm();
+      toast.success('Kelompok ujian berhasil diubah');
     },
-    onError: (error: any) => {
-      alert("Gagal memperbarui data: " + (error.response?.data?.message || error.message));
-    }
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || 'Gagal mengubah kelompok ujian');
+    },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.delete(`/exam-groups/${id}`),
+    mutationFn: async (id: string) => api.delete(`/exam-groups/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['exam-groups'] });
-      alert("Data berhasil dihapus!");
+      toast.success('Kelompok ujian berhasil dihapus');
     },
-    onError: (error: any) => {
-      alert("Gagal menghapus data: " + (error.response?.data?.message || error.message));
-    }
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || 'Gagal menghapus kelompok ujian');
+    },
   });
 
-  const openCreateModal = () => {
-    setForm({ name: '', description: '', academicYear: '', semester: '', startDateTime: null, endDateTime: null });
-    setEditingId(null);
-    setIsModalOpen(true);
+  const handleDelete = (id: string) => {
+    if (confirm('Apakah Anda yakin ingin menghapus kelompok ujian ini?')) {
+      deleteMutation.mutate(id);
+    }
   };
 
-  const openEditModal = (group: ExamGroup) => {
-    setForm({
-      name: group.name,
-      description: group.description || '',
-      academicYear: group.academicYear || '',
-      semester: group.semester || '',
-      startDateTime: group.startDate ? new Date(group.startDate) : null,
-      endDateTime: group.endDate ? new Date(group.endDate) : null,
-    });
-    setEditingId(group.id);
+  const openCreateModal = () => {
+    resetForm();
     setIsModalOpen(true);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
+    resetForm();
+  };
+
+  const openEditModal = (group: ExamGroup) => {
+    setEditingGroup(group);
+    setFormData({
+      name: group.name,
+      description: group.description || '',
+      academicYear: group.academicYear || '',
+      semester: group.semester || 'Ganjil',
+      startDate: group.startDate ? new Date(group.startDate) : null,
+      endDate: group.endDate ? new Date(group.endDate) : null,
+      isActive: group.isActive,
+    });
+    setIsModalOpen(true);
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      description: '',
+      academicYear: '',
+      semester: 'Ganjil',
+      startDate: null,
+      endDate: null,
+      isActive: true,
+    });
+    setEditingGroup(null);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const payload: any = {
-      name: form.name,
-      description: form.description,
-      academicYear: form.academicYear,
-      semester: form.semester,
-    };
-    
-    if (form.startDateTime) {
-      payload.startDate = form.startDateTime.toISOString();
-    }
-    if (form.endDateTime) {
-      payload.endDate = form.endDateTime.toISOString();
-    }
-
-    if (editingId) {
-      updateMutation.mutate({ id: editingId, data: payload });
+    if (editingGroup) {
+      updateMutation.mutate({ id: editingGroup.id, data: formData });
     } else {
-      createMutation.mutate(payload);
+      createMutation.mutate(formData);
     }
   };
 
+  const filteredGroups = groups?.filter((group) => {
+    const matchesSearch = group.name.toLowerCase().includes(searchText.toLowerCase());
+    const matchesYear = selectedYear ? group.academicYear === selectedYear : true;
+    const matchesSemester = selectedSemester ? group.semester === selectedSemester : true;
+    return matchesSearch && matchesYear && matchesSemester;
+  });
+
   return (
-    <Stack gap={6}>
-      <Flex justify="space-between" align="center">
+    <Stack gap={6} p={6}>
+      <Flex align="center" justify="space-between">
         <Box>
           <Heading size="xl" fontWeight="bold" color="gray.900">
-            Event / Kelompok Ujian
+            Kelompok Ujian / Event
           </Heading>
           <Text color="gray.500" mt={1}>
-            Kelola pengelompokan ujian seperti ASAT, ASTS, Try Out, dll.
+            Kelola kelompok ujian akademik (UTS, UAS, dll) beserta tahun ajaran.
           </Text>
         </Box>
+        <Button
+          bg="indigo.600"
+          color="white"
+          _hover={{ bg: 'indigo.700' }}
+          borderRadius="lg"
+          px={4}
+          py={2}
+          fontWeight="medium"
+          onClick={openCreateModal}
+          cursor="pointer"
+        >
+          <Plus size={20} style={{ marginRight: '6px' }} />
+          Tambah Kelompok
+        </Button>
+      </Flex>
+
+      <Flex direction={{ base: 'column', md: 'row' }} gap={4} justify="space-between" align={{ md: 'center' }}>
+        <HStack gap={3} flexWrap="wrap">
+          <Flex align="center" gap={2} bg="gray.50" px={3} py={2} borderRadius="lg" borderWidth="1px" borderColor="gray.200">
+            <Search size={16} className="text-gray-500" />
+            <Input
+              placeholder="Cari event..."
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              size="sm"
+              variant="unstyled"
+              flex={1}
+              minW="180px"
+              _placeholder={{ color: 'gray.400' }}
+            />
+          </Flex>
+          <Flex align="center" gap={2} bg="gray.50" px={3} py={2} borderRadius="lg" borderWidth="1px" borderColor="gray.200">
+            <Filter size={16} className="text-gray-500" />
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                outline: 'none',
+                cursor: 'pointer',
+                fontSize: '14px',
+                color: '#4a5568',
+              }}
+            >
+              <option value="">Semua Tahun</option>
+              {Array.from({ length: 7 }, (_, i) => {
+                const y = new Date().getFullYear() - 3 + i;
+                return <option key={y} value={`${y}/${y + 1}`}>{y}/{y + 1}</option>;
+              })}
+            </select>
+          </Flex>
+          <Flex align="center" gap={2} bg="gray.50" px={3} py={2} borderRadius="lg" borderWidth="1px" borderColor="gray.200">
+            <select
+              value={selectedSemester}
+              onChange={(e) => setSelectedSemester(e.target.value)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                outline: 'none',
+                cursor: 'pointer',
+                fontSize: '14px',
+                color: '#4a5568',
+              }}
+            >
+              <option value="">Semua Semester</option>
+              <option value="Ganjil">Ganjil</option>
+              <option value="Genap">Genap</option>
+            </select>
+          </Flex>
+        </HStack>
         <Button
           bg="indigo.600"
           color="white"
@@ -191,7 +284,7 @@ export default function ExamGroupsPage() {
               </Table.Row>
             </Table.Header>
             <Table.Body>
-              {groups?.map((group) => (
+              {filteredGroups?.map((group) => (
                 <Table.Row key={group.id} _hover={{ bg: 'gray.50' }} transition="background 0.15s">
                   <Table.Cell px={6} py={4}>
                     <Text fontWeight="medium" color="gray.900">{group.name}</Text>
@@ -253,7 +346,7 @@ export default function ExamGroupsPage() {
                   </Table.Cell>
                 </Table.Row>
               ))}
-              {groups?.length === 0 && (
+              {filteredGroups?.length === 0 && (
                 <Table.Row>
                   <Table.Cell colSpan={4} px={6} py={12} textAlign="center" color="gray.500" fontStyle="italic">
                     Belum ada kelompok ujian.
@@ -281,7 +374,7 @@ export default function ExamGroupsPage() {
           <Box bg="white" borderRadius="2xl" shadow="xl" w="full" maxW="md" overflow="hidden">
             <Flex px={6} py={4} borderBottom="1px solid" borderColor="gray.100" justify="space-between" align="center" bg="gray.50">
               <Heading size="md" fontWeight="bold" color="gray.900">
-                {editingId ? 'Edit Event Ujian' : 'Tambah Event Ujian'}
+                {editingGroup ? 'Edit Event Ujian' : 'Tambah Event Ujian'}
               </Heading>
               <Button variant="ghost" color="gray.400" onClick={closeModal} fontSize="xl" p={0} minW={0} cursor="pointer">×</Button>
             </Flex>
@@ -289,36 +382,36 @@ export default function ExamGroupsPage() {
               <Stack gap={4} p={6}>
                 <Box>
                   <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Nama Event <span style={{ color: 'red' }}>*</span></Text>
-                  <Input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Cth. ASAT Genap 2024" borderRadius="lg" />
+                  <Input required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="Cth. ASAT Genap 2024" borderRadius="lg" />
                 </Box>
                 <Box>
                   <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Deskripsi</Text>
-                  <Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Opsional" borderRadius="lg" />
+                  <Input value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Opsional" borderRadius="lg" />
                 </Box>
                 <Flex gap={3}>
                   <Box flex={1}>
                     <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Tahun Ajaran</Text>
-                    <Input value={form.academicYear} onChange={(e) => setForm({ ...form, academicYear: e.target.value })} placeholder="Cth. 2024/2025" borderRadius="lg" />
+                    <Input value={formData.academicYear} onChange={(e) => setFormData({ ...formData, academicYear: e.target.value })} placeholder="Cth. 2024/2025" borderRadius="lg" />
                   </Box>
                   <Box flex={1}>
                     <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Semester</Text>
-                    <Input value={form.semester} onChange={(e) => setForm({ ...form, semester: e.target.value })} placeholder="Cth. Genap" borderRadius="lg" />
+                    <Input value={formData.semester} onChange={(e) => setFormData({ ...formData, semester: e.target.value })} placeholder="Cth. Genap" borderRadius="lg" />
                   </Box>
                 </Flex>
                 <SimpleGrid columns={2} gap={4}>
                   <Box>
                     <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Mulai</Text>
                     <ChakraDatePicker 
-                      value={form.startDateTime} 
-                      onChange={(date) => setForm({ ...form, startDateTime: date })} 
+                      value={formData.startDate} 
+                      onChange={(date) => setFormData({ ...formData, startDate: date })} 
                       placeholder="Pilih waktu"
                     />
                   </Box>
                   <Box>
                     <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Berakhir</Text>
                     <ChakraDatePicker 
-                      value={form.endDateTime} 
-                      onChange={(date) => setForm({ ...form, endDateTime: date })} 
+                      value={formData.endDate} 
+                      onChange={(date) => setFormData({ ...formData, endDate: date })} 
                       placeholder="Pilih waktu"
                     />
                   </Box>

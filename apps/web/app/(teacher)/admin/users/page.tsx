@@ -698,27 +698,27 @@ export default function UsersManagementPage() {
                     </Text>
                     <Flex gap={2}>
                       {ROLE_OPTIONS.map(({ label, value }) => (
-                        <button
+                        <Button
                           key={value}
                           type="button"
                           onClick={() => setForm({ ...form, role: value })}
-                          style={{
-                            flex: 1,
-                            padding: '10px 8px',
-                            borderRadius: '8px',
-                            borderWidth: '2px',
-                            borderStyle: 'solid',
-                            borderColor: form.role === value ? '#6366f1' : '#e5e7eb',
-                            background: form.role === value ? '#eef2ff' : 'white',
-                            color: form.role === value ? '#4338ca' : '#6b7280',
-                            fontWeight: 600,
-                            fontSize: '0.875rem',
-                            cursor: 'pointer',
-                            transition: 'all 0.15s',
-                          }}
+                          flex={1}
+                          py={2.5}
+                          px={2}
+                          borderRadius="lg"
+                          borderWidth="2px"
+                          fontWeight="semibold"
+                          fontSize="sm"
+                          cursor="pointer"
+                          transition="all 0.15s"
+                          variant="outline"
+                          borderColor={form.role === value ? 'indigo.500' : 'gray.200'}
+                          bg={form.role === value ? 'indigo.50' : 'white'}
+                          color={form.role === value ? 'indigo.700' : 'gray.500'}
+                          _hover={{ borderColor: 'indigo.400', bg: 'indigo.50', color: 'indigo.700' }}
                         >
                           {label}
-                        </button>
+                        </Button>
                       ))}
                     </Flex>
                   </Box>

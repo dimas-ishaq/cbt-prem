@@ -192,7 +192,7 @@ export function QuestionCard({ question, index, onAnswer, selectedAnswer, isFlag
                   <input
                     type="checkbox"
                     className="hidden"
-                    checked={isSelected}
+                    checked={!!isSelected}
                     onChange={() => handleMultipleResponseChange(option.id)}
                   />
                   <Flex

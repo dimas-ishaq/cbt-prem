@@ -44,6 +44,12 @@ export class ExamSessionsController {
     return this.examSessionsService.gradeAnswer(answerId, dto);
   }
 
+  @Get('my-history')
+  @Roles(Role.SISWA)
+  async myHistory(@Request() req) {
+    return this.examSessionsService.getMyHistory(req.user.userId);
+  }
+
   @Get('exam/:examId')
   @Roles(Role.GURU, Role.SUPER_ADMIN)
   async getExamSessions(@Param('examId') examId: string) {

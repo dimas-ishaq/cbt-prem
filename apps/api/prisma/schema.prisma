@@ -56,6 +56,7 @@ model User {
   email         String    @unique
   password      String
   fullName      String
+  photo        String?
   role          Role      @default(SISWA)
   isActive      Boolean   @default(true)
   createdAt     DateTime  @default(now())
@@ -179,8 +180,12 @@ model Exam {
   randomizeOpsi     Boolean     @default(true)
   passingGrade      Int         @default(0)
   status            ExamStatus  @default(DRAFT)
+  showScore         Boolean     @default(true)
   sebConfigKey      String?     // Safe Exam Browser config
   sebBrowserKey     String?     // Safe Exam Browser browser key
+  blockKeyCopyPaste Boolean     @default(false)
+  forceFullscreen   Boolean     @default(false)
+  maxViolations     Int         @default(0)
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
 

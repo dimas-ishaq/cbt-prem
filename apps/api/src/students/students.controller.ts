@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Delete, UseGuards, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, UseGuards, Query, Request } from '@nestjs/common';
 import { StudentsService } from './students.service';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -25,6 +25,12 @@ export class StudentsController {
     @Query('grade') grade?: string,
   ) {
     return this.studentsService.findAll(majorId, rombelId, grade);
+  }
+
+  @Get('me')
+  @Roles(Role.SISWA)
+  async myProfile(@Request() req) {
+    return this.studentsService.getMyProfile(req.user.userId);
   }
 
   @Get(':id')

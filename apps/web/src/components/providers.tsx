@@ -14,19 +14,19 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ChakraProvider value={system}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          enableSystem={false}
-          disableTransitionOnChange={false}
-        >
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="light"
+        enableSystem={false}
+        disableTransitionOnChange={false}
+      >
+        <ChakraProvider value={system}>
           <ConfirmationProvider>
             {children}
             <Toaster position="top-right" />
           </ConfirmationProvider>
-        </ThemeProvider>
-      </ChakraProvider>
+        </ChakraProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

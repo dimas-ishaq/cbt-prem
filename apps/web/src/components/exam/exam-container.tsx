@@ -4,11 +4,13 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useSocket } from '@/hooks/useSocket';
+import { useSound } from '@/hooks/useSound';
+import { useAuthStore } from '@/store/auth.store';
 import { QuestionCard } from './question-card';
 import { ExamNav } from './exam-nav';
 import { ExamTimer } from './exam-timer';
 import { useRouter } from 'next/navigation';
-import { AlertTriangle, ChevronLeft, ChevronRight, LogOut, ShieldAlert } from 'lucide-react';
+import { AlertTriangle, ChevronLeft, ChevronRight, LogOut, ShieldAlert, ArrowLeft, User, Clock, BookOpen, Award, CheckCircle2, Bookmark, HelpCircle } from 'lucide-react';
 import {
   Box,
   Flex,
@@ -32,28 +34,71 @@ export function ExamContainer({ examId }: Props) {
   const [flaggedQuestions, setFlaggedQuestions] = useState<string[]>([]);
   const [showViolationModal, setShowViolationModal] = useState(false);
   const [violationMessage, setViolationMessage] = useState('');
+  const [violationCount, setViolationCount] = useState(0);
   
+  const [tokenInput, setTokenInput] = useState('');
+  const [tokenError, setTokenError] = useState('');
+  const [checkedTerms, setCheckedTerms] = useState<Record<number, boolean>>({
+    0: false,
+    1: false,
+    2: false,
+  });
+
+  const allChecked = checkedTerms[0] && checkedTerms[1] && checkedTerms[2];
+  const user = useAuthStore((state) => state.user);
+
+  const enterFullScreen = () => {
+    const elem = document.documentElement;
+    if (elem.requestFullscreen) {
+      elem.requestFullscreen().catch((err) => {
+        console.error("Gagal masuk mode layar penuh:", err);
+      });
+    }
+  };
+
   const router = useRouter();
   const socket = useSocket();
   const confirmDialog = useConfirm();
+  const { playViolation } = useSound();
 
   // Fetch exam details
-  const { data: exam, isLoading: isLoadingExam } = useQuery({
+  const { data: exam, isLoading: isLoadingExam, error: examError } = useQuery({
     queryKey: ['exam', examId],
     queryFn: async () => {
       const response = await api.get(`/exams/${examId}`);
       return response.data;
     },
+    retry: false,
+  });
+
+  // Fetch settings for timezone
+  const { data: settings } = useQuery({
+    queryKey: ['settings'],
+    queryFn: async () => {
+      const response = await api.get('/settings');
+      return response.data;
+    },
+  });
+
+  // Fetch student profile details (NIS, Jurusan, Rombel)
+  const { data: profile } = useQuery({
+    queryKey: ['student-profile'],
+    queryFn: async () => {
+      const response = await api.get('/students/me');
+      return response.data;
+    },
+    enabled: user?.role === 'SISWA',
   });
 
   // Start/Get Session
   const startSessionMutation = useMutation({
-    mutationFn: async () => {
-      const response = await api.post('/exam-sessions/start', { examId });
+    mutationFn: async (token?: string) => {
+      const response = await api.post('/exam-sessions/start', { examId, token });
       return response.data;
     },
     onSuccess: (data) => {
       setSessionId(data.id);
+      setTokenError('');
       if (data.answers) {
         const existingAnswers: Record<string, string> = {};
         data.answers.forEach((ans: any) => {
@@ -71,48 +116,15 @@ export function ExamContainer({ examId }: Props) {
         socket.emit('join_exam', { examId });
       }
     },
+    onError: (err: any) => {
+      const errMsg = err.response?.data?.message;
+      if (errMsg === 'Invalid exam token' || errMsg === 'Invalid token') {
+        setTokenError('Token yang Anda masukkan salah. Silakan coba lagi.');
+      } else {
+        setTokenError(errMsg || 'Gagal memulai ujian. Silakan coba lagi.');
+      }
+    }
   });
-
-  useEffect(() => {
-    startSessionMutation.mutate();
-
-    let lastViolationTime = 0;
-    const VIOLATION_COOLDOWN = 5000;
-
-    const reportViolation = (type: string, description: string) => {
-      const now = Date.now();
-      if (now - lastViolationTime > VIOLATION_COOLDOWN) {
-        if (socket) {
-          socket.emit('violation_detected', {
-            examId,
-            type,
-            description,
-          });
-        }
-        setViolationMessage(description);
-        setShowViolationModal(true);
-        lastViolationTime = now;
-      }
-    };
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        reportViolation('TAB_SWITCH', 'Terdeteksi berpindah tab atau meminimalkan browser.');
-      }
-    };
-
-    const handleBlur = () => {
-      reportViolation('WINDOW_BLUR', 'Terdeteksi beralih fokus ke aplikasi atau jendela lain.');
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('blur', handleBlur);
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('blur', handleBlur);
-    };
-  }, [examId, socket]);
 
   const submitAnswerMutation = useMutation({
     mutationFn: async ({ questionId, answer, type }: { questionId: string, answer: string, type: string }) => {
@@ -147,6 +159,139 @@ export function ExamContainer({ examId }: Props) {
     },
   });
 
+  useEffect(() => {
+    if (!sessionId) return;
+
+    let lastViolationTime = 0;
+    const VIOLATION_COOLDOWN = 5000;
+
+    const reportViolation = (type: string, description: string) => {
+      const now = Date.now();
+      if (now - lastViolationTime > VIOLATION_COOLDOWN) {
+        if (socket) {
+          socket.emit('violation_detected', {
+            examId,
+            type,
+            description,
+          });
+        }
+        playViolation();
+        
+        setViolationCount(prev => {
+          const nextCount = prev + 1;
+          if (exam?.maxViolations > 0 && nextCount >= exam.maxViolations) {
+            setViolationMessage(description + ' Anda telah melebihi batas maksimum pelanggaran. Ujian Anda dikumpulkan otomatis.');
+            setShowViolationModal(true);
+            setTimeout(() => {
+              finishExamMutation.mutate();
+            }, 3000);
+          } else {
+            setViolationMessage(description);
+            setShowViolationModal(true);
+          }
+          return nextCount;
+        });
+        
+        lastViolationTime = now;
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        reportViolation('TAB_SWITCH', 'Terdeteksi berpindah tab atau meminimalkan browser.');
+      }
+    };
+
+    const handleBlur = () => {
+      reportViolation('WINDOW_BLUR', 'Terdeteksi beralih fokus ke aplikasi atau jendela lain.');
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('blur', handleBlur);
+
+    // 2. Keyboard & Mouse Protection
+    const handleContextMenu = (e: MouseEvent) => {
+      if (exam?.blockKeyCopyPaste) {
+        e.preventDefault();
+        reportViolation('CONTEXT_MENU', 'Terdeteksi klik kanan (membuka menu konteks).');
+      }
+    };
+
+    const handleSelectStart = (e: Event) => {
+      if (exam?.blockKeyCopyPaste) {
+        e.preventDefault();
+      }
+    };
+
+    const handleCopyCutPaste = (e: ClipboardEvent) => {
+      if (exam?.blockKeyCopyPaste) {
+        e.preventDefault();
+        reportViolation('COPY_PASTE', 'Terdeteksi upaya menyalin atau menempel teks.');
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!exam?.blockKeyCopyPaste) return;
+      const isF12 = e.key === 'F12';
+      const isCtrlShiftI = e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i');
+      const isCtrlShiftJ = e.ctrlKey && e.shiftKey && (e.key === 'J' || e.key === 'j');
+      const isCtrlShiftC = e.ctrlKey && e.shiftKey && (e.key === 'C' || e.key === 'c');
+      const isCtrlC = e.ctrlKey && (e.key === 'C' || e.key === 'c');
+      const isCtrlV = e.ctrlKey && (e.key === 'V' || e.key === 'v');
+      const isCtrlU = e.ctrlKey && (e.key === 'U' || e.key === 'u');
+      const isCtrlF = e.ctrlKey && (e.key === 'F' || e.key === 'f');
+
+      if (isF12 || isCtrlShiftI || isCtrlShiftJ || isCtrlShiftC || isCtrlC || isCtrlV || isCtrlU || isCtrlF) {
+        e.preventDefault();
+        reportViolation('KEYBOARD_SHORTCUT', 'Terdeteksi upaya menggunakan shortcut keyboard terlarang.');
+      }
+    };
+
+    document.addEventListener('contextmenu', handleContextMenu);
+    document.addEventListener('selectstart', handleSelectStart);
+    document.addEventListener('copy', handleCopyCutPaste);
+    document.addEventListener('cut', handleCopyCutPaste);
+    document.addEventListener('paste', handleCopyCutPaste);
+    document.addEventListener('keydown', handleKeyDown);
+
+    // 3. Forced Fullscreen Exit Detector
+    const handleFullscreenChange = () => {
+      if (exam?.forceFullscreen) {
+        const isFullscreen = document.fullscreenElement || (document as any).webkitFullscreenElement;
+        if (!isFullscreen) {
+          reportViolation('FULLSCREEN_EXIT', 'Terdeteksi keluar dari mode layar penuh (Fullscreen).');
+        }
+      }
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('blur', handleBlur);
+      document.removeEventListener('contextmenu', handleContextMenu);
+      document.removeEventListener('selectstart', handleSelectStart);
+      document.removeEventListener('copy', handleCopyCutPaste);
+      document.removeEventListener('cut', handleCopyCutPaste);
+      document.removeEventListener('paste', handleCopyCutPaste);
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+    };
+  }, [examId, socket, playViolation, sessionId, exam, finishExamMutation]);
+
+  useEffect(() => {
+    if (socket && sessionId) {
+      socket.emit('question_changed', {
+        examId,
+        questionIndex: currentQuestionIndex + 1,
+      });
+    }
+  }, [socket, sessionId, examId, currentQuestionIndex]);
+
+
+
   const toggleFlagQuestion = (questionId: string) => {
     setFlaggedQuestions(prev => 
       prev.includes(questionId) 
@@ -155,7 +300,373 @@ export function ExamContainer({ examId }: Props) {
     );
   };
 
+  const isSebError = (examError as any)?.response?.status === 401 && 
+    (examError as any)?.response?.data?.message === 'Safe Exam Browser required';
+
+  if (isSebError) {
+    return (
+      <Flex direction="column" align="center" justify="center" minH="screen" bg="gray.950" p={6} position="relative" overflow="hidden">
+        <Box position="absolute" top="-10%" left="-10%" w="50vw" h="50vw" bg="red.900/15" borderRadius="full" filter="blur(120px)" zIndex={0} pointerEvents="none" />
+        
+        <Box
+          bg="gray.900/80"
+          backdropFilter="blur(24px)"
+          w="full"
+          maxW="md"
+          borderRadius="3xl"
+          p={8}
+          boxShadow="2xl"
+          border="1px solid"
+          borderColor="red.500/20"
+          textAlign="center"
+          zIndex={1}
+        >
+          <Flex w={16} h={16} bg="red.500/10" borderRadius="full" align="center" justify="center" mx="auto" mb={6} border="1px solid" borderColor="red.500/20">
+            <ShieldAlert className="text-red-500 animate-pulse" size={32} />
+          </Flex>
+          <Heading size="md" fontWeight="bold" color="white">Safe Exam Browser Diperlukan</Heading>
+          <Text color="gray.400" fontSize="sm" mt={3} lineHeight="relaxed">
+            Ujian ini dikonfigurasi menggunakan pengamanan tingkat tinggi dan hanya dapat diakses melalui **Safe Exam Browser**.
+          </Text>
+          
+          <Box mt={6} p={4} bg="whiteAlpha.50" borderRadius="2xl" border="1px solid" borderColor="whiteAlpha.100" fontSize="xs" color="gray.350" textAlign="left">
+            <Text fontWeight="bold" color="indigo.300" mb={1}>Langkah-langkah mengikuti ujian:</Text>
+            <ol style={{ paddingLeft: '16px', margin: '4px 0' }}>
+              <li>Unduh dan pasang aplikasi Safe Exam Browser di perangkat Anda.</li>
+              <li>Unduh berkas konfigurasi (.seb) dari pengawas ujian.</li>
+              <li>Buka berkas konfigurasi tersebut untuk meluncurkan aplikasi ujian.</li>
+            </ol>
+          </Box>
+
+          <Button
+            onClick={() => router.push('/dashboard')}
+            mt={6}
+            w="full"
+            py={6}
+            bg="gray.800"
+            color="white"
+            fontWeight="bold"
+            borderRadius="xl"
+            _hover={{ bg: 'gray.700' }}
+            cursor="pointer"
+            fontSize="sm"
+          >
+            Kembali ke Dashboard
+          </Button>
+        </Box>
+      </Flex>
+    );
+  }
+
   if (isLoadingExam || !sessionId) {
+    if (exam && !sessionId) {
+      const isTokenRequired = !!exam.token;
+      return (
+        <Flex direction="column" h="screen" bg="gray.950" p={{ base: 4, md: 8 }} overflow="hidden" position="relative">
+          {/* Glowing Background Orbs */}
+          <Box position="absolute" top="-10%" left="-10%" w="50vw" h="50vw" bg="indigo.900/15" borderRadius="full" filter="blur(120px)" zIndex={0} pointerEvents="none" />
+          <Box position="absolute" bottom="-10%" right="-10%" w="40vw" h="40vw" bg="violet.900/10" borderRadius="full" filter="blur(100px)" zIndex={0} pointerEvents="none" />
+
+          {/* Top Bar with Back/Close Button */}
+          <Flex align="center" justify="space-between" mb={4} zIndex={1} w="full">
+            <Button
+              onClick={() => router.push('/dashboard')}
+              variant="ghost"
+              color="gray.400"
+              _hover={{ color: 'white', bg: 'whiteAlpha.100' }}
+              borderRadius="xl"
+              gap={2.5}
+              px={4}
+              py={5}
+              fontSize="sm"
+              fontWeight="bold"
+              cursor="pointer"
+            >
+              <ArrowLeft size={16} />
+              Kembali ke Dashboard
+            </Button>
+            <Text fontSize="xs" fontWeight="bold" color="gray.500" letterSpacing="wider" textTransform="uppercase">
+              Lobi Ujian CBT
+            </Text>
+          </Flex>
+
+          {/* Main Glassmorphic Card Container */}
+          <Box
+            bg="gray.900/80"
+            backdropFilter="blur(24px)"
+            w="full"
+            h="full"
+            borderRadius="3xl"
+            p={{ base: 6, md: 8 }}
+            boxShadow="0 25px 50px -12px rgba(0, 0, 0, 0.7)"
+            border="1px solid"
+            borderColor="whiteAlpha.100"
+            display="flex"
+            flexDirection="column"
+            overflowY="auto"
+            zIndex={1}
+          >
+            {/* Header */}
+            <Flex justify="space-between" align="start" mb={6} borderBottom="1px solid" borderColor="whiteAlpha.100" pb={5} direction={{ base: 'column', sm: 'row' }} gap={4}>
+              <Box>
+                <Heading size="xl" fontWeight="black" color="white" letterSpacing="tight">
+                  Konfirmasi & Tata Tertib Ujian
+                </Heading>
+                <Text color="gray.400" fontSize="sm" mt={1}>
+                  Harap periksa informasi peserta dan jadwal ujian dengan teliti sebelum memulai.
+                </Text>
+              </Box>
+              <Box bg="indigo.500/10" border="1px solid" borderColor="indigo.500/30" px={4} py={2} borderRadius="xl">
+                <Text fontSize="sm" fontWeight="black" color="indigo.300">
+                  {exam.duration} MENIT
+                </Text>
+              </Box>
+            </Flex>
+
+            {/* Warning Banner */}
+            <Box bg="amber.500/10" border="1px solid" borderColor="amber.500/30" p={4} borderRadius="2xl" mb={6}>
+              <Flex gap={3} align="start">
+                <Box bg="amber.500/20" p={2.5} borderRadius="xl" color="amber.300" mt={0.5}>
+                  <ShieldAlert size={20} />
+                </Box>
+                <Box>
+                  <Text fontWeight="extrabold" color="amber.300" fontSize="sm">Sistem Keamanan Ujian (Proctoring) Aktif</Text>
+                  <Text color="gray.300" fontSize="xs" mt={1} lineHeight="relaxed">
+                    Ujian ini mendeteksi aktivitas tab, aplikasi, dan status layar penuh browser Anda. Membuka jendela lain, shortcut devtools, atau meminimalkan browser akan dicatat otomatis sebagai tindakan pelanggaran tata tertib.
+                  </Text>
+                </Box>
+              </Flex>
+            </Box>
+
+            {/* Grid for Student Info & Exam Info */}
+            <SimpleGrid columns={{ base: 1, md: 2 }} gap={6} mb={6}>
+              {/* Student Identity Box */}
+              <Box p={5} bg="whiteAlpha.50" borderRadius="2xl" border="1px solid" borderColor="whiteAlpha.100" display="flex" flexDirection="column" justifyContent="space-between">
+                <Heading size="xs" fontWeight="extrabold" color="indigo.400" textTransform="uppercase" letterSpacing="wider" mb={4}>
+                  Identitas Peserta Ujian
+                </Heading>
+                <Flex gap={4} align="center" mb={4}>
+                  <Flex w={14} h={14} bg="indigo.600" borderRadius="full" align="center" justify="center" fontWeight="black" color="white" fontSize="xl" border="2px solid" borderColor="indigo.400">
+                    {(profile?.fullName || user?.fullName)?.substring(0, 2).toUpperCase() || 'U'}
+                  </Flex>
+                  <Box>
+                    <Text fontSize="3xs" fontWeight="bold" color="gray.400" textTransform="uppercase" letterSpacing="wider">Nama Lengkap</Text>
+                    <Text fontSize="md" fontWeight="bold" color="white">{profile?.fullName || user?.fullName || '-'}</Text>
+                  </Box>
+                </Flex>
+                <Stack gap={3}>
+                  <Box>
+                    <Text fontSize="3xs" fontWeight="bold" color="gray.400" textTransform="uppercase" letterSpacing="wider">Nomor Induk Siswa (NIS)</Text>
+                    <Text fontSize="sm" fontWeight="bold" color="gray.200">{profile?.nis || user?.username || '-'}</Text>
+                  </Box>
+                  <Box>
+                    <Text fontSize="3xs" fontWeight="bold" color="gray.400" textTransform="uppercase" letterSpacing="wider">Jurusan & Rombel</Text>
+                    <Text fontSize="sm" fontWeight="semibold" color="gray.350">
+                      {profile?.major?.name || 'Belum Ditentukan'} — {profile?.rombel?.name || 'Belum Ditentukan'}
+                    </Text>
+                  </Box>
+                </Stack>
+              </Box>
+
+              {/* Exam Info Box */}
+              <Box p={5} bg="whiteAlpha.50" borderRadius="2xl" border="1px solid" borderColor="whiteAlpha.100">
+                <Heading size="xs" fontWeight="extrabold" color="amber.400" textTransform="uppercase" letterSpacing="wider" mb={4}>
+                  Informasi Jadwal & Soal Ujian
+                </Heading>
+                <Stack gap={4}>
+                  <Box>
+                    <Text fontSize="3xs" fontWeight="bold" color="gray.400" textTransform="uppercase" letterSpacing="wider">Nama Mata Pelajaran</Text>
+                    <Text fontSize="md" fontWeight="bold" color="white">{exam.title} ({exam.subject?.name})</Text>
+                  </Box>
+                  <SimpleGrid columns={3} gap={2}>
+                    <Box bg="whiteAlpha.50" p={2.5} borderRadius="xl" textAlign="center" border="1px solid" borderColor="whiteAlpha.50">
+                      <Text fontSize="3xs" fontWeight="bold" color="gray.400" textTransform="uppercase">Soal</Text>
+                      <Text fontSize="sm" fontWeight="bold" color="white" mt={0.5}>{exam.examQuestions?.length || 0} Butir</Text>
+                    </Box>
+                    <Box bg="whiteAlpha.50" p={2.5} borderRadius="xl" textAlign="center" border="1px solid" borderColor="whiteAlpha.50">
+                      <Text fontSize="3xs" fontWeight="bold" color="gray.400" textTransform="uppercase">Kategori</Text>
+                      <Text fontSize="sm" fontWeight="bold" color="white" mt={0.5}>{exam.examGroup?.name || 'Umum'}</Text>
+                    </Box>
+                    <Box bg="whiteAlpha.50" p={2.5} borderRadius="xl" textAlign="center" border="1px solid" borderColor="whiteAlpha.50">
+                      <Text fontSize="3xs" fontWeight="bold" color="gray.400" textTransform="uppercase">Kelulusan</Text>
+                      <Text fontSize="sm" fontWeight="bold" color="white" mt={0.5}>{exam.passingGrade || 0} KKM</Text>
+                    </Box>
+                  </SimpleGrid>
+                  <SimpleGrid columns={2} gap={4}>
+                    <Box>
+                      <Text fontSize="3xs" fontWeight="bold" color="gray.400" textTransform="uppercase">Mulai Ujian</Text>
+                      <Text fontSize="xs" fontWeight="bold" color="gray.200" mt={0.5}>
+                        {new Date(exam.startTime).toLocaleString('id-ID', { timeZone: settings?.timezone || 'Asia/Jakarta', dateStyle: 'medium', timeStyle: 'short' })}
+                      </Text>
+                    </Box>
+                    <Box>
+                      <Text fontSize="3xs" fontWeight="bold" color="gray.400" textTransform="uppercase">Selesai Ujian</Text>
+                      <Text fontSize="xs" fontWeight="bold" color="gray.200" mt={0.5}>
+                        {new Date(exam.endTime).toLocaleString('id-ID', { timeZone: settings?.timezone || 'Asia/Jakarta', dateStyle: 'medium', timeStyle: 'short' })}
+                      </Text>
+                    </Box>
+                  </SimpleGrid>
+                </Stack>
+              </Box>
+            </SimpleGrid>
+
+            {/* Exam Guide Box */}
+            <Box mb={6} p={5} bg="whiteAlpha.50" borderRadius="2xl" border="1px solid" borderColor="whiteAlpha.100">
+              <Heading size="xs" fontWeight="extrabold" color="teal.400" textTransform="uppercase" letterSpacing="wider" mb={4}>
+                Panduan Langkah Pengerjaan Ujian
+              </Heading>
+              <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} gap={4} fontSize="xs">
+                <Box p={3.5} bg="whiteAlpha.50" borderRadius="xl" border="1px solid" borderColor="whiteAlpha.50">
+                  <Text fontWeight="bold" color="teal.300" mb={1}>1. Masuk Fullscreen</Text>
+                  <Text color="gray.400" lineHeight="relaxed">Sistem akan mengunci layar browser Anda ke mode layar penuh. Jangan menekan tombol ESC, Windows, atau beralih fokus.</Text>
+                </Box>
+                <Box p={3.5} bg="whiteAlpha.50" borderRadius="xl" border="1px solid" borderColor="whiteAlpha.50">
+                  <Text fontWeight="bold" color="teal.300" mb={1}>2. Kerjakan Soal & Simpan</Text>
+                  <Text color="gray.400" lineHeight="relaxed">Pilih opsi atau ketik jawaban Anda. Jawaban Anda secara otomatis tersimpan dan tersinkronisasi ke server secara realtime.</Text>
+                </Box>
+                <Box p={3.5} bg="whiteAlpha.50" borderRadius="xl" border="1px solid" borderColor="whiteAlpha.50">
+                  <Text fontWeight="bold" color="teal.300" mb={1}>3. Selesaikan Ujian</Text>
+                  <Text color="gray.400" lineHeight="relaxed">Gunakan tombol "Selesai Ujian" di pojok kanan atas setelah seluruh soal terjawab untuk men-submit lembar ujian Anda.</Text>
+                </Box>
+              </SimpleGrid>
+            </Box>
+
+            {/* Checklist */}
+            <Heading size="xs" fontWeight="extrabold" color="gray.400" textTransform="uppercase" letterSpacing="wider" mb={4}>
+              Syarat & Ketentuan Peserta (Harap Centang Seluruh Persyaratan)
+            </Heading>
+            <Stack gap={3} mb={6}>
+              {[
+                {
+                  id: 0,
+                  title: 'Keamanan & Integritas Ujian',
+                  desc: 'Saya menyetujui bahwa selama ujian berlangsung, sistem proctoring akan memantau aktivitas layar saya. Saya bersedia tidak membuka tab baru, mencari jawaban di internet, atau berpindah ke aplikasi lain.'
+                },
+                {
+                  id: 1,
+                  title: 'Kemandirian & Kejujuran Akademik',
+                  desc: 'Saya menyatakan akan mengerjakan soal-soal ujian ini secara mandiri dan jujur, tanpa bantuan dari orang lain maupun alat bantu yang tidak diizinkan.'
+                },
+                {
+                  id: 2,
+                  title: 'Konsekuensi Pelanggaran',
+                  desc: 'Saya memahami bahwa pelanggaran berulang terhadap tata tertib ujian dapat mengakibatkan sesi ujian saya dikunci secara otomatis oleh sistem, dan nilai ujian saya dibatalkan.'
+                }
+              ].map((item) => (
+                <Flex
+                  key={item.id}
+                  align="start"
+                  p={4.5}
+                  borderRadius="2xl"
+                  border="1.5px solid"
+                  borderColor={checkedTerms[item.id] ? 'indigo.500' : 'whiteAlpha.100'}
+                  bg={checkedTerms[item.id] ? 'indigo.950/20' : 'whiteAlpha.50'}
+                  transition="all 0.2s"
+                  cursor="pointer"
+                  onClick={() => setCheckedTerms(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
+                  _hover={{ borderColor: 'indigo.500/50', bg: 'whiteAlpha.100' }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checkedTerms[item.id] || false}
+                    onChange={() => {}}
+                    style={{
+                      marginTop: '4px',
+                      marginRight: '18px',
+                      width: '20px',
+                      height: '20px',
+                      accentColor: '#6366f1',
+                      cursor: 'pointer'
+                    }}
+                  />
+                  <Box>
+                    <Text fontWeight="bold" color={checkedTerms[item.id] ? 'white' : 'gray.200'} fontSize="sm">
+                      {item.title}
+                    </Text>
+                    <Text color="gray.400" fontSize="xs" mt={1} lineHeight="relaxed">
+                      {item.desc}
+                    </Text>
+                  </Box>
+                </Flex>
+              ))}
+            </Stack>
+
+            {/* Token Section */}
+            {isTokenRequired && (
+              <Box mb={6} p={5} bg="whiteAlpha.50" borderRadius="2xl" border="1px solid" borderColor="whiteAlpha.100">
+                <Text fontSize="xs" fontWeight="bold" color="indigo.300" mb={3} textTransform="uppercase" letterSpacing="wider">
+                  Masukkan Token Ujian
+                </Text>
+                <input
+                  type="text"
+                  placeholder={allChecked ? "Masukkan 8 digit token" : "Centang semua persetujuan di atas untuk mengisi token"}
+                  value={tokenInput}
+                  disabled={!allChecked}
+                  onChange={(e) => {
+                    setTokenInput(e.target.value.toUpperCase());
+                    setTokenError('');
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '14px 18px',
+                    borderRadius: '14px',
+                    border: '2px solid',
+                    borderColor: tokenError ? '#ef4444' : (allChecked ? '#6366f1' : 'transparent'),
+                    backgroundColor: allChecked ? '#0f172a' : '#1e293b/30',
+                    color: allChecked ? '#ffffff' : '#64748b',
+                    fontSize: '18px',
+                    fontWeight: 'black',
+                    letterSpacing: allChecked ? '4px' : 'normal',
+                    textAlign: 'center',
+                    outline: 'none',
+                    transition: 'all 0.2s',
+                    cursor: allChecked ? 'text' : 'not-allowed',
+                  }}
+                />
+                {!allChecked && (
+                  <Text color="gray.500" fontSize="3xs" fontWeight="bold" mt={2.5} textAlign="center">
+                    * Input token dikunci hingga seluruh persetujuan di atas dicentang
+                  </Text>
+                )}
+                {tokenError && (
+                  <Text color="red.400" fontSize="xs" fontWeight="bold" mt={2.5} textAlign="center">
+                    {tokenError}
+                  </Text>
+                )}
+              </Box>
+            )}
+
+            {/* Action Button */}
+            <Button
+              onClick={() => {
+                enterFullScreen();
+                startSessionMutation.mutate(isTokenRequired ? tokenInput : undefined);
+              }}
+              disabled={
+                startSessionMutation.isPending || 
+                !allChecked || 
+                (isTokenRequired && tokenInput.trim().length === 0)
+              }
+              bg={allChecked ? "indigo.600" : "whiteAlpha.100"}
+              color={allChecked ? "white" : "whiteAlpha.400"}
+              _hover={allChecked ? { bg: 'indigo.700', boxShadow: '0 0 24px rgba(99, 102, 241, 0.4)' } : {}}
+              borderRadius="2xl"
+              fontWeight="black"
+              py={7}
+              cursor={allChecked ? "pointer" : "not-allowed"}
+              w="full"
+              shadow="lg"
+              fontSize="md"
+              textTransform="uppercase"
+              letterSpacing="wider"
+            >
+              {startSessionMutation.isPending ? 'Mempersiapkan Ujian...' : 'Mulai Ujian Sekarang'}
+            </Button>
+          </Box>
+        </Flex>
+      );
+    }
+
     return (
       <Flex direction="column" align="center" justify="center" minH="screen" bg="gray.50">
         <Spinner size="xl" color="indigo.600" mb={4} />
@@ -196,9 +707,18 @@ export function ExamContainer({ examId }: Props) {
         {/* Action Button */}
         <Button
           onClick={async () => {
+            const unanswered = totalQuestions - answeredCount;
+            let title = 'Selesai Ujian';
+            let description = 'Apakah Anda yakin ingin menyelesaikan ujian? Jawaban Anda akan dikirimkan dan nilai Anda akan langsung diproses.';
+            
+            if (unanswered > 0) {
+              title = 'Konfirmasi: Soal Belum Terjawab';
+              description = `Peringatan: Masih terdapat ${unanswered} dari ${totalQuestions} soal yang belum Anda isi. Apakah Anda yakin ingin menyelesaikan ujian sekarang?`;
+            }
+
             const confirmed = await confirmDialog({
-              title: 'Selesai Ujian',
-              description: 'Apakah Anda yakin ingin menyelesaikan ujian? Nilai Anda akan langsung diproses.',
+              title,
+              description,
               confirmText: 'Ya, Selesai'
             });
             if (confirmed) {
@@ -279,7 +799,8 @@ export function ExamContainer({ examId }: Props) {
         {/* Right Side: Sidebar Navigation */}
         <Flex as="aside" w={80} bg="white" borderLeft="1px solid" borderColor="gray.100" direction="column" justify="space-between">
           <Box p={6} overflowY="auto" flex={1}>
-            <Heading size="sm" fontWeight="bold" color="gray.850" mb={2}>
+            <Heading size="sm" fontWeight="bold" color="gray.850" mb={2} display="flex" alignItems="center" gap={2}>
+              <HelpCircle size={17} className="text-indigo-500" />
               Navigasi Soal
             </Heading>
             <Text fontSize="2xs" color="gray.450" fontWeight="medium" mb={6}>
@@ -298,13 +819,19 @@ export function ExamContainer({ examId }: Props) {
           {/* Stats Footer */}
           <Box p={6} borderTop="1px solid" borderColor="gray.50" bg="gray.50/50">
             <SimpleGrid columns={2} gap={3} mb={4}>
-              <Box bg="white" p={3} borderRadius="xl" border="1px solid" borderColor="gray.100" shadow="xs" textAlign="center">
-                <Text fontSize="2xl" fontWeight="black" color="indigo.600">{answeredCount}</Text>
-                <Text fontSize="3xs" fontWeight="semibold" color="gray.400" textTransform="uppercase" letterSpacing="wider" mt={1}>Terjawab</Text>
+              <Box bg="emerald.50/30" p={3.5} borderRadius="2xl" border="1px solid" borderColor="emerald.100" shadow="xs" textAlign="center">
+                <Flex justify="center" align="center" gap={1.5} mb={1}>
+                  <CheckCircle2 size={15} className="text-emerald-500" />
+                  <Text fontSize="2xl" fontWeight="black" color="emerald.600">{answeredCount}</Text>
+                </Flex>
+                <Text fontSize="3xs" fontWeight="extrabold" color="emerald.700" textTransform="uppercase" letterSpacing="wider">Terjawab</Text>
               </Box>
-              <Box bg="white" p={3} borderRadius="xl" border="1px solid" borderColor="gray.100" shadow="xs" textAlign="center">
-                <Text fontSize="2xl" fontWeight="black" color="amber.500">{flaggedQuestions.length}</Text>
-                <Text fontSize="3xs" fontWeight="semibold" color="gray.400" textTransform="uppercase" letterSpacing="wider" mt={1}>Ragu-Ragu</Text>
+              <Box bg="amber.50/30" p={3.5} borderRadius="2xl" border="1px solid" borderColor="amber.100" shadow="xs" textAlign="center">
+                <Flex justify="center" align="center" gap={1.5} mb={1}>
+                  <Bookmark size={15} className="text-amber-500 fill-amber-500" />
+                  <Text fontSize="2xl" fontWeight="black" color="amber.600">{flaggedQuestions.length}</Text>
+                </Flex>
+                <Text fontSize="3xs" fontWeight="extrabold" color="amber.700" textTransform="uppercase" letterSpacing="wider">Ragu-Ragu</Text>
               </Box>
             </SimpleGrid>
             
@@ -331,7 +858,12 @@ export function ExamContainer({ examId }: Props) {
               Aktivitas perpindahan layar dicatat oleh sistem pengawas (proctoring). Pelanggaran berulang dapat membatalkan sesi ujian Anda.
             </Box>
             <Button
-              onClick={() => setShowViolationModal(false)}
+              onClick={() => {
+                if (exam?.forceFullscreen) {
+                  enterFullScreen();
+                }
+                setShowViolationModal(false);
+              }}
               mt={6}
               w="full"
               py={5}

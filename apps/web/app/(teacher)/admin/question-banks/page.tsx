@@ -1,7 +1,7 @@
 'use client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { Plus, Trash2, Edit2, BookOpen } from 'lucide-react';
+import { Plus, Trash2, Edit2, BookOpen, Search, SlidersHorizontal, ArrowUpDown, RotateCcw, FolderOpen, FileQuestion, Hash } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
@@ -38,6 +38,12 @@ export default function QuestionBankListPage() {
     subjectId: '',
     category: '',
   });
+
+  // Filter and sort states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedSubjectId, setSelectedSubjectId] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [sortBy, setSortBy] = useState('name-asc');
 
   const { data: banks, isLoading } = useQuery<QuestionBank[]>({
     queryKey: ['question-banks'],
@@ -126,6 +132,57 @@ export default function QuestionBankListPage() {
     }
   };
 
+  // Dynamic categories extraction
+  const categories = Array.from(
+    new Set(
+      banks
+        ?.map((b) => b.category?.trim())
+        .filter((cat): cat is string => !!cat) || []
+    )
+  ).sort();
+
+  // Stats calculation
+  const totalBanks = banks?.length || 0;
+  const totalQuestions = banks?.reduce((acc, bank) => {
+    return acc + (bank._count?.questions ?? bank.questions?.length ?? 0);
+  }, 0) || 0;
+  const totalCategories = categories.length;
+
+  // Filtered and sorted banks list
+  const filteredBanks = (banks || []).filter((bank) => {
+    const matchesSearch = bank.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSubject = selectedSubjectId ? bank.subjectId === selectedSubjectId : true;
+    const matchesCategory = selectedCategory ? (bank.category || 'Umum') === selectedCategory : true;
+    return matchesSearch && matchesSubject && matchesCategory;
+  });
+
+  const sortedBanks = [...filteredBanks].sort((a, b) => {
+    if (sortBy === 'name-asc') {
+      return a.name.localeCompare(b.name);
+    }
+    if (sortBy === 'name-desc') {
+      return b.name.localeCompare(a.name);
+    }
+    const aCount = a._count?.questions ?? a.questions?.length ?? 0;
+    const bCount = b._count?.questions ?? b.questions?.length ?? 0;
+    if (sortBy === 'questions-desc') {
+      return bCount - aCount;
+    }
+    if (sortBy === 'questions-asc') {
+      return aCount - bCount;
+    }
+    return 0;
+  });
+
+  const handleResetFilters = () => {
+    setSearchQuery('');
+    setSelectedSubjectId('');
+    setSelectedCategory('');
+    setSortBy('name-asc');
+  };
+
+  const isFilterActive = searchQuery !== '' || selectedSubjectId !== '' || selectedCategory !== '' || sortBy !== 'name-asc';
+
   return (
     <Stack gap={6} p={6}>
       <Flex align="center" justify="space-between">
@@ -155,6 +212,184 @@ export default function QuestionBankListPage() {
           {t('addQb')}
         </Button>
       </Flex>
+
+      {/* Stats Cards - Only show when banks are loaded and banks list is not empty */}
+      {!isLoading && banks && banks.length > 0 && (
+        <SimpleGrid columns={{ base: 1, md: 3 }} gap={6}>
+          {/* Card 1: Total Banks */}
+          <Box bg="white" p={5} borderRadius="xl" borderWidth="1px" borderColor="gray.100" shadow="sm">
+            <Flex align="center" gap={4}>
+              <Box p={3} bg="indigo.50" borderRadius="lg" color="indigo.600">
+                <BookOpen size={24} />
+              </Box>
+              <Box>
+                <Text fontSize="xs" color="gray.500" fontWeight="medium" textTransform="uppercase" letterSpacing="wider">
+                  Total Bank Soal
+                </Text>
+                <Text fontSize="2xl" fontWeight="bold" color="gray.900" mt={1}>
+                  {totalBanks}
+                </Text>
+              </Box>
+            </Flex>
+          </Box>
+
+          {/* Card 2: Total Questions */}
+          <Box bg="white" p={5} borderRadius="xl" borderWidth="1px" borderColor="gray.100" shadow="sm">
+            <Flex align="center" gap={4}>
+              <Box p={3} bg="teal.50" borderRadius="lg" color="teal.600">
+                <FileQuestion size={24} />
+              </Box>
+              <Box>
+                <Text fontSize="xs" color="gray.500" fontWeight="medium" textTransform="uppercase" letterSpacing="wider">
+                  Total Soal
+                </Text>
+                <Text fontSize="2xl" fontWeight="bold" color="gray.900" mt={1}>
+                  {totalQuestions}
+                </Text>
+              </Box>
+            </Flex>
+          </Box>
+
+          {/* Card 3: Unique Categories */}
+          <Box bg="white" p={5} borderRadius="xl" borderWidth="1px" borderColor="gray.100" shadow="sm">
+            <Flex align="center" gap={4}>
+              <Box p={3} bg="orange.50" borderRadius="lg" color="orange.600">
+                <Hash size={24} />
+              </Box>
+              <Box>
+                <Text fontSize="xs" color="gray.500" fontWeight="medium" textTransform="uppercase" letterSpacing="wider">
+                  Kategori
+                </Text>
+                <Text fontSize="2xl" fontWeight="bold" color="gray.900" mt={1}>
+                  {totalCategories}
+                </Text>
+              </Box>
+            </Flex>
+          </Box>
+        </SimpleGrid>
+      )}
+
+      {/* Filter and Search Panel - Only show when banks are loaded and banks list is not empty */}
+      {!isLoading && banks && banks.length > 0 && (
+        <Box bg="white" p={4} borderRadius="xl" borderWidth="1px" borderColor="gray.100" shadow="sm">
+          <Flex direction={{ base: 'column', lg: 'row' }} gap={4} align={{ lg: 'center' }}>
+            {/* Search Input */}
+            <Box flex={2} position="relative">
+              <Box position="absolute" left={3} top="50%" transform="translateY(-50%)" color="gray.400" pointerEvents="none" zIndex={2}>
+                <Search size={18} />
+              </Box>
+              <Input
+                placeholder="Cari bank soal..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                pl={10}
+                borderRadius="lg"
+                borderColor="gray.200"
+                _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
+              />
+            </Box>
+
+            {/* Select Filters and Sorting */}
+            <Flex flex={{ base: 1, lg: 3 }} gap={3} direction={{ base: 'column', md: 'row' }} width="full">
+              {/* Subject Filter */}
+              <Box flex={1}>
+                <select
+                  value={selectedSubjectId}
+                  onChange={(e) => setSelectedSubjectId(e.target.value)}
+                  style={{
+                    width: '100%',
+                    height: '40px',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #e2e8f0',
+                    outline: 'none',
+                    backgroundColor: 'white',
+                    fontSize: '14px',
+                    color: '#1a202c',
+                  }}
+                >
+                  <option value="">Semua Mapel</option>
+                  {subjects?.map((subject) => (
+                    <option key={subject.id} value={subject.id}>
+                      {subject.name}
+                    </option>
+                  ))}
+                </select>
+              </Box>
+
+              {/* Category Filter */}
+              <Box flex={1}>
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  style={{
+                    width: '100%',
+                    height: '40px',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #e2e8f0',
+                    outline: 'none',
+                    backgroundColor: 'white',
+                    fontSize: '14px',
+                    color: '#1a202c',
+                  }}
+                >
+                  <option value="">Semua Kategori</option>
+                  <option value="Umum">Umum</option>
+                  {categories.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+              </Box>
+
+              {/* Sort By */}
+              <Box flex={1}>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  style={{
+                    width: '100%',
+                    height: '40px',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #e2e8f0',
+                    outline: 'none',
+                    backgroundColor: 'white',
+                    fontSize: '14px',
+                    color: '#1a202c',
+                  }}
+                >
+                  <option value="name-asc">Nama (A - Z)</option>
+                  <option value="name-desc">Nama (Z - A)</option>
+                  <option value="questions-desc">Soal Terbanyak</option>
+                  <option value="questions-asc">Soal Tersedikit</option>
+                </select>
+              </Box>
+
+              {/* Reset Button */}
+              {isFilterActive && (
+                <Button
+                  onClick={handleResetFilters}
+                  variant="outline"
+                  borderColor="gray.200"
+                  color="gray.600"
+                  _hover={{ bg: 'gray.50' }}
+                  borderRadius="lg"
+                  height="40px"
+                  px={4}
+                  cursor="pointer"
+                  flexShrink={0}
+                >
+                  <RotateCcw size={16} style={{ marginRight: '6px' }} />
+                  Reset
+                </Button>
+              )}
+            </Flex>
+          </Flex>
+        </Box>
+      )}
 
       {isLoading ? (
         <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} gap={6}>
@@ -196,9 +431,39 @@ export default function QuestionBankListPage() {
             {t('createBankBtn')}
           </Button>
         </Box>
+      ) : sortedBanks.length === 0 ? (
+        <Box
+          bg="gray.50"
+          borderWidth="1px"
+          borderColor="gray.200"
+          borderRadius="xl"
+          p={12}
+          textAlign="center"
+        >
+          <Flex display="inline-flex" p={4} bg="gray.100" borderRadius="full" color="gray.400" mb={4}>
+            <Search size={32} />
+          </Flex>
+          <Heading size="md" fontWeight="medium" color="gray.900">
+            Hasil pencarian tidak ditemukan
+          </Heading>
+          <Text color="gray.500" mt={2}>
+            Coba sesuaikan filter atau kata kunci pencarian Anda.
+          </Text>
+          <Button
+            bg="indigo.600"
+            color="white"
+            _hover={{ bg: 'indigo.700' }}
+            borderRadius="lg"
+            mt={6}
+            onClick={handleResetFilters}
+            cursor="pointer"
+          >
+            Bersihkan Filter
+          </Button>
+        </Box>
       ) : (
         <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} gap={6}>
-          {banks.map((bank: QuestionBank) => (
+          {sortedBanks.map((bank: QuestionBank) => (
             <Box
               key={bank.id}
               bg="white"
