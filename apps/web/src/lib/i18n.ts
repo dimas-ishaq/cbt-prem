@@ -23,7 +23,7 @@ const resources = {
       logout: 'Keluar',
       cancelBtn: 'Batal',
       examCards: 'Kartu Ujian',
-      reports: 'Laporan Rekomendasi',
+      reports: 'Laporan',
       
       // Subjects
       subjectsTitle: 'Mata Pelajaran',
@@ -169,7 +169,7 @@ const resources = {
       logout: 'Sign Out',
       cancelBtn: 'Cancel',
       examCards: 'Exam Cards',
-      reports: 'Recommendation Reports',
+      reports: 'Reports',
       
       // Subjects
       subjectsTitle: 'Subjects',

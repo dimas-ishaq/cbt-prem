@@ -1,9 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { NotFoundException } from '@nestjs/common';
 
 @Injectable()
-export class RecommendationsService {
+export class ReportsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getExamReports() {
@@ -96,7 +95,7 @@ export class RecommendationsService {
     ];
   }
 
-  async getAllRecommendations() {
+  async getAllReports() {
     const [exam, student, monitoring, operational, premium] =
       await Promise.all([
         this.getExamReports(),

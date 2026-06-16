@@ -57,7 +57,7 @@ const menuGroups = [
       { name: 'Bank Soal', href: '/admin/question-banks', icon: FileText, key: 'questionBanks' },
       { name: 'Ujian', href: '/admin/exams', icon: GraduationCap, key: 'exams' },
       { name: 'Monitoring', href: '/admin/monitoring', icon: Activity, key: 'monitoring' },
-      { name: 'Laporan Rekomendasi', href: '/admin/reports', icon: BarChart3, key: 'reports' },
+      { name: 'Laporan', href: '/admin/reports', icon: BarChart3, key: 'reports' },
     ],
   },
   {
@@ -97,7 +97,9 @@ export function AdminSidebar() {
         item.href === '/admin/logs' ||
         item.href === '/admin/majors' ||
         item.href === '/admin/rombels' ||
-        item.href === '/admin/exam-cards'
+        item.href === '/admin/exam-cards' ||
+        item.href === '/admin/monitoring' ||
+        item.href === '/admin/reports'
       ) {
         return user?.role === 'SUPER_ADMIN';
       }

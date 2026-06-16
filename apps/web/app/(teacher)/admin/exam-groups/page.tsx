@@ -197,7 +197,9 @@ export default function ExamGroupsPage() {
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
               size="sm"
-              variant="unstyled"
+              border="none"
+              outline="none"
+              _focus={{ boxShadow: 'none' }}
               flex={1}
               minW="180px"
               _placeholder={{ color: 'gray.400' }}
@@ -243,20 +245,6 @@ export default function ExamGroupsPage() {
             </select>
           </Flex>
         </HStack>
-        <Button
-          bg="indigo.600"
-          color="white"
-          _hover={{ bg: 'indigo.700' }}
-          borderRadius="lg"
-          px={4}
-          py={2}
-          fontWeight="medium"
-          cursor="pointer"
-          onClick={openCreateModal}
-        >
-          <Plus size={20} style={{ marginRight: '8px' }} />
-          Tambah Event
-        </Button>
       </Flex>
 
       <Box bg="white" borderRadius="xl" shadow="sm" borderWidth="1px" borderColor="gray.100" overflow="hidden">

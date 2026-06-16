@@ -28,7 +28,6 @@ import {
   Spinner,
   IconButton,
   Input,
-  Select,
 } from "@chakra-ui/react";
 import toast from "react-hot-toast";
 import { useConfirm } from "@/components/ui/confirmation-dialog";
@@ -153,21 +152,24 @@ export default function ExamsPage() {
             borderColor="gray.200"
           >
             <Filter size={16} className="text-gray-500" />
-            <Select
+            <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              size="sm"
-              variant={"unstyled" as any}
-              flex={1}
-              pr={6}
-              cursor="pointer"
+              style={{
+                background: "transparent",
+                border: "none",
+                outline: "none",
+                cursor: "pointer",
+                fontSize: "14px",
+                color: "#4a5568",
+              }}
             >
               <option value="">Semua Status</option>
               <option value="DRAFT">Draft</option>
               <option value="PUBLISHED">Terpublikasi</option>
               <option value="ONGOING">Sedang Berjalan</option>
               <option value="COMPLETED">Selesai</option>
-            </Select>
+            </select>
           </Flex>
         </Flex>
 
