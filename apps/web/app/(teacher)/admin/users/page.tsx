@@ -7,20 +7,18 @@ import { useConfirm } from '@/components/ui/confirmation-dialog';
 import { useAuthStore } from '@/store/auth.store';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import {
-  Box,
-  Flex,
-  Heading,
-  Text,
-  Button,
-  Table,
-  Stack,
-  Input,
-  Spinner,
-  IconButton,
-  HStack,
-  Badge,
-} from '@chakra-ui/react';
+import { Box } from '@chakra-ui/react/box';
+import { Badge } from '@chakra-ui/react/badge';
+import { Button } from '@chakra-ui/react/button';
+import { Flex } from '@chakra-ui/react/flex';
+import { Heading } from '@chakra-ui/react/heading';
+import { HStack } from '@chakra-ui/react/hstack';
+import { IconButton } from '@chakra-ui/react/icon-button';
+import { Input } from '@chakra-ui/react/input';
+import { Spinner } from '@chakra-ui/react/spinner';
+import { Stack } from '@chakra-ui/react/stack';
+import { Table } from '@chakra-ui/react/table';
+import { Text } from '@chakra-ui/react/text';
 import {
   Plus,
   Search,

@@ -43,7 +43,6 @@ const menuGroups = [
   {
     titleKey: 'groupAcademic',
     items: [
-      { name: 'Mata Pelajaran', href: '/admin/subjects', icon: BookOpen, key: 'subjects' },
       { name: 'Konsentrasi Keahlian', href: '/admin/majors', icon: Award, key: 'majors' },
       { name: 'Rombongan Belajar', href: '/admin/rombels', icon: Users, key: 'rombels' },
       { name: 'Pengguna', href: '/admin/users', icon: Users, key: 'users' },
@@ -91,6 +90,7 @@ export function AdminSidebar() {
 
   const visibleMenuGroups = menuGroups.map((group) => {
     const visibleItems = group.items.filter((item) => {
+      // Only SUPER_ADMIN can access these items
       if (
         item.href === '/admin/settings' ||
         item.href === '/admin/roles' ||

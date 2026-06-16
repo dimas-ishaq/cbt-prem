@@ -21,6 +21,7 @@ import {
 } from '@chakra-ui/react';
 import { BookOpen, LogOut, GraduationCap, Clock, Hash, Award, Users, History } from 'lucide-react';
 import { ColorModeToggle } from '@/components/ui/color-mode-toggle';
+import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 
@@ -178,6 +179,7 @@ export default function DashboardPage() {
                 >
                   Portal Siswa
                 </Text>
+                <Breadcrumb />
               </Box>
             </Flex>
 

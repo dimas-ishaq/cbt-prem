@@ -27,6 +27,65 @@ interface Props {
   examId: string;
 }
 
+function generateSEBConfig(exam: any): string {
+  const config = {
+    'general': {
+      'startURL': typeof window !== 'undefined' ? window.location.origin + '/exams/' + exam.id : '',
+      'sebServerURL': '',
+      'browserExamKeys': exam.sebBrowserKey ? [exam.sebBrowserKey] : [],
+      'sebConfigKey': exam.sebConfigKey || '',
+      'allowQuit': true,
+      'quitURL': typeof window !== 'undefined' ? window.location.origin + '/dashboard' : '',
+      'quitURLConfirm': true,
+    },
+    'browser': {
+      'allowBrowsingBackForward': false,
+      'allowNavigationToDataURL': false,
+      'allowNavigationToNewBrowserWindow': false,
+      'allowSpellCheck': false,
+      'userAgent': 'SEB_CBT_Enterprise',
+    },
+    'downUploads': {
+      'allowUploads': false,
+      'downloadPDFFiles': false,
+      'downloadDirectory': '',
+      'openSaveDialogAs': false,
+    },
+    'examSession': {
+      'allowReconfiguring': true,
+      'clearBrowserSession': 1,
+      'browserSessionToken': exam.id,
+      'examKeySalt': exam.sebConfigKey || 'cbt-enterprise',
+    },
+    'keys': {
+      'escKeyQuit': 1,
+      'insertKeyQuit': 0,
+    },
+    'printing': {
+      'allowPrint': false,
+    },
+    'security': {
+      'enableAppSwitcherBlacklist': true,
+      'enableCopy': false,
+      'enableCut': false,
+      'enablePaste': false,
+      'enableRightClick': false,
+      'showKeyboardButton': false,
+    },
+    'window': {
+      'allowFullScreen': true,
+      'enableCursorLocation': true,
+      'mainBrowserWindowPosition': [0, 0],
+      'mainBrowserWindowSize': [0, 0],
+      'allowChangingWindowPosition': false,
+      'enableAltEnterFullScreen': false,
+      'forceQuitInTimeInSeconds': 0,
+    },
+  };
+
+  return JSON.stringify(config, null, 2);
+}
+
 export function ExamContainer({ examId }: Props) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -312,57 +371,305 @@ export function ExamContainer({ examId }: Props) {
   const isSebError = (examError as any)?.response?.status === 401 && (
     (examError as any)?.response?.data?.message?.toLowerCase().includes('safe exam browser') ||
     (examError as any)?.response?.data?.message?.toLowerCase().includes('seb')
-  );
-
-  if (isSebError) {
+  );  if (isSebError) {
     return (
-      <Flex direction="column" align="center" justify="center" minH="screen" bg="gray.950" p={6} position="relative" overflow="hidden">
-        <Box position="absolute" top="-10%" left="-10%" w="50vw" h="50vw" bg="red.900/15" borderRadius="full" filter="blur(120px)" zIndex={0} pointerEvents="none" />
-        
+      <Flex 
+        direction="column" 
+        align="center" 
+        justify="center" 
+        minH="100vh"
+        w="100vw"
+        bg="gray.950" 
+        p={0}
+        position="fixed"
+        top={0}
+        left={0}
+        overflow="hidden"
+        zIndex={9999}
+      >
+        {/* Animated Background Gradient */}
+        <Box 
+          position="absolute" 
+          top="-20%" 
+          left="-20%" 
+          w="60vw" 
+          h="60vw" 
+          bg="red.900/20" 
+          borderRadius="full" 
+          filter="blur(120px)" 
+          zIndex={0} 
+          pointerEvents="none"
+          animation="pulse 8s ease-in-out infinite"
+        />
+        <Box 
+          position="absolute" 
+          bottom="-20%" 
+          right="-20%" 
+          w="50vw" 
+          h="50vw" 
+          bg="orange.900/15" 
+          borderRadius="full" 
+          filter="blur(100px)" 
+          zIndex={0} 
+          pointerEvents="none"
+        />
+
+        {/* Main Content Container */}
         <Box
-          bg="gray.900/80"
-          backdropFilter="blur(24px)"
+          bg="gray.900/85"
+          backdropFilter="blur(32px)"
           w="full"
-          maxW="md"
-          borderRadius="3xl"
-          p={8}
+          maxW="3xl"
+          borderRadius="4xl"
+          p={{ base: 6, md: 10 }}
           boxShadow="2xl"
           border="1px solid"
           borderColor="red.500/20"
+          zIndex={10}
+          display="flex"
+          flexDirection="column"
+          overflowY="auto"
           textAlign="center"
-          zIndex={1}
+          m={{ base: 4, md: 8 }}
+          flex={1}
         >
-          <Flex w={16} h={16} bg="red.500/10" borderRadius="full" align="center" justify="center" mx="auto" mb={6} border="1px solid" borderColor="red.500/20">
-            <ShieldAlert className="text-red-500 animate-pulse" size={32} />
+          {/* Icon Badge */}
+          <Flex 
+            w={20} 
+            h={20} 
+            bg="red.500/15" 
+            borderRadius="full" 
+            align="center" 
+            justify="center" 
+            mx="auto" 
+            mb={6} 
+            border="2px solid" 
+            borderColor="red.500/30"
+          >
+            <ShieldAlert className="text-red-500 animate-pulse" size={48} />
           </Flex>
-          <Heading size="md" fontWeight="bold" color="white">Safe Exam Browser Diperlukan</Heading>
-          <Text color="gray.400" fontSize="sm" mt={3} lineHeight="relaxed">
-            Ujian ini dikonfigurasi menggunakan pengamanan tingkat tinggi dan hanya dapat diakses melalui **Safe Exam Browser**.
+
+          {/* Main Heading */}
+          <Heading 
+            size="2xl" 
+            fontWeight="black" 
+            color="white"
+            mb={3}
+            letterSpacing="tight"
+          >
+            Safe Exam Browser Diperlukan
+          </Heading>
+
+          {/* Subtitle */}
+          <Text 
+            color="gray.300" 
+            fontSize="md" 
+            mt={2}
+            mb={8}
+            lineHeight="relaxed"
+            fontWeight="medium"
+          >
+            Ujian ini dikonfigurasi dengan pengamanan tingkat tinggi dan hanya dapat diakses melalui aplikasi <Text as="span" fontWeight="bold" color="red.300">Safe Exam Browser (SEB)</Text>.
           </Text>
-          
-          <Box mt={6} p={4} bg="whiteAlpha.50" borderRadius="2xl" border="1px solid" borderColor="whiteAlpha.100" fontSize="xs" color="gray.350" textAlign="left">
-            <Text fontWeight="bold" color="indigo.300" mb={1}>Langkah-langkah mengikuti ujian:</Text>
-            <ol style={{ paddingLeft: '16px', margin: '4px 0' }}>
-              <li>Unduh dan pasang aplikasi Safe Exam Browser di perangkat Anda.</li>
-              <li>Unduh berkas konfigurasi (.seb) dari pengawas ujian.</li>
-              <li>Buka berkas konfigurasi tersebut untuk meluncurkan aplikasi ujian.</li>
-            </ol>
+
+          {/* Steps Section */}
+          <Box 
+            mt={8}
+            mb={8}
+            p={6} 
+            bg="whiteAlpha.50" 
+            borderRadius="3xl" 
+            border="1px solid" 
+            borderColor="whiteAlpha.100"
+            textAlign="left"
+          >
+            <Text 
+              fontWeight="bold" 
+              color="indigo.300" 
+              mb={4}
+              fontSize="lg"
+            >
+              📋 Langkah-Langkah Mengikuti Ujian:
+            </Text>
+            <Stack gap={3}>
+              <Flex gap={3} align="flex-start">
+                <Box 
+                  w={8}
+                  h={8}
+                  bg="indigo.600"
+                  borderRadius="full"
+                  display="flex"
+                  align="center"
+                  justify="center"
+                  fontWeight="black"
+                  color="white"
+                  flexShrink={0}
+                >
+                  1
+                </Box>
+                <Box>
+                  <Text fontWeight="bold" color="white" mb={1}>Unduh Safe Exam Browser</Text>
+                  <Text color="gray.400" fontSize="sm">Klik tombol download di bawah untuk mengunduh aplikasi SEB untuk platform Anda (Windows, macOS, atau Linux).</Text>
+                </Box>
+              </Flex>
+
+              <Flex gap={3} align="flex-start">
+                <Box 
+                  w={8}
+                  h={8}
+                  bg="indigo.600"
+                  borderRadius="full"
+                  display="flex"
+                  align="center"
+                  justify="center"
+                  fontWeight="black"
+                  color="white"
+                  flexShrink={0}
+                >
+                  2
+                </Box>
+                <Box>
+                  <Text fontWeight="bold" color="white" mb={1}>Unduh Konfigurasi SEB Ujian</Text>
+                  <Text color="gray.400" fontSize="sm">Klik tombol download konfigurasi (.seb) untuk mendapatkan file pengaturan khusus ujian ini.</Text>
+                </Box>
+              </Flex>
+
+              <Flex gap={3} align="flex-start">
+                <Box 
+                  w={8}
+                  h={8}
+                  bg="indigo.600"
+                  borderRadius="full"
+                  display="flex"
+                  align="center"
+                  justify="center"
+                  fontWeight="black"
+                  color="white"
+                  flexShrink={0}
+                >
+                  3
+                </Box>
+                <Box>
+                  <Text fontWeight="bold" color="white" mb={1}>Buka Berkas Konfigurasi</Text>
+                  <Text color="gray.400" fontSize="sm">Buka/double-click file konfigurasi (.seb) untuk meluncurkan SEB dan otomatis mengarahkan ke halaman ujian ini.</Text>
+                </Box>
+              </Flex>
+            </Stack>
           </Box>
 
+          {/* Download Buttons */}
+          <Stack gap={4} mb={8}>
+            {/* Download SEB Button */}
+            <Button
+              as="a"
+              href="https://safeexambrowser.org/download_en.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              w="full"
+              py={6}
+              bg="gradient-to-r from-red-600 to-red-700"
+              color="white"
+              fontWeight="bold"
+              borderRadius="2xl"
+              fontSize="md"
+              display="flex"
+              align="center"
+              justify="center"
+              gap={3}
+              boxShadow="0 8px 24px rgba(220, 38, 38, 0.3)"
+              _hover={{
+                boxShadow: '0 12px 32px rgba(220, 38, 38, 0.5)',
+                transform: 'translateY(-2px)'
+              }}
+              transition="all 0.3s ease"
+              cursor="pointer"
+              style={{
+                background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)'
+              }}
+            >
+              <Box as="svg" w={5} h={5} fill="currentColor" viewBox="0 0 20 20">
+                <path d="M10 2C5.58 2 2 5.58 2 10s3.58 8 8 8 8-3.58 8-8-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6zm3.5-9H10.5V5h-1v2H7.5v1h2v2h1v-2h2.5v-1z" />
+              </Box>
+              Unduh Safe Exam Browser
+            </Button>
+
+            {/* Download Config Button */}
+            <Button
+              onClick={() => {
+                // Generate and download SEB config
+                const sebConfig = generateSEBConfig(exam);
+                const blob = new Blob([sebConfig], { type: 'application/octet-stream' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${exam.title.replace(/\s+/g, '_')}_config.seb`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+              }}
+              w="full"
+              py={6}
+              bg="indigo.600"
+              color="white"
+              fontWeight="bold"
+              borderRadius="2xl"
+              fontSize="md"
+              display="flex"
+              align="center"
+              justify="center"
+              gap={3}
+              boxShadow="0 8px 24px rgba(79, 70, 229, 0.3)"
+              _hover={{
+                bg: 'indigo.700',
+                boxShadow: '0 12px 32px rgba(79, 70, 229, 0.5)',
+                transform: 'translateY(-2px)'
+              }}
+              transition="all 0.3s ease"
+              cursor="pointer"
+            >
+              <Box as="svg" w={5} h={5} fill="currentColor" viewBox="0 0 20 20">
+                <path d="M13 8V2H7v6H2l8 8 8-8h-5zM0 18h20v2H0z" />
+              </Box>
+              Unduh Konfigurasi SEB Ujian ({exam.title})
+            </Button>
+          </Stack>
+
+          {/* Security Badge */}
+          <Box 
+            p={4}
+            bg="amber.500/10"
+            borderRadius="2xl"
+            border="1px solid"
+            borderColor="amber.500/30"
+            mb={6}
+          >
+            <Flex gap={2} align="flex-start">
+              <Box as="svg" w={5} h={5} fill="currentColor" color="amber.400" flexShrink={0} mt={0.5} viewBox="0 0 20 20">
+                <path d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" />
+              </Box>
+              <Box>
+                <Text fontWeight="bold" color="amber.300" fontSize="sm">Sistem Keamanan Tingkat Tinggi</Text>
+                <Text color="gray.400" fontSize="xs" mt={1}>SEB akan mendeteksi aktivitas mencurigakan seperti tab switching, screenshot, DevTools, dan upaya copy-paste.</Text>
+              </Box>
+            </Flex>
+          </Box>
+
+          {/* Return Button */}
           <Button
             onClick={() => router.push('/dashboard')}
-            mt={6}
             w="full"
-            py={6}
+            py={5}
             bg="gray.800"
             color="white"
             fontWeight="bold"
-            borderRadius="xl"
+            borderRadius="2xl"
             _hover={{ bg: 'gray.700' }}
             cursor="pointer"
-            fontSize="sm"
+            fontSize="md"
+            transition="all 0.3s ease"
           >
-            Kembali ke Dashboard
+            ← Kembali ke Dashboard
           </Button>
         </Box>
       </Flex>

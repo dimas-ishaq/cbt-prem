@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { Box, Flex, Heading, Text } from '@chakra-ui/react';
 import { ColorModeToggle } from '@/components/ui/color-mode-toggle';
+import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { Clock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
@@ -86,16 +87,20 @@ export default function AdminLayout({
           top={0}
           zIndex={10}
           display="flex"
-          alignItems="center"
+          alignItems="flex-start"
           justifyContent="space-between"
+          gap={4}
           style={{
             backdropFilter: 'blur(12px)',
             backgroundColor: 'var(--header-bg)',
           }}
         >
-          <Heading size="md" fontWeight="bold" color="text.primary" textTransform="capitalize">
-            Admin Management
-          </Heading>
+          <Box>
+            <Heading size="md" fontWeight="bold" color="text.primary" textTransform="capitalize">
+              Admin Management
+            </Heading>
+            <Breadcrumb />
+          </Box>
           <Flex align="center" gap={4}>
             {timeStr && (
               <Flex

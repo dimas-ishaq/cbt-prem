@@ -7,7 +7,7 @@ const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
-function generateToken(length = 8) {
+function generateToken(length = 6) {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
 }
@@ -20,6 +20,9 @@ async function main() {
   console.log('🌱 Start seeding...');
 
   // ─── Cleanup (respect FK order) ───
+  // Clean implicit M:N join table for Subject-Teacher before deleting subjects/teachers
+  await prisma.$executeRawUnsafe('DELETE FROM "_SubjectToTeacher"');
+
   await prisma.answer.deleteMany({});
   await prisma.violation.deleteMany({});
   await prisma.examSession.deleteMany({});
@@ -45,9 +48,6 @@ async function main() {
   await prisma.rombel.deleteMany({});
   await prisma.major.deleteMany({});
   await prisma.setting.deleteMany({});
-
-  // Clean implicit M:N join table for Subject-Teacher before deleting teachers
-  await prisma.$executeRawUnsafe('DELETE FROM "_SubjectToTeacher"');
 
   console.log('🧹 Database cleaned.');
 
@@ -712,7 +712,7 @@ async function main() {
   // ========================================================================
   // 10. EXAM SESSIONS (3+ per exam, diverse statuses)
   // ========================================================================
-  const examSessions: { id: string; examIdx: number; studentIdx: number }[] = [];
+  const examSessions: { id: string; examIdx: number; studentIdx: number; status: SessionStatus }[] = [];
 
   for (let ei = 0; ei < exams.length; ei++) {
     const count = 3 + (ei % 3); // 3,4,5,3,4,3
@@ -761,7 +761,7 @@ async function main() {
         },
       });
 
-      examSessions.push({ id: session.id, examIdx: ei, studentIdx });
+      examSessions.push({ id: session.id, examIdx: ei, studentIdx, status: sessionStatus });
     }
   }
 
@@ -770,17 +770,10 @@ async function main() {
   // ========================================================================
   // 11. ANSWERS (covering sessions, including essay and media reference)
   // ========================================================================
-  let answerCount = 0;
-  const sessionsWithCompletedStatus = examSessions.filter((es) =>
-    [SessionStatus.SUBMITTED, SessionStatus.FINISHED, SessionStatus.LOCKED].includes(
-      // Access status via the relation is indirect; we stored examIdx in the array
-      // but we didn't store status. Re-evaluate based on examIdx bounds.
-      // For simplicity, we add answers to all sessions (demo data).
-      SessionStatus.IN_PROGRESS
-    )
-  );
+  const completedStatuses = new Set([SessionStatus.SUBMITTED, SessionStatus.FINISHED, SessionStatus.LOCKED]);
+  const sessionsWithCompletedStatus = examSessions.filter((es) => completedStatuses.has(es.status));
 
-  for (const es of examSessions) {
+  for (const es of sessionsWithCompletedStatus) {
     const examQuestionsForExam = questions.filter((q) => q.bankIdx === examsData[es.examIdx].questionBankIdx);
     if (examQuestionsForExam.length === 0) continue;
 
@@ -892,7 +885,6 @@ async function main() {
     // Manajemen
     { menuIdx: 1, name: 'Pengguna', url: '/admin/users', orderIndex: 1 },
     { menuIdx: 1, name: 'Role & Permissions', url: '/admin/roles', orderIndex: 2 },
-    { menuIdx: 1, name: 'Mata Pelajaran', url: '/admin/subjects', orderIndex: 3 },
     { menuIdx: 1, name: 'Jurusan', url: '/admin/majors', orderIndex: 4 },
     { menuIdx: 1, name: 'Rombel', url: '/admin/rombels', orderIndex: 5 },
 
@@ -1109,7 +1101,7 @@ async function main() {
   }
 
   console.log('\n✨ SEMUA FITUR SUDAH TERISI! Terdapat:');
-  console.log(' ✅ 11 tipe data utama (settings, majors, rombels, users, subjects, exam-groups, question-banks, questions, exams, exam-sessions, answers, violations, custom-roles, menus, submenus, permissions, audit-logs, notifications)');
+  console.log(' ✅ 11 tipe data utama (settings, majors, rombels, users, exam-groups, question-banks, questions, exams, exam-sessions, answers, violations, custom-roles, menus, submenus, permissions, audit-logs, notifications)');
   console.log(' ✅ Semua enum values diuji coba (SessionStatus: IN_PROGRESS, SUBMITTED, FINISHED, LOCKED, NOT_STARTED; ExamStatus: ONGOING, PUBLISHED, DRAFT; ViolationLevel: RINGAN, SEDANG, BERAT, KRITIS)');
   console.log(' ✅ Essays, media reference, essay answers');
   console.log(' ✅ Violations dengan berbagai tipe dan deskripsi');

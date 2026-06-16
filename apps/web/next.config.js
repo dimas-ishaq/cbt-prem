@@ -6,8 +6,20 @@ const nextConfig = {
   async headers() {
     return [
       {
-        // Terapkan ke semua route
-        source: '/(.*)',
+        // Static chunks Next.js/Turbopack — HARUS bisa di-cache browser
+        // Tanpa ini, shared module chunks (e.g. Chakra UI Table) tidak bisa
+        // ditemukan antar halaman → "module factory is not available"
+        source: '/_next/static/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        // Terapkan ke semua route KECUALI _next/static
+        source: '/((?!_next/).*)',
         headers: [
           // ── Kompatibilitas Safe Exam Browser (SEB) ──────────────────
           // SEB 3.x berbasis Chromium dan sangat sensitif terhadap CSP.
@@ -50,25 +62,10 @@ const nextConfig = {
             key: 'Referrer-Policy',
             value: 'strict-origin-when-cross-origin',
           },
-          // Nonaktifkan cache untuk halaman ujian (agar data selalu fresh)
+          // no-store hanya untuk halaman HTML, bukan untuk JS chunks
           {
             key: 'Cache-Control',
             value: 'no-store, max-age=0',
-          },
-        ],
-      },
-      {
-        // Izinkan cache untuk aset statis Next.js (CSS, JS, font, gambar)
-        source: '/_next/static/(.*)',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-          // Izinkan aset statis di-load dari SEB WebView
-          {
-            key: 'Access-Control-Allow-Origin',
-            value: '*',
           },
         ],
       },
@@ -77,4 +74,3 @@ const nextConfig = {
 };
 
 export default nextConfig;
-
