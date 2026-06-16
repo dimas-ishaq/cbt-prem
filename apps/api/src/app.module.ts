@@ -21,6 +21,7 @@ import { RombelsModule } from './rombels/rombels.module';
 import { LoggerModule } from './common/logger/logger.module';
 import { LogsModule } from './logs/logs.module';
 import { ReportsModule } from './reports/reports.module';
+import { SubjectsModule } from './subjects/subjects.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { ReportsModule } from './reports/reports.module';
     MajorsModule,
     ExamGroupsModule,
     RombelsModule,
+    SubjectsModule,
     LoggerModule,
     LogsModule,
     ReportsModule,

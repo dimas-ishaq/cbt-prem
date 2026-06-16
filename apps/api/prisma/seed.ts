@@ -209,25 +209,26 @@ async function main() {
   // 5. SUBJECT (5)
   // ========================================================================
   const subjectsData = [
-    { name: 'Matematika Wajib', code: 'MTK', description: 'Matematika wajib tingkat menengah' },
-    { name: 'Bahasa Indonesia', code: 'BIN', description: 'Bahasa Indonesia tingkat menengah' },
-    { name: 'Bahasa Inggris', code: 'BIG', description: 'Bahasa Inggris tingkat menengah' },
-    { name: 'Pendidikan Pancasila', code: 'PPKN', description: 'Pendidikan Pancasila dan Kewarganegaraan' },
-    { name: 'Produk Kreatif', code: 'PKK', description: 'Produk Kreatif dan Kewirausahaan' },
+    { name: 'Matematika', code: 'MTK', description: 'Konsep numerik, aljabar, geometri, dan statistika.' },
+    { name: 'Bahasa Indonesia', code: 'BIN', description: 'Keterampilan membaca, menulis, menyimak, dan berbicara.' },
+    { name: 'Bahasa Inggris', code: 'BIG', description: 'Reading comprehension, grammar, and writing skills.' },
+    { name: 'Pendidikan Pancasila', code: 'PPKN', description: 'Nilai kebangsaan, konstitusi, dan kewarganegaraan.' },
+    { name: 'Informatika', code: 'IF', description: 'Komputasi, algoritma, dan literasi digital.' },
+    { name: 'Produk Kreatif dan Kewirausahaan', code: 'PKK', description: 'Inovasi, bisnis, dan proyek kewirausahaan.' },
   ];
 
   await prisma.subject.createMany({ data: subjectsData });
   const subjects = await prisma.subject.findMany({ orderBy: { code: 'asc' } });
   console.log(`✅ Subjects: ${subjects.length} created.`);
 
-  // Link teachers to subjects (each teacher teaches 1–2 subjects)
+  // Link teachers to subjects (each teacher teaches 1–3 subjects)
   const teacherSubjectMap = [
-    [subjects[0].id], // teacher 0 -> Matematika
-    [subjects[1].id], // teacher 1 -> Bahasa Indonesia
-    [subjects[2].id], // teacher 2 -> Bahasa Inggris
-    [subjects[3].id], // teacher 3 -> PPKN
-    [subjects[0].id, subjects[2].id], // teacher 4 -> Matematika + Inggris
-    [subjects[1].id, subjects[3].id], // teacher 5 -> Bahasa Indo + PPKN
+    [subjects[0].id, subjects[4].id],
+    [subjects[1].id],
+    [subjects[2].id],
+    [subjects[3].id],
+    [subjects[0].id, subjects[2].id, subjects[5].id],
+    [subjects[1].id, subjects[3].id, subjects[4].id],
   ];
 
   await Promise.all(
