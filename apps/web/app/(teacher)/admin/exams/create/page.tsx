@@ -21,6 +21,7 @@ import {
   HStack,
   Badge,
 } from '@chakra-ui/react';
+import toast from 'react-hot-toast';
 
 interface Subject {
   id: string;
@@ -66,12 +67,11 @@ export default function CreateExamPage() {
     examGroupId: '',
     sebConfigKey: '',
     sebBrowserKey: '',
+    requireSeb: false,
     blockKeyCopyPaste: false,
     forceFullscreen: false,
     maxViolations: 0,
   });
-
-  const [requireSeb, setRequireSeb] = useState(false);
 
   const [selectedQuestionIds, setSelectedQuestionIds] = useState<string[]>([]);
   const [selectedBankId, setSelectedBankId] = useState<string>('');
@@ -127,29 +127,34 @@ export default function CreateExamPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedQuestionIds.length === 0) {
-      alert('Pilih minimal satu soal.');
+      toast.error('Pilih minimal satu soal.');
       return;
     }
-    
+
     // Clean up empty optional fields
-    const payload = {
+    const payload: any = {
       ...formData,
       questionIds: selectedQuestionIds,
       startTime: `${formData.startDate}T${formData.startTimeField}:00`,
       endTime: `${formData.endDate}T${formData.endTimeField}:00`,
-      sebConfigKey: requireSeb ? formData.sebConfigKey : null,
-      sebBrowserKey: requireSeb ? formData.sebBrowserKey : null,
+      sebConfigKey: formData.requireSeb ? (formData.sebConfigKey?.trim() || undefined) : undefined,
+      sebBrowserKey: formData.requireSeb ? (formData.sebBrowserKey?.trim() || undefined) : undefined,
       maxViolations: parseInt(formData.maxViolations as any) || 0,
     };
-    
+
     // Remove UI-only fields
-    delete (payload as any).startDate;
-    delete (payload as any).startTimeField;
-    delete (payload as any).endDate;
-    delete (payload as any).endTimeField;
-    
-    if (!payload.examGroupId) delete (payload as any).examGroupId;
-    
+    delete payload.startDate;
+    delete payload.startTimeField;
+    delete payload.endDate;
+    delete payload.endTimeField;
+
+    if (!payload.requireSeb) {
+      delete payload.sebConfigKey;
+      delete payload.sebBrowserKey;
+    }
+
+    if (!payload.examGroupId) delete payload.examGroupId;
+
     createMutation.mutate(payload);
   };
 
@@ -443,146 +448,117 @@ export default function CreateExamPage() {
                   <Input
                     value={formData.token}
                     onChange={(e) => setFormData({ ...formData, token: e.target.value })}
-                    placeholder="e.g. ABCXYZ"
-                    borderRadius="lg"
-                    borderColor="gray.200"
-                    _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
                   />
                 </Box>
 
-
                 <Stack gap={3}>
-                  <Flex
-                    as="label"
-                    align="center"
-                    gap={3}
-                    cursor="pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={formData.randomizeSoal}
-                      onChange={(e) => setFormData({ ...formData, randomizeSoal: e.target.checked })}
-                      style={{ width: '16px', height: '16px', accentColor: '#4f46e5' }}
-                    />
-                    <Text fontSize="sm" color="gray.700">Acak Urutan Soal</Text>
-                  </Flex>
-                  <Flex
-                    as="label"
-                    align="center"
-                    gap={3}
-                    cursor="pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={formData.randomizeOpsi}
-                      onChange={(e) => setFormData({ ...formData, randomizeOpsi: e.target.checked })}
-                      style={{ width: '16px', height: '16px', accentColor: '#4f46e5' }}
-                    />
-                    <Text fontSize="sm" color="gray.700">Acak Urutan Opsi</Text>
-                  </Flex>
-                  <Flex
-                    as="label"
-                    align="center"
-                    gap={3}
-                    cursor="pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={requireSeb}
-                      onChange={(e) => setRequireSeb(e.target.checked)}
-                      style={{ width: '16px', height: '16px', accentColor: '#4f46e5' }}
-                    />
-                    <Text fontSize="sm" fontWeight="bold" color="gray.700">Wajibkan Safe Exam Browser</Text>
-                  </Flex>
-                  {requireSeb && (
-                    <Stack gap={2.5} pl={7} className="animate-fade-in">
-                      <Box>
-                        <Text fontSize="2xs" fontWeight="semibold" color="gray.500" mb={1}>Kunci Konfigurasi SEB (Opsional)</Text>
-                        <Input
-                          size="xs"
-                          value={formData.sebConfigKey}
-                          onChange={(e) => setFormData({ ...formData, sebConfigKey: e.target.value })}
-                          placeholder="Config Key"
-                          borderRadius="md"
-                        />
-                      </Box>
-                      <Box>
-                        <Text fontSize="2xs" fontWeight="semibold" color="gray.500" mb={1}>Kunci Browser SEB (Opsional)</Text>
-                        <Input
-                          size="xs"
-                          value={formData.sebBrowserKey}
-                          onChange={(e) => setFormData({ ...formData, sebBrowserKey: e.target.value })}
-                          placeholder="Browser Key"
-                          borderRadius="md"
-                        />
-                      </Box>
-                    </Stack>
-                  )}
-                  <Flex
-                    as="label"
-                    align="center"
-                    gap={3}
-                    cursor="pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={formData.blockKeyCopyPaste}
-                      onChange={(e) => setFormData({ ...formData, blockKeyCopyPaste: e.target.checked })}
-                      style={{ width: '16px', height: '16px', accentColor: '#4f46e5' }}
-                    />
-                    <Text fontSize="sm" color="gray.700">Proteksi Keyboard & Mouse (Blokir Klik Kanan, Salin-Tempel, DevTools)</Text>
-                  </Flex>
-                  <Flex
-                    as="label"
-                    align="center"
-                    gap={3}
-                    cursor="pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={formData.forceFullscreen}
-                      onChange={(e) => setFormData({ ...formData, forceFullscreen: e.target.checked })}
-                      style={{ width: '16px', height: '16px', accentColor: '#4f46e5' }}
-                    />
-                    <Text fontSize="sm" color="gray.700">Wajibkan Layar Penuh (Forced Fullscreen)</Text>
-                  </Flex>
-                  <Box>
-                    <Text fontSize="xs" fontWeight="semibold" color="gray.700" mb={1}>Batas Maksimum Pelanggaran (0 untuk Tidak Terbatas)</Text>
-                    <Input
-                      type="number"
-                      size="sm"
-                      w="20"
-                      value={formData.maxViolations}
-                      onChange={(e) => setFormData({ ...formData, maxViolations: parseInt(e.target.value) || 0 })}
-                      borderRadius="md"
-                    />
+                    <Flex as="label" align="center" gap={3} cursor="pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.randomizeSoal}
+                        onChange={(e) => setFormData({ ...formData, randomizeSoal: e.target.checked })}
+                        style={{ width: '16px', height: '16px', accentColor: '#4f46e5' }}
+                      />
+                      <Text fontSize="sm" color="gray.700">Acak Urutan Soal</Text>
+                    </Flex>
+                    <Flex as="label" align="center" gap={3} cursor="pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.randomizeOpsi}
+                        onChange={(e) => setFormData({ ...formData, randomizeOpsi: e.target.checked })}
+                        style={{ width: '16px', height: '16px', accentColor: '#4f46e5' }}
+                      />
+                      <Text fontSize="sm" color="gray.700">Acak Urutan Opsi</Text>
+                    </Flex>
+                    <Flex as="label" align="center" gap={3} cursor="pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.requireSeb}
+                        onChange={(e) => setFormData({ ...formData, requireSeb: e.target.checked })}
+                        style={{ width: '16px', height: '16px', accentColor: '#4f46e5' }}
+                      />
+                      <Text fontSize="sm" fontWeight="bold" color="gray.700">Wajibkan Safe Exam Browser</Text>
+                    </Flex>
+                    {formData.requireSeb && (
+                      <Stack gap={2.5} pl={7} className="animate-fade-in">
+                        <Box>
+                          <Text fontSize="2xs" fontWeight="semibold" color="gray.500" mb={1}>Kunci Konfigurasi SEB (Opsional)</Text>
+                          <Input
+                            size="xs"
+                            value={formData.sebConfigKey}
+                            onChange={(e) => setFormData({ ...formData, sebConfigKey: e.target.value })}
+                            placeholder="Config Key"
+                            borderRadius="md"
+                          />
+                        </Box>
+                        <Box>
+                          <Text fontSize="2xs" fontWeight="semibold" color="gray.500" mb={1}>Kunci Browser SEB (Opsional)</Text>
+                          <Input
+                            size="xs"
+                            value={formData.sebBrowserKey}
+                            onChange={(e) => setFormData({ ...formData, sebBrowserKey: e.target.value })}
+                            placeholder="Browser Key"
+                            borderRadius="md"
+                          />
+                        </Box>
+                      </Stack>
+                    )}
+                    <Flex as="label" align="center" gap={3} cursor="pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.blockKeyCopyPaste}
+                        onChange={(e) => setFormData({ ...formData, blockKeyCopyPaste: e.target.checked })}
+                        style={{ width: '16px', height: '16px', accentColor: '#4f46e5' }}
+                      />
+                      <Text fontSize="sm" color="gray.700">Proteksi Keyboard & Mouse (Blokir Klik Kanan, Salin-Tempel, DevTools)</Text>
+                    </Flex>
+                    <Flex as="label" align="center" gap={3} cursor="pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.forceFullscreen}
+                        onChange={(e) => setFormData({ ...formData, forceFullscreen: e.target.checked })}
+                        style={{ width: '16px', height: '16px', accentColor: '#4f46e5' }}
+                      />
+                      <Text fontSize="sm" color="gray.700">Wajibkan Layar Penuh (Forced Fullscreen)</Text>
+                    </Flex>
+                    <Box>
+                      <Text fontSize="xs" fontWeight="semibold" color="gray.700" mb={1}>Batas Maksimum Pelanggaran (0 untuk Tidak Terbatas)</Text>
+                      <Input
+                        type="number"
+                        size="sm"
+                        w="20"
+                        value={formData.maxViolations}
+                        onChange={(e) => setFormData({ ...formData, maxViolations: parseInt(e.target.value) || 0 })}
+                        borderRadius="md"
+                      />
+                    </Box>
+                  </Stack>
+
+                  <Box pt={4} borderTop="1px solid" borderColor="gray.100">
+                    <Flex justify="space-between" fontSize="sm" mb={4}>
+                      <Text color="gray.500">Soal Terpilih:</Text>
+                      <Text fontWeight="bold" color="gray.900">{selectedQuestionIds.length}</Text>
+                    </Flex>
+                    <Button
+                      type="submit"
+                      w="full"
+                      bg="indigo.600"
+                      color="white"
+                      _hover={{ bg: 'indigo.700' }}
+                      borderRadius="lg"
+                      fontWeight="bold"
+                      py={3}
+                      disabled={createMutation.isPending}
+                      cursor="pointer"
+                    >
+                      <Save size={20} />
+                      {createMutation.isPending ? 'Menyimpan...' : 'Jadwalkan Ujian'}
+                    </Button>
                   </Box>
                 </Stack>
-
-                <Box pt={4} borderTop="1px solid" borderColor="gray.100">
-                  <Flex justify="space-between" fontSize="sm" mb={4}>
-                    <Text color="gray.500">Soal Terpilih:</Text>
-                    <Text fontWeight="bold" color="gray.900">{selectedQuestionIds.length}</Text>
-                  </Flex>
-                  <Button
-                    type="submit"
-                    w="full"
-                    bg="indigo.600"
-                    color="white"
-                    _hover={{ bg: 'indigo.700' }}
-                    borderRadius="lg"
-                    fontWeight="bold"
-                    py={3}
-                    disabled={createMutation.isPending}
-                    cursor="pointer"
-                  >
-                    <Save size={20} />
-                    {createMutation.isPending ? 'Menyimpan...' : 'Jadwalkan Ujian'}
-                  </Button>
-                </Box>
-              </Stack>
+              </Box>
             </Box>
-          </Box>
+          
         </SimpleGrid>
       </form>
     </Stack>

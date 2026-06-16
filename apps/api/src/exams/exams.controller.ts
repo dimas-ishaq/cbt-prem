@@ -34,11 +34,16 @@ export class ExamsController {
     @Param('id') id: string,
     @Headers('x-seb-config-key') sebConfigKey: string,
     @Headers('x-seb-browser-key') sebBrowserKey: string,
+    @Headers('user-agent') userAgent: string,
     @Request() req
   ) {
-    const isValidSeb = await this.examsService.validateSeb(id, sebConfigKey, sebBrowserKey);
-    if (!isValidSeb) {
-      throw new UnauthorizedException('Safe Exam Browser required');
+    // SEB validation hanya berlaku untuk SISWA — guru/admin tidak perlu SEB untuk mengakses data ujian
+    const isSiswa = req.user?.role === 'SISWA';
+    if (isSiswa) {
+      const isValidSeb = await this.examsService.validateSeb(id, userAgent, sebConfigKey, sebBrowserKey);
+      if (!isValidSeb) {
+        throw new UnauthorizedException('Safe Exam Browser diperlukan untuk mengerjakan ujian ini.');
+      }
     }
     return this.examsService.findOne(id, req.user);
   }

@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { ChevronLeft, Save, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
+import { useAuthStore } from '@/store/auth.store';
 import {
   Box,
   Flex,
@@ -74,22 +75,28 @@ export default function EditExamPage({ params }: EditExamPageProps) {
     examGroupId: '',
     sebConfigKey: '',
     sebBrowserKey: '',
+    requireSeb: false,
     blockKeyCopyPaste: false,
     forceFullscreen: false,
     maxViolations: 0,
   });
-
-  const [requireSeb, setRequireSeb] = useState(false);
   const [selectedQuestionIds, setSelectedQuestionIds] = useState<string[]>([]);
   const [selectedBankId, setSelectedBankId] = useState<string>('');
 
+  const token = useAuthStore((state) => state.access_token);
+
   // Fetch the current exam details
+  // staleTime:0 + gcTime:0 memastikan data selalu fresh dari DB setiap kali halaman dibuka
   const { data: exam, isLoading: isLoadingExam } = useQuery({
     queryKey: ['exam-edit', examId],
     queryFn: async () => {
       const response = await api.get(`/exams/${examId}`);
       return response.data;
     },
+    enabled: !!token && !!examId,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
   });
 
   // Fetch static data
@@ -163,12 +170,11 @@ export default function EditExamPage({ params }: EditExamPageProps) {
         examGroupId: exam.examGroupId || '',
         sebConfigKey: exam.sebConfigKey || '',
         sebBrowserKey: exam.sebBrowserKey || '',
+        requireSeb: exam.requireSeb ?? false,
         blockKeyCopyPaste: exam.blockKeyCopyPaste ?? false,
         forceFullscreen: exam.forceFullscreen ?? false,
         maxViolations: exam.maxViolations ?? 0,
       });
-
-      setRequireSeb(!!(exam.sebConfigKey || exam.sebBrowserKey));
       
       if (exam.examQuestions) {
         setSelectedQuestionIds(exam.examQuestions.map((eq: any) => eq.questionId));
@@ -179,6 +185,7 @@ export default function EditExamPage({ params }: EditExamPageProps) {
   const updateMutation = useMutation({
     mutationFn: (data: any) => api.patch(`/exams/${examId}`, data),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['exam-edit', examId] });
       queryClient.invalidateQueries({ queryKey: ['exams'] });
       toast.success('Ujian berhasil diperbarui!');
       router.push('/admin/exams');
@@ -201,23 +208,36 @@ export default function EditExamPage({ params }: EditExamPageProps) {
       return;
     }
 
-    const payload = {
-      ...formData,
-      questionIds: selectedQuestionIds,
+    // Payload eksplisit — boolean di-cast agar tidak pernah jadi string
+    const payload: Record<string, any> = {
+      title: formData.title,
+      description: formData.description,
+      subjectId: formData.subjectId,
+      examGroupId: formData.examGroupId || null,
       startTime: `${formData.startDate}T${formData.startTimeField}:00`,
       endTime: `${formData.endDate}T${formData.endTimeField}:00`,
-      sebConfigKey: requireSeb ? formData.sebConfigKey : null,
-      sebBrowserKey: requireSeb ? formData.sebBrowserKey : null,
-      maxViolations: parseInt(formData.maxViolations as any) || 0,
+      duration: Number(formData.duration),
+      token: formData.token || null,
+      maxAttempts: Number(formData.maxAttempts) || 1,
+      passingGrade: Number(formData.passingGrade) || 0,
+      maxViolations: Number(formData.maxViolations) || 0,
+      status: formData.status,
+      // ⬇ boolean eksplisit — ini kunci utama agar nilai selalu tersimpan benar
+      randomizeSoal: Boolean(formData.randomizeSoal),
+      randomizeOpsi: Boolean(formData.randomizeOpsi),
+      requireSeb: Boolean(formData.requireSeb),
+      blockKeyCopyPaste: Boolean(formData.blockKeyCopyPaste),
+      forceFullscreen: Boolean(formData.forceFullscreen),
+      // SEB keys hanya dikirim jika requireSeb aktif
+      sebConfigKey: formData.requireSeb ? (formData.sebConfigKey?.trim() || undefined) : undefined,
+      sebBrowserKey: formData.requireSeb ? (formData.sebBrowserKey?.trim() || undefined) : undefined,
+      questionIds: selectedQuestionIds,
     };
 
-    // Remove UI-only fields
-    delete (payload as any).startDate;
-    delete (payload as any).startTimeField;
-    delete (payload as any).endDate;
-    delete (payload as any).endTimeField;
-
-    if (!payload.examGroupId) payload.examGroupId = null as any;
+    if (!payload.requireSeb) {
+      delete payload.sebConfigKey;
+      delete payload.sebBrowserKey;
+    }
 
     updateMutation.mutate(payload);
   };
@@ -537,110 +557,112 @@ export default function EditExamPage({ params }: EditExamPageProps) {
                     </select>
                   </Box>
 
-                  <Flex as="label" align="center" gap={3} cursor="pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.randomizeSoal}
-                      onChange={(e) => setFormData({ ...formData, randomizeSoal: e.target.checked })}
-                      style={{ width: '16px', height: '16px', accentColor: '#4f46e5' }}
-                    />
-                    <Text fontSize="sm" color="gray.700">Acak Urutan Soal</Text>
-                  </Flex>
-                  <Flex as="label" align="center" gap={3} cursor="pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.randomizeOpsi}
-                      onChange={(e) => setFormData({ ...formData, randomizeOpsi: e.target.checked })}
-                      style={{ width: '16px', height: '16px', accentColor: '#4f46e5' }}
-                    />
-                    <Text fontSize="sm" color="gray.700">Acak Urutan Opsi</Text>
-                  </Flex>
+                  <Stack gap={3}>
+                    <Flex as="label" align="center" gap={3} cursor="pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.randomizeSoal}
+                        onChange={(e) => setFormData({ ...formData, randomizeSoal: e.target.checked })}
+                        style={{ width: '16px', height: '16px', accentColor: '#4f46e5' }}
+                      />
+                      <Text fontSize="sm" color="gray.700">Acak Urutan Soal</Text>
+                    </Flex>
+                    <Flex as="label" align="center" gap={3} cursor="pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.randomizeOpsi}
+                        onChange={(e) => setFormData({ ...formData, randomizeOpsi: e.target.checked })}
+                        style={{ width: '16px', height: '16px', accentColor: '#4f46e5' }}
+                      />
+                      <Text fontSize="sm" color="gray.700">Acak Urutan Opsi</Text>
+                    </Flex>
 
-                  <Flex as="label" align="center" gap={3} cursor="pointer">
-                    <input
-                      type="checkbox"
-                      checked={requireSeb}
-                      onChange={(e) => setRequireSeb(e.target.checked)}
-                      style={{ width: '16px', height: '16px', accentColor: '#4f46e5' }}
-                    />
-                    <Text fontSize="sm" fontWeight="bold" color="gray.700">Wajibkan Safe Exam Browser</Text>
-                  </Flex>
-                  {requireSeb && (
-                    <Stack gap={2.5} pl={7} className="animate-fade-in">
-                      <Box>
-                        <Text fontSize="2xs" fontWeight="semibold" color="gray.500" mb={1}>Kunci Konfigurasi SEB (Opsional)</Text>
-                        <Input
-                          size="xs"
-                          value={formData.sebConfigKey}
-                          onChange={(e) => setFormData({ ...formData, sebConfigKey: e.target.value })}
-                          placeholder="Config Key"
-                          borderRadius="md"
-                        />
-                      </Box>
-                      <Box>
-                        <Text fontSize="2xs" fontWeight="semibold" color="gray.500" mb={1}>Kunci Browser SEB (Opsional)</Text>
-                        <Input
-                          size="xs"
-                          value={formData.sebBrowserKey}
-                          onChange={(e) => setFormData({ ...formData, sebBrowserKey: e.target.value })}
-                          placeholder="Browser Key"
-                          borderRadius="md"
-                        />
-                      </Box>
-                    </Stack>
-                  )}
+                    <Flex as="label" align="center" gap={3} cursor="pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.requireSeb}
+                        onChange={(e) => setFormData({ ...formData, requireSeb: e.target.checked })}
+                        style={{ width: '16px', height: '16px', accentColor: '#4f46e5' }}
+                      />
+                      <Text fontSize="sm" fontWeight="bold" color="gray.700">Wajibkan Safe Exam Browser</Text>
+                    </Flex>
+                    {formData.requireSeb && (
+                      <Stack gap={2.5} pl={7} className="animate-fade-in">
+                        <Box>
+                          <Text fontSize="2xs" fontWeight="semibold" color="gray.500" mb={1}>Kunci Konfigurasi SEB (Opsional)</Text>
+                          <Input
+                            size="xs"
+                            value={formData.sebConfigKey}
+                            onChange={(e) => setFormData({ ...formData, sebConfigKey: e.target.value })}
+                            placeholder="Config Key"
+                            borderRadius="md"
+                          />
+                        </Box>
+                        <Box>
+                          <Text fontSize="2xs" fontWeight="semibold" color="gray.500" mb={1}>Kunci Browser SEB (Opsional)</Text>
+                          <Input
+                            size="xs"
+                            value={formData.sebBrowserKey}
+                            onChange={(e) => setFormData({ ...formData, sebBrowserKey: e.target.value })}
+                            placeholder="Browser Key"
+                            borderRadius="md"
+                          />
+                        </Box>
+                      </Stack>
+                    )}
 
-                  <Flex as="label" align="center" gap={3} cursor="pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.blockKeyCopyPaste}
-                      onChange={(e) => setFormData({ ...formData, blockKeyCopyPaste: e.target.checked })}
-                      style={{ width: '16px', height: '16px', accentColor: '#4f46e5' }}
-                    />
-                    <Text fontSize="sm" color="gray.700">Proteksi Keyboard & Mouse (Klik Kanan, Copy-Paste, DevTools)</Text>
-                  </Flex>
-                  <Flex as="label" align="center" gap={3} cursor="pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.forceFullscreen}
-                      onChange={(e) => setFormData({ ...formData, forceFullscreen: e.target.checked })}
-                      style={{ width: '16px', height: '16px', accentColor: '#4f46e5' }}
-                    />
-                    <Text fontSize="sm" color="gray.700">Wajibkan Layar Penuh (Forced Fullscreen)</Text>
-                  </Flex>
-                  <Box>
-                    <Text fontSize="xs" fontWeight="semibold" color="gray.700" mb={1}>Batas Maksimum Pelanggaran (0 untuk Tidak Terbatas)</Text>
-                    <Input
-                      type="number"
-                      size="sm"
-                      w="20"
-                      value={formData.maxViolations}
-                      onChange={(e) => setFormData({ ...formData, maxViolations: parseInt(e.target.value) || 0 })}
-                      borderRadius="md"
-                    />
+                    <Flex as="label" align="center" gap={3} cursor="pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.blockKeyCopyPaste}
+                        onChange={(e) => setFormData({ ...formData, blockKeyCopyPaste: e.target.checked })}
+                        style={{ width: '16px', height: '16px', accentColor: '#4f46e5' }}
+                      />
+                      <Text fontSize="sm" color="gray.700">Proteksi Keyboard & Mouse (Klik Kanan, Copy-Paste, DevTools)</Text>
+                    </Flex>
+                    <Flex as="label" align="center" gap={3} cursor="pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.forceFullscreen}
+                        onChange={(e) => setFormData({ ...formData, forceFullscreen: e.target.checked })}
+                        style={{ width: '16px', height: '16px', accentColor: '#4f46e5' }}
+                      />
+                      <Text fontSize="sm" color="gray.700">Wajibkan Layar Penuh (Forced Fullscreen)</Text>
+                    </Flex>
+                    <Box>
+                      <Text fontSize="xs" fontWeight="semibold" color="gray.700" mb={1}>Batas Maksimum Pelanggaran (0 untuk Tidak Terbatas)</Text>
+                      <Input
+                        type="number"
+                        size="sm"
+                        w="20"
+                        value={formData.maxViolations}
+                        onChange={(e) => setFormData({ ...formData, maxViolations: parseInt(e.target.value) || 0 })}
+                        borderRadius="md"
+                      />
+                    </Box>
+                  </Stack>
+
+                  <Box pt={4} borderTop="1px solid" borderColor="gray.100" mt={4}>
+                    <Flex justify="space-between" fontSize="sm" mb={4}>
+                      <Text color="gray.500">Soal Terpilih:</Text>
+                      <Text fontWeight="bold" color="gray.900">{selectedQuestionIds.length} Soal</Text>
+                    </Flex>
+                    <Button
+                      type="submit"
+                      w="full"
+                      bg="indigo.600"
+                      color="white"
+                      _hover={{ bg: 'indigo.700' }}
+                      borderRadius="xl"
+                      gap={2}
+                      cursor="pointer"
+                      loading={updateMutation.isPending}
+                    >
+                      <Save size={18} />
+                      Simpan Perubahan
+                    </Button>
                   </Box>
                 </Stack>
-
-                <Box pt={4} borderTop="1px solid" borderColor="gray.100" mt={4}>
-                  <Flex justify="space-between" fontSize="sm" mb={4}>
-                    <Text color="gray.500">Soal Terpilih:</Text>
-                    <Text fontWeight="bold" color="gray.900">{selectedQuestionIds.length} Soal</Text>
-                  </Flex>
-                  <Button
-                    type="submit"
-                    w="full"
-                    bg="indigo.600"
-                    color="white"
-                    _hover={{ bg: 'indigo.700' }}
-                    borderRadius="xl"
-                    gap={2}
-                    cursor="pointer"
-                    loading={updateMutation.isPending}
-                  >
-                    <Save size={18} />
-                    Simpan Perubahan
-                  </Button>
-                </Box>
               </Box>
             </Stack>
           </Box>

@@ -51,6 +51,10 @@ export class CreateExamDto {
 
   @IsBoolean()
   @IsOptional()
+  requireSeb?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
   blockKeyCopyPaste?: boolean;
 
   @IsBoolean()

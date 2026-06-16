@@ -15,7 +15,7 @@ import * as ExcelJS from 'exceljs';
 export class ExamSessionsService {
   constructor(private prisma: PrismaService) {}
 
-  async startSession(dto: StartSessionDto, userId: string) {
+  async startSession(dto: StartSessionDto, userId: string, userAgent?: string, sebConfigKey?: string, sebBrowserKey?: string) {
     // Get student record
     const student = await this.prisma.student.findUnique({
       where: { userId },
@@ -32,6 +32,10 @@ export class ExamSessionsService {
 
     if (!exam) {
       throw new NotFoundException('Exam not found');
+    }
+
+    if (!this.isSebAllowed(exam.requireSeb, userAgent || '', sebConfigKey || '', sebBrowserKey || '', exam.sebConfigKey, exam.sebBrowserKey)) {
+      throw new ForbiddenException('Safe Exam Browser required');
     }
 
     // Validate exam status
@@ -368,5 +372,43 @@ export class ExamSessionsService {
     });
 
     return workbook.xlsx.writeBuffer();
+  }
+
+  async resetSession(sessionId: string) {
+    const session = await this.prisma.examSession.findUnique({
+      where: { id: sessionId },
+    });
+
+    if (!session) {
+      throw new NotFoundException('Session not found');
+    }
+
+    return this.prisma.examSession.delete({
+      where: { id: sessionId },
+    });
+  }
+
+  isSebAllowed(
+    requireSeb: boolean,
+    userAgent: string,
+    sebConfigKey: string,
+    sebBrowserKey: string,
+    expectedSebConfigKey?: string | null,
+    expectedSebBrowserKey?: string | null,
+  ) {
+    if (requireSeb) {
+      const ua = (userAgent || '').toLowerCase();
+      if (!ua.includes('seb') && !ua.includes('safeexambrowser')) {
+        return false;
+      }
+    }
+
+    if (expectedSebConfigKey && expectedSebConfigKey !== sebConfigKey) {
+      return false;
+    }
+    if (expectedSebBrowserKey && expectedSebBrowserKey !== sebBrowserKey) {
+      return false;
+    }
+    return true;
   }
 }

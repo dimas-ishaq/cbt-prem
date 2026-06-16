@@ -183,6 +183,7 @@ model Exam {
   showScore         Boolean     @default(true)
   sebConfigKey      String?     // Safe Exam Browser config
   sebBrowserKey     String?     // Safe Exam Browser browser key
+  requireSeb        Boolean     @default(false)
   blockKeyCopyPaste Boolean     @default(false)
   forceFullscreen   Boolean     @default(false)
   maxViolations     Int         @default(0)

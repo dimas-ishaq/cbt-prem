@@ -61,13 +61,16 @@ export function ExamContainer({ examId }: Props) {
   const confirmDialog = useConfirm();
   const { playViolation } = useSound();
 
-  // Fetch exam details
+  const token = useAuthStore((state) => state.access_token);
+
+  // Fetch exam details — guard dengan token agar tidak 401 saat hydration
   const { data: exam, isLoading: isLoadingExam, error: examError } = useQuery({
     queryKey: ['exam', examId],
     queryFn: async () => {
       const response = await api.get(`/exams/${examId}`);
       return response.data;
     },
+    enabled: !!token && !!examId,
     retry: false,
   });
 
@@ -166,6 +169,11 @@ export function ExamContainer({ examId }: Props) {
     const VIOLATION_COOLDOWN = 5000;
 
     const reportViolation = (type: string, description: string) => {
+      // Jangan rekam pelanggaran jika semua fitur pengaman dinonaktifkan
+      if (!exam?.forceFullscreen && !exam?.blockKeyCopyPaste && !exam?.sebConfigKey && !exam?.sebBrowserKey) {
+        return;
+      }
+
       const now = Date.now();
       if (now - lastViolationTime > VIOLATION_COOLDOWN) {
         if (socket) {
@@ -300,8 +308,11 @@ export function ExamContainer({ examId }: Props) {
     );
   };
 
-  const isSebError = (examError as any)?.response?.status === 401 && 
-    (examError as any)?.response?.data?.message === 'Safe Exam Browser required';
+  // Deteksi error SEB: cek status 401 dengan berbagai variasi pesan
+  const isSebError = (examError as any)?.response?.status === 401 && (
+    (examError as any)?.response?.data?.message?.toLowerCase().includes('safe exam browser') ||
+    (examError as any)?.response?.data?.message?.toLowerCase().includes('seb')
+  );
 
   if (isSebError) {
     return (

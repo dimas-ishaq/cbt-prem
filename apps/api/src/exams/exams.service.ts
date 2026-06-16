@@ -153,11 +153,29 @@ export class ExamsService {
   }
 
   async update(id: string, data: any) {
-    const { questionIds, ...examData } = data;
-    
+    const { questionIds, startDate, startTimeField, endDate, endTimeField, ...examData } = data;
+
+    // Eksplisit petakan boolean security flags agar tidak pernah ter-drop
     const updateData: any = {
       ...examData,
+      // Pastikan boolean selalu disertakan secara eksplisit
+      ...(typeof data.requireSeb === 'boolean' && { requireSeb: data.requireSeb }),
+      ...(typeof data.blockKeyCopyPaste === 'boolean' && { blockKeyCopyPaste: data.blockKeyCopyPaste }),
+      ...(typeof data.forceFullscreen === 'boolean' && { forceFullscreen: data.forceFullscreen }),
+      ...(typeof data.randomizeSoal === 'boolean' && { randomizeSoal: data.randomizeSoal }),
+      ...(typeof data.randomizeOpsi === 'boolean' && { randomizeOpsi: data.randomizeOpsi }),
     };
+
+    // Konversi empty string ke null untuk relasi opsional
+    if (!updateData.examGroupId) {
+      delete updateData.examGroupId; // jangan update jika kosong
+    }
+
+    // SEB keys: hapus jika requireSeb false
+    if (updateData.requireSeb === false) {
+      updateData.sebConfigKey = null;
+      updateData.sebBrowserKey = null;
+    }
 
     if (data.startTime) {
       updateData.startTime = new Date(data.startTime);
@@ -166,12 +184,11 @@ export class ExamsService {
       updateData.endTime = new Date(data.endTime);
     }
 
-    if (questionIds) {
-      // Delete existing questions for this exam
+    if (questionIds && questionIds.length > 0) {
+      // Hapus soal lama lalu buat ulang
       await this.prisma.examQuestion.deleteMany({
         where: { examId: id },
       });
-      // Re-create the relation maps
       updateData.examQuestions = {
         create: questionIds.map((qId: string, index: number) => ({
           questionId: qId,
@@ -183,25 +200,76 @@ export class ExamsService {
     return this.prisma.exam.update({
       where: { id },
       data: updateData,
+      include: {
+        subject: true,
+        examGroup: true,
+        examQuestions: {
+          include: { question: { include: { options: true } } },
+        },
+      },
     });
   }
 
   async remove(id: string) {
-    return this.prisma.exam.delete({
-      where: { id },
+    return this.prisma.$transaction(async (tx) => {
+      await tx.answer.deleteMany({
+        where: {
+          examSession: {
+            examId: id,
+          },
+        },
+      });
+
+      await tx.violation.deleteMany({
+        where: {
+          examSession: {
+            examId: id,
+          },
+        },
+      });
+
+      await tx.examSession.deleteMany({
+        where: { examId: id },
+      });
+
+      await tx.examQuestion.deleteMany({
+        where: { examId: id },
+      });
+
+      return tx.exam.delete({
+        where: { id },
+      });
     });
   }
 
-  async validateSeb(examId: string, sebConfigKey: string, sebBrowserKey: string) {
+  async validateSeb(examId: string, userAgent: string, sebConfigKey: string, sebBrowserKey: string) {
     const exam = await this.prisma.exam.findUnique({ where: { id: examId } });
     if (!exam) return false;
     
+    return this.isSebAllowed(exam.requireSeb, userAgent, sebConfigKey, sebBrowserKey, exam.sebConfigKey, exam.sebBrowserKey);
+  }
+
+  isSebAllowed(
+    requireSeb: boolean,
+    userAgent: string,
+    sebConfigKey: string,
+    sebBrowserKey: string,
+    expectedSebConfigKey?: string | null,
+    expectedSebBrowserKey?: string | null,
+  ) {
+    if (requireSeb) {
+      const ua = (userAgent || '').toLowerCase();
+      if (!ua.includes('seb') && !ua.includes('safeexambrowser')) {
+        return false;
+      }
+    }
+
     // In production, we would compare hashes provided by SEB
     // SEB-Config-Key and SEB-Browser-Exam-Key headers
-    if (exam.sebConfigKey && exam.sebConfigKey !== sebConfigKey) {
+    if (expectedSebConfigKey && expectedSebConfigKey !== sebConfigKey) {
       return false;
     }
-    if (exam.sebBrowserKey && exam.sebBrowserKey !== sebBrowserKey) {
+    if (expectedSebBrowserKey && expectedSebBrowserKey !== sebBrowserKey) {
       return false;
     }
     return true;

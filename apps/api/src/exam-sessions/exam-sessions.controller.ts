@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Param, Get, UseGuards, Request, Patch, Res } from '@nestjs/common';
+import { Controller, Post, Body, Param, Get, UseGuards, Request, Patch, Res, Delete, Headers } from '@nestjs/common';
 import * as express from 'express';
 import { ExamSessionsService } from './exam-sessions.service';
 import { StartSessionDto } from './dto/start-session.dto';
@@ -16,8 +16,14 @@ export class ExamSessionsController {
 
   @Post('start')
   @Roles(Role.SISWA)
-  async start(@Body() dto: StartSessionDto, @Request() req) {
-    return this.examSessionsService.startSession(dto, req.user.userId);
+  async start(
+    @Body() dto: StartSessionDto,
+    @Request() req,
+    @Headers('user-agent') userAgent: string,
+    @Headers('x-seb-config-key') sebConfigKey: string,
+    @Headers('x-seb-browser-key') sebBrowserKey: string,
+  ) {
+    return this.examSessionsService.startSession(dto, req.user.userId, userAgent, sebConfigKey, sebBrowserKey);
   }
 
   @Post(':id/submit-answer')
@@ -76,5 +82,11 @@ export class ExamSessionsController {
   @Get(':id')
   async getSession(@Param('id') id: string) {
     return this.examSessionsService.getSession(id);
+  }
+
+  @Delete(':id/reset')
+  @Roles(Role.GURU, Role.SUPER_ADMIN)
+  async resetSession(@Param('id') id: string) {
+    return this.examSessionsService.resetSession(id);
   }
 }
