@@ -32,7 +32,7 @@ import {
   SimpleGrid,
   Grid,
 } from '@chakra-ui/react';
-import toast from 'react-hot-toast';
+import { toast } from '@/lib/toaster';
 
 export default function SessionDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);

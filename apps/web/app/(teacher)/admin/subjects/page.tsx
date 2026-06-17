@@ -6,14 +6,15 @@ import api from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
 import { useRouter } from 'next/navigation';
 import {
-  Box, Flex, Heading, Text, Button, Table, Stack, Input, Textarea, Spinner, IconButton, HStack, Badge, SimpleGrid, Wrap, WrapItem, Checkbox, CheckboxGroup,
+  Box, Flex, Heading, Text, Button, Table, Stack, Input, Textarea, Spinner, IconButton, HStack, Badge, SimpleGrid, Wrap, WrapItem, Checkbox,
 } from '@chakra-ui/react';
-import toast from 'react-hot-toast';
+import { toast } from '@/lib/toaster';
 import { useConfirm } from '@/components/ui/confirmation-dialog';
 import { Plus, Pencil, Trash2, Search, BookOpen, GraduationCap, Link2, Upload, Download } from 'lucide-react';
 
 interface TeacherSummary {
   id: string;
+  nip?: string | null;
   user?: { fullName: string; username?: string };
 }
 
@@ -34,6 +35,7 @@ export default function SubjectsPage() {
   const queryClient = useQueryClient();
   const confirmDialog = useConfirm();
   const [searchTerm, setSearchTerm] = useState('');
+  const [teacherSearch, setTeacherSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
   const [formData, setFormData] = useState(emptyForm);
@@ -48,13 +50,22 @@ export default function SubjectsPage() {
     queryFn: async () => (await api.get('/subjects')).data,
   });
 
-  const { data: teachers } = useQuery<TeacherSummary[]>({
-    queryKey: ['teachers'],
+  const teacherSearchEnabled = teacherSearch.trim().length >= 3;
+  const { data: teacherResults, isFetching: isSearchingTeachers } = useQuery<TeacherSummary[]>({
+    queryKey: ['teachers', 'search', teacherSearch],
     queryFn: async () => {
-      const response = await api.get('/teachers');
-      return response.data.map((teacher: any) => ({ id: teacher.id, user: teacher.user }));
+      const response = await api.get('/teachers', { params: { search: teacherSearch.trim() } });
+      return response.data.map((teacher: any) => ({ id: teacher.id, nip: teacher.nip, user: teacher.user }));
     },
+    enabled: teacherSearchEnabled,
   });
+
+  const selectedTeachers = useMemo(() => {
+    const merged = new Map<string, TeacherSummary>();
+    (editingSubject?.teachers || []).forEach((teacher) => merged.set(teacher.id, teacher));
+    (teacherResults || []).forEach((teacher) => merged.set(teacher.id, teacher));
+    return Array.from(merged.values());
+  }, [editingSubject?.teachers, teacherResults]);
 
   const createMutation = useMutation({
     mutationFn: (data: typeof formData) => api.post('/subjects', data),
@@ -108,8 +119,8 @@ export default function SubjectsPage() {
     },
   });
 
-  const resetForm = () => { setFormData(emptyForm); setEditingSubject(null); };
-  const handleEdit = (subject: Subject) => { setEditingSubject(subject); setFormData({ name: subject.name, code: subject.code, description: subject.description || '', teacherIds: subject.teachers?.map((t) => t.id) || [] }); setIsModalOpen(true); };
+  const resetForm = () => { setFormData(emptyForm); setEditingSubject(null); setTeacherSearch(''); };
+  const handleEdit = (subject: Subject) => { setEditingSubject(subject); setFormData({ name: subject.name, code: subject.code, description: subject.description || '', teacherIds: subject.teachers?.map((t) => t.id) || [] }); setTeacherSearch(subject.teachers?.[0]?.user?.fullName || subject.teachers?.[0]?.user?.username || ''); setIsModalOpen(true); };
   const handleSubmit = (e: React.FormEvent) => { e.preventDefault(); editingSubject ? updateMutation.mutate({ id: editingSubject.id, data: formData }) : createMutation.mutate(formData); };
   const filteredSubjects = useMemo(() => (subjects || []).filter((subject) => subject.name.toLowerCase().includes(searchTerm.toLowerCase()) || subject.code.toLowerCase().includes(searchTerm.toLowerCase()) || (subject.description || '').toLowerCase().includes(searchTerm.toLowerCase())), [subjects, searchTerm]);
   const totalSubjects = subjects?.length || 0;
@@ -149,7 +160,7 @@ export default function SubjectsPage() {
               <Table.Row key={subject.id} _hover={{ bg: 'gray.50' }}>
                 <Table.Cell px={6} py={4} fontFamily="mono" fontWeight="bold" color="indigo.600">{subject.code}</Table.Cell>
                 <Table.Cell px={6} py={4} fontWeight="semibold" color="gray.900">{subject.name}</Table.Cell>
-                <Table.Cell px={6} py={4}><Wrap>{(subject.teachers || []).length > 0 ? subject.teachers!.map((teacher) => <WrapItem key={teacher.id}><Badge colorPalette="blue" variant="subtle" borderRadius="md" px={2} py={1}>{teacher.user?.fullName || teacher.id}</Badge></WrapItem>) : <Badge colorPalette="gray" variant="subtle">Belum ada guru</Badge>}</Wrap></Table.Cell>
+                <Table.Cell px={6} py={4}><Wrap>{(subject.teachers || []).length > 0 ? subject.teachers!.map((teacher) => <WrapItem key={teacher.id}><Badge colorPalette="blue" variant="subtle" borderRadius="md" px={2} py={1}>{teacher.user?.fullName || teacher.user?.username || teacher.id}</Badge></WrapItem>) : <Badge colorPalette="gray" variant="subtle">Belum ada guru</Badge>}</Wrap></Table.Cell>
                 <Table.Cell px={6} py={4} fontSize="sm" color="gray.500" maxW="xs" truncate>{subject.description || '-'}</Table.Cell>
                 <Table.Cell px={6} py={4} textAlign="end"><HStack gap={2} justify="flex-end"><IconButton aria-label="Edit mata pelajaran" variant="ghost" color="indigo.600" _hover={{ bg: 'indigo.50' }} size="sm" borderRadius="lg" onClick={() => handleEdit(subject)} cursor="pointer"><Pencil size={18} /></IconButton><IconButton aria-label="Delete mata pelajaran" variant="ghost" color="red.600" _hover={{ bg: 'red.50' }} size="sm" borderRadius="lg" onClick={async () => { const confirmed = await confirmDialog({ title: 'Hapus Mata Pelajaran', description: `Apakah Anda yakin ingin menghapus mata pelajaran "${subject.name}"? Relasi guru dan data turunannya akan ikut terpengaruh.`, confirmText: 'Hapus' }); if (confirmed) deleteMutation.mutate(subject.id); }} cursor="pointer"><Trash2 size={18} /></IconButton></HStack></Table.Cell>
               </Table.Row>
@@ -159,7 +170,7 @@ export default function SubjectsPage() {
         </Table.Root>
       </Box>
 
-      {isModalOpen && (<Box position="fixed" inset={0} bg="blackAlpha.600" display="flex" alignItems="center" justifyContent="center" zIndex={50} px={4}><Box bg="white" borderRadius="xl" p={8} w="full" maxW="lg" shadow="2xl"><Heading size="lg" fontWeight="bold" mb={6}>{editingSubject ? 'Ubah Mata Pelajaran' : 'Tambah Mata Pelajaran Baru'}</Heading><form onSubmit={handleSubmit}><Stack gap={4}><Box><Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Kode <span style={{ color: 'red' }}>*</span></Text><Input required value={formData.code} onChange={(e) => setFormData({ ...formData, code: e.target.value })} placeholder="MTK" borderRadius="lg" /></Box><Box><Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Nama <span style={{ color: 'red' }}>*</span></Text><Input required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="Matematika" borderRadius="lg" /></Box><Box><Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Deskripsi</Text><Textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Deskripsi singkat..." borderRadius="lg" rows={3} /></Box><Box><Text fontSize="sm" fontWeight="medium" color="gray.700" mb={2}>Guru Pengampu</Text><Wrap>{(teachers || []).map((teacher) => { const checked = formData.teacherIds.includes(teacher.id); return (<WrapItem key={teacher.id}><label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', borderRadius: '12px', border: '1px solid var(--chakra-colors-gray-200)', cursor: 'pointer', background: checked ? 'var(--chakra-colors-indigo-50)' : 'white', color: 'var(--chakra-colors-gray-700)' }}><input type="checkbox" checked={checked} onChange={(e) => setFormData({ ...formData, teacherIds: e.target.checked ? [...formData.teacherIds, teacher.id] : formData.teacherIds.filter((id) => id !== teacher.id) })} style={{ accentColor: 'var(--chakra-colors-indigo-600)' }} /><span>{teacher.user?.fullName || teacher.id}</span></label></WrapItem>); })}</Wrap></Box><Flex gap={3} pt={4}><Button type="button" onClick={() => { setIsModalOpen(false); resetForm(); }} flex={1} variant="outline" borderRadius="lg" cursor="pointer">Batal</Button><Button type="submit" flex={1} bg="indigo.600" color="white" _hover={{ bg: 'indigo.700' }} borderRadius="lg" cursor="pointer" loading={createMutation.isPending || updateMutation.isPending}>Simpan</Button></Flex></Stack></form></Box></Box>) }
+      {isModalOpen && (<Box position="fixed" inset={0} bg="blackAlpha.600" display="flex" alignItems="center" justifyContent="center" zIndex={50} px={4}><Box bg="white" borderRadius="xl" p={8} w="full" maxW="lg" shadow="2xl"><Heading size="lg" fontWeight="bold" mb={6}>{editingSubject ? 'Ubah Mata Pelajaran' : 'Tambah Mata Pelajaran Baru'}</Heading><form onSubmit={handleSubmit}><Stack gap={4}><Box><Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Kode <span style={{ color: 'red' }}>*</span></Text><Input required value={formData.code} onChange={(e) => setFormData({ ...formData, code: e.target.value })} placeholder="MTK" borderRadius="lg" /></Box><Box><Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Nama <span style={{ color: 'red' }}>*</span></Text><Input required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="Matematika" borderRadius="lg" /></Box><Box><Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Deskripsi</Text><Textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Deskripsi singkat..." borderRadius="lg" rows={3} /></Box><Box><Flex justify="space-between" align="center" mb={2}><Text fontSize="sm" fontWeight="medium" color="gray.700">Guru Pengampu</Text><Text fontSize="xs" color="gray.500">Ketik minimal 3 karakter</Text></Flex><Input value={teacherSearch} onChange={(e) => setTeacherSearch(e.target.value)} placeholder="Cari nama guru / username..." borderRadius="lg" pl={10} /><Box position="relative" mt={2}><Box position="absolute" left={3} top={3} color="gray.400"><Search size={16} /></Box></Box>{teacherSearchEnabled && (<Box mt={3} borderWidth="1px" borderColor="gray.200" borderRadius="lg" maxH="260px" overflowY="auto"><Stack gap={0}>{isSearchingTeachers ? <Box px={4} py={3}><Text fontSize="sm" color="gray.500">Mencari guru...</Text></Box> : selectedTeachers.map((teacher) => { const checked = formData.teacherIds.includes(teacher.id); return (<Box key={teacher.id} px={4} py={3} borderBottomWidth="1px" borderColor="gray.100" _last={{ borderBottomWidth: 0 }} bg={checked ? 'indigo.50' : 'white'}><Checkbox.Root checked={checked} onCheckedChange={(details) => setFormData({ ...formData, teacherIds: details.checked ? [...formData.teacherIds, teacher.id] : formData.teacherIds.filter((id) => id !== teacher.id) })}><Checkbox.HiddenInput /><Checkbox.Control /><Checkbox.Label><Stack gap={0}><Text fontWeight="medium" color="gray.800">{teacher.user?.fullName || teacher.user?.username || teacher.id}</Text><Text fontSize="xs" color="gray.500">Username: {teacher.user?.username || '-'}{teacher.nip ? ` • NIP: ${teacher.nip}` : ' • NIP: -'}</Text></Stack></Checkbox.Label></Checkbox.Root></Box>); })}</Stack></Box>)}{teacherSearchEnabled && !isSearchingTeachers && selectedTeachers.length === 0 && <Text mt={2} fontSize="sm" color="gray.500">Tidak ada guru yang cocok.</Text>}<Wrap mt={3}>{formData.teacherIds.map((id) => { const teacher = selectedTeachers.find((item) => item.id === id); return teacher ? <WrapItem key={id}><Badge colorPalette="indigo" variant="subtle" borderRadius="md" px={2} py={1}>{teacher.user?.fullName || teacher.user?.username || teacher.id}</Badge></WrapItem> : null; })}</Wrap></Box><Flex gap={3} pt={4}><Button type="button" onClick={() => { setIsModalOpen(false); resetForm(); }} flex={1} variant="outline" borderRadius="lg" cursor="pointer">Batal</Button><Button type="submit" flex={1} bg="indigo.600" color="white" _hover={{ bg: 'indigo.700' }} borderRadius="lg" cursor="pointer" loading={createMutation.isPending || updateMutation.isPending}>Simpan</Button></Flex></Stack></form></Box></Box>)}
     </Stack>
   );
 }

@@ -20,7 +20,7 @@ import {
   Badge,
   SimpleGrid,
 } from '@chakra-ui/react';
-import toast from 'react-hot-toast';
+import { toast } from '@/lib/toaster';
 
 interface ExamGroup {
   id: string;

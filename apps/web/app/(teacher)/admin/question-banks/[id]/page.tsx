@@ -22,7 +22,7 @@ import {
   HStack,
   Input,
 } from '@chakra-ui/react';
-import toast from 'react-hot-toast';
+import { toast } from '@/lib/toaster';
 import { useConfirm } from '@/components/ui/confirmation-dialog';
 
 interface Option {

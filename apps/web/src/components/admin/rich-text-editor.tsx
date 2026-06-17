@@ -7,7 +7,7 @@ import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 import { useRef, useCallback, useEffect, useState } from 'react';
 import api from '@/lib/api';
-import toast from 'react-hot-toast';
+import { toast } from '@/lib/toaster';
 import { compressImage } from '@/utils/imageUtils';
 import {
   Bold,

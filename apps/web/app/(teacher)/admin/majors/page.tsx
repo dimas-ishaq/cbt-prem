@@ -21,7 +21,7 @@ import {
   Grid,
   Badge,
 } from '@chakra-ui/react';
-import toast from 'react-hot-toast';
+import { toast } from '@/lib/toaster';
 import { useConfirm } from '@/components/ui/confirmation-dialog';
 import { Plus, Pencil, Trash2, Search, GraduationCap } from 'lucide-react';
 

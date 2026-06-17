@@ -14,7 +14,7 @@ import {
   Textarea,
   Input,
 } from '@chakra-ui/react';
-import toast from 'react-hot-toast';
+import { toast } from '@/lib/toaster';
 import {
   Upload,
   Volume2,

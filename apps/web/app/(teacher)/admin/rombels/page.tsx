@@ -19,7 +19,7 @@ import {
   Badge,
   SimpleGrid,
 } from '@chakra-ui/react';
-import toast from 'react-hot-toast';
+import { toast } from '@/lib/toaster';
 import { useConfirm } from '@/components/ui/confirmation-dialog';
 import { Plus, Pencil, Trash2, Search, Users, GraduationCap, Mail, ArrowLeft, X, Download, Upload } from 'lucide-react';
 

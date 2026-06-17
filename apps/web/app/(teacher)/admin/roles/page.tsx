@@ -6,7 +6,7 @@ import { useAuthStore } from '@/store/auth.store';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Badge, Box, Button, Flex, Grid, Heading, HStack, IconButton, Input, Spinner, Stack, Table, Text, Textarea } from '@chakra-ui/react';
-import toast from 'react-hot-toast';
+import { toast } from '@/lib/toaster';
 import { useConfirm } from '@/components/ui/confirmation-dialog';
 import {
   Plus,

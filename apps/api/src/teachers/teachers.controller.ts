@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, UseGuards, Query } from '@nestjs/common';
 import { TeachersService } from './teachers.service';
 import { CreateTeacherDto } from './dto/create-teacher.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -19,8 +19,8 @@ export class TeachersController {
 
   @Get()
   @Roles(Role.SUPER_ADMIN, Role.ADMIN_SEKOLAH)
-  findAll() {
-    return this.teachersService.findAll();
+  findAll(@Query('search') search?: string) {
+    return this.teachersService.findAll(search);
   }
 
   @Delete(':id')

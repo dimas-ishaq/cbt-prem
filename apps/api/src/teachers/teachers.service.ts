@@ -29,9 +29,33 @@ export class TeachersService {
     });
   }
 
-  async findAll() {
+  async findAll(search?: string) {
     return this.prisma.teacher.findMany({
-      include: { user: true, subjects: true },
+      where: search
+        ? {
+            user: {
+              OR: [
+                { fullName: { contains: search, mode: 'insensitive' } },
+                { username: { contains: search, mode: 'insensitive' } },
+              ],
+            },
+          }
+        : undefined,
+      select: {
+        id: true,
+        nip: true,
+        user: {
+          select: {
+            fullName: true,
+            username: true,
+          },
+        },
+      },
+      orderBy: {
+        user: {
+          fullName: 'asc',
+        },
+      },
     });
   }
 

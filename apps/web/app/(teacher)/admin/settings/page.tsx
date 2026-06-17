@@ -18,7 +18,7 @@ import {
   Card,
   HStack,
 } from '@chakra-ui/react';
-import toast from 'react-hot-toast';
+import { toast } from '@/lib/toaster';
 import { Settings, Save, ShieldAlert, Upload, Trash2, Globe, Heart, Languages, Bookmark } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 

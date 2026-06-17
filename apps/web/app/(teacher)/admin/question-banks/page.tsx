@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
 import { Box, Flex, Heading, Text, Button, Stack, Spinner, IconButton, SimpleGrid, HStack, Skeleton, Input, Textarea } from '@chakra-ui/react';
-import toast from 'react-hot-toast';
+import { toast } from '@/lib/toaster';
 import { useConfirm } from '@/components/ui/confirmation-dialog';
 
 interface Subject {

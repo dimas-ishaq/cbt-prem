@@ -19,7 +19,7 @@ import {
   Badge,
 } from '@chakra-ui/react';
 import { Printer, Users, CheckSquare, Square, Info, ShieldAlert, Award } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { toast } from '@/lib/toaster';
 
 interface Student {
   id: string;

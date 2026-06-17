@@ -1,7 +1,6 @@
 'use client';
 
 import { Moon, Sun } from 'lucide-react';
-import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
 import { Box, Flex } from '@chakra-ui/react';
 
@@ -10,19 +9,40 @@ interface ColorModeToggleProps {
   variant?: 'icon' | 'switch';
 }
 
+const STORAGE_KEY = 'cbt-color-mode';
+
+function getInitialMode() {
+  if (typeof window === 'undefined') return 'light';
+  const stored = window.localStorage.getItem(STORAGE_KEY);
+  return stored === 'dark' ? 'dark' : 'light';
+}
+
+function applyMode(mode: 'light' | 'dark') {
+  const root = document.documentElement;
+  root.classList.toggle('dark', mode === 'dark');
+  root.style.colorScheme = mode;
+  window.localStorage.setItem(STORAGE_KEY, mode);
+}
+
 export function ColorModeToggle({ size = 'md', variant = 'icon' }: ColorModeToggleProps) {
-  const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [mode, setMode] = useState<'light' | 'dark'>('light');
 
   useEffect(() => {
+    const initialMode = getInitialMode();
+    setMode(initialMode);
+    applyMode(initialMode);
     setMounted(true);
   }, []);
 
   if (!mounted) return null;
 
-  const isDark = resolvedTheme === 'dark';
-
-  const toggle = () => setTheme(isDark ? 'light' : 'dark');
+  const isDark = mode === 'dark';
+  const toggle = () => {
+    const nextMode = isDark ? 'light' : 'dark';
+    setMode(nextMode);
+    applyMode(nextMode);
+  };
 
   if (variant === 'switch') {
     return (
@@ -78,7 +98,6 @@ export function ColorModeToggle({ size = 'md', variant = 'icon' }: ColorModeTogg
     );
   }
 
-  // Icon variant
   const iconSize = size === 'sm' ? 15 : size === 'lg' ? 20 : 17;
   const btnSize = size === 'sm' ? 7 : size === 'lg' ? 10 : 9;
 
@@ -106,10 +125,7 @@ export function ColorModeToggle({ size = 'md', variant = 'icon' }: ColorModeTogg
       }}
       style={{ outline: 'none' }}
     >
-      {isDark
-        ? <Sun size={iconSize} />
-        : <Moon size={iconSize} />
-      }
+      {isDark ? <Sun size={iconSize} /> : <Moon size={iconSize} />}
     </Flex>
   );
 }

@@ -23,7 +23,7 @@ import {
   Badge,
   Spinner,
 } from '@chakra-ui/react';
-import toast from 'react-hot-toast';
+import { toast } from '@/lib/toaster';
 
 interface Subject {
   id: string;
