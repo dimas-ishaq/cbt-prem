@@ -3,6 +3,9 @@ import {
   ForbiddenException,
   NotFoundException,
   BadRequestException,
+  OnModuleInit,
+  OnModuleDestroy,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { StartSessionDto } from './dto/start-session.dto';
@@ -12,17 +15,65 @@ import { SessionStatus, ExamStatus } from '@prisma/client';
 import * as ExcelJS from 'exceljs';
 
 @Injectable()
-export class ExamSessionsService {
+export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(ExamSessionsService.name);
+  private autoSubmitTimer: NodeJS.Timeout | null = null;
+
   constructor(private prisma: PrismaService) {}
+
+  onModuleInit() {
+    this.autoSubmitTimer = setInterval(() => {
+      this.autoSubmitExpiredSessions().catch((error) => {
+        this.logger.error(`Auto-submit job failed: ${error.message}`, error.stack);
+      });
+    }, 5 * 60 * 1000);
+
+    void this.autoSubmitExpiredSessions();
+  }
+
+  onModuleDestroy() {
+    if (this.autoSubmitTimer) {
+      clearInterval(this.autoSubmitTimer);
+      this.autoSubmitTimer = null;
+    }
+  }
+
+  private async autoSubmitExpiredSessions() {
+    const expiredSessions = await this.prisma.examSession.findMany({
+      where: {
+        status: SessionStatus.IN_PROGRESS,
+        exam: {
+          endTime: {
+            lte: new Date(),
+          },
+        },
+      },
+      select: { id: true },
+    });
+
+    for (const session of expiredSessions) {
+      try {
+        await this.finishSession(session.id);
+      } catch (error) {
+        this.logger.warn(`Auto-submit skipped for session ${session.id}: ${error.message}`);
+      }
+    }
+  }
 
   async startSession(dto: StartSessionDto, userId: string, userAgent?: string, sebConfigKey?: string, sebBrowserKey?: string) {
     // Get student record
     const student = await this.prisma.student.findUnique({
       where: { userId },
+      include: { rombel: true, major: true },
     });
 
     if (!student) {
       throw new ForbiddenException('User is not a student');
+    }
+
+    // Ownership check: student harus terdaftar minimal di satu rombel atau major
+    if (!student.rombelId && !student.majorId) {
+      throw new ForbiddenException('Student is not assigned to any class or major');
     }
 
     // Get exam record
@@ -49,13 +100,7 @@ export class ExamSessionsService {
       throw new BadRequestException('Exam is outside of scheduled time');
     }
 
-    // Validate token
-    if (exam.token && exam.token !== dto.token) {
-      throw new BadRequestException('Invalid exam token');
-    }
-
-
-    // Check for existing session
+    ownership added
     const existingSession = await this.prisma.examSession.findUnique({
       where: {
         examId_studentId: {

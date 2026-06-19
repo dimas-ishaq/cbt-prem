@@ -24,33 +24,26 @@ export class ExamsService {
     });
   }
 
-  async findAll(user?: any) {
-    const include: any = { 
-      subject: true, 
+  async findAll(user?: any, skip?: number, take?: number) {
+    const include: any = {
+      subject: true,
       examGroup: true,
       teacher: { include: { user: true } },
-      _count: {
-        select: { examSessions: true }
-      }
+      _count: { select: { examSessions: true } },
     };
 
     if (user && user.role === 'SISWA') {
       include.examSessions = {
-        where: {
-          student: {
-            userId: user.userId
-          }
-        },
-        select: {
-          id: true,
-          status: true,
-        }
+        where: { student: { userId: user.userId } },
+        select: { id: true, status: true },
       };
     }
 
     return this.prisma.exam.findMany({
       include,
       orderBy: { createdAt: 'desc' },
+      skip,
+      take,
     });
   }
 

@@ -15,7 +15,6 @@ export class QuestionBankController {
   @Post()
   @Roles(Role.GURU, Role.SUPER_ADMIN)
   async create(@Body() dto: CreateQuestionBankDto, @Request() req) {
-    // Note: In real app, we need to map req.user.userId to teacher.id
     const teacher = await this.questionBankService['prisma'].teacher.findUnique({
       where: { userId: req.user.userId }
     });
@@ -29,8 +28,7 @@ export class QuestionBankController {
   @Roles(Role.GURU, Role.SUPER_ADMIN)
   findAll(@Request() req) {
     if (req.user.role === Role.GURU) {
-      // Logic to find teacher.id first or use userId if indexed
-      return this.questionBankService.findAll(); // Simplified for now
+      return this.questionBankService.findAll();
     }
     return this.questionBankService.findAll();
   }
@@ -43,13 +41,25 @@ export class QuestionBankController {
 
   @Patch(':id')
   @Roles(Role.GURU, Role.SUPER_ADMIN)
-  update(@Param('id') id: string, @Body() dto: UpdateQuestionBankDto) {
-    return this.questionBankService.update(id, dto);
+  async update(@Param('id') id: string, @Body() dto: UpdateQuestionBankDto, @Request() req) {
+    const teacher = await this.questionBankService['prisma'].teacher.findUnique({
+      where: { userId: req.user.userId }
+    });
+    if (!teacher) {
+      throw new UnauthorizedException('User is not a teacher');
+    }
+    return this.questionBankService.update(id, dto, teacher.id);
   }
 
   @Delete(':id')
   @Roles(Role.GURU, Role.SUPER_ADMIN)
-  remove(@Param('id') id: string) {
-    return this.questionBankService.remove(id);
+  async remove(@Param('id') id: string, @Request() req) {
+    const teacher = await this.questionBankService['prisma'].teacher.findUnique({
+      where: { userId: req.user.userId }
+    });
+    if (!teacher) {
+      throw new UnauthorizedException('User is not a teacher');
+    }
+    return this.questionBankService.remove(id, teacher.id);
   }
 }

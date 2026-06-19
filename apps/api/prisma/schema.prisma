@@ -192,6 +192,8 @@ model Exam {
 
   examQuestions ExamQuestion[]
   examSessions  ExamSession[]
+  targetRombels ExamTargetRombel[]
+  targetMajors  ExamTargetMajor[]
 }
 
 model ExamQuestion {
@@ -240,6 +242,26 @@ model Answer {
   updatedAt      DateTime    @updatedAt
 
   @@unique([examSessionId, questionId])
+}
+
+model ExamTargetRombel {
+  id       String @id @default(uuid())
+  examId   String
+  exam     Exam   @relation(fields: [examId], references: [id], onDelete: Cascade)
+  rombelId String
+  rombel   Rombel @relation(fields: [rombelId], references: [id], onDelete: Cascade)
+
+  @@unique([examId, rombelId])
+}
+
+model ExamTargetMajor {
+  id      String @id @default(uuid())
+  examId  String
+  exam    Exam   @relation(fields: [examId], references: [id], onDelete: Cascade)
+  majorId String
+  major   Major  @relation(fields: [majorId], references: [id], onDelete: Cascade)
+
+  @@unique([examId, majorId])
 }
 
 model Violation {

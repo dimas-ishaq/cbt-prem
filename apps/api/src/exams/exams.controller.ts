@@ -1,5 +1,6 @@
-import { Controller, Get, Post, Body, Param, Patch, Delete, UseGuards, Request, Headers, UnauthorizedException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Patch, Delete, UseGuards, Request, Headers, UnauthorizedException, Query } from '@nestjs/common';
 import { ExamsService } from './exams.service';
+import { PaginationDto } from '../common/dto/pagination.dto';
 import { CreateExamDto } from './dto/create-exam.dto';
 import { UpdateExamDto } from './dto/update-exam.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -25,8 +26,9 @@ export class ExamsController {
   }
 
   @Get()
-  findAll(@Request() req) {
-    return this.examsService.findAll(req.user);
+  async findAll(@Request() req, @Query() pagination: PaginationDto) {
+    const { skip, take } = pagination;
+    return this.examsService.findAll(req.user, skip, take);
   }
 
   @Get(':id')
@@ -37,8 +39,7 @@ export class ExamsController {
     @Headers('user-agent') userAgent: string,
     @Request() req
   ) {
-    // SEB validation hanya berlaku untuk SISWA — guru/admin tidak perlu SEB untuk mengakses data ujian
-    const isSiswa = req.user?.role === 'SISWA';
+    const isSiswa = req.user?.role === Role.SISWA;
     if (isSiswa) {
       const isValidSeb = await this.examsService.validateSeb(id, userAgent, sebConfigKey, sebBrowserKey);
       if (!isValidSeb) {
