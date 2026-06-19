@@ -105,7 +105,7 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
       throw new BadRequestException('Exam is outside of scheduled time');
     }
 
-    ownership added
+
     const existingSession = await this.prisma.examSession.findUnique({
       where: {
         examId_studentId: {

@@ -33,7 +33,7 @@ export class StudentsService {
     }).then(user => ({ ...user, temporaryPassword: tempPassword }));
   }
 
-  async findAll(majorId?: string, rombelId?: string, grade?: string) {
+  async findAll(majorId?: string, rombelId?: string, grade?: string, skip?: number, take?: number) {
     const where: any = {};
     if (majorId) where.majorId = majorId;
     if (rombelId) {
@@ -43,10 +43,15 @@ export class StudentsService {
         name: { startsWith: grade, mode: 'insensitive' },
       };
     }
-    return this.prisma.student.findMany({
-      where,
-      include: { user: true, rombel: true },
-    });
+    const [data, total] = await Promise.all([
+      this.prisma.student.findMany({
+        where,
+        include: { user: true, rombel: true },
+        ...(skip !== undefined && take !== undefined ? { skip, take } : {}),
+      }),
+      this.prisma.student.count({ where }),
+    ]);
+    return { data, total };
   }
 
   async findOne(id: string) {

@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Body, Param, Delete, UseGuards, Query } from '@nestjs/common';
 import { TeachersService } from './teachers.service';
 import { CreateTeacherDto } from './dto/create-teacher.dto';
+import { PaginationDto } from '../common/dto/pagination.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -19,8 +20,8 @@ export class TeachersController {
 
   @Get()
   @Roles(Role.SUPER_ADMIN, Role.ADMIN_SEKOLAH)
-  findAll(@Query('search') search?: string) {
-    return this.teachersService.findAll(search);
+  findAll(@Query() pagination: PaginationDto, @Query('search') search?: string) {
+    return this.teachersService.findAll(search, pagination.skip, pagination.take);
   }
 
   @Delete(':id')

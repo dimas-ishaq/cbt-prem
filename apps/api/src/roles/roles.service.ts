@@ -7,16 +7,20 @@ import { UpdateRoleDto } from './dto/update-role.dto';
 export class RolesService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll() {
-    const roles = await this.prisma.customRole.findMany({
-      include: {
-        _count: {
-          select: { permissions: true },
+  async findAll(skip?: number, take?: number) {
+    const [data, total] = await Promise.all([
+      this.prisma.customRole.findMany({
+        include: {
+          _count: {
+            select: { permissions: true },
+          },
         },
-      },
-      orderBy: { name: 'asc' },
-    });
-    return roles;
+        orderBy: { name: 'asc' },
+        ...(skip !== undefined && take !== undefined ? { skip, take } : {}),
+      }),
+      this.prisma.customRole.count(),
+    ]);
+    return { data, total };
   }
 
   async getPermissionsMatrix() {

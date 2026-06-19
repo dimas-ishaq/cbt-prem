@@ -16,15 +16,20 @@ export class ExamGroupsService {
     });
   }
 
-  async findAll() {
-    return this.prisma.examGroup.findMany({
-      orderBy: { createdAt: 'desc' },
-      include: {
-        _count: {
-          select: { exams: true },
+  async findAll(skip?: number, take?: number) {
+    const [data, total] = await Promise.all([
+      this.prisma.examGroup.findMany({
+        orderBy: { createdAt: 'desc' },
+        include: {
+          _count: {
+            select: { exams: true },
+          },
         },
-      },
-    });
+        ...(skip !== undefined && take !== undefined ? { skip, take } : {}),
+      }),
+      this.prisma.examGroup.count(),
+    ]);
+    return { data, total };
   }
 
   async findOne(id: string) {

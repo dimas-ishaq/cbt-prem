@@ -40,14 +40,19 @@ function parseCsvLine(line: string) {
 export class SubjectsService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll() {
-    return this.prisma.subject.findMany({
-      include: {
-        teachers: { select: { id: true, user: { select: { fullName: true } } } },
-        _count: { select: { questionBanks: true, exams: true, teachers: true } },
-      },
-      orderBy: { code: 'asc' },
-    });
+  async findAll(skip?: number, take?: number) {
+    const [data, total] = await Promise.all([
+      this.prisma.subject.findMany({
+        include: {
+          teachers: { select: { id: true, user: { select: { fullName: true } } } },
+          _count: { select: { questionBanks: true, exams: true, teachers: true } },
+        },
+        orderBy: { code: 'asc' },
+        ...(skip !== undefined && take !== undefined ? { skip, take } : {}),
+      }),
+      this.prisma.subject.count(),
+    ]);
+    return { data, total };
   }
 
   async findOne(id: string) {

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, UseInterceptors, UploadedFile, Res } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, UseInterceptors, UploadedFile, Res, Query } from '@nestjs/common';
 import { RombelsService } from './rombels.service';
 import { CreateRombelDto } from './dto/create-rombel.dto';
 import { UpdateRombelDto } from './dto/update-rombel.dto';
@@ -8,6 +8,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import { Role } from '@prisma/client';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 @Controller('rombels')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -22,8 +23,8 @@ export class RombelsController {
 
   @Get()
   @Roles(Role.SUPER_ADMIN, Role.ADMIN_SEKOLAH, Role.GURU, Role.PENGAWAS)
-  findAll() {
-    return this.rombelsService.findAll();
+  findAll(@Query() pagination: PaginationDto) {
+    return this.rombelsService.findAll(pagination.skip, pagination.take);
   }
 
   @Get('template/download')

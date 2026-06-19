@@ -7,15 +7,22 @@ import { UpdateMajorDto } from './dto/update-major.dto';
 export class MajorsService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll() {
-    return this.prisma.major.findMany({
-      include: {
-        _count: {
-          select: { students: true },
+  async findAll(skip?: number, take?: number) {
+    const where = {};
+    const [data, total] = await Promise.all([
+      this.prisma.major.findMany({
+        where,
+        include: {
+          _count: {
+            select: { students: true },
+          },
         },
-      },
-      orderBy: { code: 'asc' },
-    });
+        orderBy: { code: 'asc' },
+        ...(skip !== undefined && take !== undefined ? { skip, take } : {}),
+      }),
+      this.prisma.major.count({ where }),
+    ]);
+    return { data, total };
   }
 
   async findOne(id: string) {

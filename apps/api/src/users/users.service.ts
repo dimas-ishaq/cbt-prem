@@ -23,26 +23,32 @@ export class UsersService {
   // ─── Admin CRUD ────────────────────────────────────────────────────────────
 
   /** List all users, optionally filtered by role */
-  async findAll(role?: Role) {
-    return this.prisma.user.findMany({
-      where: role ? { role } : undefined,
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        fullName: true,
-        role: true,
-        isActive: true,
-        createdAt: true,
-        student: {
-          select: { id: true, nis: true, rombel: { select: { id: true, name: true } }, major: { select: { name: true, code: true } } },
+  async findAll(role?: Role, skip?: number, take?: number) {
+    const where = role ? { role } : undefined;
+    const [data, total] = await Promise.all([
+      this.prisma.user.findMany({
+        where,
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          fullName: true,
+          role: true,
+          isActive: true,
+          createdAt: true,
+          student: {
+            select: { id: true, nis: true, rombel: { select: { id: true, name: true } }, major: { select: { name: true, code: true } } },
+          },
+          teacher: {
+            select: { id: true, nip: true, subjects: { select: { id: true, name: true } } },
+          },
         },
-        teacher: {
-          select: { id: true, nip: true, subjects: { select: { id: true, name: true } } },
-        },
-      },
-      orderBy: [{ role: 'asc' }, { createdAt: 'desc' }],
-    });
+        orderBy: [{ role: 'asc' }, { createdAt: 'desc' }],
+        ...(skip !== undefined && take !== undefined ? { skip, take } : {}),
+      }),
+      this.prisma.user.count({ where }),
+    ]);
+    return { data, total };
   }
 
   /** Get a single user by id */

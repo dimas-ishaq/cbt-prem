@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Body, Param, Delete, UseGuards, Query, Request } from '@nestjs/common';
 import { StudentsService } from './students.service';
 import { CreateStudentDto } from './dto/create-student.dto';
+import { PaginationDto } from '../common/dto/pagination.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -20,11 +21,12 @@ export class StudentsController {
   @Get()
   @Roles(Role.SUPER_ADMIN, Role.ADMIN_SEKOLAH, Role.GURU)
   findAll(
+    @Query() pagination: PaginationDto,
     @Query('majorId') majorId?: string,
     @Query('rombelId') rombelId?: string,
     @Query('grade') grade?: string,
   ) {
-    return this.studentsService.findAll(majorId, rombelId, grade);
+    return this.studentsService.findAll(majorId, rombelId, grade, pagination.skip, pagination.take);
   }
 
   @Get('me')

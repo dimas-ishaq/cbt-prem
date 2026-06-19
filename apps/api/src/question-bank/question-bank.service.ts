@@ -16,11 +16,17 @@ export class QuestionBankService {
     });
   }
 
-  async findAll(teacherId?: string) {
-    return this.prisma.questionBank.findMany({
-      where: teacherId ? { teacherId } : {},
-      include: { subject: true, _count: { select: { questions: true } } },
-    });
+  async findAll(teacherId?: string, skip?: number, take?: number) {
+    const where = teacherId ? { teacherId } : {};
+    const [data, total] = await Promise.all([
+      this.prisma.questionBank.findMany({
+        where,
+        include: { subject: true, _count: { select: { questions: true } } },
+        ...(skip !== undefined && take !== undefined ? { skip, take } : {}),
+      }),
+      this.prisma.questionBank.count({ where }),
+    ]);
+    return { data, total };
   }
 
   async findOne(id: string) {

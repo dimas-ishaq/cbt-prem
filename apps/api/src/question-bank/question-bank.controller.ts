@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Body, Param, Delete, UseGuards, Request, UnauthorizedException } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, Delete, UseGuards, Request, UnauthorizedException, Query } from '@nestjs/common';
 import { QuestionBankService } from './question-bank.service';
 import { CreateQuestionBankDto } from './dto/create-question-bank.dto';
 import { UpdateQuestionBankDto } from './dto/update-question-bank.dto';
@@ -6,6 +6,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '@prisma/client';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 @Controller('question-banks')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -26,11 +27,14 @@ export class QuestionBankController {
 
   @Get()
   @Roles(Role.GURU, Role.SUPER_ADMIN)
-  findAll(@Request() req) {
-    if (req.user.role === Role.GURU) {
-      return this.questionBankService.findAll();
-    }
-    return this.questionBankService.findAll();
+  async findAll(@Request() req, @Query() pagination: PaginationDto) {
+    const teacher = req.user.role === Role.GURU
+      ? await this.questionBankService['prisma'].teacher.findUnique({
+          where: { userId: req.user.userId },
+        })
+      : null;
+
+    return this.questionBankService.findAll(teacher?.id, pagination.skip, pagination.take);
   }
 
   @Get(':id')

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, UseInterceptors, UploadedFile, BadRequestException, Query } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { SubjectsService } from './subjects.service';
 import { CreateSubjectDto } from './dto/create-subject.dto';
@@ -6,6 +6,7 @@ import { UpdateSubjectDto } from './dto/update-subject.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { Permissions } from '../auth/decorators/permissions.decorator';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 @Controller('subjects')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
@@ -14,8 +15,8 @@ export class SubjectsController {
 
   @Get()
   @Permissions('subjects:view')
-  findAll() {
-    return this.subjectsService.findAll();
+  findAll(@Query() pagination: PaginationDto) {
+    return this.subjectsService.findAll(pagination.skip, pagination.take);
   }
 
   @Get(':id')

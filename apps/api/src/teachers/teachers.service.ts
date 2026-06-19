@@ -31,34 +31,38 @@ export class TeachersService {
     }).then(user => ({ ...user, temporaryPassword: tempPassword }));
   }
 
-  async findAll(search?: string) {
-    return this.prisma.teacher.findMany({
-      where: search
-        ? {
-            user: {
-              OR: [
-                { fullName: { contains: search, mode: 'insensitive' } },
-                { username: { contains: search, mode: 'insensitive' } },
-              ],
+  async findAll(search?: string, skip?: number, take?: number) {
+    const where = search
+      ? {
+          OR: [
+            { user: { fullName: { contains: search, mode: 'insensitive' } } },
+            { user: { username: { contains: search, mode: 'insensitive' } } },
+          ],
+        }
+      : undefined;
+    const [data, total] = await Promise.all([
+      this.prisma.teacher.findMany({
+        where,
+        select: {
+          id: true,
+          nip: true,
+          user: {
+            select: {
+              fullName: true,
+              username: true,
             },
-          }
-        : undefined,
-      select: {
-        id: true,
-        nip: true,
-        user: {
-          select: {
-            fullName: true,
-            username: true,
           },
         },
-      },
-      orderBy: {
-        user: {
-          fullName: 'asc',
+        orderBy: {
+          user: {
+            fullName: 'asc',
+          },
         },
-      },
-    });
+        ...(skip !== undefined && take !== undefined ? { skip, take } : {}),
+      }),
+      this.prisma.teacher.count({ where }),
+    ]);
+    return { data, total };
   }
 
   async remove(id: string) {

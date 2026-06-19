@@ -18,47 +18,52 @@ export class NotificationsService {
     const notification = await this.prisma.notification.create({
       data: {
         type: dto.type,
-        priority: dto.priority ?? NotificationPriority.NORMAL,
+        priority: dto.priority ?? 'NORMAL',
         title: dto.title,
         message: dto.message,
-        referenceId: dto.referenceId ?? undefined,
-        referenceType: dto.referenceType ?? undefined,
+        referenceId: dto.referenceId ?? null,
+        referenceType: dto.referenceType ?? null,
         createdBy,
-        recipients: {
-          create: recipientUserIds.map((userId) => ({ userId })),
-        },
-      },
-      include: {
-        recipients: true,
       },
     });
 
-    for (const recipient of notification.recipients) {
+    // Create recipients
+    await this.prisma.notificationRecipient.createMany({
+      data: recipientUserIds.map((userId) => ({ notificationId: notification.id, userId })),
+    });
+
+    // Fetch full notification with recipients for real-time emission
+    const fullNotification = await this.prisma.notification.findUnique({
+      where: { id: notification.id },
+      include: { notificationRecipients: true },
+    });
+
+    for (const recipient of fullNotification.notificationRecipients) {
       this.realtimeGateway.sendToUser(recipient.userId, 'new_notification', {
-        id: notification.id,
-        type: notification.type,
-        priority: notification.priority,
-        title: notification.title,
-        message: notification.message,
-        referenceId: notification.referenceId,
-        referenceType: notification.referenceType,
-        createdAt: notification.createdAt,
+        id: fullNotification.id,
+        type: fullNotification.type,
+        priority: fullNotification.priority,
+        title: fullNotification.title,
+        message: fullNotification.message,
+        referenceId: fullNotification.referenceId,
+        referenceType: fullNotification.referenceType,
+        createdAt: fullNotification.createdAt,
       });
     }
 
-    return notification;
+    return fullNotification;
   }
 
   async findByUser(userId: string) {
     return this.prisma.notification.findMany({
       orderBy: { createdAt: 'desc' },
       where: {
-        recipients: {
+        notificationRecipients: {
           some: { userId },
         },
       },
       include: {
-        recipients: {
+        notificationRecipients: {
           where: { userId },
         },
       },

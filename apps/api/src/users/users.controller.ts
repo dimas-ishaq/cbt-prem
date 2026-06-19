@@ -19,6 +19,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '@prisma/client';
+import { PaginationDto } from '../common/dto/pagination.dto';
 import { Response } from 'express';
 
 @Controller('users')
@@ -29,8 +30,8 @@ export class UsersController {
   /** GET /users?role=GURU — list all users (super admin only) */
   @Get()
   @Roles(Role.SUPER_ADMIN)
-  findAll(@Query('role') role?: Role) {
-    return this.usersService.findAll(role);
+  findAll(@Query() pagination: PaginationDto, @Query('role') role?: Role) {
+    return this.usersService.findAll(role, pagination.skip, pagination.take);
   }
 
   /** GET /users/:id — single user detail */

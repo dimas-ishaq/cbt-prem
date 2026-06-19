@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query } from '@nestjs/common';
 import { ExamGroupsService } from './exam-groups.service';
 import { CreateExamGroupDto } from './dto/create-exam-group.dto';
 import { UpdateExamGroupDto } from './dto/update-exam-group.dto';
@@ -6,6 +6,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '@prisma/client';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 @Controller('exam-groups')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -19,8 +20,8 @@ export class ExamGroupsController {
   }
 
   @Get()
-  findAll() {
-    return this.examGroupsService.findAll();
+  findAll(@Query() pagination: PaginationDto) {
+    return this.examGroupsService.findAll(pagination.skip, pagination.take);
   }
 
   @Get(':id')

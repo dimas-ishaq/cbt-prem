@@ -1,10 +1,11 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Query } from '@nestjs/common';
 import { MajorsService } from './majors.service';
 import { CreateMajorDto } from './dto/create-major.dto';
 import { UpdateMajorDto } from './dto/update-major.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { Permissions } from '../auth/decorators/permissions.decorator';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 @Controller('majors')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
@@ -13,8 +14,8 @@ export class MajorsController {
 
   @Get()
   @Permissions('majors:view')
-  findAll() {
-    return this.majorsService.findAll();
+  findAll(@Query() pagination: PaginationDto) {
+    return this.majorsService.findAll(pagination.skip, pagination.take);
   }
 
   @Get(':id')

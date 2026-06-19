@@ -30,11 +30,16 @@ export class RombelsService {
     });
   }
 
-  async findAll() {
-    return this.prisma.rombel.findMany({
-      include: { major: true, _count: { select: { students: true } } },
-      orderBy: { name: 'asc' },
-    });
+  async findAll(skip?: number, take?: number) {
+    const [data, total] = await Promise.all([
+      this.prisma.rombel.findMany({
+        include: { major: true, _count: { select: { students: true } } },
+        orderBy: { name: 'asc' },
+        ...(skip !== undefined && take !== undefined ? { skip, take } : {}),
+      }),
+      this.prisma.rombel.count(),
+    ]);
+    return { data, total };
   }
 
   async findOne(id: string) {
