@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
 import { useRouter } from 'next/navigation';
@@ -34,6 +35,7 @@ export default function SubjectsPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const confirmDialog = useConfirm();
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const [teacherSearch, setTeacherSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -76,9 +78,9 @@ export default function SubjectsPage() {
       queryClient.invalidateQueries({ queryKey: ['subjects'] });
       setIsModalOpen(false);
       resetForm();
-      toast.success('Mata pelajaran berhasil ditambahkan!');
+      toast.success(t('subjectCreateSuccess'));
     },
-    onError: (err: any) => toast.error(err.response?.data?.message || 'Gagal menambahkan mata pelajaran'),
+    onError: (err: any) => toast.error(err.response?.data?.message || t('subjectCreateError')),
   });
 
   const updateMutation = useMutation({
@@ -87,18 +89,18 @@ export default function SubjectsPage() {
       queryClient.invalidateQueries({ queryKey: ['subjects'] });
       setIsModalOpen(false);
       resetForm();
-      toast.success('Mata pelajaran berhasil diperbarui!');
+      toast.success(t('subjectUpdateSuccess'));
     },
-    onError: (err: any) => toast.error(err.response?.data?.message || 'Gagal memperbarui mata pelajaran'),
+    onError: (err: any) => toast.error(err.response?.data?.message || t('subjectUpdateError')),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/subjects/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subjects'] });
-      toast.success('Mata pelajaran berhasil dihapus!');
+      toast.success(t('subjectDeleteSuccess'));
     },
-    onError: (err: any) => toast.error(err.response?.data?.message || 'Gagal menghapus mata pelajaran'),
+    onError: (err: any) => toast.error(err.response?.data?.message || t('subjectDeleteError')),
   });
 
   const importMutation = useMutation({
@@ -110,14 +112,14 @@ export default function SubjectsPage() {
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ['subjects'] });
       setImportFile(null);
-      toast.success(`Import berhasil: ${res.data.importedCount} data`);
+      toast.success(t('subjectImportSuccess', { count: res.data.importedCount }));
     },
     onError: (err: any) => {
       const payload = err.response?.data;
       if (payload?.errors?.length) {
         toast.error(payload.errors[0]);
       } else {
-        toast.error(payload?.message || 'Gagal import CSV');
+        toast.error(payload?.message || t('subjectImportError'));
       }
     },
   });
@@ -145,20 +147,20 @@ export default function SubjectsPage() {
   const totalRelations = subjectList.reduce((acc, subject) => acc + (subject._count?.teachers || 0), 0);
   const subjectsWithTeachers = subjectList.filter((subject) => (subject._count?.teachers || 0) > 0).length;
 
-  if (isLoading) return <Flex justify="center" align="center" py={16}><Spinner size="lg" color="indigo.600" /><Text ml={3} color="gray.500">Memuat data mata pelajaran...</Text></Flex>;
+  if (isLoading) return <Flex justify="center" align="center" py={16}><Spinner size="lg" color="indigo.600" /><Text ml={3} color="gray.500">{t('loadingSubjects')}</Text></Flex>;
 
   return (
     <Stack gap={6}>
       <Flex justify="space-between" align="center" gap={4} wrap="wrap">
         <Box>
-          <Heading size="xl" fontWeight="bold" color="gray.900">Mata Pelajaran</Heading>
-          <Text color="gray.500" mt={1}>Kelola daftar mata pelajaran dan relasi guru pengampu.</Text>
+          <Heading size="xl" fontWeight="bold" color="gray.900">{t('subjectsTitle')}</Heading>
+          <Text color="gray.500" mt={1}>{t('subjectsDesc')}</Text>
         </Box>
         <HStack gap={3} wrap="wrap">
-          <Button as="a" href="/templates/subjects-template.csv" download bg="white" borderWidth="1px" borderColor="gray.200" color="gray.700" _hover={{ bg: 'gray.50' }} borderRadius="lg" cursor="pointer"><Download size={18} style={{ marginRight: '6px' }} />Template CSV</Button>
-          <Button as="label" bg="white" borderWidth="1px" borderColor="gray.200" color="gray.700" _hover={{ bg: 'gray.50' }} borderRadius="lg" cursor="pointer"><Upload size={18} style={{ marginRight: '6px' }} />Import CSV<Input hidden type="file" accept=".csv,text/csv" onChange={(e) => setImportFile(e.target.files?.[0] || null)} /></Button>
-          <Button isDisabled={!importFile || importMutation.isPending} onClick={() => importFile && importMutation.mutate(importFile)} bg="indigo.600" color="white" _hover={{ bg: 'indigo.700' }} borderRadius="lg" cursor="pointer">Upload</Button>
-          <Button bg="indigo.600" color="white" _hover={{ bg: 'indigo.700' }} borderRadius="lg" onClick={() => { resetForm(); setIsModalOpen(true); }} cursor="pointer"><Plus size={20} style={{ marginRight: '6px' }} />Tambah Mata Pelajaran</Button>
+          <Button as="a" href="/templates/subjects-template.csv" download bg="white" borderWidth="1px" borderColor="gray.200" color="gray.700" _hover={{ bg: 'gray.50' }} borderRadius="lg" cursor="pointer"><Download size={18} style={{ marginRight: '6px' }} />{t('downloadTemplate')}</Button>
+          <Button as="label" bg="white" borderWidth="1px" borderColor="gray.200" color="gray.700" _hover={{ bg: 'gray.50' }} borderRadius="lg" cursor="pointer"><Upload size={18} style={{ marginRight: '6px' }} />{t('importCsv')}<Input hidden type="file" accept=".csv,text/csv" onChange={(e) => setImportFile(e.target.files?.[0] || null)} /></Button>
+          <Button isDisabled={!importFile || importMutation.isPending} onClick={() => importFile && importMutation.mutate(importFile)} bg="indigo.600" color="white" _hover={{ bg: 'indigo.700' }} borderRadius="lg" cursor="pointer">{t('uploadBtn')}</Button>
+          <Button bg="indigo.600" color="white" _hover={{ bg: 'indigo.700' }} borderRadius="lg" onClick={() => { resetForm(); setIsModalOpen(true); }} cursor="pointer"><Plus size={20} style={{ marginRight: '6px' }} />{t('addSubject')}</Button>
         </HStack>
       </Flex>
 

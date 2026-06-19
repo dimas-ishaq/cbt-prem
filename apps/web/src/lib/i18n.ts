@@ -24,6 +24,9 @@ const resources = {
       cancelBtn: 'Batal',
       examCards: 'Kartu Ujian',
       reports: 'Laporan',
+      loadingSubjects: 'Memuat data mata pelajaran...',
+      subjectsTitle: 'Mata Pelajaran',
+      subjectsDesc: 'Kelola daftar mata pelajaran dan relasi guru pengampu.',
       
       // Users
       usersTitle: 'Manajemen Pengguna',
@@ -79,6 +82,18 @@ const resources = {
       addQuestionSuccess: 'Pertanyaan berhasil ditambahkan!',
       addQuestionFail: 'Gagal menambahkan pertanyaan',
       editQuestionTitle: 'Ubah Pertanyaan',
+      subjectCreateSuccess: 'Mata pelajaran berhasil ditambahkan!',
+      subjectCreateError: 'Gagal menambahkan mata pelajaran',
+      subjectUpdateSuccess: 'Mata pelajaran berhasil diperbarui!',
+      subjectUpdateError: 'Gagal memperbarui mata pelajaran',
+      subjectDeleteSuccess: 'Mata pelajaran berhasil dihapus!',
+      subjectDeleteError: 'Gagal menghapus mata pelajaran',
+      subjectImportSuccess: 'Import berhasil: {{count}} data',
+      subjectImportError: 'Gagal import CSV',
+      downloadTemplate: 'Unduh Template',
+      importCsv: 'Impor CSV',
+      uploadBtn: 'Upload',
+      addSubject: 'Tambah Mata Pelajaran',
       editQuestionSuccess: 'Pertanyaan berhasil diubah!',
       editQuestionFail: 'Gagal mengubah pertanyaan',
       deleteQuestionSuccess: 'Pertanyaan berhasil dihapus!',
@@ -99,7 +114,6 @@ const resources = {
       noQuestions: 'Tidak ada pertanyaan di bank soal ini',
       noQuestionsDesc: 'Mulai tambahkan pertanyaan untuk menggunakannya dalam ujian Anda.',
       addFirstQuestionBtn: 'Tambah Pertanyaan Pertama',
-      downloadTemplate: 'Unduh Template',
       previewImport: 'Pratinjau Import',
       previewTitle: 'Pratinjau Soal yang Akan Diimport',
       previewDesc: 'Pastikan soal berikut sudah benar sebelum menyimpan ke bank soal.',
@@ -221,9 +235,8 @@ const resources = {
       enterProctor: 'Enter Proctor',
       noActiveExams: 'No active exams',
       noActiveExamsDesc: 'Exams ready to monitor will appear here after being published.',
-      examRegistered: '{{count}} students registered',
       filterStatusTryAgain: 'Try changing keyword or filter status for different results.',
-      filterStatusExamsWillAppear: 'Exams ready for monitoring will appear here after publication.'
+      filterStatusExamsWillAppear: 'Exams ready for monitoring will appear here after publication.',
       
       // Exam Container (student exam page)
       examInstructions: 'Informasi Jadwal & Soal Ujian',
@@ -270,8 +283,7 @@ const resources = {
       cancelBtn: 'Cancel',
       examCards: 'Exam Cards',
       reports: 'Reports',
-      
-      // Subjects
+      loadingSubjects: 'Loading subjects...',
       subjectsTitle: 'Subjects',
       subjectsDesc: 'Manage school subjects and codes.',
       addSubject: 'Add Subject',
@@ -280,7 +292,7 @@ const resources = {
       subjectNameLabel: 'Subject Name',
       noSubjects: 'No subjects found.',
       confirmDeleteSubject: 'Are you sure you want to delete this subject?',
-
+      
       // Users
       usersTitle: 'User Management',
       usersDesc: 'Manage student and teacher accounts.',
@@ -333,7 +345,18 @@ const resources = {
 
       // Question Bank Detail
       addQuestionSuccess: 'Question added successfully!',
-      addQuestionFail: 'Failed to add question',
+      subjectCreateSuccess: 'Subject added successfully!',
+      subjectCreateError: 'Failed to add subject',
+      subjectUpdateSuccess: 'Subject updated successfully!',
+      subjectUpdateError: 'Failed to update subject',
+      subjectDeleteSuccess: 'Subject deleted successfully!',
+      subjectDeleteError: 'Failed to delete subject',
+      subjectImportSuccess: 'Import successful: {{count}} records',
+      subjectImportError: 'Failed to import CSV',
+      downloadTemplate: 'Download Template',
+      importCsv: 'Import CSV',
+      uploadBtn: 'Upload',
+      addSubject: 'Add Subject',
       editQuestionTitle: 'Edit Question',
       editQuestionSuccess: 'Question updated successfully!',
       editQuestionFail: 'Failed to update question',
@@ -479,7 +502,7 @@ const resources = {
       noActiveExamsDesc: 'Exams ready to monitor will appear here after being published.',
       examRegistered: '{{count}} students registered',
       filterStatusTryAgain: 'Try changing keyword or filter status for different results.',
-      filterStatusExamsWillAppear: 'Exams ready for monitoring will appear here after publication.'
+      filterStatusExamsWillAppear: 'Exams ready for monitoring will appear here after publication.',
       
       // Exam Container (student exam page)
       examInstructions: 'Schedule & Exam Information',

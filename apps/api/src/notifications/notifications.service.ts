@@ -32,9 +32,8 @@ export class NotificationsService {
         message: dto.message,
         referenceId: dto.referenceId ?? null,
         referenceType: dto.referenceType ?? null,
-        createdBy,
         ...(createdBy
-          ? { user: { connect: { id: createdBy } } }
+          ? { createdByUser: { connect: { id: createdBy } } }
           : {}),
       },
     });
