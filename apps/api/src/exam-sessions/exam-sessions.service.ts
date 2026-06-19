@@ -13,13 +13,18 @@ import { SubmitAnswerDto } from './dto/submit-answer.dto';
 import { GradeAnswerDto } from './dto/grade-answer.dto';
 import { SessionStatus, ExamStatus } from '@prisma/client';
 import * as ExcelJS from 'exceljs';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationPriority, NotificationType } from '@prisma/client';
 
 @Injectable()
 export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(ExamSessionsService.name);
   private autoSubmitTimer: NodeJS.Timeout | null = null;
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationsService: NotificationsService,
+  ) {}
 
   onModuleInit() {
     this.autoSubmitTimer = setInterval(() => {
@@ -187,6 +192,8 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
     const session = await this.prisma.examSession.findUnique({
       where: { id: sessionId },
       include: { 
+        exam: true,
+        student: { include: { user: true } },
         answers: {
           include: {
             question: {
@@ -252,7 +259,7 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
         });
       }
 
-      return tx.examSession.update({
+      const updatedSession = await tx.examSession.update({
         where: { id: sessionId },
         data: {
           status: SessionStatus.SUBMITTED,
@@ -260,6 +267,21 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
           score: totalScore,
         },
       });
+
+      await this.notificationsService.create({
+        type: NotificationType.EXAM_SUBMITTED,
+        priority: NotificationPriority.NORMAL,
+        title: 'Ujian selesai',
+        message: `Siswa menyelesaikan ujian ${session.exam.title}`,
+        referenceId: updatedSession.id,
+        referenceType: 'exam_session',
+        targets: [
+          { type: 'ROLE' as any, id: 'GURU' },
+          { type: 'ROLE' as any, id: 'SUPER_ADMIN' },
+        ],
+      }, session.student.userId);
+
+      return updatedSession;
     });
   }
 

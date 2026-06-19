@@ -22,6 +22,7 @@ import { LoggerModule } from './common/logger/logger.module';
 import { LogsModule } from './logs/logs.module';
 import { ReportsModule } from './reports/reports.module';
 import { SubjectsModule } from './subjects/subjects.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -55,6 +56,7 @@ import { SubjectsModule } from './subjects/subjects.module';
     LoggerModule,
     LogsModule,
     ReportsModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

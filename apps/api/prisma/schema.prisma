@@ -43,6 +43,24 @@ enum SessionStatus {
   LOCKED
 }
 
+enum NotificationType {
+  EXAM_SUBMITTED
+  EXAM_AUTO_SUBMIT
+  VIOLATION_DETECTED
+  IMPORT_COMPLETED
+  IMPORT_FAILED
+  EXAM_REMINDER
+  SESSION_EXPIRED
+  SYSTEM_ANNOUNCEMENT
+}
+
+enum NotificationPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
 enum ViolationLevel {
   RINGAN
   SEDANG
@@ -65,7 +83,7 @@ model User {
   student       Student?
   teacher       Teacher?
   auditLogs     AuditLog[]
-  notifications Notification[]
+  notificationRecipients NotificationRecipient[]
   roles         UserRole[]
 }
 
@@ -285,13 +303,43 @@ model AuditLog {
 }
 
 model Notification {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  title     String
-  message   String
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
+  id            String             @id @default(uuid())
+  type          NotificationType
+  priority      NotificationPriority @default(NORMAL)
+  title         String
+  message       String
+  referenceId   String?
+  referenceType String?
+  isRead        Boolean            @default(false)
+  createdBy     String?
+  createdAt     DateTime           @default(now())
+
+  @@index([createdAt])
+}
+
+model NotificationRecipient {
+  id         String      @id @default(uuid())
+  notificationId String
+  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isRead     Boolean     @default(false)
+  readAt     DateTime?
+  createdAt  DateTime    @default(now())
+
+  @@unique([notificationId, userId])
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+}
+
+model NotificationPreference {
+  id      String           @id @default(uuid())
+  userId  String
+  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type    NotificationType
+  enabled Boolean          @default(true)
+
+  @@unique([userId, type])
 }
 
 model Setting {

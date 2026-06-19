@@ -30,6 +30,10 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     private prisma: PrismaService,
   ) {}
 
+  sendToUser(userId: string, event: string, payload: any) {
+    this.server.to(`user_${userId}`).emit(event, payload);
+  }
+
   async handleConnection(client: Socket) {
     try {
       const token = client.handshake.auth.token;
