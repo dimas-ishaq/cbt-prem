@@ -22,7 +22,6 @@ import {
   Textarea,
   createListCollection,
 } from '@chakra-ui/react';
-import { Select } from '@/components/ui/select';
 import { toast } from '@/lib/toaster';
 import { useConfirm } from '@/components/ui/confirmation-dialog';
 import {

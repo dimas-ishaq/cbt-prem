@@ -86,53 +86,55 @@ export class ExamSessionsService {
   }
 
   async submitAnswer(sessionId: string, dto: SubmitAnswerDto) {
-    const session = await this.prisma.examSession.findUnique({
-      where: { id: sessionId },
-      include: { exam: true },
-    });
+    return this.prisma.$transaction(async (tx) => {
+      const session = await tx.examSession.findUnique({
+        where: { id: sessionId },
+        include: { exam: true },
+      });
 
-    if (!session) {
-      throw new NotFoundException('Session not found');
-    }
+      if (!session) {
+        throw new NotFoundException('Session not found');
+      }
 
-    if (session.status !== SessionStatus.IN_PROGRESS) {
-      throw new BadRequestException('Session is not in progress');
-    }
+      if (session.status !== SessionStatus.IN_PROGRESS) {
+        throw new BadRequestException('Session is not in progress');
+      }
 
-    // Validate if question belongs to exam
-    const examQuestion = await this.prisma.examQuestion.findUnique({
-      where: {
-        examId_questionId: {
-          examId: session.examId,
-          questionId: dto.questionId,
+      // Validate if question belongs to exam
+      const examQuestion = await tx.examQuestion.findUnique({
+        where: {
+          examId_questionId: {
+            examId: session.examId,
+            questionId: dto.questionId,
+          },
         },
-      },
-    });
+      });
 
-    if (!examQuestion) {
-      throw new BadRequestException('Question does not belong to this exam');
-    }
+      if (!examQuestion) {
+        throw new BadRequestException('Question does not belong to this exam');
+      }
 
-    // Save or update answer
-    return this.prisma.answer.upsert({
-      where: {
-        examSessionId_questionId: {
+      // Save or update answer
+      return tx.answer.upsert({
+        where: {
+          examSessionId_questionId: {
+            examSessionId: sessionId,
+            questionId: dto.questionId,
+          },
+        },
+        update: {
+          selectedOption: dto.selectedOptionId,
+          essayAnswer: dto.essayAnswer,
+          fileUrl: dto.fileUrl,
+        },
+        create: {
           examSessionId: sessionId,
           questionId: dto.questionId,
+          selectedOption: dto.selectedOptionId,
+          essayAnswer: dto.essayAnswer,
+          fileUrl: dto.fileUrl,
         },
-      },
-      update: {
-        selectedOption: dto.selectedOptionId,
-        essayAnswer: dto.essayAnswer,
-        fileUrl: dto.fileUrl,
-      },
-      create: {
-        examSessionId: sessionId,
-        questionId: dto.questionId,
-        selectedOption: dto.selectedOptionId,
-        essayAnswer: dto.essayAnswer,
-        fileUrl: dto.fileUrl,
-      },
+      });
     });
   }
 

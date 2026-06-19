@@ -24,6 +24,24 @@ import { toast } from '@/lib/toaster';
 import { Settings, Save, ShieldAlert, Upload, Trash2, Globe, Heart, Languages, Bookmark } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+const timezones = [
+  { label: 'Asia/Jakarta (WIB)', value: 'Asia/Jakarta' },
+  { label: 'Asia/Makassar (WITA)', value: 'Asia/Makassar' },
+  { label: 'Asia/Jayapura (WIT)', value: 'Asia/Jayapura' },
+];
+
+const languages = [
+  { label: 'Bahasa Indonesia', value: 'id' },
+  { label: 'English', value: 'en' },
+];
+
+const academicYearOptions = [
+  '2023/2024',
+  '2024/2025',
+  '2025/2026',
+  '2026/2027',
+];
+
 const timezoneOptions = createListCollection({
   items: timezones.map((tz) => ({ label: tz.label, value: tz.value })),
 });
@@ -35,7 +53,6 @@ const languageOptions = createListCollection({
 const academicYearSelectOptions = createListCollection({
   items: academicYearOptions.map((year) => ({ label: `Tahun Pelajaran ${year}`, value: year })),
 });
-
 
 export default function SettingsPage() {
   const { user } = useAuthStore();

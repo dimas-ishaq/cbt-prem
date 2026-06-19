@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException, ConflictException }
 import { PrismaService } from '../prisma/prisma.service';
 import { User, Prisma, Role } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
+import * as crypto from 'crypto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
@@ -221,7 +222,7 @@ export class UsersService {
   }
 
   async importUsers(users: any[]) {
-    const defaultPassword = 'password123';
+    const defaultPassword = crypto.randomBytes(12).toString('hex');
     const results = { created: 0, updated: 0, errors: [] as string[] };
 
     for (const u of users) {

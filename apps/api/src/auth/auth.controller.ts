@@ -1,4 +1,5 @@
 import { Controller, Post, Body, UnauthorizedException, UseGuards, Get, Request } from '@nestjs/common';
+import { ThrottlerGuard } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
@@ -7,6 +8,7 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Post('login')
+  @UseGuards(ThrottlerGuard)
   async login(@Body() body: any) {
     const user = await this.authService.validateUser(body.username, body.password);
     if (!user) {

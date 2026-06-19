@@ -3,13 +3,15 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateTeacherDto } from './dto/create-teacher.dto';
 import { Role } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class TeachersService {
   constructor(private prisma: PrismaService) {}
 
   async create(dto: CreateTeacherDto) {
-    const hashedPassword = await bcrypt.hash('password123', 10);
+    const tempPassword = crypto.randomBytes(12).toString('hex');
+    const hashedPassword = await bcrypt.hash(tempPassword, 10);
     return this.prisma.user.create({
       data: {
         username: dto.username,
@@ -26,7 +28,7 @@ export class TeachersService {
       include: {
         teacher: true,
       },
-    });
+    }).then(user => ({ ...user, temporaryPassword: tempPassword }));
   }
 
   async findAll(search?: string) {

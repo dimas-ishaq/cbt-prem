@@ -26,5 +26,8 @@
   ],
   "trustedDependencies": [
     "turbo"
-  ]
+  ],
+  "dependencies": {
+    "@nestjs/throttler": "^6.5.0"
+  }
 }
