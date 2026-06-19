@@ -22,6 +22,8 @@ import {
   HStack,
   Badge,
   Spinner,
+  Select,
+  createListCollection,
 } from '@chakra-ui/react';
 import { toast } from '@/lib/toaster';
 
@@ -123,6 +125,27 @@ export default function EditExamPage({ params }: EditExamPageProps) {
       return response.data.filter((b: any) => b.subjectId === formData.subjectId);
     },
     enabled: !!formData.subjectId,
+  });
+
+  const examGroupOptions = createListCollection({
+    items: examGroups?.map((group) => ({ label: group.name, value: group.id })) || [],
+  });
+
+  const subjectOptions = createListCollection({
+    items: subjects?.map((subject) => ({ label: subject.name, value: subject.id })) || [],
+  });
+
+  const questionBankOptions = createListCollection({
+    items: questionBanks?.map((bank) => ({ label: bank.name, value: bank.id })) || [],
+  });
+
+  const statusOptions = createListCollection({
+    items: [
+      { label: 'DRAFT', value: 'DRAFT' },
+      { label: 'PUBLISHED', value: 'PUBLISHED' },
+      { label: 'ONGOING', value: 'ONGOING' },
+      { label: 'COMPLETED', value: 'COMPLETED' },
+    ],
   });
 
   const { data: questions } = useQuery<Question[]>({
@@ -310,48 +333,62 @@ export default function EditExamPage({ params }: EditExamPageProps) {
                   </Box>
                   <Box>
                     <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Event / Kelompok Ujian <span style={{ color: 'red' }}>*</span></Text>
-                    <select
-                      required
-                      value={formData.examGroupId}
-                      onChange={(e) => setFormData({ ...formData, examGroupId: e.target.value })}
-                      style={{
-                        width: '100%',
-                        padding: '8px 12px',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '8px',
-                        backgroundColor: 'white',
-                        outline: 'none',
-                        fontSize: '14px',
-                      }}
+                    <Select.Root
+                      collection={examGroupOptions}
+                      value={formData.examGroupId ? [formData.examGroupId] : []}
+                      onValueChange={(details) => setFormData({ ...formData, examGroupId: details.value[0] || '' })}
+                      positioning={{ sameWidth: true }}
                     >
-                      <option value="">-- Pilih Event Ujian --</option>
-                      {examGroups?.map((g) => (
-                        <option key={g.id} value={g.id}>{g.name}</option>
-                      ))}
-                    </select>
+                      <Select.HiddenSelect />
+                      <Select.Control>
+                        <Select.Trigger>
+                          <Select.ValueText placeholder="-- Pilih Event Ujian --" />
+                        </Select.Trigger>
+                        <Select.IndicatorGroup>
+                          <Select.Indicator />
+                          <Select.ClearTrigger />
+                        </Select.IndicatorGroup>
+                      </Select.Control>
+                      <Select.Positioner>
+                        <Select.Content>
+                          {examGroupOptions.items.map((item) => (
+                            <Select.Item key={item.value} item={item}>
+                              {item.label}
+                            </Select.Item>
+                          ))}
+                        </Select.Content>
+                      </Select.Positioner>
+                    </Select.Root>
                   </Box>
                   <SimpleGrid columns={2} gap={4}>
                     <Box>
                       <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Mata Pelajaran</Text>
-                      <select
-                        required
-                        value={formData.subjectId}
-                        onChange={(e) => setFormData({ ...formData, subjectId: e.target.value })}
-                        style={{
-                          width: '100%',
-                          padding: '8px 12px',
-                          border: '1px solid #e2e8f0',
-                          borderRadius: '8px',
-                          backgroundColor: 'white',
-                          outline: 'none',
-                          fontSize: '14px',
-                        }}
+                      <Select.Root
+                        collection={subjectOptions}
+                        value={formData.subjectId ? [formData.subjectId] : []}
+                        onValueChange={(details) => setFormData({ ...formData, subjectId: details.value[0] || '' })}
+                        positioning={{ sameWidth: true }}
                       >
-                        <option value="">Pilih Mata Pelajaran</option>
-                        {subjects?.map((s) => (
-                          <option key={s.id} value={s.id}>{s.name}</option>
-                        ))}
-                      </select>
+                        <Select.HiddenSelect />
+                        <Select.Control>
+                          <Select.Trigger>
+                            <Select.ValueText placeholder="Pilih Mata Pelajaran" />
+                          </Select.Trigger>
+                          <Select.IndicatorGroup>
+                            <Select.Indicator />
+                            <Select.ClearTrigger />
+                          </Select.IndicatorGroup>
+                        </Select.Control>
+                        <Select.Positioner>
+                          <Select.Content>
+                            {subjectOptions.items.map((item) => (
+                              <Select.Item key={item.value} item={item}>
+                                {item.label}
+                              </Select.Item>
+                            ))}
+                          </Select.Content>
+                        </Select.Positioner>
+                      </Select.Root>
                     </Box>
                     <Box>
                       <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Durasi (Menit)</Text>
@@ -435,24 +472,32 @@ export default function EditExamPage({ params }: EditExamPageProps) {
                   <Stack gap={4}>
                     <Box>
                       <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Bank Soal</Text>
-                      <select
-                        value={selectedBankId}
-                        onChange={(e) => setSelectedBankId(e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '8px 12px',
-                          border: '1px solid #e2e8f0',
-                          borderRadius: '8px',
-                          backgroundColor: 'white',
-                          outline: 'none',
-                          fontSize: '14px',
-                        }}
+                      <Select.Root
+                        collection={questionBankOptions}
+                        value={selectedBankId ? [selectedBankId] : []}
+                        onValueChange={(details) => setSelectedBankId(details.value[0] || '')}
+                        positioning={{ sameWidth: true }}
                       >
-                        <option value="">-- Pilih Bank Soal --</option>
-                        {questionBanks?.map((bank) => (
-                          <option key={bank.id} value={bank.id}>{bank.name}</option>
-                        ))}
-                      </select>
+                        <Select.HiddenSelect />
+                        <Select.Control>
+                          <Select.Trigger>
+                            <Select.ValueText placeholder="-- Pilih Bank Soal --" />
+                          </Select.Trigger>
+                          <Select.IndicatorGroup>
+                            <Select.Indicator />
+                            <Select.ClearTrigger />
+                          </Select.IndicatorGroup>
+                        </Select.Control>
+                        <Select.Positioner>
+                          <Select.Content>
+                            {questionBankOptions.items.map((item) => (
+                              <Select.Item key={item.value} item={item}>
+                                {item.label}
+                              </Select.Item>
+                            ))}
+                          </Select.Content>
+                        </Select.Positioner>
+                      </Select.Root>
                     </Box>
 
                     {selectedBankId && (
@@ -537,24 +582,32 @@ export default function EditExamPage({ params }: EditExamPageProps) {
                   </Box>
                   <Box>
                     <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Status Publikasi</Text>
-                    <select
-                      value={formData.status}
-                      onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                      style={{
-                        width: '100%',
-                        padding: '8px 12px',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '8px',
-                        backgroundColor: 'white',
-                        outline: 'none',
-                        fontSize: '14px',
-                      }}
+                    <Select.Root
+                      collection={statusOptions}
+                      value={[formData.status]}
+                      onValueChange={(details) => setFormData({ ...formData, status: details.value[0] })}
+                      positioning={{ sameWidth: true }}
                     >
-                      <option value="DRAFT">DRAFT</option>
-                      <option value="PUBLISHED">PUBLISHED</option>
-                      <option value="ONGOING">ONGOING</option>
-                      <option value="COMPLETED">COMPLETED</option>
-                    </select>
+                      <Select.HiddenSelect />
+                      <Select.Control>
+                        <Select.Trigger>
+                          <Select.ValueText placeholder="Pilih status" />
+                        </Select.Trigger>
+                        <Select.IndicatorGroup>
+                          <Select.Indicator />
+                          <Select.ClearTrigger />
+                        </Select.IndicatorGroup>
+                      </Select.Control>
+                      <Select.Positioner>
+                        <Select.Content>
+                          {statusOptions.items.map((item) => (
+                            <Select.Item key={item.value} item={item}>
+                              {item.label}
+                            </Select.Item>
+                          ))}
+                        </Select.Content>
+                      </Select.Positioner>
+                    </Select.Root>
                   </Box>
 
                   <Stack gap={3}>

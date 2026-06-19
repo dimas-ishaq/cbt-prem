@@ -19,6 +19,8 @@ import {
   HStack,
   Badge,
   SimpleGrid,
+  Select,
+  createListCollection,
 } from '@chakra-ui/react';
 import { toast } from '@/lib/toaster';
 
@@ -40,6 +42,9 @@ interface ExamGroup {
 
 export default function ExamGroupsPage() {
   const queryClient = useQueryClient();
+  const [searchText, setSearchText] = useState('');
+  const [selectedYear, setSelectedYear] = useState('');
+  const [selectedSemester, setSelectedSemester] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState<ExamGroup | null>(null);
   const [formData, setFormData] = useState({
@@ -52,16 +57,30 @@ export default function ExamGroupsPage() {
     isActive: true,
   });
 
-  const [searchText, setSearchText] = useState('');
-  const [selectedYear, setSelectedYear] = useState('');
-  const [selectedSemester, setSelectedSemester] = useState('');
-
   const { data: groups, isLoading } = useQuery<ExamGroup[]>({
     queryKey: ['exam-groups'],
     queryFn: async () => {
       const res = await api.get('/exam-groups');
       return res.data;
     },
+  });
+
+  const yearOptions = createListCollection({
+    items: [
+      { label: 'Semua Tahun', value: '' },
+      ...Array.from({ length: 7 }, (_, i) => {
+        const y = new Date().getFullYear() - 3 + i;
+        return { label: `${y}/${y + 1}`, value: `${y}/${y + 1}` };
+      }),
+    ],
+  });
+
+  const semesterOptions = createListCollection({
+    items: [
+      { label: 'Semua Semester', value: '' },
+      { label: 'Ganjil', value: 'Ganjil' },
+      { label: 'Genap', value: 'Genap' },
+    ],
   });
 
   const createMutation = useMutation({
@@ -207,42 +226,60 @@ export default function ExamGroupsPage() {
           </Flex>
           <Flex align="center" gap={2} bg="gray.50" px={3} py={2} borderRadius="lg" borderWidth="1px" borderColor="gray.200">
             <Filter size={16} className="text-gray-500" />
-            <select
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(e.target.value)}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                outline: 'none',
-                cursor: 'pointer',
-                fontSize: '14px',
-                color: '#4a5568',
-              }}
+            <Select.Root
+              collection={yearOptions}
+              value={selectedYear ? [selectedYear] : []}
+              onValueChange={(details) => setSelectedYear(details.value[0] || '')}
+              positioning={{ sameWidth: true }}
             >
-              <option value="">Semua Tahun</option>
-              {Array.from({ length: 7 }, (_, i) => {
-                const y = new Date().getFullYear() - 3 + i;
-                return <option key={y} value={`${y}/${y + 1}`}>{y}/{y + 1}</option>;
-              })}
-            </select>
+              <Select.HiddenSelect />
+              <Select.Control>
+                <Select.Trigger>
+                  <Select.ValueText placeholder="Semua Tahun" />
+                </Select.Trigger>
+                <Select.IndicatorGroup>
+                  <Select.Indicator />
+                  <Select.ClearTrigger />
+                </Select.IndicatorGroup>
+              </Select.Control>
+              <Select.Positioner>
+                <Select.Content>
+                  {yearOptions.items.map((item) => (
+                    <Select.Item key={item.value} item={item}>
+                      {item.label}
+                    </Select.Item>
+                  ))}
+                </Select.Content>
+              </Select.Positioner>
+            </Select.Root>
           </Flex>
           <Flex align="center" gap={2} bg="gray.50" px={3} py={2} borderRadius="lg" borderWidth="1px" borderColor="gray.200">
-            <select
-              value={selectedSemester}
-              onChange={(e) => setSelectedSemester(e.target.value)}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                outline: 'none',
-                cursor: 'pointer',
-                fontSize: '14px',
-                color: '#4a5568',
-              }}
+            <Select.Root
+              collection={semesterOptions}
+              value={selectedSemester ? [selectedSemester] : []}
+              onValueChange={(details) => setSelectedSemester(details.value[0] || '')}
+              positioning={{ sameWidth: true }}
             >
-              <option value="">Semua Semester</option>
-              <option value="Ganjil">Ganjil</option>
-              <option value="Genap">Genap</option>
-            </select>
+              <Select.HiddenSelect />
+              <Select.Control>
+                <Select.Trigger>
+                  <Select.ValueText placeholder="Semua Semester" />
+                </Select.Trigger>
+                <Select.IndicatorGroup>
+                  <Select.Indicator />
+                  <Select.ClearTrigger />
+                </Select.IndicatorGroup>
+              </Select.Control>
+              <Select.Positioner>
+                <Select.Content>
+                  {semesterOptions.items.map((item) => (
+                    <Select.Item key={item.value} item={item}>
+                      {item.label}
+                    </Select.Item>
+                  ))}
+                </Select.Content>
+              </Select.Positioner>
+            </Select.Root>
           </Flex>
         </HStack>
       </Flex>
@@ -379,11 +416,61 @@ export default function ExamGroupsPage() {
                 <Flex gap={3}>
                   <Box flex={1}>
                     <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Tahun Ajaran</Text>
-                    <Input value={formData.academicYear} onChange={(e) => setFormData({ ...formData, academicYear: e.target.value })} placeholder="Cth. 2024/2025" borderRadius="lg" />
+                    <Select.Root
+                      collection={yearOptions}
+                      value={formData.academicYear ? [formData.academicYear] : []}
+                      onValueChange={(details) => setFormData({ ...formData, academicYear: details.value[0] || '' })}
+                      positioning={{ sameWidth: true }}
+                    >
+                      <Select.HiddenSelect />
+                      <Select.Control>
+                        <Select.Trigger borderRadius="lg">
+                          <Select.ValueText placeholder="Pilih tahun ajaran" />
+                        </Select.Trigger>
+                        <Select.IndicatorGroup>
+                          <Select.Indicator />
+                          <Select.ClearTrigger />
+                        </Select.IndicatorGroup>
+                      </Select.Control>
+                      <Select.Positioner>
+                        <Select.Content>
+                          {yearOptions.items.map((item) => (
+                            <Select.Item key={item.value} item={item}>
+                              {item.label}
+                            </Select.Item>
+                          ))}
+                        </Select.Content>
+                      </Select.Positioner>
+                    </Select.Root>
                   </Box>
                   <Box flex={1}>
                     <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Semester</Text>
-                    <Input value={formData.semester} onChange={(e) => setFormData({ ...formData, semester: e.target.value })} placeholder="Cth. Genap" borderRadius="lg" />
+                    <Select.Root
+                      collection={semesterOptions}
+                      value={formData.semester && formData.semester !== 'Ganjil' ? [formData.semester] : formData.semester === 'Ganjil' ? ['Ganjil'] : []}
+                      onValueChange={(details) => setFormData({ ...formData, semester: details.value[0] || 'Ganjil' })}
+                      positioning={{ sameWidth: true }}
+                    >
+                      <Select.HiddenSelect />
+                      <Select.Control>
+                        <Select.Trigger borderRadius="lg">
+                          <Select.ValueText placeholder="Pilih semester" />
+                        </Select.Trigger>
+                        <Select.IndicatorGroup>
+                          <Select.Indicator />
+                          <Select.ClearTrigger />
+                        </Select.IndicatorGroup>
+                      </Select.Control>
+                      <Select.Positioner>
+                        <Select.Content>
+                          {semesterOptions.items.filter((item) => item.value !== '').map((item) => (
+                            <Select.Item key={item.value} item={item}>
+                              {item.label}
+                            </Select.Item>
+                          ))}
+                        </Select.Content>
+                      </Select.Positioner>
+                    </Select.Root>
                   </Box>
                 </Flex>
                 <SimpleGrid columns={2} gap={4}>

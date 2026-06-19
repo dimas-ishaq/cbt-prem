@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { Plus, Trash2, Edit2, ChevronLeft, HelpCircle, FileDown, Download, Eye, AlertTriangle, CheckCircle2, X } from 'lucide-react';
-import { useState, use, useRef } from 'react';
+import { useState, use, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -21,6 +21,9 @@ import {
   SimpleGrid,
   HStack,
   Input,
+  Textarea,
+  Select,
+  createListCollection,
 } from '@chakra-ui/react';
 import { toast } from '@/lib/toaster';
 import { useConfirm } from '@/components/ui/confirmation-dialog';
@@ -119,6 +122,10 @@ export default function QuestionBankDetailPage({ params }: { params: Promise<{ i
       const res = await api.get('/subjects');
       return res.data;
     },
+  });
+
+  const subjectOptions = createListCollection({
+    items: subjects?.map((subject) => ({ label: subject.name, value: subject.id })) ?? [],
   });
 
   const createQuestionMutation = useMutation({
@@ -836,26 +843,32 @@ export default function QuestionBankDetailPage({ params }: { params: Promise<{ i
                   <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>
                     {t('subjectLabel')} <span style={{ color: 'red' }}>*</span>
                   </Text>
-                  <select
-                    required
-                    value={bankFormData.subjectId}
-                    onChange={(e) => setBankFormData({ ...bankFormData, subjectId: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      borderRadius: '8px',
-                      border: '1px solid #e2e8f0',
-                      outline: 'none',
-                      backgroundColor: 'white',
-                    }}
+                  <Select.Root
+                    collection={subjectOptions}
+                    value={bankFormData.subjectId ? [bankFormData.subjectId] : []}
+                    onValueChange={(details) => setBankFormData({ ...bankFormData, subjectId: details.value[0] || '' })}
+                    positioning={{ sameWidth: true }}
                   >
-                    <option value="">{t('selectSubject')}</option>
-                    {subjects?.map((subject) => (
-                      <option key={subject.id} value={subject.id}>
-                        {subject.name}
-                      </option>
-                    ))}
-                  </select>
+                    <Select.HiddenSelect />
+                    <Select.Control>
+                      <Select.Trigger>
+                        <Select.ValueText placeholder={t('selectSubject')} />
+                      </Select.Trigger>
+                      <Select.IndicatorGroup>
+                        <Select.Indicator />
+                        <Select.ClearTrigger />
+                      </Select.IndicatorGroup>
+                    </Select.Control>
+                    <Select.Positioner>
+                      <Select.Content>
+                        {subjectOptions.items.map((item) => (
+                          <Select.Item key={item.value} item={item}>
+                            {item.label}
+                          </Select.Item>
+                        ))}
+                      </Select.Content>
+                    </Select.Positioner>
+                  </Select.Root>
                 </Box>
                 <Box>
                   <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>

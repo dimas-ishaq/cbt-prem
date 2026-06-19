@@ -1,7 +1,7 @@
 'use client';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Upload, X, Crop, RotateCcw, Check, ImageIcon } from 'lucide-react';
-import { Box, Flex, Text, Button, Stack, Input, SimpleGrid, HStack, IconButton, } from '@chakra-ui/react';
+import { Box, Flex, Text, Button, Stack, Input, SimpleGrid, HStack, IconButton, Select, createListCollection, } from '@chakra-ui/react';
 import { compressImage, validateImageFile, createThumbnail } from '@/utils/imageUtils';
 import { MediaLibraryModal } from '@/components/admin/media-library-modal';
 import { RichTextEditor } from '@/components/admin/rich-text-editor';
@@ -42,6 +42,23 @@ export function QuestionForm({ onSubmit, onCancel, isSubmitting, initialData }: 
   const [uploading, setUploading] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const typeOptions = createListCollection({
+    items: [
+      { label: 'Pilihan Ganda', value: 'PILIHAN_GANDA' },
+      { label: 'Multiple Response', value: 'MULTIPLE_RESPONSE' },
+      { label: 'Essay', value: 'ESSAY' },
+      { label: 'Benar / Salah', value: 'BENAR_SALAH' },
+    ],
+  });
+
+  const difficultyOptions = createListCollection({
+    items: [
+      { label: 'Mudah', value: 'MUDAH' },
+      { label: 'Sedang', value: 'SEDANG' },
+      { label: 'Sulit', value: 'SULIT' },
+    ],
+  });
 
   // Image editor/cropper lift state
   const [editorOpen, setEditorOpen] = useState(false);
@@ -227,20 +244,61 @@ export function QuestionForm({ onSubmit, onCancel, isSubmitting, initialData }: 
           <SimpleGrid columns={{ base: 1, md: 3 }} gap={4}>
             <Box>
               <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Type</Text>
-              <select value={type} onChange={(e) => handleTypeChange(e.target.value)} className="w-full p-2 border border-gray-200 rounded-lg">
-                <option value="PILIHAN_GANDA">Pilihan Ganda</option>
-                <option value="MULTIPLE_RESPONSE">Multiple Response</option>
-                <option value="ESSAY">Essay</option>
-                <option value="BENAR_SALAH">Benar / Salah</option>
-              </select>
+              <Select.Root
+                collection={typeOptions}
+                value={[type]}
+                onValueChange={(details) => handleTypeChange(details.value[0] || 'PILIHAN_GANDA')}
+                positioning={{ sameWidth: true }}
+              >
+                <Select.HiddenSelect />
+                <Select.Control>
+                  <Select.Trigger>
+                    <Select.ValueText placeholder="Pilih type" />
+                  </Select.Trigger>
+                  <Select.IndicatorGroup>
+                    <Select.Indicator />
+                    <Select.ClearTrigger />
+                  </Select.IndicatorGroup>
+                </Select.Control>
+                <Select.Positioner>
+                  <Select.Content>
+                    {typeOptions.items.map((item) => (
+                      <Select.Item key={item.value} item={item}>
+                        {item.label}
+                      </Select.Item>
+                    ))}
+                  </Select.Content>
+                </Select.Positioner>
+              </Select.Root>
             </Box>
             <Box>
               <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Difficulty</Text>
-              <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)} className="w-full p-2 border border-gray-200 rounded-lg">
-                <option value="MUDAH">Mudah</option>
-                <option value="SEDANG">Sedang</option>
-                <option value="SULIT">Sulit</option>
-              </select>
+              <Select.Root
+                collection={difficultyOptions}
+                value={[difficulty]}
+                onValueChange={(details) => setDifficulty(details.value[0] || 'SEDANG')}
+                positioning={{ sameWidth: true }}
+              >
+                <Select.HiddenSelect />
+                <Select.Control>
+                  <Select.Trigger>
+                    <Select.ValueText placeholder="Pilih difficulty" />
+                  </Select.Trigger>
+                  <Select.IndicatorGroup>
+                    <Select.Indicator />
+                    <Select.ClearTrigger />
+                  </Select.IndicatorGroup>
+                </Select.Control>
+                <Select.Positioner>
+                  <Select.Content>
+                    {difficultyOptions.items.map((item) => (
+                      <Select.Item key={item.value} item={item}>
+                        {item.label}
+                      </Select.Item>
+                    ))}
+                  </Select.Content>
+                </Select.Positioner>
+              </Select.Root>
             </Box>
             <Box>
               <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Points</Text>

@@ -6,7 +6,7 @@ import { toast } from '@/lib/toaster';
 import { useAuthStore } from '@/store/auth.store';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Box, Badge, Button, Flex, Heading, HStack, IconButton, Input, Spinner, Stack, Table, Text } from '@chakra-ui/react';
+import { Box, Flex, Heading, Text, Button, Stack, Spinner, Badge, Table, Input, HStack, IconButton, Select, createListCollection } from '@chakra-ui/react';
 import { useConfirm } from '@/components/ui/confirmation-dialog';
 import {
   Plus,
@@ -144,6 +144,8 @@ export default function UsersManagementPage() {
 
   const [activeTab, setActiveTab] = useState<ActiveTab>('ALL');
   const [searchTerm, setSearchTerm] = useState('');
+  const [importFileName, setImportFileName] = useState('');
+  const [isImporting, setIsImporting] = useState(false);
 
   // Modal state
   type ModalMode = 'create' | 'edit' | 'reset-password' | null;
@@ -172,6 +174,10 @@ export default function UsersManagementPage() {
       const res = await api.get('/rombels');
       return res.data;
     },
+  });
+
+  const rombelOptions = createListCollection({
+    items: rombels.map((r) => ({ label: r.name, value: r.id })),
   });
 
   // ── Mutations ──────────────────────────────────────────────────────────────
@@ -223,6 +229,102 @@ export default function UsersManagementPage() {
     },
     onError: (err: any) => toast.error(err.response?.data?.message || 'Gagal mereset password'),
   });
+
+  const parseCsvLine = (line: string) => {
+    const cells: string[] = [];
+    let current = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      const next = line[i + 1];
+      if (char === '"') {
+        if (inQuotes && next === '"') {
+          current += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char === ',' && !inQuotes) {
+        cells.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+
+    cells.push(current.trim());
+    return cells;
+  };
+
+  const downloadTemplate = () => {
+    const csv = [
+      'nama,email,username,password,no_hp,role,nis,nip,kode_mapel,kode_jurusan,kode_rombel',
+      'Budi Santoso,budi@mail.com,budi123,Password123!,08123456789,GURU,,1987654321,MTK,,'
+    ].join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'template_import_pengguna.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    toast.success('Template CSV berhasil diunduh');
+  };
+
+  const handleImportFile = async (file?: File | null) => {
+    if (!file) return;
+
+    setIsImporting(true);
+    try {
+      const text = await file.text();
+      const lines = text.replace(/\r/g, '').split('\n').filter((line) => line.trim());
+      if (lines.length < 2) {
+        toast.error('File CSV kosong atau tidak valid');
+        return;
+      }
+
+      const headers = parseCsvLine(lines[0]).map((h) => h.trim().toLowerCase());
+      const users = lines.slice(1).map((line) => {
+        const values = parseCsvLine(line);
+        const row: Record<string, string> = {};
+        headers.forEach((header, index) => {
+          row[header] = values[index] ?? '';
+        });
+        return {
+          nama: row.nama || row.fullname || '',
+          email: row.email || '',
+          username: row.username || '',
+          password: row.password || '',
+          no_hp: row.no_hp || row.nohp || '',
+          role: (row.role || '').toUpperCase(),
+          nis: row.nis || row.nisn || '',
+          nip: row.nip || '',
+          kode_mapel: row.kode_mapel || '',
+          kode_jurusan: row.kode_jurusan || '',
+          kode_rombel: row.kode_rombel || '',
+          fullName: row.nama || row.fullname || '',
+          rombel: row.kode_rombel || row.rombel || '',
+        };
+      }).filter((u) => u.username || u.nama || u.email);
+
+      const response = await api.post('/users/import', { users });
+      const result = response.data;
+      toast.success(`Import selesai. Dibuat: ${result.created ?? 0}, Diperbarui: ${result.updated ?? 0}`);
+      if (result.errors?.length) {
+        toast.error(result.errors.slice(0, 3).join(' | '));
+      }
+      queryClient.invalidateQueries({ queryKey: ['users-all'] });
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || error.message || 'Gagal import CSV');
+    } finally {
+      setIsImporting(false);
+      setImportFileName('');
+    }
+  };
 
   // ── Modal helpers ──────────────────────────────────────────────────────────
   const openCreateModal = () => {
@@ -331,6 +433,33 @@ export default function UsersManagementPage() {
             _hover={{ bg: 'gray.50' }}
             borderRadius="lg"
             size="sm"
+            onClick={downloadTemplate}
+            cursor="pointer"
+          >
+            <Download size={16} style={{ marginRight: 6 }} />
+            Template CSV
+          </Button>
+          <Button
+            variant="outline"
+            borderColor="gray.200"
+            color="gray.600"
+            _hover={{ bg: 'gray.50' }}
+            borderRadius="lg"
+            size="sm"
+            onClick={() => document.getElementById('import-users-input')?.click()}
+            cursor="pointer"
+            isLoading={isImporting}
+          >
+            <Upload size={16} style={{ marginRight: 6 }} />
+            Import CSV
+          </Button>
+          <Button
+            variant="outline"
+            borderColor="gray.200"
+            color="gray.600"
+            _hover={{ bg: 'gray.50' }}
+            borderRadius="lg"
+            size="sm"
             onClick={handleExport}
             cursor="pointer"
           >
@@ -349,6 +478,18 @@ export default function UsersManagementPage() {
             <Plus size={16} style={{ marginRight: 6 }} />
             Tambah Pengguna
           </Button>
+          <input
+            id="import-users-input"
+            type="file"
+            accept=".csv,text/csv"
+            style={{ display: 'none' }}
+            onChange={(e) => {
+              const file = e.target.files?.[0] || null;
+              setImportFileName(file?.name || '');
+              void handleImportFile(file);
+              e.currentTarget.value = '';
+            }}
+          />
         </HStack>
       </Flex>
 
@@ -803,27 +944,32 @@ export default function UsersManagementPage() {
                       <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>
                         Rombel / Kelas
                       </Text>
-                      <select
-                        value={form.rombelId}
-                        onChange={(e) => setForm({ ...form, rombelId: e.target.value })}
-                        style={{
-                          width: '100%',
-                          padding: '8px 12px',
-                          borderRadius: '8px',
-                          border: '1px solid var(--chakra-colors-gray-200)',
-                          backgroundColor: 'white',
-                          color: 'var(--chakra-colors-gray-800)',
-                          fontSize: '14px',
-                          outline: 'none',
-                        }}
+                      <Select.Root
+                        collection={rombelOptions}
+                        value={form.rombelId ? [form.rombelId] : []}
+                        onValueChange={(details) => setForm({ ...form, rombelId: details.value[0] || '' })}
+                        positioning={{ sameWidth: true }}
                       >
-                        <option value="">-- Pilih Rombel --</option>
-                        {rombels?.map((r) => (
-                          <option key={r.id} value={r.id}>
-                            {r.name}
-                          </option>
-                        ))}
-                      </select>
+                        <Select.HiddenSelect />
+                        <Select.Control>
+                          <Select.Trigger>
+                            <Select.ValueText placeholder="-- Pilih Rombel --" />
+                          </Select.Trigger>
+                          <Select.IndicatorGroup>
+                            <Select.Indicator />
+                            <Select.ClearTrigger />
+                          </Select.IndicatorGroup>
+                        </Select.Control>
+                        <Select.Positioner>
+                          <Select.Content>
+                            {rombelOptions.items.map((item) => (
+                              <Select.Item key={item.value} item={item}>
+                                {item.label}
+                              </Select.Item>
+                            ))}
+                          </Select.Content>
+                        </Select.Positioner>
+                      </Select.Root>
                     </Box>
                   </Flex>
                 )}

@@ -19,6 +19,7 @@ import {
   Stack,
   HStack,
   Icon,
+  createListCollection,
 } from '@chakra-ui/react';
 
 interface Exam {
@@ -34,6 +35,14 @@ interface Exam {
 export default function MonitoringListPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ONGOING' | 'PUBLISHED'>('ALL');
+
+  const statusOptions = createListCollection({
+    items: [
+      { label: 'Semua Status', value: 'ALL' },
+      { label: 'Sedang Berlangsung', value: 'ONGOING' },
+      { label: 'Terpublikasi', value: 'PUBLISHED' },
+    ],
+  });
 
   const { data: exams, isLoading, refetch, isFetching } = useQuery<Exam[]>({
     queryKey: ['exams-monitoring'],
@@ -108,22 +117,32 @@ export default function MonitoringListPage() {
           />
         </Box>
         <Box minW="200px">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as any)}
-              style={{
-                width: '100%',
-                padding: '0.5rem 1rem',
-                borderRadius: '0.75rem',
-                border: '1px solid var(--chakra-colors-gray-200)',
-                backgroundColor: 'white',
-                outline: 'none',
-              }}
-            >
-              <option value="ALL">Semua Status</option>
-              <option value="ONGOING">Sedang Berlangsung</option>
-              <option value="PUBLISHED">Terpublikasi</option>
-            </select>
+          <Select.Root
+            collection={statusOptions}
+            value={statusFilter !== 'ALL' ? [statusFilter] : []}
+            onValueChange={(details) => setStatusFilter((details.value[0] || 'ALL') as 'ALL' | 'ONGOING' | 'PUBLISHED')}
+            positioning={{ sameWidth: true }}
+          >
+            <Select.HiddenSelect />
+            <Select.Control>
+              <Select.Trigger borderRadius="xl">
+                <Select.ValueText placeholder="Semua Status" />
+              </Select.Trigger>
+              <Select.IndicatorGroup>
+                <Select.Indicator />
+                <Select.ClearTrigger />
+              </Select.IndicatorGroup>
+            </Select.Control>
+            <Select.Positioner>
+              <Select.Content>
+                {statusOptions.items.map((item) => (
+                  <Select.Item key={item.value} item={item}>
+                    {item.label}
+                  </Select.Item>
+                ))}
+              </Select.Content>
+            </Select.Positioner>
+          </Select.Root>
         </Box>
       </Flex>
 

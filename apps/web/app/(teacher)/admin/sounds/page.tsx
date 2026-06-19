@@ -13,6 +13,8 @@ import {
   Button,
   Textarea,
   Input,
+  Select,
+  createListCollection,
 } from '@chakra-ui/react';
 import { toast } from '@/lib/toaster';
 import {
@@ -46,6 +48,10 @@ export default function AdminSoundsPage() {
     usage: '' as SoundUsage | '',
     customName: '',
     file: null as File | null,
+  });
+
+  const usageOptions = createListCollection({
+    items: USAGE_OPTIONS.map((opt) => ({ label: opt.label, value: opt.value })),
   });
 
   // Only SUPER_ADMIN
@@ -124,28 +130,32 @@ export default function AdminSoundsPage() {
             px={4}
             borderColor="border.default"
           />
-          <select
-            value={form.usage}
-            onChange={(e) => setForm({ ...form, usage: e.target.value as SoundUsage })}
-            style={{
-              padding: '0 16px',
-              height: '48px',
-              borderRadius: '12px',
-              border: '1px solid var(--chakra-colors-border-default)',
-              backgroundColor: 'var(--chakra-colors-bg-canvas)',
-              outline: 'none',
-              fontSize: '14px',
-              minWidth: '200px',
-              color: 'var(--chakra-colors-text-muted)',
-            }}
+          <Select.Root
+            collection={usageOptions}
+            value={form.usage ? [form.usage] : []}
+            onValueChange={(details) => setForm({ ...form, usage: details.value[0] as SoundUsage })}
+            positioning={{ sameWidth: true }}
           >
-            <option value="" style={{ background: 'var(--chakra-colors-bg-surface)' }}>Pilih kegunaan sound</option>
-            {USAGE_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value} style={{ background: 'var(--chakra-colors-bg-surface)' }}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+            <Select.HiddenSelect />
+            <Select.Control>
+              <Select.Trigger>
+                <Select.ValueText placeholder="Pilih kegunaan sound" />
+              </Select.Trigger>
+              <Select.IndicatorGroup>
+                <Select.Indicator />
+                <Select.ClearTrigger />
+              </Select.IndicatorGroup>
+            </Select.Control>
+            <Select.Positioner>
+              <Select.Content>
+                {usageOptions.items.map((item) => (
+                  <Select.Item key={item.value} item={item}>
+                    {item.label}
+                  </Select.Item>
+                ))}
+              </Select.Content>
+            </Select.Positioner>
+          </Select.Root>
           <Input
             placeholder="Nama custom (opsional)"
             value={form.customName}

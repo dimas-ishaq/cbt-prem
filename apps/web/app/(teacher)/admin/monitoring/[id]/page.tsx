@@ -37,6 +37,8 @@ import {
   Icon,
   IconButton,
   Tooltip,
+  Select,
+  createListCollection,
 } from '@chakra-ui/react';
 
 interface Student {
@@ -59,6 +61,15 @@ interface Violation {
 }
 
 type SortKey = 'name' | 'progress' | 'violations' | 'status';
+
+const sortOptions = createListCollection({
+  items: [
+    { label: 'Progres', value: 'progress' },
+    { label: 'Nama', value: 'name' },
+    { label: 'Pelanggaran', value: 'violations' },
+    { label: 'Status', value: 'status' },
+  ],
+});
 
 export default function ExamMonitoringPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -341,24 +352,34 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
                 />
               </Box>
               {/* Sort */}
-              <select
-                value={sortKey}
-                onChange={(e) => setSortKey(e.target.value as SortKey)}
-                style={{
-                  width: '130px',
-                  padding: '0.375rem 0.75rem',
-                  borderRadius: '0.5rem',
-                  border: '1px solid var(--chakra-colors-gray-200)',
-                  backgroundColor: 'white',
-                  outline: 'none',
-                  fontSize: '14px',
-                }}
-              >
-                <option value="progress">Progres</option>
-                <option value="name">Nama</option>
-                <option value="violations">Pelanggaran</option>
-                <option value="status">Status</option>
-              </select>
+              <Box minW="130px">
+                <Select.Root
+                  collection={sortOptions}
+                  value={[sortKey]}
+                  onValueChange={(details) => setSortKey((details.value[0] || 'progress') as SortKey)}
+                  positioning={{ sameWidth: true }}
+                >
+                  <Select.HiddenSelect />
+                  <Select.Control>
+                    <Select.Trigger borderRadius="lg" fontSize="sm" height="36px">
+                      <Select.ValueText placeholder="Progres" />
+                    </Select.Trigger>
+                    <Select.IndicatorGroup>
+                      <Select.Indicator />
+                      <Select.ClearTrigger />
+                    </Select.IndicatorGroup>
+                  </Select.Control>
+                  <Select.Positioner>
+                    <Select.Content>
+                      {sortOptions.items.map((item) => (
+                        <Select.Item key={item.value} item={item}>
+                          {item.label}
+                        </Select.Item>
+                      ))}
+                    </Select.Content>
+                  </Select.Positioner>
+                </Select.Root>
+              </Box>
 
               <IconButton
                 onClick={() => setSortAsc((v) => !v)}

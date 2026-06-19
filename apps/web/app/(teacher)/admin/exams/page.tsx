@@ -28,6 +28,8 @@ import {
   Spinner,
   IconButton,
   Input,
+  Select,
+  createListCollection,
 } from "@chakra-ui/react";
 import { toast } from '@/lib/toaster';
 import { useConfirm } from "@/components/ui/confirmation-dialog";
@@ -54,6 +56,16 @@ const statusColorMap: Record<string, { bg: string; color: string }> = {
   COMPLETED: { bg: "gray.100", color: "gray.700" },
   DRAFT: { bg: "yellow.100", color: "yellow.700" },
 };
+
+const statusOptions = createListCollection({
+  items: [
+    { label: 'Semua Status', value: '' },
+    { label: 'Draft', value: 'DRAFT' },
+    { label: 'Terpublikasi', value: 'PUBLISHED' },
+    { label: 'Sedang Berjalan', value: 'ONGOING' },
+    { label: 'Selesai', value: 'COMPLETED' },
+  ],
+});
 
 export default function ExamsPage() {
   const queryClient = useQueryClient();

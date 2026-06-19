@@ -5,7 +5,7 @@ import { Plus, Trash2, Edit2, BookOpen, Search, SlidersHorizontal, ArrowUpDown, 
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
-import { Box, Flex, Heading, Text, Button, Stack, Spinner, IconButton, SimpleGrid, HStack, Skeleton, Input, Textarea } from '@chakra-ui/react';
+import { Box, Flex, Heading, Text, Button, Stack, Spinner, IconButton, SimpleGrid, HStack, Skeleton, Input, Textarea, Select, createListCollection } from '@chakra-ui/react';
 import { toast } from '@/lib/toaster';
 import { useConfirm } from '@/components/ui/confirmation-dialog';
 
@@ -183,6 +183,27 @@ export default function QuestionBankListPage() {
 
   const isFilterActive = searchQuery !== '' || selectedSubjectId !== '' || selectedCategory !== '' || sortBy !== 'name-asc';
 
+  const subjectOptions = createListCollection({
+    items: [{ label: 'Semua Mapel', value: '' }, ...(subjects?.map((subject) => ({ label: subject.name, value: subject.id })) || [])],
+  });
+
+  const categoryOptions = createListCollection({
+    items: [
+      { label: 'Semua Kategori', value: '' },
+      { label: 'Umum', value: 'Umum' },
+      ...categories.map((cat) => ({ label: cat, value: cat })),
+    ],
+  });
+
+  const sortOptions = createListCollection({
+    items: [
+      { label: 'Nama (A - Z)', value: 'name-asc' },
+      { label: 'Nama (Z - A)', value: 'name-desc' },
+      { label: 'Soal Terbanyak', value: 'questions-desc' },
+      { label: 'Soal Tersedikit', value: 'questions-asc' },
+    ],
+  });
+
   return (
     <Stack gap={6} p={6}>
       <Flex align="center" justify="space-between">
@@ -293,79 +314,92 @@ export default function QuestionBankListPage() {
             <Flex flex={{ base: 1, lg: 3 }} gap={3} direction={{ base: 'column', md: 'row' }} width="full">
               {/* Subject Filter */}
               <Box flex={1}>
-                <select
-                  value={selectedSubjectId}
-                  onChange={(e) => setSelectedSubjectId(e.target.value)}
-                  style={{
-                    width: '100%',
-                    height: '40px',
-                    padding: '8px 12px',
-                    borderRadius: '8px',
-                    border: '1px solid #e2e8f0',
-                    outline: 'none',
-                    backgroundColor: 'white',
-                    fontSize: '14px',
-                    color: '#1a202c',
-                  }}
+                <Select.Root
+                  collection={subjectOptions}
+                  value={selectedSubjectId ? [selectedSubjectId] : []}
+                  onValueChange={(details) => setSelectedSubjectId(details.value[0] || '')}
+                  positioning={{ sameWidth: true }}
                 >
-                  <option value="">Semua Mapel</option>
-                  {subjects?.map((subject) => (
-                    <option key={subject.id} value={subject.id}>
-                      {subject.name}
-                    </option>
-                  ))}
-                </select>
+                  <Select.HiddenSelect />
+                  <Select.Control>
+                    <Select.Trigger borderRadius="lg">
+                      <Select.ValueText placeholder="Semua Mapel" />
+                    </Select.Trigger>
+                    <Select.IndicatorGroup>
+                      <Select.Indicator />
+                      <Select.ClearTrigger />
+                    </Select.IndicatorGroup>
+                  </Select.Control>
+                  <Select.Positioner>
+                    <Select.Content>
+                      {subjectOptions.items.map((item) => (
+                        <Select.Item key={item.value} item={item}>
+                          {item.label}
+                        </Select.Item>
+                      ))}
+                    </Select.Content>
+                  </Select.Positioner>
+                </Select.Root>
               </Box>
 
               {/* Category Filter */}
               <Box flex={1}>
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  style={{
-                    width: '100%',
-                    height: '40px',
-                    padding: '8px 12px',
-                    borderRadius: '8px',
-                    border: '1px solid #e2e8f0',
-                    outline: 'none',
-                    backgroundColor: 'white',
-                    fontSize: '14px',
-                    color: '#1a202c',
-                  }}
+                <Select.Root
+                  collection={categoryOptions}
+                  value={selectedCategory ? [selectedCategory] : []}
+                  onValueChange={(details) => setSelectedCategory(details.value[0] || '')}
+                  positioning={{ sameWidth: true }}
                 >
-                  <option value="">Semua Kategori</option>
-                  <option value="Umum">Umum</option>
-                  {categories.map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat}
-                    </option>
-                  ))}
-                </select>
+                  <Select.HiddenSelect />
+                  <Select.Control>
+                    <Select.Trigger borderRadius="lg">
+                      <Select.ValueText placeholder="Semua Kategori" />
+                    </Select.Trigger>
+                    <Select.IndicatorGroup>
+                      <Select.Indicator />
+                      <Select.ClearTrigger />
+                    </Select.IndicatorGroup>
+                  </Select.Control>
+                  <Select.Positioner>
+                    <Select.Content>
+                      {categoryOptions.items.map((item) => (
+                        <Select.Item key={item.value} item={item}>
+                          {item.label}
+                        </Select.Item>
+                      ))}
+                    </Select.Content>
+                  </Select.Positioner>
+                </Select.Root>
               </Box>
 
               {/* Sort By */}
               <Box flex={1}>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  style={{
-                    width: '100%',
-                    height: '40px',
-                    padding: '8px 12px',
-                    borderRadius: '8px',
-                    border: '1px solid #e2e8f0',
-                    outline: 'none',
-                    backgroundColor: 'white',
-                    fontSize: '14px',
-                    color: '#1a202c',
-                  }}
+                <Select.Root
+                  collection={sortOptions}
+                  value={[sortBy]}
+                  onValueChange={(details) => setSortBy(details.value[0] || 'name-asc')}
+                  positioning={{ sameWidth: true }}
                 >
-                  <option value="name-asc">Nama (A - Z)</option>
-                  <option value="name-desc">Nama (Z - A)</option>
-                  <option value="questions-desc">Soal Terbanyak</option>
-                  <option value="questions-asc">Soal Tersedikit</option>
-                </select>
+                  <Select.HiddenSelect />
+                  <Select.Control>
+                    <Select.Trigger borderRadius="lg">
+                      <Select.ValueText placeholder="Urutkan" />
+                    </Select.Trigger>
+                    <Select.IndicatorGroup>
+                      <Select.Indicator />
+                      <Select.ClearTrigger />
+                    </Select.IndicatorGroup>
+                  </Select.Control>
+                  <Select.Positioner>
+                    <Select.Content>
+                      {sortOptions.items.map((item) => (
+                        <Select.Item key={item.value} item={item}>
+                          {item.label}
+                        </Select.Item>
+                      ))}
+                    </Select.Content>
+                  </Select.Positioner>
+                </Select.Root>
               </Box>
 
               {/* Reset Button */}
@@ -573,26 +607,32 @@ export default function QuestionBankListPage() {
                   <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>
                     {t('subjectLabel')} <span style={{ color: 'red' }}>*</span>
                   </Text>
-                  <select
-                    required
-                    value={formData.subjectId}
-                    onChange={(e) => setFormData({ ...formData, subjectId: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      borderRadius: '8px',
-                      border: '1px solid #e2e8f0',
-                      outline: 'none',
-                      backgroundColor: 'white',
-                    }}
+                  <Select.Root
+                    collection={subjectOptions}
+                    value={formData.subjectId ? [formData.subjectId] : []}
+                    onValueChange={(details) => setFormData({ ...formData, subjectId: details.value[0] || '' })}
+                    positioning={{ sameWidth: true }}
                   >
-                    <option value="">{t('selectSubject')}</option>
-                    {subjects?.map((subject) => (
-                      <option key={subject.id} value={subject.id}>
-                        {subject.name}
-                      </option>
-                    ))}
-                  </select>
+                    <Select.HiddenSelect />
+                    <Select.Control>
+                      <Select.Trigger borderRadius="lg">
+                        <Select.ValueText placeholder={t('selectSubject')} />
+                      </Select.Trigger>
+                      <Select.IndicatorGroup>
+                        <Select.Indicator />
+                        <Select.ClearTrigger />
+                      </Select.IndicatorGroup>
+                    </Select.Control>
+                    <Select.Positioner>
+                      <Select.Content>
+                        {subjectOptions.items.map((item) => (
+                          <Select.Item key={item.value} item={item}>
+                            {item.label}
+                          </Select.Item>
+                        ))}
+                      </Select.Content>
+                    </Select.Positioner>
+                  </Select.Root>
                 </Box>
                 <Box>
                   <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>

@@ -909,28 +909,32 @@ export default function RombelsPage() {
                   <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>
                     Pilih Jurusan <span style={{ color: 'red' }}>*</span>
                   </Text>
-                  <select
-                    required
-                    value={formData.majorId}
-                    onChange={(e) => setFormData({ ...formData, majorId: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      borderRadius: '8px',
-                      border: '1px solid var(--chakra-colors-gray-200)',
-                      backgroundColor: 'white',
-                      color: 'var(--chakra-colors-gray-800)',
-                      fontSize: '14px',
-                      outline: 'none',
-                    }}
+                  <Select.Root
+                    collection={majorOptions}
+                    value={formData.majorId ? [formData.majorId] : []}
+                    onValueChange={(details) => setFormData({ ...formData, majorId: details.value[0] || '' })}
+                    positioning={{ sameWidth: true }}
                   >
-                    <option value="" disabled>-- Pilih Jurusan --</option>
-                    {majors?.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.name}
-                      </option>
-                    ))}
-                  </select>
+                    <Select.HiddenSelect />
+                    <Select.Control>
+                      <Select.Trigger>
+                        <Select.ValueText placeholder="-- Pilih Jurusan --" />
+                      </Select.Trigger>
+                      <Select.IndicatorGroup>
+                        <Select.Indicator />
+                        <Select.ClearTrigger />
+                      </Select.IndicatorGroup>
+                    </Select.Control>
+                    <Select.Positioner>
+                      <Select.Content>
+                        {majorOptions.items.map((item) => (
+                          <Select.Item key={item.value} item={item}>
+                            {item.label}
+                          </Select.Item>
+                        ))}
+                      </Select.Content>
+                    </Select.Positioner>
+                  </Select.Root>
                 </Box>
 
                 <Flex justify="flex-end" gap={3} pt={4}>

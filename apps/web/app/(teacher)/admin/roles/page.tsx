@@ -5,7 +5,24 @@ import api from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Badge, Box, Button, Flex, Grid, Heading, HStack, IconButton, Input, Spinner, Stack, Table, Text, Textarea } from '@chakra-ui/react';
+import {
+  Box,
+  Flex,
+  Heading,
+  Text,
+  Button,
+  Stack,
+  Input,
+  Spinner,
+  Grid,
+  Table,
+  HStack,
+  Badge,
+  IconButton,
+  Textarea,
+  createListCollection,
+} from '@chakra-ui/react';
+import { Select } from '@/components/ui/select';
 import { toast } from '@/lib/toaster';
 import { useConfirm } from '@/components/ui/confirmation-dialog';
 import {
@@ -98,7 +115,12 @@ export default function RolesPage() {
   });
   const [selectedPermissionIds, setSelectedPermissionIds] = useState<string[]>([]);
 
-  // 1. Fetch all roles
+  const statusOptions = createListCollection({
+    items: [
+      { label: 'Aktif (Dapat Ditugaskan)', value: 'true' },
+      { label: 'Non-Aktif (Ditangguhkan)', value: 'false' },
+    ],
+  });
   const { data: roles, isLoading: rolesLoading } = useQuery<RoleDetail[]>({
     queryKey: ['roles'],
     queryFn: async () => {
@@ -544,21 +566,32 @@ export default function RolesPage() {
                     <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>
                       Status Peran
                     </Text>
-                    <select
-                      value={formData.isActive ? 'true' : 'false'}
-                      onChange={(e) => setFormData({ ...formData, isActive: e.target.value === 'true' })}
-                      style={{
-                        width: '100%',
-                        height: '40px',
-                        borderRadius: '8px',
-                        border: '1px solid #E2E8F0',
-                        padding: '0 12px',
-                        fontSize: '14px',
-                      }}
+                    <Select.Root
+                      collection={statusOptions}
+                      value={[formData.isActive ? 'true' : 'false']}
+                      onValueChange={(details) => setFormData({ ...formData, isActive: details.value[0] === 'true' })}
+                      positioning={{ sameWidth: true }}
                     >
-                      <option value="true">Aktif (Dapat Ditugaskan)</option>
-                      <option value="false">Non-Aktif (Ditangguhkan)</option>
-                    </select>
+                      <Select.HiddenSelect />
+                      <Select.Control>
+                        <Select.Trigger>
+                          <Select.ValueText placeholder="Pilih status" />
+                        </Select.Trigger>
+                        <Select.IndicatorGroup>
+                          <Select.Indicator />
+                          <Select.ClearTrigger />
+                        </Select.IndicatorGroup>
+                      </Select.Control>
+                      <Select.Positioner>
+                        <Select.Content>
+                          {statusOptions.items.map((item) => (
+                            <Select.Item key={item.value} item={item}>
+                              {item.label}
+                            </Select.Item>
+                          ))}
+                        </Select.Content>
+                      </Select.Positioner>
+                    </Select.Root>
                   </Box>
                 </Grid>
                 <Box>

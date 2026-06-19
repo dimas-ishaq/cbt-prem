@@ -17,29 +17,25 @@ import {
   Image,
   Card,
   HStack,
+  Select,
+  createListCollection,
 } from '@chakra-ui/react';
 import { toast } from '@/lib/toaster';
 import { Settings, Save, ShieldAlert, Upload, Trash2, Globe, Heart, Languages, Bookmark } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-const timezones = [
-  { value: 'Asia/Jakarta', label: 'WIB - Asia/Jakarta (UTC+07:00)' },
-  { value: 'Asia/Makassar', label: 'WITA - Asia/Makassar (UTC+08:00)' },
-  { value: 'Asia/Jayapura', label: 'WIT - Asia/Jayapura (UTC+09:00)' },
-  { value: 'UTC', label: 'UTC - Coordinated Universal Time (UTC+00:00)' },
-];
-
-const languages = [
-  { value: 'id', label: 'Bahasa Indonesia (Indonesian)' },
-  { value: 'en', label: 'English (English)' },
-];
-
-const currentYear = new Date().getFullYear();
-const academicYearOptions = Array.from({ length: 7 }, (_, i) => {
-  const startYear = currentYear - 3 + i;
-  const endYear = startYear + 1;
-  return `${startYear}/${endYear}`;
+const timezoneOptions = createListCollection({
+  items: timezones.map((tz) => ({ label: tz.label, value: tz.value })),
 });
+
+const languageOptions = createListCollection({
+  items: languages.map((lang) => ({ label: lang.label, value: lang.value })),
+});
+
+const academicYearSelectOptions = createListCollection({
+  items: academicYearOptions.map((year) => ({ label: `Tahun Pelajaran ${year}`, value: year })),
+});
+
 
 export default function SettingsPage() {
   const { user } = useAuthStore();
@@ -406,29 +402,32 @@ export default function SettingsPage() {
                 <Globe size={15} className="text-indigo-500" />
                 {t('timezoneLabel')}
               </Text>
-              <select
-                value={timezone}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setTimezone(e.target.value)}
-                style={{
-                  width: '100%',
-                  height: '48px',
-                  padding: '0 16px',
-                  borderRadius: '12px',
-                  border: '1px solid var(--chakra-colors-border-default)',
-                  backgroundColor: 'var(--chakra-colors-bg-canvas)',
-                  color: 'var(--chakra-colors-text-primary)',
-                  fontSize: '14px',
-                  outline: 'none',
-                  transition: 'border-color 0.15s',
-                  cursor: 'pointer',
-                }}
+              <Select.Root
+                collection={timezoneOptions}
+                value={[timezone]}
+                onValueChange={(details) => setTimezone(details.value[0] || 'Asia/Jakarta')}
+                positioning={{ sameWidth: true }}
               >
-                {timezones.map((tz) => (
-                  <option key={tz.value} value={tz.value} style={{ background: 'var(--chakra-colors-bg-surface)' }}>
-                    {tz.label}
-                  </option>
-                ))}
-              </select>
+                <Select.HiddenSelect />
+                <Select.Control>
+                  <Select.Trigger>
+                    <Select.ValueText placeholder="Pilih timezone" />
+                  </Select.Trigger>
+                  <Select.IndicatorGroup>
+                    <Select.Indicator />
+                    <Select.ClearTrigger />
+                  </Select.IndicatorGroup>
+                </Select.Control>
+                <Select.Positioner>
+                  <Select.Content>
+                    {timezoneOptions.items.map((item) => (
+                      <Select.Item key={item.value} item={item}>
+                        {item.label}
+                      </Select.Item>
+                    ))}
+                  </Select.Content>
+                </Select.Positioner>
+              </Select.Root>
             </Stack>
           </Stack>
         </Box>
@@ -459,29 +458,32 @@ export default function SettingsPage() {
                 <Languages size={15} className="text-indigo-500" />
                 Bahasa / Language
               </Text>
-              <select
-                value={language}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setLanguage(e.target.value)}
-                style={{
-                  width: '100%',
-                  height: '48px',
-                  padding: '0 16px',
-                  borderRadius: '12px',
-                  border: '1px solid var(--chakra-colors-border-default)',
-                  backgroundColor: 'var(--chakra-colors-bg-canvas)',
-                  color: 'var(--chakra-colors-text-primary)',
-                  fontSize: '14px',
-                  outline: 'none',
-                  transition: 'border-color 0.15s',
-                  cursor: 'pointer',
-                }}
+              <Select.Root
+                collection={languageOptions}
+                value={[language]}
+                onValueChange={(details) => setLanguage(details.value[0] || 'id')}
+                positioning={{ sameWidth: true }}
               >
-                {languages.map((lang) => (
-                  <option key={lang.value} value={lang.value} style={{ background: 'var(--chakra-colors-bg-surface)' }}>
-                    {lang.label}
-                  </option>
-                ))}
-              </select>
+                <Select.HiddenSelect />
+                <Select.Control>
+                  <Select.Trigger>
+                    <Select.ValueText placeholder="Pilih bahasa" />
+                  </Select.Trigger>
+                  <Select.IndicatorGroup>
+                    <Select.Indicator />
+                    <Select.ClearTrigger />
+                  </Select.IndicatorGroup>
+                </Select.Control>
+                <Select.Positioner>
+                  <Select.Content>
+                    {languageOptions.items.map((item) => (
+                      <Select.Item key={item.value} item={item}>
+                        {item.label}
+                      </Select.Item>
+                    ))}
+                  </Select.Content>
+                </Select.Positioner>
+              </Select.Root>
             </Stack>
           </Stack>
         </Box>
@@ -512,29 +514,32 @@ export default function SettingsPage() {
                 <Bookmark size={15} className="text-indigo-500" />
                 Tahun Ajaran Aktif
               </Text>
-              <select
-                value={academicYear}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setAcademicYear(e.target.value)}
-                style={{
-                  width: '100%',
-                  height: '48px',
-                  padding: '0 16px',
-                  borderRadius: '12px',
-                  border: '1px solid var(--chakra-colors-border-default)',
-                  backgroundColor: 'var(--chakra-colors-bg-canvas)',
-                  color: 'var(--chakra-colors-text-primary)',
-                  fontSize: '14px',
-                  outline: 'none',
-                  transition: 'border-color 0.15s',
-                  cursor: 'pointer',
-                }}
+              <Select.Root
+                collection={academicYearSelectOptions}
+                value={[academicYear]}
+                onValueChange={(details) => setAcademicYear(details.value[0] || academicYearOptions[0])}
+                positioning={{ sameWidth: true }}
               >
-                {academicYearOptions.map((year) => (
-                  <option key={year} value={year} style={{ background: 'var(--chakra-colors-bg-surface)' }}>
-                    Tahun Pelajaran {year}
-                  </option>
-                ))}
-              </select>
+                <Select.HiddenSelect />
+                <Select.Control>
+                  <Select.Trigger>
+                    <Select.ValueText placeholder="Pilih tahun ajaran" />
+                  </Select.Trigger>
+                  <Select.IndicatorGroup>
+                    <Select.Indicator />
+                    <Select.ClearTrigger />
+                  </Select.IndicatorGroup>
+                </Select.Control>
+                <Select.Positioner>
+                  <Select.Content>
+                    {academicYearSelectOptions.items.map((item) => (
+                      <Select.Item key={item.value} item={item}>
+                        {item.label}
+                      </Select.Item>
+                    ))}
+                  </Select.Content>
+                </Select.Positioner>
+              </Select.Root>
             </Stack>
           </Stack>
         </Box>
