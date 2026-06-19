@@ -3,7 +3,7 @@
 **Project:** CBT Premium Enterprise API & Web  
 **Branch:** `main`  
 **Audit Date:** 2026-06-19  
-**Last Updated:** 2026-06-19 (fixes applied)  
+**Last Updated:** 2026-06-19 (pagination, auto-submit, realtime notifications, build fixes applied)  
 **Auditor:** Internal Code Audit  
 **Scope:** Entire backend (`apps/api`) + root configuration  
 
@@ -14,9 +14,9 @@
 | Metric | Status |
 |:---|:---|
 | **Overall Health** | ⚠️ CONDITIONAL PASS |
-| **Critical Risks** | 2 items (⬇️ dari 4) |
-| **High Risks** | 4 items (⬇️ dari 6) |
-| **Medium Risks** | 7 items |
+| **Critical Risks** | 0 items (⬇️ dari 4) |
+| **High Risks** | 3 items (⬇️ dari 6) |
+| **Medium Risks** | 4 items (⬇️ dari 7) |
 | **Low Risks** | 5 items |
 | **Test Coverage** | ~22% |
 | **Security Posture** | ⚠️ NEEDS ATTENTION (⬆️ improved) |
@@ -36,6 +36,10 @@
 | 6 | Tambah `@nestjs/throttler` + rate limit 5 req/menit di `/auth/login` | ✅ **FIXED** |
 | 7 | Buat `apps/api/.env.example` dengan semua variabel environment | ✅ **FIXED** |
 | 8 | Isi `apps/api/.env` dengan konfigurasi development | ✅ **FIXED** |
+| 9 | Tambah auto-submit server-side untuk exam session expired via interval di `ExamSessionsService` | ✅ **FIXED** |
+| 10 | Tambah pagination `page`/`limit` pada semua endpoint `findAll` utama | ✅ **FIXED** |
+| 11 | Integrasikan notifikasi dengan `RealtimeGateway.sendToUser` dan `NotificationRecipient` | ✅ **FIXED** |
+| 12 | Perbaiki mapping notification schema dan dependency build error (`@nestjs/swagger`) | ✅ **FIXED** |
 
 ---
 
@@ -290,12 +294,12 @@ G:/Project/Javascript/cbt-prem/
 | R-01 | JWT secret fallback to `'default-secret'` | Auth | 🔴 4 | 🔴 4 | ~~🔴 16~~ | ✅ **FIXED** — env var now required | DevOps | ✅ **Fixed** |
 | R-02 | Teachers default password `'password123'` hardcoded | Teachers | 🔴 4 | 🔴 4 | ~~🔴 16~~ | ✅ **FIXED** — random `crypto.randomBytes` | Backend | ✅ **Fixed** |
 | R-03 | Unprotected `GET /settings` endpoint | Settings | 🔴 4 | 🟠 3 | ~~🔴 12~~ | ✅ **FIXED** — JWT guard + SUPER_ADMIN role | Backend | ✅ **Fixed** |
-| R-04 | No server-side exam timeout/auto-submit | ExamSessions | 🔴 4 | 🟠 3 | **🔴 12** | Implement BullMQ delayed job / cron | Backend | **Open** |
+| R-04 | No server-side exam timeout/auto-submit | ExamSessions | 🔴 4 | 🟠 3 | **🔴 12** | ✅ **FIXED** — in-memory `setInterval` auto-submit di `ExamSessionsService` | Backend | ✅ **Fixed** (in-memory; non-distributed) |
 | R-05 | No rate limiting on `/auth/login` | Auth | 🟠 3 | 🔴 4 | ~~🟠 12~~ | ✅ **FIXED** — ThrottlerGuard 5 req/menit | DevOps | ✅ **Fixed** |
 | R-06 | WebSocket only: in-memory broadcast (no Redis) | Realtime | 🟠 3 | 🟠 3 | **🟠 9** | Socket.IO Redis adapter | Backend | **Open** |
 | R-07 | Non-atomic `submitAnswer` — risk of partial writes | ExamSessions | 🟠 3 | 🟠 3 | ~~🟠 9~~ | ✅ **FIXED** — `$transaction` wrapper | Backend | ✅ **Fixed** |
 | R-08 | N+1 query in `exams.findOne` | Exams | 🟡 2 | 🟠 3 | **🟡 6** | Batch selects / include pruning | Architect | **Open** |
-| R-09 | No pagination on list endpoints | Multiple | 🟡 2 | 🟡 2 | **🟡 4** | Add `take/skip` with max cap | Backend | **Open** |
+| R-09 | No pagination on list endpoints | Multiple | 🟡 2 | 🟡 2 | 🟡 4 | ✅ **FIXED** — semua `findAll` endpoint + `PaginationDto` | Backend | ✅ **Fixed** |
 | R-10 | Synchronous DOCX/Excel import blocks event loop | Questions | 🟡 2 | 🟡 2 | **🟡 4** | Offload to BullMQ worker | Backend | **Open** |
 | R-11 | No ownership check on question bank update/delete | Questions | 🟡 2 | 🟡 2 | **🟡 4** | Verify `teacherId` matches `req.user` | Backend | **Open** |
 | R-12 | Audit log model unused outside RBAC module | All | 🟡 2 | 🟡 2 | **🟡 3** | Emit on every mutation via middleware/interceptor | Backend | **Open** |
@@ -304,7 +308,7 @@ G:/Project/Javascript/cbt-prem/
 | R-15 | No `.env.example` → secrets discovered manually | DevOps | 🟢 1 | 🟡 2 | ~~🟡 2~~ | ✅ **FIXED** — `.env.example` created | DevOps | ✅ **Fixed** |
 | R-16 | TypeScript strict checks disabled (`strictNullChecks: false`) | Build | 🟢 1 | 🟡 2 | **🟡 2** | Enable strict mode in `tsconfig.json` | All | **Open** |
 | R-17 | Reports endpoints return placeholder URLs | Reports | 🟢 1 | 🟡 2 | **🟡 2** | Implement `generateReport` methods | Backend | **Open** |
-| R-18 | `Notifications` model exists, `RealtimeService` empty | Realtime | 🟢 1 | 🟡 2 | **🟡 2** | Implement notification broadcasting | Backend | **Open** |
+| R-18 | `Notifications` model exists, `RealtimeService` empty | Realtime | 🟢 1 | 🟡 2 | 🟡 2 | ✅ **FIXED** — notifikasi via `RealtimeGateway.sendToUser` + `NotificationRecipient` | Backend | ✅ **Fixed** |
 | R-19 | No compliance/data retention policy defined | All | 🟢 1 | 🟢 1 | **🟢 1** | Define retention + purge job | PO/Sec | **Open** |
 | R-20 | README is generic Turborepo template (stale) | Docs | 🟢 1 | 🟢 1 | **🟢 1** | Replace with project-specific README | Docs | **Open** |
 
@@ -313,7 +317,7 @@ G:/Project/Javascript/cbt-prem/
 | Date | Critical | High | Medium | Low | Notes |
 |:---|:---:|:---:|:---:|:---:|:---|
 | 2026-06-14 (Baseline) | 4 | 5 | 7 | 4 | Initial audit |
-| 2026-06-19 (Post-fix) | **2** | **4** | 7 | 5 | R-01, R-02, R-03, R-05, R-07, R-15 fixed |
+| 2026-06-19 (Post-fix) | **0** | **3** | **4** | 5 | R-01, R-02, R-03, R-05, R-07, R-09, R-15, R-18 fixed; R-04 implemented via interval, pagination, notification fixes applied |
 | TBD (Post-Sprint 1) | — | — | — | — | |
 
 ---
@@ -369,12 +373,12 @@ DevOps/Config   █████          0 Critical, 0 High, 0 Medium
 
 | # | Task | Owner | Estimated |
 |:---|:---|:---|:---:|
-| 1 | Server-side exam timeout: cron/queue auto-submit at `endTime` | Backend | 2h |
+| 1 | ~~Server-side exam timeout: cron/queue auto-submit at `endTime`~~ ✅ **DONE** (in-memory interval) | Backend | 2h |
 | 2 | Enforce SEB browser validation in `ExamsController.findOne` | Backend | 30m |
 | 3 | Add ownership check in `ExamSessionsService.startSession` (class/subject) | Backend | 30m |
 | 4 | Add ownership guard on question bank update/delete | Backend | 30m |
 | 5 | Prisma N+1 fix: batch-load `examQuestions.options` in `exams.findOne` | Architect | 2h |
-| 6 | Add pagination (`take/skip`) on all `findAll` endpoints | Backend | 3h |
+| 6 | ~~Add pagination (`take/skip`) on all `findAll` endpoints~~ ✅ **DONE** | Backend | 3h |
 | 7 | Add DB indexes: `userId`, `examId`, `studentId`, `questionId` | DBA | 1h |
 | 8 | Add health check `/api/health` with DB + Redis probe | DevOps | 1h |
 
@@ -419,6 +423,11 @@ DevOps/Config   █████          0 Critical, 0 High, 0 Medium
 | No rate limit login | `apps/api/src/auth/auth.controller.ts` + `auth.module.ts` | ✅ Tambah `@nestjs/throttler` + `ThrottlerGuard` (5 req/menit) |
 | No `.env.example` | `apps/api/` | ✅ Buat `apps/api/.env.example` dengan 9 variabel |
 | Missing env vars | `apps/api/.env` | ✅ Tambah `NODE_ENV`, `CORS_ORIGINS`, `REDIS_URL`, `FRONTEND_URL` |
+| No pagination | `apps/api/src/*/*/{controller,service}.ts` (18 files) | ✅ Tambah `PaginationDto` ke semua `findAll` + return `{ data, total }` |
+| No exam auto-submit | `apps/api/src/exam-sessions/exam-sessions.service.ts` | ✅ `setInterval` 5 menit + `autoSubmitExpiredSessions()` + `finishSession` |
+| Notification not wired | `apps/api/src/notifications/notifications.service.ts` | ✅ `create()` → `RealtimeGateway.sendToUser()` + `NotificationRecipient` |
+| Build error — missing `@nestjs/swagger` | `apps/api/src/notifications/dto/create-notification.dto.ts` | ✅ `bun add @nestjs/swagger` |
+| Stale Prisma client types (notification enums) | `apps/api/src/notifications/dto/create-notification.dto.ts` | ✅ Local enum re-export to bypass stale generated types |
 
 ---
 
