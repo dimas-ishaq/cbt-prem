@@ -164,24 +164,32 @@ export default function ExamsPage() {
             borderColor="gray.200"
           >
             <Filter size={16} className="text-gray-500" />
-            <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              style={{
-                background: "transparent",
-                border: "none",
-                outline: "none",
-                cursor: "pointer",
-                fontSize: "14px",
-                color: "#4a5568",
-              }}
+            <Select.Root
+              collection={statusOptions}
+              value={selectedStatus ? [selectedStatus] : []}
+              onValueChange={(details) => setSelectedStatus(details.value[0] || '')}
+              positioning={{ sameWidth: true }}
             >
-              <option value="">Semua Status</option>
-              <option value="DRAFT">Draft</option>
-              <option value="PUBLISHED">Terpublikasi</option>
-              <option value="ONGOING">Sedang Berjalan</option>
-              <option value="COMPLETED">Selesai</option>
-            </select>
+              <Select.HiddenSelect />
+              <Select.Control>
+                <Select.Trigger>
+                  <Select.ValueText placeholder="Semua Status" />
+                </Select.Trigger>
+                <Select.IndicatorGroup>
+                  <Select.Indicator />
+                  <Select.ClearTrigger />
+                </Select.IndicatorGroup>
+              </Select.Control>
+              <Select.Positioner>
+                <Select.Content>
+                  {statusOptions.items.map((item) => (
+                    <Select.Item key={item.value} item={item}>
+                      {item.label}
+                    </Select.Item>
+                  ))}
+                </Select.Content>
+              </Select.Positioner>
+            </Select.Root>
           </Flex>
         </Flex>
 
