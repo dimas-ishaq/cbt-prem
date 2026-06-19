@@ -1,10 +1,12 @@
 'use client';
+
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Upload, X, Crop, RotateCcw, Check, ImageIcon } from 'lucide-react';
-import { Box, Flex, Text, Button, Stack, Input, SimpleGrid, HStack, IconButton, Select, createListCollection, } from '@chakra-ui/react';
+import { Box, Flex, Text, Button, Stack, Input, SimpleGrid, HStack, IconButton, Select, createListCollection } from '@chakra-ui/react';
 import { compressImage, validateImageFile, createThumbnail } from '@/utils/imageUtils';
 import { MediaLibraryModal } from '@/components/admin/media-library-modal';
 import { RichTextEditor } from '@/components/admin/rich-text-editor';
+import { useTranslation } from 'react-i18next';
 
 interface Option {
   content: string;
@@ -27,6 +29,7 @@ interface QuestionFormProps {
 }
 
 export function QuestionForm({ onSubmit, onCancel, isSubmitting, initialData }: QuestionFormProps) {
+  const { t } = useTranslation();
   const [content, setContent] = useState(initialData?.content || '');
   const [type, setType] = useState(initialData?.type || 'PILIHAN_GANDA');
   const [difficulty, setDifficulty] = useState(initialData?.difficulty || 'SEDANG');
@@ -68,9 +71,11 @@ export function QuestionForm({ onSubmit, onCancel, isSubmitting, initialData }: 
   const addOption = () => {
     setOptions([...options, { content: '', isCorrect: false }]);
   };
+
   const removeOption = (index: number) => {
     setOptions(options.filter((_, i) => i !== index));
   };
+
   const updateOption = (index: number, field: keyof Option, value: any) => {
     setOptions((prev) => {
       return prev.map((opt, i) => {
@@ -97,7 +102,6 @@ export function QuestionForm({ onSubmit, onCancel, isSubmitting, initialData }: 
         maxSizeMB: 2,
       });
       const thumbnail = await createThumbnail(compressed, 200);
-
       const formData = new FormData();
       formData.append('file', compressed);
       const { data } = await (await import('@/lib/api')).default.post('/questions/upload', formData, {
@@ -186,28 +190,29 @@ export function QuestionForm({ onSubmit, onCancel, isSubmitting, initialData }: 
         if (file) openCropEditor(file);
         e.target.value = '';
       }} />
-
       <Stack gap={6}>
         <Stack gap={4}>
           <Box>
             <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>
-              Konten Soal
+              {t('questionContentLabel')}
             </Text>
-            <RichTextEditor
-              value={content}
-              onChange={(val) => setContent(val)}
-              placeholder="Ketik soal di sini..."
-            />
+            <RichTextEditor value={content} onChange={(val) => setContent(val)} placeholder={t('questionPlaceholder')} />
           </Box>
 
           {/* Image Upload + Crop Modal */}
           <Box>
             <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={2}>
-              Media Gambar (Opsional)
+              {t('questionMediaLabel')}
             </Text>
             <div
-              onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
-              onDragLeave={(e) => { e.preventDefault(); setIsDragOver(false); }}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setIsDragOver(true);
+              }}
+              onDragLeave={(e) => {
+                e.preventDefault();
+                setIsDragOver(false);
+              }}
               onDrop={(e) => {
                 e.preventDefault();
                 setIsDragOver(false);
@@ -226,24 +231,48 @@ export function QuestionForm({ onSubmit, onCancel, isSubmitting, initialData }: 
                 <Flex direction="column" align="center" gap={3}>
                   <img src={mediaUrl} alt="Preview" style={{ maxWidth: '100%', maxHeight: '320px', borderRadius: '0.5rem' }} />
                   <div className="flex gap-2">
-                    <Button size="xs" variant="ghost" onClick={(e) => { e.stopPropagation(); openCropEditor(new File([], 'edit')); }}>Ganti Gambar</Button>
-                    <Button size="xs" variant="ghost" colorScheme="red" onClick={(e) => { e.stopPropagation(); if (confirm('Hapus gambar?')) { setMediaUrl(''); setMediaType(''); } }}>Hapus</Button>
+                    <Button size="xs" variant="ghost" onClick={(e) => {
+                      e.stopPropagation();
+                      openCropEditor(new File([], 'edit'));
+                    }}>
+                      {t('changeImageLabel')}
+                    </Button>
+                    <Button size="xs" variant="ghost" colorScheme="red" onClick={(e) => {
+                      e.stopPropagation();
+                      if (confirm(t('deleteImageConfirmConfirm') || 'Hapus gambar?')) {
+                        setMediaUrl('');
+                        setMediaType('');
+                      }
+                    }}>
+                      {t('deleteImageLabel')}
+                    </Button>
                   </div>
-                  <Text fontSize="xs" color="#64748b">Klik atau drag untuk mengganti gambar (crop supported)</Text>
+                  <Text fontSize="xs" color="#64748b">
+                    {t('dragDropImageLabel')}
+                  </Text>
                 </Flex>
               ) : (
                 <Flex direction="column" align="center" gap={2}>
-                  <div className="p-3 rounded-full bg-gray-100"><ImageIcon size={24} className="text-gray-400" /></div>
-                  <Text fontWeight="medium" fontSize="sm">Drag & drop gambar / klik untuk pilih</Text>
-                  <Text fontSize="xs" color="gray.400">Mendukung crop & kompresi otomatis sebelum upload</Text>
+                  <div className="p-3 rounded-full bg-gray-100">
+                    <ImageIcon size={24} className="text-gray-400" />
+                  </div>
+                  <Text fontWeight="medium" fontSize="sm">
+                    {t('dragDropImageLabel')}
+                  </Text>
+                  <Text fontSize="xs" color="gray.400">
+                    {t('imageUploadDesc')}
+                  </Text>
                 </Flex>
               )}
             </div>
           </Box>
 
+          {/* Fields */}
           <SimpleGrid columns={{ base: 1, md: 3 }} gap={4}>
             <Box>
-              <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Type</Text>
+              <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>
+                {t('typeLabel')}
+              </Text>
               <Select.Root
                 collection={typeOptions}
                 value={[type]}
@@ -253,7 +282,7 @@ export function QuestionForm({ onSubmit, onCancel, isSubmitting, initialData }: 
                 <Select.HiddenSelect />
                 <Select.Control>
                   <Select.Trigger>
-                    <Select.ValueText placeholder="Pilih type" />
+                    <Select.ValueText placeholder={t('questionTypePILIHAN_GANDA')} />
                   </Select.Trigger>
                   <Select.IndicatorGroup>
                     <Select.Indicator />
@@ -271,8 +300,11 @@ export function QuestionForm({ onSubmit, onCancel, isSubmitting, initialData }: 
                 </Select.Positioner>
               </Select.Root>
             </Box>
+
             <Box>
-              <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Difficulty</Text>
+              <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>
+                {t('difficultyLabel')}
+              </Text>
               <Select.Root
                 collection={difficultyOptions}
                 value={[difficulty]}
@@ -282,7 +314,7 @@ export function QuestionForm({ onSubmit, onCancel, isSubmitting, initialData }: 
                 <Select.HiddenSelect />
                 <Select.Control>
                   <Select.Trigger>
-                    <Select.ValueText placeholder="Pilih difficulty" />
+                    <Select.ValueText placeholder={t('difficultyMUDAH')} />
                   </Select.Trigger>
                   <Select.IndicatorGroup>
                     <Select.Indicator />
@@ -300,9 +332,12 @@ export function QuestionForm({ onSubmit, onCancel, isSubmitting, initialData }: 
                 </Select.Positioner>
               </Select.Root>
             </Box>
+
             <Box>
-              <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Points</Text>
-              <Input type="number" value={points} onChange={(e) => setPoints(parseInt(e.target.value))} min={1} />
+              <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>
+                {t('pointsLabel')}
+              </Text>
+              <Input type="number" value={points} onChange={(e) => setPoints(parseInt(e.target.value) || 0)} min={1} />
             </Box>
           </SimpleGrid>
         </Stack>
@@ -310,10 +345,12 @@ export function QuestionForm({ onSubmit, onCancel, isSubmitting, initialData }: 
         {type !== 'ESSAY' && (
           <Stack gap={4}>
             <Flex justify="space-between" align="center">
-              <Text fontSize="sm" fontWeight="bold" color="gray.900">Opsi Jawaban</Text>
+              <Text fontSize="sm" fontWeight="bold" color="gray.900">
+                {t('answerOptionsLabel')}
+              </Text>
               {type !== 'BENAR_SALAH' && (
                 <Button type="button" onClick={addOption} variant="ghost" size="xs" colorScheme="indigo">
-                  + Tambah Opsi
+                  {t('addOptionBtn')}
                 </Button>
               )}
             </Flex>
@@ -334,12 +371,19 @@ export function QuestionForm({ onSubmit, onCancel, isSubmitting, initialData }: 
                     <RichTextEditor
                       value={option.content}
                       onChange={(val) => updateOption(idx, 'content', val)}
-                      placeholder={`Opsi ${String.fromCharCode(65 + idx)}`}
+                      placeholder={t('optionPlaceholder', { letter: String.fromCharCode(65 + idx) })}
                       compact
                     />
                   </Box>
                   {options.length > 2 && type !== 'BENAR_SALAH' && (
-                    <IconButton type="button" onClick={() => removeOption(idx)} colorScheme="red" variant="ghost" size="sm" aria-label="Remove">
+                    <IconButton
+                      type="button"
+                      onClick={() => removeOption(idx)}
+                      colorScheme="red"
+                      variant="ghost"
+                      size="sm"
+                      aria-label="Remove"
+                    >
                       <X size={16} />
                     </IconButton>
                   )}
@@ -349,10 +393,13 @@ export function QuestionForm({ onSubmit, onCancel, isSubmitting, initialData }: 
           </Stack>
         )}
 
+        {/* Actions */}
         <Flex gap={3} pt={4} borderTop="1px solid" borderColor="gray.100">
-          <Button type="button" onClick={onCancel} flex={1} variant="outline">Batal</Button>
+          <Button type="button" onClick={onCancel} flex={1} variant="outline">
+            {t('cancel')}
+          </Button>
           <Button type="submit" disabled={isSubmitting || uploading} flex={1} colorScheme="indigo">
-            {isSubmitting || uploading ? 'Menyimpan...' : 'Simpan Soal'}
+            {isSubmitting || uploading ? t('savingQuestion') : t('saveQuestion')}
           </Button>
         </Flex>
       </Stack>
@@ -361,19 +408,23 @@ export function QuestionForm({ onSubmit, onCancel, isSubmitting, initialData }: 
       {editorOpen && (
         <Box position="fixed" inset={0} bg="blackAlpha.600" zIndex={999} display="flex" alignItems="center" justifyContent="center">
           <Stack gap={4} bg="white" p={6} borderRadius="lg" maxWidth="90vw" maxHeight="90vh">
-            <Text fontWeight="bold">Edit Gambar</Text>
+            <Text fontWeight="bold">{t('editImageTitle')}</Text>
             {srcImage && (
               <Box overflow="auto" maxHeight="60vh" maxWidth="70vw">
                 <img src={srcImage.src} alt="to edit" style={{ maxWidth: '100%', maxHeight: '60vh' }} />
               </Box>
             )}
-            <Text fontSize="sm" color="gray.500">Fitur crop & rotasi akan ditambahkan berikutnya. Untuk saat ini gambar langsung dikompres dan diupload.</Text>
+            <Text fontSize="sm" color="gray.500">
+              {t('cropFeatureComingSoon')}
+            </Text>
             <Flex gap={3}>
               <Button variant="outline" onClick={closeEditor}>
-                <RotateCcw size={16} style={{ marginRight: '8px' }} /> Batal
+                <RotateCcw size={16} style={{ marginRight: '8px' }} />
+                {t('cancel')}
               </Button>
               <Button colorScheme="indigo" onClick={confirmCrop} loading={uploading}>
-                <Upload size={16} style={{ marginRight: '8px' }} /> Ya, Upload
+                <Upload size={16} style={{ marginRight: '8px' }} />
+                {t('uploadImageBtn')}
               </Button>
             </Flex>
           </Stack>

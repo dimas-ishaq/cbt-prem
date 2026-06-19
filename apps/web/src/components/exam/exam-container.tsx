@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useSocket } from '@/hooks/useSocket';
@@ -87,6 +88,7 @@ function generateSEBConfig(exam: any): string {
 }
 
 export function ExamContainer({ examId }: Props) {
+  const { t } = useTranslation();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -728,7 +730,7 @@ export function ExamContainer({ examId }: Props) {
             <Flex justify="space-between" align="start" mb={6} borderBottom="1px solid" borderColor="whiteAlpha.100" pb={5} direction={{ base: 'column', sm: 'row' }} gap={4}>
               <Box>
                 <Heading size="xl" fontWeight="black" color="white" letterSpacing="tight">
-                  Konfirmasi & Tata Tertib Ujian
+                  {t('confirmExamRules')}
                 </Heading>
                 <Text color="gray.400" fontSize="sm" mt={1}>
                   Harap periksa informasi peserta dan jadwal ujian dengan teliti sebelum memulai.
@@ -789,7 +791,7 @@ export function ExamContainer({ examId }: Props) {
               {/* Exam Info Box */}
               <Box p={5} bg="whiteAlpha.50" borderRadius="2xl" border="1px solid" borderColor="whiteAlpha.100">
                 <Heading size="xs" fontWeight="extrabold" color="amber.400" textTransform="uppercase" letterSpacing="wider" mb={4}>
-                  Informasi Jadwal & Soal Ujian
+                  {t('examInstructions')}
                 </Heading>
                 <Stack gap={4}>
                   <Box>
@@ -818,7 +820,7 @@ export function ExamContainer({ examId }: Props) {
                       </Text>
                     </Box>
                     <Box>
-                      <Text fontSize="3xs" fontWeight="bold" color="gray.400" textTransform="uppercase">Selesai Ujian</Text>
+                      <Text fontSize="3xs" fontWeight="bold" color="gray.400" textTransform="uppercase">{t('stepFinish')}</Text>
                       <Text fontSize="xs" fontWeight="bold" color="gray.200" mt={0.5}>
                         {new Date(exam.endTime).toLocaleString('id-ID', { timeZone: settings?.timezone || 'Asia/Jakarta', dateStyle: 'medium', timeStyle: 'short' })}
                       </Text>
@@ -843,8 +845,8 @@ export function ExamContainer({ examId }: Props) {
                   <Text color="gray.400" lineHeight="relaxed">Pilih opsi atau ketik jawaban Anda. Jawaban Anda secara otomatis tersimpan dan tersinkronisasi ke server secara realtime.</Text>
                 </Box>
                 <Box p={3.5} bg="whiteAlpha.50" borderRadius="xl" border="1px solid" borderColor="whiteAlpha.50">
-                  <Text fontWeight="bold" color="teal.300" mb={1}>3. Selesaikan Ujian</Text>
-                  <Text color="gray.400" lineHeight="relaxed">Gunakan tombol "Selesai Ujian" di pojok kanan atas setelah seluruh soal terjawab untuk men-submit lembar ujian Anda.</Text>
+                  <Text fontWeight="bold" color="teal.300" mb={1}>{t('stepFinish')}</Text>
+                  <Text color="gray.400" lineHeight="relaxed">{t('stepFinishDesc')}</Text>
                 </Box>
               </SimpleGrid>
             </Box>
@@ -1026,18 +1028,18 @@ export function ExamContainer({ examId }: Props) {
         <Button
           onClick={async () => {
             const unanswered = totalQuestions - answeredCount;
-            let title = 'Selesai Ujian';
-            let description = 'Apakah Anda yakin ingin menyelesaikan ujian? Jawaban Anda akan dikirimkan dan nilai Anda akan langsung diproses.';
+            let title = t('confirmFinishTitle');
+            let description = t('confirmFinishDesc');
             
             if (unanswered > 0) {
-              title = 'Konfirmasi: Soal Belum Terjawab';
-              description = `Peringatan: Masih terdapat ${unanswered} dari ${totalQuestions} soal yang belum Anda isi. Apakah Anda yakin ingin menyelesaikan ujian sekarang?`;
+              title = t('confirmUnansweredTitle');
+              description = t('confirmUnansweredDesc', { unanswered, totalQuestions });
             }
 
             const confirmed = await confirmDialog({
               title,
               description,
-              confirmText: 'Ya, Selesai'
+              confirmText: t('yesFinish')
             });
             if (confirmed) {
               finishExamMutation.mutate();
@@ -1094,7 +1096,7 @@ export function ExamContainer({ examId }: Props) {
             </Button>
             
             <Text fontSize="2xs" fontWeight="semibold" color="gray.400" textTransform="uppercase">
-              Soal {currentQuestionIndex + 1} dari {totalQuestions}
+              {t('questionProgress', { current: currentQuestionIndex + 1, total: totalQuestions })}
             </Text>
 
             <Button
@@ -1119,10 +1121,10 @@ export function ExamContainer({ examId }: Props) {
           <Box p={6} overflowY="auto" flex={1}>
             <Heading size="sm" fontWeight="bold" color="gray.850" mb={2} display="flex" alignItems="center" gap={2}>
               <HelpCircle size={17} className="text-indigo-500" />
-              Navigasi Soal
+              {t('questionNavigationLabel')}
             </Heading>
             <Text fontSize="2xs" color="gray.450" fontWeight="medium" mb={6}>
-              Pilih nomor untuk langsung melompat ke soal terkait.
+              {t('questionNavigationDesc')}
             </Text>
             
             <ExamNav

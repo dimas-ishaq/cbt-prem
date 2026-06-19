@@ -6,17 +6,22 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 
 @Controller('settings')
-@UseGuards(JwtAuthGuard, RolesGuard)
 export class SettingsController {
   constructor(private readonly settingsService: SettingsService) {}
 
   @Get()
-  @Roles(Role.SUPER_ADMIN)
+  @UseGuards(JwtAuthGuard)
   async getSettings() {
     return this.settingsService.getAll();
   }
 
+  @Get('public')
+  async getPublicSettings() {
+    return this.settingsService.getAll();
+  }
+
   @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.SUPER_ADMIN)
   async updateSettings(@Body() body: Record<string, string>) {
     return this.settingsService.updateMany(body);

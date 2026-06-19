@@ -130,6 +130,122 @@ const resources = {
       completedStatus: 'Selesai',
       violationDetected: 'Pelanggaran Terdeteksi',
       minutesAgo: 'menit yang lalu',
+
+      // Form fields
+      questionContentLabel: 'Konten Soal',
+      questionMediaLabel: 'Media Gambar (Opsional)',
+      typeLabel: 'Tipe',
+      difficultyLabel: 'Tingkat Kesulitan',
+      pointsLabel: 'Poin',
+      answerOptionsLabel: 'Opsi Jawaban',
+      addOptionBtn: '+ Tambah Opsi',
+      questionPlaceholder: 'Ketik soal di sini...',
+      optionPlaceholder: 'Opsi {{letter}}',
+      saveQuestion: 'Simpan Soal',
+      savingQuestion: 'Menyimpan...',
+      cancel: 'Batal',
+      
+      // Question types
+      questionTypePILIHAN_GANDA: 'Pilihan Ganda',
+      questionTypeMULTIPLE_RESPONSE: 'Multiple Response',
+      questionTypeESSAY: 'Essay',
+      questionTypeBENAR_SALAH: 'Benar / Salah',
+
+      // Image editor
+      editImageTitle: 'Edit Gambar',
+      changeImageLabel: 'Ganti Gambar',
+      deleteImageLabel: 'Hapus',
+      dragDropImageLabel: 'Drag & drop gambar / klik untuk pilih',
+      imageUploadDesc: 'Mendukung crop & kompresi otomatis sebelum upload',
+      deleteImageConfirmConfirm: 'Apakah Anda yakin ingin menghapus gambar?',
+      cropFeatureComingSoon: 'Fitur crop & rotasi akan ditambahkan berikutnya. Untuk saat ini gambar langsung dikompres dan diupload.',
+      uploadImageBtn: 'Ya, Upload',
+
+      // Question Banks List
+      statsTotalBanks: 'Total Bank Soal',
+      statsTotalQuestions: 'Total Soal',
+      statsCategories: 'Kategori',
+      filterAllSubjects: 'Semua Mapel',
+      filterAllCategories: 'Semua Kategori',
+      sortNameAsc: 'Nama (A - Z)',
+      sortNameDesc: 'Nama (Z - A)',
+      sortQuestionsDesc: 'Soal Terbanyak',
+      sortQuestionsAsc: 'Soal Tersedikit',
+      filterReset: 'Reset',
+      searchQuestionBanks: 'Cari bank soal...',
+      emptyNoResults: 'Hasil pencarian tidak ditemukan',
+      emptyNoResultsDesc: 'Coba sesuaikan filter atau kata kunci pencarian Anda.',
+      clearFilters: 'Bersihkan Filter',
+      categoryDefault: 'Umum',
+
+      // Question Bank Detail
+      deleteBankSuccess: 'Bank soal berhasil dihapus',
+      downloadTemplateError: 'Gagal mengunduh template',
+      confirmDeleteBank: 'Hapus Bank Soal',
+      viewDetails: 'Lihat Detail',
+      sessionFinished: 'Selesai',
+      sessionLocked: 'Terkunci',
+      points: 'poin',
+      notGraded: 'Belum dinilai',
+
+      // Exam History
+      loadingHistory: 'Memuat riwayat ujian...',
+      errorLoadingHistory: 'Gagal memuat riwayat ujian',
+      historyTitle: 'Riwayat Pengerjaan Ujian',
+      historyDesc: 'Daftar ujian yang sudah Anda kerjakan beserta hasilnya.',
+      emptyHistory: 'Belum ada riwayat pengerjaan ujian.',
+      emptyHistoryDesc: 'Ujian yang sudah dikerjakan akan muncul di sini.',
+      finishedAt: 'Selesai:',
+      duration: 'Durasi:',
+      hoursMinutes: '{{hours}} jam {{minutes}} menit',
+      minutes: '{{count}} menit',
+
+      // Student Dashboard
+      studentPortal: 'Portal Siswa',
+      availableExams: 'Ujian Tersedia',
+      examHistory: 'Riwayat Pengerjaan',
+      availableExamsList: 'Daftar Ujian Tersedia',
+      availableExamsDesc: 'Pilih ujian aktif yang ingin Anda ikuti untuk memulai pengerjaan.',
+      selectExamStart: 'Mulai Ujian',
+      
+      // Monitoring
+      monitoringTitle: 'Live Monitoring',
+      monitoringDesc: 'Monitor student progress in real-time',
+      refreshBtn: 'Refresh',
+      searchExamOrSubject: 'Search exam or subject…',
+      filterAllStatus: 'All Status',
+      filterStatusOngoing: 'Ongoing',
+      filterStatusPublished: 'Published',
+      badgeOngoing: 'ONGOING',
+      badgePublished: 'AVAILABLE',
+      enterProctor: 'Enter Proctor',
+      noActiveExams: 'No active exams',
+      noActiveExamsDesc: 'Exams ready to monitor will appear here after being published.',
+      examRegistered: '{{count}} students registered',
+      filterStatusTryAgain: 'Try changing keyword or filter status for different results.',
+      filterStatusExamsWillAppear: 'Exams ready for monitoring will appear here after publication.'
+      
+      // Exam Container (student exam page)
+      examInstructions: 'Informasi Jadwal & Soal Ujian',
+      totalQuestionsLabel: 'Soal',
+      finishExam: 'Selesai Ujian',
+      stepWorkOnQuestion: 'Kerjakan Soal & Simpan',
+      stepWorkDesc: 'Pilih opsi atau ketik jawaban Anda. Jawaban Anda secara otomatis tersimpan dan tersinkronisasi ke server secara realtime.',
+      stepFinish: 'Selesaikan Ujian',
+      stepFinishDesc: 'Gunakan tombol "Selesai Ujian" di pojok kanan atas setelah seluruh soal terjawab untuk men-submit lembar ujian Anda.',
+      confirmFinishTitle: 'Selesai Ujian',
+      confirmFinishDesc: 'Apakah Anda yakin ingin menyelesaikan ujian? Jawaban Anda akan dikirimkan dan nilai Anda akan langsung diproses.',
+      confirmUnansweredTitle: 'Konfirmasi: Soal Belum Terjawab',
+      confirmUnansweredDesc: 'Beberapa soal belum Anda jawab. Apakah Anda tetap ingin menyelesaikan ujian?',
+      yesFinish: 'Ya, Selesaikan',
+      autoSaveNote: 'Jawaban disimpan otomatis saat Anda beralih nomor atau mengklik area luar.',
+      confirmExamRules: 'Konfirmasi & Tata Tertib Ujian',
+      questionProgress: 'Soal {{current}} dari {{total}}',
+      questionNavigationLabel: 'Navigasi Soal',
+      questionNavigationDesc: 'Pilih nomor untuk langsung melompat ke soal terkait.',
+
+      // Language
+      languageLabel: 'Bahasa / Language',
     }
   },
   en: {
@@ -270,6 +386,122 @@ const resources = {
       completedStatus: 'Completed',
       violationDetected: 'Violation Detected',
       minutesAgo: 'minutes ago',
+
+      // Form fields
+      questionContentLabel: 'Question Content',
+      questionMediaLabel: 'Image Media (Optional)',
+      typeLabel: 'Type',
+      difficultyLabel: 'Difficulty',
+      pointsLabel: 'Points',
+      answerOptionsLabel: 'Answer Options',
+      addOptionBtn: '+ Add Option',
+      questionPlaceholder: 'Type your question here...',
+      optionPlaceholder: 'Option {{letter}}',
+      saveQuestion: 'Save Question',
+      savingQuestion: 'Saving...',
+      cancel: 'Cancel',
+      
+      // Question types
+      questionTypePILIHAN_GANDA: 'Multiple Choice',
+      questionTypeMULTIPLE_RESPONSE: 'Multiple Response',
+      questionTypeESSAY: 'Essay',
+      questionTypeBENAR_SALAH: 'True / False',
+
+      // Image editor
+      editImageTitle: 'Edit Image',
+      changeImageLabel: 'Change Image',
+      deleteImageLabel: 'Delete',
+      dragDropImageLabel: 'Drag & drop image or click to select',
+      imageUploadDesc: 'Supports automatic cropping & compression before upload',
+      deleteImageConfirmConfirm: 'Are you sure you want to delete the image?',
+      cropFeatureComingSoon: 'Crop & rotate features coming soon. For now, images are compressed and uploaded directly.',
+      uploadImageBtn: 'Yes, Upload',
+
+      // Question Banks List
+      statsTotalBanks: 'Total Question Banks',
+      statsTotalQuestions: 'Total Questions',
+      statsCategories: 'Categories',
+      filterAllSubjects: 'All Subjects',
+      filterAllCategories: 'All Categories',
+      sortNameAsc: 'Name (A - Z)',
+      sortNameDesc: 'Name (Z - A)',
+      sortQuestionsDesc: 'Most Questions',
+      sortQuestionsAsc: 'Fewest Questions',
+      filterReset: 'Reset',
+      searchQuestionBanks: 'Search question banks...',
+      emptyNoResults: 'No results found',
+      emptyNoResultsDesc: 'Try adjusting your filters or search keywords.',
+      clearFilters: 'Clear Filters',
+      categoryDefault: 'General',
+
+      // Question Bank Detail
+      deleteBankSuccess: 'Bank deleted successfully',
+      downloadTemplateError: 'Failed to download template',
+      confirmDeleteBank: 'Delete Question Bank',
+      viewDetails: 'View Details',
+      sessionFinished: 'Finished',
+      sessionLocked: 'Locked',
+      points: 'points',
+      notGraded: 'Not graded',
+
+      // Exam History
+      loadingHistory: 'Loading exam history...',
+      errorLoadingHistory: 'Failed to load exam history',
+      historyTitle: 'Exam History',
+      historyDesc: 'List of exams you have completed with results.',
+      emptyHistory: 'No exam history found.',
+      emptyHistoryDesc: 'Completed exams will appear here.',
+      finishedAt: 'Finished:',
+      duration: 'Duration:',
+      hoursMinutes: '{{hours}}h {{minutes}}m',
+      minutes: '{{count}}m',
+
+      // Student Dashboard
+      studentPortal: 'Student Portal',
+      availableExams: 'Available Exams',
+      examHistory: 'Exam History',
+      availableExamsList: 'Available Exams',
+      availableExamsDesc: 'Select an active exam to start working.',
+      selectExamStart: 'Start Exam',
+      
+      // Monitoring
+      monitoringTitle: 'Live Monitoring',
+      monitoringDesc: 'Monitor student progress in real-time',
+      refreshBtn: 'Refresh',
+      searchExamOrSubject: 'Search exam or subject…',
+      filterAllStatus: 'All Status',
+      filterStatusOngoing: 'Ongoing',
+      filterStatusPublished: 'Published',
+      badgeOngoing: 'ONGOING',
+      badgePublished: 'AVAILABLE',
+      enterProctor: 'Enter Proctor',
+      noActiveExams: 'No active exams',
+      noActiveExamsDesc: 'Exams ready to monitor will appear here after being published.',
+      examRegistered: '{{count}} students registered',
+      filterStatusTryAgain: 'Try changing keyword or filter status for different results.',
+      filterStatusExamsWillAppear: 'Exams ready for monitoring will appear here after publication.'
+      
+      // Exam Container (student exam page)
+      examInstructions: 'Schedule & Exam Information',
+      totalQuestionsLabel: 'Questions',
+      finishExam: 'Finish Exam',
+      stepWorkOnQuestion: 'Work on Questions & Save',
+      stepWorkDesc: 'Select an option or type your answer. Your answers are automatically saved and synced to the server in real-time.',
+      stepFinish: 'Finish Exam',
+      stepFinishDesc: 'Use the "Finish Exam" button in the top right corner after answering all questions to submit your exam.',
+      confirmFinishTitle: 'Finish Exam',
+      confirmFinishDesc: 'Are you sure you want to finish the exam? Your answers will be submitted and your score will be processed immediately.',
+      confirmUnansweredTitle: 'Confirmation: Unanswered Questions',
+      confirmUnansweredDesc: 'Some questions are still unanswered. Do you still want to finish the exam?',
+      yesFinish: 'Yes, Finish',
+      autoSaveNote: 'Answers are saved automatically when you switch questions or click outside the area.',
+      confirmExamRules: 'Exam Confirmation & Rules',
+      questionProgress: 'Question {{current}} of {{total}}',
+      questionNavigationLabel: 'Question Navigation',
+      questionNavigationDesc: 'Choose a number to jump directly to the related question.',
+
+      // Language
+      languageLabel: 'Language',
     }
   }
 };
