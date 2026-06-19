@@ -8,6 +8,7 @@ import { Box, Flex, Heading, Text } from '@chakra-ui/react';
 import { ColorModeToggle } from '@/components/ui/color-mode-toggle';
 import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { Clock } from 'lucide-react';
+import { NotificationBell } from '@/components/ui/notification-bell';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
@@ -121,6 +122,7 @@ export default function AdminLayout({
                 <Text fontFamily="mono" fontSize="2xs">{timeStr}</Text>
               </Flex>
             )}
+            <NotificationBell />
             <ColorModeToggle size="md" />
           </Flex>
         </Box>

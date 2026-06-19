@@ -27,7 +27,9 @@ import {
   Stack,
   HStack,
   Image,
+  IconButton,
 } from '@chakra-ui/react';
+import { Bell } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 
@@ -219,6 +221,15 @@ export function AdminSidebar() {
             })}
           </Stack>
         ))}
+
+        <Box px={3} pt={4} borderTop="1px solid" borderColor="rgba(255,255,255,0.1)">
+          <Flex align="center" justify="space-between" py={2}>
+            <HStack gap={2} color="#7a8fab">
+              <Bell size={16} />
+              <Text fontSize="xs" fontWeight="medium">{t('notifications')}</Text>
+            </HStack>
+          </Flex>
+        </Box>
       </Stack>
 
       <Box px={3} py={4} borderTop="1px solid" style={{ borderColor: 'rgba(28,45,74,0.6)' }}>

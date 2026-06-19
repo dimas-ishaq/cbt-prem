@@ -74,12 +74,12 @@ export class NotificationsService {
     return (this.prisma as any).notification.findMany({
       orderBy: { createdAt: 'desc' },
       where: {
-        notificationRecipients: {
+        recipients: {
           some: { userId },
         },
       },
       include: {
-        notificationRecipients: {
+        recipients: {
           where: { userId },
         },
       },

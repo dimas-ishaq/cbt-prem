@@ -11,6 +11,7 @@ import api from '@/lib/api';
 import { Toaster } from './ui/toaster';
 import { ConfirmationProvider } from './ui/confirmation-dialog';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { NotificationBell } from '@/components/ui/notification-bell';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient());

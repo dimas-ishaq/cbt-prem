@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
-import { io, type Socket } from 'socket.io-client';
+import { useEffect, useRef, useCallback } from 'react';
+import { io, Socket } from 'socket.io-client';
 import { useAuthStore } from '../store/auth.store';
 
-export const useSocket = (): Socket | null => {
-  const [socket, setSocket] = useState<Socket | null>(null);
-  const token = useAuthStore((state) => state.access_token);
+export function useSocket() {
+  const socketRef = useRef<Socket | null>(null);
+  const token = useAuthStore((s) => s.access_token);
 
   useEffect(() => {
     if (!token) return;
@@ -13,12 +13,41 @@ export const useSocket = (): Socket | null => {
       auth: { token },
     });
 
-    setSocket(s);
+    socketRef.current = s;
 
     return () => {
       s.disconnect();
+      socketRef.current = null;
     };
   }, [token]);
 
-  return socket;
-};
+  return socketRef.current;
+}
+
+export function useNotificationListener(
+  handler: (data: {
+    id: string;
+    type: string;
+    priority: string;
+    title: string;
+    message: string;
+    referenceId?: string;
+    referenceType?: string;
+    createdAt: string;
+  }) => void
+) {
+  const socket = useSocket();
+  const handlerRef = useRef(handler);
+  handlerRef.current = handler;
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const callback = (data: any) => handlerRef.current(data);
+    socket.on('new_notification', callback);
+
+    return () => {
+      socket.off('new_notification', callback);
+    };
+  }, [socket]);
+}

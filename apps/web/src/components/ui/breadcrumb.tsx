@@ -4,33 +4,36 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { Box, HStack, Text } from "@chakra-ui/react";
+import { useTranslation } from 'react-i18next';
 
 const segmentLabels: Record<string, string> = {
-  admin: "Admin",
-  dashboard: "Dashboard",
-  exams: "Ujian",
-  create: "Buat Baru",
-  edit: "Edit",
-  'question-banks': "Bank Soal",
-  'exam-groups': "Event Ujian",
-  'exam-cards': "Kartu Ujian",
-  monitoring: "Monitoring",
-  reports: "Laporan",
-  generate: "Generate",
-  results: "Hasil",
-  sessions: "Sesi",
-  majors: "Konsentrasi Keahlian",
-  logs: "Log Sistem",
-  settings: "Pengaturan",
-  roles: "Manajemen Akses",
-  users: "Pengguna",
-  rombels: "Rombongan Belajar",
+  dashboard: 'dashboard',
+  exams: 'exams',
+  create: 'create',
+  edit: 'edit',
+  'question-banks': 'questionBanks',
+  'exam-groups': 'examGroups',
+  'exam-cards': 'examCards',
+  monitoring: 'monitoring',
+  reports: 'reports',
+  generate: 'generate',
+  results: 'results',
+  sessions: 'sessions',
+  majors: 'majors',
+  logs: 'logs',
+  settings: 'settings',
+  roles: 'roles',
+  users: 'users',
+  rombels: 'rombels',
+  subjects: 'subjects',
+  admin: 'admin',
 };
 
 const isDynamicSegment = (segment: string) => /^\[.+\]$/.test(segment) || /^[a-f0-9-]{6,}$/i.test(segment);
 
 export function Breadcrumb() {
   const pathname = usePathname();
+  const { t } = useTranslation();
   const segments = pathname.split("/").filter(Boolean);
 
   if (segments.length === 0) return null;
@@ -40,8 +43,8 @@ export function Breadcrumb() {
     .map((segment, index, arr) => {
       const href = "/" + arr.slice(0, index + 1).join("/");
       const isLast = index === arr.length - 1;
-      let label = segmentLabels[segment] ?? decodeURIComponent(segment);
-      if (isDynamicSegment(segment)) label = "Detail";
+      let label = segmentLabels[segment] ? t(segmentLabels[segment]) : decodeURIComponent(segment);
+      if (isDynamicSegment(segment)) label = t('detail');
       return { href, label, isLast };
     });
 

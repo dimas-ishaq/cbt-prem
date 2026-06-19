@@ -27,6 +27,8 @@ const resources = {
       loadingSubjects: 'Memuat data mata pelajaran...',
       subjectsTitle: 'Mata Pelajaran',
       subjectsDesc: 'Kelola daftar mata pelajaran dan relasi guru pengampu.',
+      admin: 'Admin',
+      detail: 'Detail',
       
       // Users
       usersTitle: 'Manajemen Pengguna',
@@ -259,6 +261,13 @@ const resources = {
 
       // Language
       languageLabel: 'Bahasa / Language',
+
+      // Notifications
+      notifications: 'Notifikasi',
+      noNotifications: 'Belum ada notifikasi',
+      markAllAsRead: 'Tandai semua dibaca',
+      close: 'Tutup',
+      unreadNotifications: '{{count}} notifikasi belum dibaca',
     }
   },
   en: {
@@ -286,6 +295,8 @@ const resources = {
       loadingSubjects: 'Loading subjects...',
       subjectsTitle: 'Subjects',
       subjectsDesc: 'Manage school subjects and codes.',
+      admin: 'Admin',
+      detail: 'Detail',
       addSubject: 'Add Subject',
       searchSubjects: 'Search subjects...',
       subjectCodeLabel: 'Subject Code',
@@ -525,6 +536,13 @@ const resources = {
 
       // Language
       languageLabel: 'Language',
+
+      // Notifications
+      notifications: 'Notifications',
+      noNotifications: 'No notifications yet',
+      markAllAsRead: 'Mark all as read',
+      close: 'Close',
+      unreadNotifications: '{{count}} unread notifications',
     }
   }
 };

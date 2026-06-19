@@ -1,4 +1,4 @@
-import { PrismaClient, Role, QuestionType, Difficulty, ExamStatus, SessionStatus, ViolationLevel, } from '@prisma/client';
+import { PrismaClient, Role, QuestionType, Difficulty, ExamStatus, SessionStatus, ViolationLevel, NotificationType, NotificationPriority, } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import pg from 'pg';
 import * as bcrypt from 'bcryptjs';
@@ -60,6 +60,7 @@ async function main() {
   const pwdPengawas = await bcrypt.hash('pengawas123', salt);
 
   const now = new Date();
+let answerCount = 0;
 
   // ========================================================================
   // 1. SETTINGS (10+)
@@ -206,7 +207,7 @@ async function main() {
   console.log(`✅ Users: ${superUsers.length + teacherUsers.length + studentUsers.length + 2} created (${superUsers.length} SA, ${teacherUsers.length} teachers, ${studentUsers.length} students, 1 admin, 1 pengawas).`);
 
   // ========================================================================
-  // 5. SUBJECT (5)
+  // 5. SUBJECT (6)
   // ========================================================================
   const subjectsData = [
     { name: 'Matematika', code: 'MTK', description: 'Konsep numerik, aljabar, geometri, dan statistika.' },
@@ -300,7 +301,7 @@ async function main() {
     { name: 'Bank Soal Bahasa Indonesia', subjectId: subjects[1].id, teacherId: teachers[1].id, category: 'UTS' },
     { name: 'Bank Soal Bahasa Inggris', subjectId: subjects[2].id, teacherId: teachers[2].id, category: 'UTS' },
     { name: 'Bank Soal PPKN', subjectId: subjects[3].id, teacherId: teachers[3].id, category: 'UAS' },
-    { name: 'Bank Soal PKK', subjectId: subjects[4].id, teacherId: teachers[4].id, category: 'UTS' },
+    { name: 'Bank Soal PKK', subjectId: subjects[5].id, teacherId: teachers[4].id, category: 'UTS' },
   ];
 
   const qBanks = await Promise.all(
@@ -661,7 +662,7 @@ async function main() {
     {
       title: 'UAS PKK (DRAFT)',
       desc: 'Ujian Akhir Semester PKK - belum dipublikasikan',
-      subjectIdx: 4, teacherIdx: 4, groupIdx: 0,
+      subjectIdx: 5, teacherIdx: 4, groupIdx: 0,
       startOffsetMin: 1440, endOffsetDays: 30,
       duration: 90, passingGrade: 70, status: ExamStatus.DRAFT,
       questionBankIdx: 5,
@@ -1034,28 +1035,80 @@ async function main() {
   console.log(`✅ Audit Logs: ${auditLogsData.length} created.`);
 
   // ========================================================================
-  // 20. NOTIFICATIONS (5)
+  // 20. NOTIFICATIONS (5) + RECIPIENTS
   // ========================================================================
-  const notificationsData: { userId: string; title: string; message: string }[] = [
-    { userId: teacherUsers[0].id, title: 'Ujian Dimulai', message: 'UTS Matematika telah dimulai oleh 5 siswa.' },
-    { userId: teacherUsers[1].id, title: 'Pelanggaran Terdeteksi', message: 'Siswa Ani Rahmawati terdeteksi membuka tab baru selama ujian.' },
-    { userId: superUsers[0].id, title: 'Seeder Selesai', message: 'Seeder berhasil menjalankan semua data.' },
-    { userId: teacherUsers[2].id, title: 'Siswa Selesai Ujian', message: '3 siswa telah menyelesaikan Try Out Bahasa Inggris.' },
-    { userId: pengawasUser.id, title: 'Monitoring Aktif', message: 'Anda ditugaskan sebagai pengawas untuk UAS PPKN.' },
+  const createdNotifications: { id: string }[] = [];
+  const notifTypes = [
+    'EXAM_REMINDER',
+    'VIOLATION_DETECTED',
+    'SYSTEM_ANNOUNCEMENT',
+    'EXAM_SUBMITTED',
+    'SESSION_EXPIRED',
+  ] as const;
+  for (let ni = 0; ni < 5; ni++) {
+    const notification = await prisma.notification.create({
+      data: {
+        type: notifTypes[ni],
+        priority: ni === 1 ? 'URGENT' : ni === 0 ? 'HIGH' : 'NORMAL',
+        title: ['Ujian Dimulai', 'Pelanggaran Terdeteksi', 'Seeder Selesai', 'Siswa Selesai Ujian', 'Monitoring Aktif'][ni],
+        message: [
+          'UTS Matematika telah dimulai oleh 5 siswa.',
+          'Siswa Ani Rahmawati terdeteksi membuka tab baru selama ujian.',
+          'Seeder berhasil menjalankan semua data.',
+          '3 siswa telah menyelesaikan Try Out Bahasa Inggris.',
+          'Anda ditugaskan sebagai pengawas untuk UAS PPKN.',
+        ][ni],
+        referenceId: exams[ni]?.id || null,
+        referenceType: exams[ni] ? 'exam' : null,
+        createdBy: superUsers[0].id,
+      },
+    });
+    createdNotifications.push({ id: notification.id });
+    const recipientUserIds: string[] = [
+      [teacherUsers[0].id, superUsers[1].id],
+      [teacherUsers[1].id, pengawasUser.id],
+      superUsers.map((u) => u.id),
+      [teacherUsers[2].id, superUsers[0].id],
+      [pengawasUser.id, superUsers[0].id],
+    ][ni];
+    await prisma.notificationRecipient.createMany({
+      data: recipientUserIds.map((userId) => ({ notificationId: notification.id, userId })),
+    });
+  }
+  console.log(`✅ Notifications: ${createdNotifications.length} created.`);
+  // ========================================================================
+  // 20b. NOTIFICATION PREFERENCES
+  // ========================================================================
+  const notifPrefUsers = [...superUsers, ...teachers.slice(0, 3), pengawasUser];
+  const allNotifTypes: string[] = [
+    'EXAM_SUBMITTED', 'EXAM_AUTO_SUBMIT', 'VIOLATION_DETECTED', 'IMPORT_COMPLETED', 'IMPORT_FAILED', 'EXAM_REMINDER', 'SESSION_EXPIRED', 'SYSTEM_ANNOUNCEMENT'
   ];
+  const notifPrefsData: { userId: string; type: string; enabled: boolean }[] = [];
+  for (const u of notifPrefUsers) {
+    for (const nt of allNotifTypes) {
+      notifPrefsData.push({ userId: u.id, type: nt, enabled: true });
+    }
+  }
+  await prisma.notificationPreference.createMany({ data: notifPrefsData });
+  console.log(`✅ Notification Preferences: ${notifPrefsData.length} created.`);
 
-  await prisma.notification.createMany({ data: notificationsData });
-  console.log(`✅ Notifications: ${notificationsData.length} created.`);
+  // ========================================================================
+  // 21. EXAM TARGETS (rombels + majors)
+  // ========================================================================
+  await prisma.examTargetRombel.createMany({
+    data: exams.map((e, i) => ({ examId: e.id, rombelId: rombels[i % rombels.length].id })),
+  });
+  await prisma.examTargetMajor.createMany({
+    data: exams.map((e, i) => ({ examId: e.id, majorId: rombels[i % rombels.length].majorId })),
+  });
+  console.log('✅ Exam Targets: created for all exams.');
 
   // Add media to first question (image reference)
   const firstQuestion = await prisma.question.findFirst({ orderBy: { createdAt: 'asc' } });
   if (firstQuestion) {
     await prisma.question.update({
       where: { id: firstQuestion.id },
-      data: {
-        mediaUrl: '/media/matematika/grafik1.png',
-        mediaType: 'image',
-      },
+      data: { mediaUrl: '/media/matematika/grafik1.png', mediaType: 'image' },
     });
   }
 
@@ -1088,7 +1141,9 @@ async function main() {
   console.log(` • User-Roles: ${userRolesData.length}`);
   console.log(` • Role Audit Logs: ${roleAuditLogs.length}`);
   console.log(` • Audit Logs: ${auditLogsData.length}`);
-  console.log(` • Notifications: ${notificationsData.length}`);
+  console.log(` • Notifications: ${createdNotifications.length}`);
+  console.log(` • Notification Preferences: ${notifPrefsData.length}`);
+  console.log(' • Exam Targets: created');
   console.log('═══════════════════════════════════════');
 
   const tokenExams = await prisma.exam.findMany({

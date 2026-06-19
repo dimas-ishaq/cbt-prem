@@ -41,7 +41,7 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
       client.data.user = payload;
       
       // Join a room based on their role/ID for targeted notifications
-      client.join(`user_${payload.sub}`);
+      client.join(`user_${payload.userId}`);
       this.logger.log(`Client connected: ${client.id}, User: ${payload.username} (${payload.role})`);
     } catch (e) {
       this.logger.warn(`Connection handshake rejected for client ${client.id}`);
