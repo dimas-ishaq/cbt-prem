@@ -1,7 +1,8 @@
 import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateNotificationDto, NotificationTargetType } from './dto/create-notification.dto';
-import { NotificationPriority, Role } from '@prisma/client';
+import { Role } from '@prisma/client';
+import { NotificationPriority } from './dto/create-notification.dto';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 
 @Injectable()
@@ -15,10 +16,10 @@ export class NotificationsService {
     const resolvedTargets = await Promise.all(dto.targets.map((target) => this.resolveUserIdsByTarget(target)));
     const recipientUserIds = Array.from(new Set(resolvedTargets.flat()));
 
-    const notification = await this.prisma.notification.create({
+    const notification = await (this.prisma as any).notification.create({
       data: {
         type: dto.type,
-        priority: dto.priority ?? 'NORMAL',
+        priority: dto.priority ?? NotificationPriority.NORMAL,
         title: dto.title,
         message: dto.message,
         referenceId: dto.referenceId ?? null,
@@ -28,26 +29,29 @@ export class NotificationsService {
     });
 
     // Create recipients
-    await this.prisma.notificationRecipient.createMany({
+    await (this.prisma as any).notificationRecipient.createMany({
       data: recipientUserIds.map((userId) => ({ notificationId: notification.id, userId })),
     });
 
     // Fetch full notification with recipients for real-time emission
-    const fullNotification = await this.prisma.notification.findUnique({
+    const fullNotification = await (this.prisma as any).notification.findUnique({
       where: { id: notification.id },
-      include: { notificationRecipients: true },
     });
 
-    for (const recipient of fullNotification.notificationRecipients) {
+    const recipients = await (this.prisma as any).notificationRecipient.findMany({
+      where: { notificationId: notification.id },
+    });
+
+    for (const recipient of recipients) {
       this.realtimeGateway.sendToUser(recipient.userId, 'new_notification', {
-        id: fullNotification.id,
-        type: fullNotification.type,
-        priority: fullNotification.priority,
-        title: fullNotification.title,
-        message: fullNotification.message,
-        referenceId: fullNotification.referenceId,
-        referenceType: fullNotification.referenceType,
-        createdAt: fullNotification.createdAt,
+        id: (fullNotification as any).id,
+        type: (fullNotification as any).type,
+        priority: (fullNotification as any).priority,
+        title: (fullNotification as any).title,
+        message: (fullNotification as any).message,
+        referenceId: (fullNotification as any).referenceId,
+        referenceType: (fullNotification as any).referenceType,
+        createdAt: (fullNotification as any).createdAt,
       });
     }
 
@@ -55,7 +59,7 @@ export class NotificationsService {
   }
 
   async findByUser(userId: string) {
-    return this.prisma.notification.findMany({
+    return (this.prisma as any).notification.findMany({
       orderBy: { createdAt: 'desc' },
       where: {
         notificationRecipients: {
@@ -71,7 +75,7 @@ export class NotificationsService {
   }
 
   async findUnreadCount(userId: string) {
-    return this.prisma.notificationRecipient.count({
+    return (this.prisma as any).notificationRecipient.count({
       where: {
         userId,
         isRead: false,
@@ -80,7 +84,7 @@ export class NotificationsService {
   }
 
   async markRead(notificationId: string, userId: string) {
-    const recipient = await this.prisma.notificationRecipient.findUnique({
+    const recipient = await (this.prisma as any).notificationRecipient.findUnique({
       where: {
         notificationId_userId: {
           notificationId,
@@ -97,7 +101,7 @@ export class NotificationsService {
       return recipient;
     }
 
-    return this.prisma.notificationRecipient.update({
+    return (this.prisma as any).notificationRecipient.update({
       where: {
         notificationId_userId: {
           notificationId,
@@ -112,7 +116,7 @@ export class NotificationsService {
   }
 
   async markAllRead(userId: string) {
-    await this.prisma.notificationRecipient.updateMany({
+    await (this.prisma as any).notificationRecipient.updateMany({
       where: {
         userId,
         isRead: false,

@@ -1,7 +1,23 @@
-import { IsEnum, IsNotEmpty, IsOptional, IsString, IsArray, IsObject, ValidateNested } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsOptional, IsString, IsArray, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { NotificationType, NotificationPriority } from '@prisma/client';
+export enum NotificationType {
+  EXAM_SUBMITTED = 'EXAM_SUBMITTED',
+  EXAM_AUTO_SUBMIT = 'EXAM_AUTO_SUBMIT',
+  VIOLATION_DETECTED = 'VIOLATION_DETECTED',
+  IMPORT_COMPLETED = 'IMPORT_COMPLETED',
+  IMPORT_FAILED = 'IMPORT_FAILED',
+  EXAM_REMINDER = 'EXAM_REMINDER',
+  SESSION_EXPIRED = 'SESSION_EXPIRED',
+  SYSTEM_ANNOUNCEMENT = 'SYSTEM_ANNOUNCEMENT',
+}
+
+export enum NotificationPriority {
+  LOW = 'LOW',
+  NORMAL = 'NORMAL',
+  HIGH = 'HIGH',
+  URGENT = 'URGENT',
+}
 
 export enum NotificationTargetType {
   USER = 'USER',

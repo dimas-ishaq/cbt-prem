@@ -32,14 +32,21 @@ export class TeachersService {
   }
 
   async findAll(search?: string, skip?: number, take?: number) {
-    const where = search
-      ? {
+    let userIds: string[] | undefined;
+    if (search) {
+      const users = await this.prisma.user.findMany({
+        where: {
           OR: [
-            { user: { fullName: { contains: search, mode: 'insensitive' } } },
-            { user: { username: { contains: search, mode: 'insensitive' } } },
+            { fullName: { contains: search, mode: 'insensitive' } },
+            { username: { contains: search, mode: 'insensitive' } },
           ],
-        }
-      : undefined;
+        },
+        select: { id: true },
+      });
+      userIds = users.map((u) => u.id);
+    }
+
+    const where: any = userIds ? { userId: { in: userIds } } : undefined;
     const [data, total] = await Promise.all([
       this.prisma.teacher.findMany({
         where,

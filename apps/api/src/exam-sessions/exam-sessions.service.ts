@@ -14,7 +14,7 @@ import { GradeAnswerDto } from './dto/grade-answer.dto';
 import { SessionStatus, ExamStatus } from '@prisma/client';
 import * as ExcelJS from 'exceljs';
 import { NotificationsService } from '../notifications/notifications.service';
-import { NotificationPriority, NotificationType } from '@prisma/client';
+import { NotificationPriority, NotificationType } from '../notifications/dto/create-notification.dto';
 
 @Injectable()
 export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
