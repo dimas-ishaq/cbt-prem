@@ -150,29 +150,12 @@ export default function QuestionBankListPage() {
     }
   };
 
-  // Dynamic categories extraction
-  const categories = Array.from(
-    new Set(
-      banks
-        ?.map((b) => b.category?.trim())
-        .filter((cat): cat is string => !!cat) || []
-    )
-  ).sort();
-
   // Stats calculation
   const totalBanks = banks?.length || 0;
   const totalQuestions = banks?.reduce((acc, bank) => {
     return acc + (bank._count?.questions ?? bank.questions?.length ?? 0);
   }, 0) || 0;
   const totalCategories = categories.length;
-
-  // Filtered and sorted banks list
-  const filteredBanks = (banks || []).filter((bank) => {
-    const matchesSearch = bank.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesSubject = selectedSubjectId ? bank.subjectId === selectedSubjectId : true;
-    const matchesCategory = selectedCategory ? (bank.category || 'Umum') === selectedCategory : true;
-    return matchesSearch && matchesSubject && matchesCategory;
-  });
 
   const sortedBanks = [...filteredBanks].sort((a, b) => {
     if (sortBy === 'name-asc') {
@@ -200,10 +183,6 @@ export default function QuestionBankListPage() {
   };
 
   const isFilterActive = searchQuery !== '' || selectedSubjectId !== '' || selectedCategory !== '' || sortBy !== 'name-asc';
-
-  const subjectOptions = createListCollection({
-    items: [{ label: 'Semua Mapel', value: '' }, ...(subjects?.map((subject) => ({ label: subject.name, value: subject.id })) || [])],
-  });
 
   const categoryOptions = createListCollection({
     items: [

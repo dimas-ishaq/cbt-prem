@@ -1,9 +1,18 @@
 "use client";
 
 import { Portal, Spinner, Stack, Toast, Toaster as ChakraToaster } from '@chakra-ui/react';
+import { useEffect, useState } from 'react';
 import { toaster } from '@/lib/toaster';
 
 export function Toaster() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
+
   return (
     <Portal>
       <ChakraToaster toaster={toaster} insetInline={{ mdDown: '4' }}>

@@ -124,7 +124,7 @@ export default function RolesPage() {
     queryKey: ['roles'],
     queryFn: async () => {
       const res = await api.get('/roles');
-      return res.data;
+      return Array.isArray(res.data) ? res.data : res.data?.data || [];
     },
   });
 
@@ -133,7 +133,7 @@ export default function RolesPage() {
     queryKey: ['permissions-matrix'],
     queryFn: async () => {
       const res = await api.get('/roles/permissions');
-      return res.data;
+      return Array.isArray(res.data) ? res.data : res.data?.data || [];
     },
   });
 
@@ -143,7 +143,7 @@ export default function RolesPage() {
     queryFn: async () => {
       if (!auditRoleId) return [];
       const res = await api.get(`/roles/${auditRoleId}/audit-logs`);
-      return res.data;
+      return Array.isArray(res.data) ? res.data : res.data?.data || [];
     },
     enabled: !!auditRoleId,
   });
