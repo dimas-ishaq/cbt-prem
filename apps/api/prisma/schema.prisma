@@ -84,6 +84,8 @@ model User {
   teacher       Teacher?
   auditLogs     AuditLog[]
   notificationRecipients NotificationRecipient[]
+  notificationPreferences NotificationPreference[]
+  notificationsCreated Notification[]
   roles         UserRole[]
 }
 
@@ -303,16 +305,19 @@ model AuditLog {
 }
 
 model Notification {
-  id            String             @id @default(uuid())
+  id            String               @id @default(uuid())
   type          NotificationType
   priority      NotificationPriority @default(NORMAL)
   title         String
   message       String
   referenceId   String?
   referenceType String?
-  isRead        Boolean            @default(false)
+  isRead        Boolean              @default(false)
   createdBy     String?
-  createdAt     DateTime           @default(now())
+  createdAt     DateTime             @default(now())
+
+  recipients    NotificationRecipient[]
+  createdByUser User?                @relation(fields: [createdBy], references: [id])
 
   @@index([createdAt])
 }
@@ -446,6 +451,7 @@ model Major {
   updatedAt   DateTime @updatedAt
   students    Student[]
   rombels     Rombel[]
+  examTargets ExamTargetMajor[]
 
   @@map("majors")
 }
@@ -459,6 +465,7 @@ model Rombel {
   updatedAt   DateTime @updatedAt
   
   students    Student[]
+  examTargets ExamTargetRombel[]
 
   @@map("rombels")
 }
