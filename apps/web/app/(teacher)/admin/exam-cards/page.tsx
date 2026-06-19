@@ -77,7 +77,7 @@ export default function ExamCardsPage() {
     queryKey: ['exam-groups'],
     queryFn: async () => {
       const response = await api.get('/exam-groups');
-      return response.data;
+      return Array.isArray(response.data) ? response.data : response.data?.data || [];
     },
   });
 
@@ -86,12 +86,14 @@ export default function ExamCardsPage() {
     queryKey: ['rombels'],
     queryFn: async () => {
       const response = await api.get('/rombels');
-      return response.data;
+      return Array.isArray(response.data) ? response.data : response.data?.data || [];
     },
   });
 
-  const selectedRombel = rombels?.find((rombel) => rombel.id === selectedRombelId);
-  const selectedExamGroup = examGroups?.find((group) => group.id === selectedExamGroupId);
+  const selectedRombelList = Array.isArray(rombels) ? rombels : Array.isArray((rombels as any)?.data) ? (rombels as any).data : [];
+  const selectedExamGroupList = Array.isArray(examGroups) ? examGroups : Array.isArray((examGroups as any)?.data) ? (examGroups as any).data : [];
+  const selectedRombel = selectedRombelList.find((rombel) => rombel.id === selectedRombelId);
+  const selectedExamGroup = selectedExamGroupList.find((group) => group.id === selectedExamGroupId);
   const activeEventTitle = selectedExamGroup?.name || 'BELUM ADA KELOMPOK UJIAN TERPILIH';
 
   const cardLayoutOptions = createListCollection({
@@ -102,11 +104,11 @@ export default function ExamCardsPage() {
   });
 
   const examGroupOptions = createListCollection({
-    items: examGroups?.map((group) => ({ label: group.name, value: group.id })) || [],
+    items: selectedExamGroupList.map((group) => ({ label: group.name, value: group.id })),
   });
 
   const rombelOptions = createListCollection({
-    items: rombels?.map((rombel) => ({ label: rombel.name, value: rombel.id })) || [],
+    items: selectedRombelList.map((rombel) => ({ label: rombel.name, value: rombel.id })),
   });
 
   useEffect(() => {
@@ -124,7 +126,7 @@ export default function ExamCardsPage() {
           rombelId: selectedRombelId,
         },
       });
-      return response.data;
+      return Array.isArray(response.data) ? response.data : response.data?.data || [];
     },
     enabled: !!selectedRombelId,
   });
@@ -176,7 +178,7 @@ export default function ExamCardsPage() {
     return url;
   };
 
-  const filteredStudentsForPrint = students?.filter((s) =>
+  const filteredStudentsForPrint = (students || []).filter((s) =>
     selectedStudentIds.includes(s.id)
   );
 

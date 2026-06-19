@@ -103,11 +103,11 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
     );
   }
 
-  // Calculate statistics
-  const totalQuestions = session.answers?.length || 0;
-  const correctCount = session.answers?.filter((a: any) => a.isCorrect === true).length || 0;
-  const incorrectCount = session.answers?.filter((a: any) => a.isCorrect === false).length || 0;
-  const essayCount = session.answers?.filter((a: any) => a.question?.type === 'ESSAY').length || 0;
+  const answers = Array.isArray(session.answers) ? session.answers : session.answers?.data || [];
+  const totalQuestions = answers.length || 0;
+  const correctCount = answers.filter((a: any) => a.isCorrect === true).length || 0;
+  const incorrectCount = answers.filter((a: any) => a.isCorrect === false).length || 0;
+  const essayCount = answers.filter((a: any) => a.question?.type === 'ESSAY').length || 0;
 
   const timeStart = session.startTime ? new Date(session.startTime) : null;
   const timeEnd = session.endTime ? new Date(session.endTime) : null;

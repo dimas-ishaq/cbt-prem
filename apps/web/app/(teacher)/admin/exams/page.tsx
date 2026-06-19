@@ -78,11 +78,11 @@ export default function ExamsPage() {
     queryKey: ["exams"],
     queryFn: async () => {
       const response = await api.get("/exams");
-      return response.data;
+      return Array.isArray(response.data) ? response.data : response.data?.data || [];
     },
   });
 
-  const filteredExams = exams?.filter((exam) => {
+  const filteredExams = (exams || []).filter((exam) => {
     const matchesSearch = searchText
       ? `${exam.title} ${exam.subject.name} ${exam.examGroup?.name ?? ""}`
           .toLowerCase()

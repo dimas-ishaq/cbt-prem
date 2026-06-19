@@ -13,8 +13,16 @@ export class NotificationsService {
   ) {}
 
   async create(dto: CreateNotificationDto, createdBy?: string) {
+    if (!dto.targets?.length) {
+      throw new ForbiddenException('Minimal satu target notifikasi harus diisi');
+    }
+
     const resolvedTargets = await Promise.all(dto.targets.map((target) => this.resolveUserIdsByTarget(target)));
-    const recipientUserIds = Array.from(new Set(resolvedTargets.flat()));
+    const recipientUserIds = Array.from(new Set(resolvedTargets.flat())).filter(Boolean);
+
+    if (recipientUserIds.length === 0) {
+      throw new NotFoundException('Tidak ada penerima notifikasi yang valid');
+    }
 
     const notification = await (this.prisma as any).notification.create({
       data: {
@@ -28,15 +36,17 @@ export class NotificationsService {
       },
     });
 
-    // Create recipients
     await (this.prisma as any).notificationRecipient.createMany({
       data: recipientUserIds.map((userId) => ({ notificationId: notification.id, userId })),
     });
 
-    // Fetch full notification with recipients for real-time emission
     const fullNotification = await (this.prisma as any).notification.findUnique({
       where: { id: notification.id },
     });
+
+    if (!fullNotification) {
+      throw new NotFoundException('Notifikasi gagal dimuat ulang');
+    }
 
     const recipients = await (this.prisma as any).notificationRecipient.findMany({
       where: { notificationId: notification.id },
@@ -44,14 +54,14 @@ export class NotificationsService {
 
     for (const recipient of recipients) {
       this.realtimeGateway.sendToUser(recipient.userId, 'new_notification', {
-        id: (fullNotification as any).id,
-        type: (fullNotification as any).type,
-        priority: (fullNotification as any).priority,
-        title: (fullNotification as any).title,
-        message: (fullNotification as any).message,
-        referenceId: (fullNotification as any).referenceId,
-        referenceType: (fullNotification as any).referenceType,
-        createdAt: (fullNotification as any).createdAt,
+        id: fullNotification.id,
+        type: fullNotification.type,
+        priority: fullNotification.priority,
+        title: fullNotification.title,
+        message: fullNotification.message,
+        referenceId: fullNotification.referenceId,
+        referenceType: fullNotification.referenceType,
+        createdAt: fullNotification.createdAt,
       });
     }
 

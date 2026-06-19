@@ -47,7 +47,10 @@ export default function SubjectsPage() {
 
   const { data: subjects, isLoading } = useQuery<Subject[]>({
     queryKey: ['subjects'],
-    queryFn: async () => (await api.get('/subjects')).data,
+    queryFn: async () => {
+      const response = await api.get('/subjects');
+      return Array.isArray(response.data) ? response.data : response.data?.data || [];
+    },
   });
 
   const teacherSearchEnabled = teacherSearch.trim().length >= 3;
@@ -122,10 +125,25 @@ export default function SubjectsPage() {
   const resetForm = () => { setFormData(emptyForm); setEditingSubject(null); setTeacherSearch(''); };
   const handleEdit = (subject: Subject) => { setEditingSubject(subject); setFormData({ name: subject.name, code: subject.code, description: subject.description || '', teacherIds: subject.teachers?.map((t) => t.id) || [] }); setTeacherSearch(subject.teachers?.[0]?.user?.fullName || subject.teachers?.[0]?.user?.username || ''); setIsModalOpen(true); };
   const handleSubmit = (e: React.FormEvent) => { e.preventDefault(); editingSubject ? updateMutation.mutate({ id: editingSubject.id, data: formData }) : createMutation.mutate(formData); };
-  const filteredSubjects = useMemo(() => (subjects || []).filter((subject) => subject.name.toLowerCase().includes(searchTerm.toLowerCase()) || subject.code.toLowerCase().includes(searchTerm.toLowerCase()) || (subject.description || '').toLowerCase().includes(searchTerm.toLowerCase())), [subjects, searchTerm]);
-  const totalSubjects = subjects?.length || 0;
-  const totalRelations = subjects?.reduce((acc, subject) => acc + (subject._count?.teachers || 0), 0) || 0;
-  const subjectsWithTeachers = subjects?.filter((subject) => (subject._count?.teachers || 0) > 0).length || 0;
+  const rawSubjects = subjects as unknown;
+  const subjectList = Array.isArray(rawSubjects)
+    ? rawSubjects
+    : Array.isArray((rawSubjects as { data?: unknown[] } | null)?.data)
+      ? ((rawSubjects as { data?: unknown[] }).data || [])
+      : [];
+
+  const filteredSubjects = useMemo(() => {
+    const query = searchTerm.toLowerCase();
+    return subjectList.filter((subject) =>
+      subject.name.toLowerCase().includes(query) ||
+      subject.code.toLowerCase().includes(query) ||
+      (subject.description || '').toLowerCase().includes(query),
+    );
+  }, [subjectList, searchTerm]);
+
+  const totalSubjects = subjectList.length;
+  const totalRelations = subjectList.reduce((acc, subject) => acc + (subject._count?.teachers || 0), 0);
+  const subjectsWithTeachers = subjectList.filter((subject) => (subject._count?.teachers || 0) > 0).length;
 
   if (isLoading) return <Flex justify="center" align="center" py={16}><Spinner size="lg" color="indigo.600" /><Text ml={3} color="gray.500">Memuat data mata pelajaran...</Text></Flex>;
 

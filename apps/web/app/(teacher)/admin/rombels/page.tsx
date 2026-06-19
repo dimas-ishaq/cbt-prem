@@ -137,7 +137,7 @@ export default function RombelsPage() {
     queryKey: ['rombels'],
     queryFn: async () => {
       const response = await api.get('/rombels');
-      return response.data;
+      return Array.isArray(response.data) ? response.data : response.data?.data || [];
     },
   });
 
@@ -146,7 +146,7 @@ export default function RombelsPage() {
     queryKey: ['majors'],
     queryFn: async () => {
       const response = await api.get('/majors');
-      return response.data;
+      return Array.isArray(response.data) ? response.data : response.data?.data || [];
     },
   });
 

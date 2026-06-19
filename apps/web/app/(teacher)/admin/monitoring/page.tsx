@@ -48,7 +48,8 @@ export default function MonitoringListPage() {
     queryKey: ['exams-monitoring'],
     queryFn: async () => {
       const res = await api.get('/exams');
-      return res.data.filter((e: any) => e.status !== 'DRAFT');
+      const list = Array.isArray(res.data) ? res.data : res.data?.data || [];
+      return list.filter((e: any) => e.status !== 'DRAFT');
     },
     refetchInterval: 15_000,
   });

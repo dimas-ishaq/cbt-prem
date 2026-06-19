@@ -164,7 +164,7 @@ export default function UsersManagementPage() {
     queryKey: ['users-all'],
     queryFn: async () => {
       const res = await api.get('/users');
-      return res.data;
+      return Array.isArray(res.data) ? res.data : res.data?.data || [];
     },
   });
 
@@ -172,12 +172,15 @@ export default function UsersManagementPage() {
     queryKey: ['rombels-list'],
     queryFn: async () => {
       const res = await api.get('/rombels');
-      return res.data;
+      return Array.isArray(res.data) ? res.data : res.data?.data || [];
     },
   });
 
+  const userList = Array.isArray(users) ? users : Array.isArray((users as any)?.data) ? (users as any).data : [];
+  const rombelList = Array.isArray(rombels) ? rombels : Array.isArray((rombels as any)?.data) ? (rombels as any).data : [];
+
   const rombelOptions = createListCollection({
-    items: rombels.map((r) => ({ label: r.name, value: r.id })),
+    items: rombelList.map((r) => ({ label: r.name, value: r.id })),
   });
 
   // ── Mutations ──────────────────────────────────────────────────────────────

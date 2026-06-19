@@ -106,7 +106,7 @@ export default function EditExamPage({ params }: EditExamPageProps) {
     queryKey: ['subjects'],
     queryFn: async () => {
       const response = await api.get('/subjects');
-      return response.data;
+      return Array.isArray(response.data) ? response.data : response.data?.data || [];
     },
   });
 
@@ -114,7 +114,7 @@ export default function EditExamPage({ params }: EditExamPageProps) {
     queryKey: ['exam-groups'],
     queryFn: async () => {
       const response = await api.get('/exam-groups');
-      return response.data;
+      return Array.isArray(response.data) ? response.data : response.data?.data || [];
     },
   });
 
@@ -122,7 +122,8 @@ export default function EditExamPage({ params }: EditExamPageProps) {
     queryKey: ['question-banks', formData.subjectId],
     queryFn: async () => {
       const response = await api.get('/question-banks');
-      return response.data.filter((b: any) => b.subjectId === formData.subjectId);
+      const banks = Array.isArray(response.data) ? response.data : response.data?.data || [];
+      return banks.filter((b: any) => b.subjectId === formData.subjectId);
     },
     enabled: !!formData.subjectId,
   });

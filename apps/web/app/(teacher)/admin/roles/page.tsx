@@ -296,7 +296,7 @@ export default function RolesPage() {
     }
   };
 
-  const filteredRoles = roles?.filter((r) =>
+  const filteredRoles = (roles || []).filter((r) =>
     r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (r.description && r.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );

@@ -61,10 +61,16 @@ export default function ExamGroupsPage() {
     queryKey: ['exam-groups'],
     queryFn: async () => {
       const res = await api.get('/exam-groups');
-      return res.data;
+      return Array.isArray(res.data) ? res.data : res.data?.data || [];
     },
   });
 
+  const filteredGroups = (groups || []).filter((group) => {
+    const matchesSearch = group.name.toLowerCase().includes(searchText.toLowerCase());
+    const matchesYear = selectedYear ? group.academicYear === selectedYear : true;
+    const matchesSemester = selectedSemester ? group.semester === selectedSemester : true;
+    return matchesSearch && matchesYear && matchesSemester;
+  });
   const yearOptions = createListCollection({
     items: [
       { label: 'Semua Tahun', value: '' },
@@ -172,13 +178,6 @@ export default function ExamGroupsPage() {
       createMutation.mutate(formData);
     }
   };
-
-  const filteredGroups = groups?.filter((group) => {
-    const matchesSearch = group.name.toLowerCase().includes(searchText.toLowerCase());
-    const matchesYear = selectedYear ? group.academicYear === selectedYear : true;
-    const matchesSemester = selectedSemester ? group.semester === selectedSemester : true;
-    return matchesSearch && matchesYear && matchesSemester;
-  });
 
   return (
     <Stack gap={6} p={6}>

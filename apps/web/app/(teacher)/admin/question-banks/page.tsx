@@ -49,7 +49,7 @@ export default function QuestionBankListPage() {
     queryKey: ['question-banks'],
     queryFn: async () => {
       const res = await api.get('/question-banks');
-      return res.data;
+      return Array.isArray(res.data) ? res.data : res.data?.data || [];
     },
   });
 
@@ -57,10 +57,28 @@ export default function QuestionBankListPage() {
     queryKey: ['subjects'],
     queryFn: async () => {
       const res = await api.get('/subjects');
-      return res.data;
+      return Array.isArray(res.data) ? res.data : res.data?.data || [];
     },
   });
 
+  const categories = Array.from(
+    new Set(
+      (banks || [])
+        .map((b) => b.category?.trim())
+        .filter((cat): cat is string => !!cat) || []
+    )
+  ).sort();
+
+  const filteredBanks = (banks || []).filter((bank) => {
+    const matchesSearch = bank.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSubject = selectedSubjectId ? bank.subjectId === selectedSubjectId : true;
+    const matchesCategory = selectedCategory ? (bank.category || 'Umum') === selectedCategory : true;
+    return matchesSearch && matchesSubject && matchesCategory;
+  });
+
+  const subjectOptions = createListCollection({
+    items: [{ label: 'Semua Mapel', value: '' }, ...(subjects?.map((subject) => ({ label: subject.name, value: subject.id })) || [])],
+  });
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => api.post('/question-banks', data),
     onSuccess: () => {

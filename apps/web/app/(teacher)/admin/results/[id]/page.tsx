@@ -56,7 +56,7 @@ export default function ExamResultsPage({ params }: { params: Promise<{ id: stri
     queryKey: ['exam-sessions', id],
     queryFn: async () => {
       const response = await api.get(`/exam-sessions/exam/${id}`);
-      return response.data;
+      return Array.isArray(response.data) ? response.data : response.data?.data || [];
     },
   });
 
