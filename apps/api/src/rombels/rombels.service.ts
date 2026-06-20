@@ -178,4 +178,43 @@ export class RombelsService {
       warnings,
     };
   }
+
+  async getExamCardsData(rombelId: string) {
+    const rombel = await this.prisma.rombel.findUnique({
+      where: { id: rombelId },
+    });
+    if (!rombel) {
+      throw new NotFoundException('Rombel not found');
+    }
+
+    return this.prisma.student.findMany({
+      where: { rombelId },
+      include: {
+        user: {
+          select: {
+            fullName: true,
+            username: true,
+            plainPassword: true,
+            photo: true,
+          },
+        },
+        rombel: {
+          select: {
+            name: true,
+          },
+        },
+        major: {
+          select: {
+            name: true,
+            code: true,
+          },
+        },
+      },
+      orderBy: {
+        user: {
+          fullName: 'asc',
+        },
+      },
+    });
+  }
 }

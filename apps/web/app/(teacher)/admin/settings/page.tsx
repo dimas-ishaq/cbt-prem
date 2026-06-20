@@ -534,7 +534,7 @@ export default function SettingsPage() {
               <Select.Root
                 collection={academicYearSelectOptions}
                 value={[academicYear]}
-                onValueChange={(details) => setAcademicYear(details.value[0] || academicYearOptions[0])}
+                onValueChange={(details) => setAcademicYear(details.value[0] || academicYearOptions[0] || '2024/2025')}
                 positioning={{ sameWidth: true }}
               >
                 <Select.HiddenSelect />

@@ -38,10 +38,12 @@ const trustBadges = [
 ];
 
 export default function LoginPage() {
-  const { user, access_token } = useAuthStore();
+  const { user, access_token, hasHydrated } = useAuthStore();
   const router = useRouter();
 
   useEffect(() => {
+    if (!hasHydrated) return;
+
     if (access_token && user) {
       if (user.role === 'SISWA') {
         router.push('/dashboard');
@@ -49,7 +51,7 @@ export default function LoginPage() {
         router.push('/admin');
       }
     }
-  }, [user, access_token, router]);
+  }, [hasHydrated, user, access_token, router]);
 
   const { data: settings } = useQuery({
     queryKey: ['settings'],

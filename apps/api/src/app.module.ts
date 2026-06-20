@@ -23,7 +23,6 @@ import { LogsModule } from './logs/logs.module';
 import { ReportsModule } from './reports/reports.module';
 import { SubjectsModule } from './subjects/subjects.module';
 import { NotificationsModule } from './notifications/notifications.module';
-
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),

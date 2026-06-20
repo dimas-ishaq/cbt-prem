@@ -27,6 +27,10 @@ out/
 build
 dist
 
+# Runtime / generated
+apps/api/uploads/tmp/
+apps/api/logs/
+reports.md
 
 # Debug
 npm-debug.log*

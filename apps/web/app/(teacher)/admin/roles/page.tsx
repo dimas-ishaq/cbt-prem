@@ -21,6 +21,7 @@ import {
   IconButton,
   Textarea,
   createListCollection,
+  Select,
 } from '@chakra-ui/react';
 import { toast } from '@/lib/toaster';
 import { useConfirm } from '@/components/ui/confirmation-dialog';

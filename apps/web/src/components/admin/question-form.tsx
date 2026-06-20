@@ -93,7 +93,7 @@ export function QuestionForm({ onSubmit, onCancel, isSubmitting, initialData }: 
   const processAndUpload = async (file: File) => {
     setUploading(true);
     try {
-      let finalFile = file;
+      const finalFile = file;
       // If editor was used, we already have editor file as canvas blob
       const compressed = await compressImage(finalFile, {
         maxWidth: 1280,

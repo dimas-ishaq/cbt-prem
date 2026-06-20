@@ -111,10 +111,35 @@ export class QuestionsController {
 
     await fs.writeFile(filePath, file.buffer);
 
-    // Placeholder virus scan hook (currently always returns clean)
-    // await this.securityUtil.scanFile(filePath);
-
     return { url: `/uploads/questions/${filename}` };
+  }
+
+  @Post('preview-pdf')
+  @Roles(Role.GURU, Role.SUPER_ADMIN)
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadPreviewPdf(@UploadedFile() file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('No file uploaded');
+    }
+
+    const allowedMimeTypes = ['application/pdf', 'application/octet-stream'];
+    if (!allowedMimeTypes.includes(file.mimetype)) {
+      throw new BadRequestException('Only PDF files are allowed');
+    }
+
+    const maxSize = 20 * 1024 * 1024; // 20MB
+    if (file.size > maxSize) {
+      throw new BadRequestException('PDF size must be less than 20MB');
+    }
+
+    const uploadDir = join(process.cwd(), 'uploads', 'tmp');
+    await fs.mkdir(uploadDir, { recursive: true });
+
+    const filename = `${randomUUID()}__preview.pdf`;
+    const filePath = join(uploadDir, filename);
+    await fs.writeFile(filePath, file.buffer);
+
+    return { url: `/uploads/tmp/${filename}` };
   }
 
   @Post('import/:bankId/preview')

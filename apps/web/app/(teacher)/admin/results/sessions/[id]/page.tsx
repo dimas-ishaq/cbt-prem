@@ -32,6 +32,7 @@ import {
   SimpleGrid,
   Grid,
 } from '@chakra-ui/react';
+import html2pdf from 'html2pdf.js';
 import { toast } from '@/lib/toaster';
 
 export default function SessionDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -81,6 +82,34 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
     setIsResetModalOpen(true);
   };
 
+  const handleExportPdf = async () => {
+    const element = document.getElementById('session-export') as HTMLElement | null;
+    if (!element) return;
+
+    await html2pdf()
+      .set({
+        margin: [8, 8, 8, 8],
+        filename: `lembar-jawaban-${session?.student?.user?.fullName || 'siswa'}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          scrollX: 0,
+          scrollY: 0,
+        },
+        jsPDF: {
+          unit: 'mm',
+          format: 'a4',
+          orientation: 'portrait',
+        },
+        pagebreak: { mode: ['css', 'legacy'] },
+      } as any)
+      .from(element)
+      .toPdf()
+      .save();
+  };
+
   if (isLoading) {
     return (
       <Flex direction="column" align="center" justify="center" minH="60vh">
@@ -116,11 +145,11 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
     : 'Sedang berjalan / belum selesai';
 
   return (
-    <Stack gap={6} p={2}>
+    <Stack gap={6} p={2} className="session-export">
       {/* Header bar */}
       <Flex justify="space-between" align={{ base: 'start', md: 'center' }} direction={{ base: 'column', md: 'row' }} gap={4} pb={4} borderBottom="1px solid" borderColor="gray.100">
         <Flex align="center" gap={4}>
-          <Link href={`/admin/results/${session.examId}`} passHref className="no-print">
+          <Link href={`/admin/results/${session.examId}`} passHref className="no-export">
             <Button variant="ghost" p={2} borderRadius="xl" border="1px solid" borderColor="gray.200" cursor="pointer" bg="white" _hover={{ bg: 'gray.50' }}>
               <ChevronLeft size={20} />
             </Button>
@@ -129,15 +158,15 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
             <Heading size="xl" fontWeight="black" color="gray.900" letterSpacing="tight">
               Lembar Jawaban Siswa
             </Heading>
-            <Text fontSize="sm" color="gray.500" mt={0.5} className="no-print">
+            <Text fontSize="sm" color="gray.500" mt={0.5} className="no-export">
               Evaluasi jawaban mandiri dan rekap nilai hasil ujian.
             </Text>
           </Box>
         </Flex>
 
-        <HStack gap={3} className="no-print">
+        <HStack gap={3} className="no-export">
           <Button
-            onClick={() => window.print()}
+            onClick={handleExportPdf}
             variant="solid"
             bg="indigo.600"
             color="white"
@@ -174,8 +203,8 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
       {/* Overview stats cards */}
       <Grid templateColumns={{ base: '1fr', lg: '1fr 2fr' }} gap={6}>
         {/* Left Side: Score & Status Card */}
-        <Flex bg="white" border="1px solid" borderColor="gray.100" borderRadius="2xl" shadow="sm" p={6} flexDirection="column" justify="center" align="center" position="relative" overflow="hidden" className="print-card">
-          <Box position="absolute" top={0} left={0} right={0} h="4px" bg="indigo.600" className="no-print" />
+        <Flex bg="white" border="1px solid" borderColor="gray.100" borderRadius="2xl" shadow="sm" p={6} flexDirection="column" justify="center" align="center" position="relative" overflow="hidden">
+          <Box position="absolute" top={0} left={0} right={0} h="4px" bg="indigo.600" className="no-export" />
           <Text fontSize="2xs" color="gray.400" fontWeight="bold" textTransform="uppercase" letterSpacing="widest" mb={2}>TOTAL NILAI AKHIR</Text>
           <Heading fontSize="6xl" fontWeight="black" color="indigo.600" lineHeight="1">{session.score ?? '--'}</Heading>
           <Box mt={4} mb={2}>
@@ -183,17 +212,17 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
               {session.status}
             </Badge>
           </Box>
-          <Text fontSize="xs" color="gray.400" mt={2} textAlign="center" className="no-print">
+          <Text fontSize="xs" color="gray.400" mt={2} textAlign="center" className="no-export">
             Dinilai otomatis oleh sistem untuk Pilihan Ganda & Multi-respons.
           </Text>
         </Flex>
 
         {/* Right Side: Details Card */}
-        <Box bg="white" border="1px solid" borderColor="gray.100" borderRadius="2xl" shadow="sm" p={6} className="print-card">
+        <Box bg="white" border="1px solid" borderColor="gray.100" borderRadius="2xl" shadow="sm" p={6}>
           <SimpleGrid columns={{ base: 1, md: 2 }} gap={6}>
             <Stack gap={4}>
               <HStack gap={3}>
-                <Flex w={8} h={8} borderRadius="lg" bg="indigo.50" align="center" justify="center" color="indigo.600" className="no-print">
+                <Flex w={8} h={8} borderRadius="lg" bg="indigo.50" align="center" justify="center" color="indigo.600" className="no-export">
                   <User size={16} />
                 </Flex>
                 <Box>
@@ -204,7 +233,7 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
               </HStack>
 
               <HStack gap={3}>
-                <Flex w={8} h={8} borderRadius="lg" bg="indigo.50" align="center" justify="center" color="indigo.600" className="no-print">
+                <Flex w={8} h={8} borderRadius="lg" bg="indigo.50" align="center" justify="center" color="indigo.600" className="no-export">
                   <BookOpen size={16} />
                 </Flex>
                 <Box>
@@ -217,7 +246,7 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
 
             <Stack gap={4}>
               <HStack gap={3}>
-                <Flex w={8} h={8} borderRadius="lg" bg="indigo.50" align="center" justify="center" color="indigo.600" className="no-print">
+                <Flex w={8} h={8} borderRadius="lg" bg="indigo.50" align="center" justify="center" color="indigo.600" className="no-export">
                   <Clock size={16} />
                 </Flex>
                 <Box>
@@ -230,7 +259,7 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
               </HStack>
 
               <HStack gap={3}>
-                <Flex w={8} h={8} borderRadius="lg" bg="indigo.50" align="center" justify="center" color="indigo.600" className="no-print">
+                <Flex w={8} h={8} borderRadius="lg" bg="indigo.50" align="center" justify="center" color="indigo.600" className="no-export">
                   <CheckCircle2 size={16} />
                 </Flex>
                 <Box>
@@ -238,8 +267,7 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
                   <HStack gap={2} mt={0.5}>
                     <Badge colorPalette="green" variant="subtle" size="sm">{correctCount} Benar</Badge>
                     <Badge colorPalette="red" variant="subtle" size="sm">{incorrectCount} Salah</Badge>
-                    {essayCount > 0 && <Badge colorPalette="purple" variant="subtle" size="sm">{essayCount} Esai</Badge>}
-                    <Text fontSize="2xs" color="gray.400">dari {totalQuestions} soal</Text>
+                    <Badge colorPalette="gray" variant="subtle" size="sm">{essayCount} Essay</Badge>
                   </HStack>
                 </Box>
               </HStack>
@@ -356,7 +384,7 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
                         const isSelected = answer.selectedOption?.split(',').includes(opt.id);
                         
                         let optionBg = 'transparent';
-                        let optionBorder = '1px solid';
+                        const optionBorder = '1px solid';
                         let optionBorderColor = 'gray.200';
                         let badgeText = '';
                         let badgeColor = '';

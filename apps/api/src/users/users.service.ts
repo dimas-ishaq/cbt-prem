@@ -93,6 +93,7 @@ export class UsersService {
         username: dto.username,
         email: dto.email || `${dto.username}@cbt.enterprise`,
         password: hashedPassword,
+        plainPassword: dto.password,
         fullName: dto.fullName,
         role,
         ...(role === Role.SISWA
@@ -146,6 +147,39 @@ export class UsersService {
             }
           : {}),
       },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        fullName: true,
+        role: true,
+        isActive: true,
+      },
+    });
+  }
+
+  /** Update self profile (name, email, password) */
+  async updateSelfProfile(id: string, dto: { fullName?: string; email?: string; password?: string }) {
+    const user = await this.findUserById(id);
+
+    if (dto.email) {
+      const existing = await this.prisma.user.findFirst({
+        where: { email: dto.email, id: { not: id } },
+      });
+      if (existing) throw new ConflictException('Email sudah digunakan oleh pengguna lain');
+    }
+
+    const data: Prisma.UserUpdateInput = {};
+    if (dto.fullName) data.fullName = dto.fullName;
+    if (dto.email) data.email = dto.email;
+    if (dto.password) {
+      data.password = await bcrypt.hash(dto.password, 10);
+      data.plainPassword = dto.password;
+    }
+
+    return this.prisma.user.update({
+      where: { id },
+      data,
       select: {
         id: true,
         username: true,
@@ -250,6 +284,7 @@ export class UsersService {
           include: { student: true, teacher: true },
         });
 
+        const plainPass = u.password || (existingUser ? undefined : defaultPassword);
         const hashedPassword = u.password
           ? await bcrypt.hash(u.password, 10)
           : existingUser
@@ -264,6 +299,7 @@ export class UsersService {
               fullName: u.fullName,
               role: roleValue as any,
               ...(hashedPassword ? { password: hashedPassword } : {}),
+              ...(plainPass ? { plainPassword: plainPass } : {}),
             },
           });
           if (roleValue === 'SISWA') {
@@ -307,6 +343,7 @@ export class UsersService {
               email: u.email || `${u.username}@cbt.enterprise`,
               fullName: u.fullName,
               password: hashedPassword!,
+              plainPassword: plainPass,
               role: roleValue as any,
               ...(roleValue === 'SISWA'
                 ? { student: { create: { nis: u.nis || `NIS-${Date.now()}`, ...rombelConnect } } }

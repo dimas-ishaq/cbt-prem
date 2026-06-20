@@ -86,6 +86,24 @@ export default function CreateExamPage() {
     },
   });
 
+  const { data: examGroups } = useQuery<ExamGroup[]>({
+    queryKey: ['exam-groups'],
+    queryFn: async () => {
+      const response = await api.get('/exam-groups');
+      return Array.isArray(response.data) ? response.data : response.data?.data || [];
+    },
+  });
+
+  const { data: questionBanks } = useQuery<QuestionBank[]>({
+    queryKey: ['question-banks', formData.subjectId],
+    queryFn: async () => {
+      const response = await api.get('/question-banks');
+      const banks = Array.isArray(response.data) ? response.data : response.data?.data || [];
+      return banks.filter((b: any) => b.subjectId === formData.subjectId);
+    },
+    enabled: !!formData.subjectId,
+  });
+
   const examGroupOptions = createListCollection({
     items: examGroups?.map((group) => ({ label: group.name, value: group.id })) || [],
   });

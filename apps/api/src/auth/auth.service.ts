@@ -54,4 +54,8 @@ export class AuthService {
       throw new UnauthorizedException('Invalid refresh token');
     }
   }
+
+  async updateProfile(userId: string, dto: any) {
+    return this.usersService.updateSelfProfile(userId, dto);
+  }
 }

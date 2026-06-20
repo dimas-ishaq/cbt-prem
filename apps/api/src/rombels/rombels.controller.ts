@@ -72,4 +72,10 @@ export class RombelsController {
   ) {
     return this.rombelsService.updateStudents(id, studentIds);
   }
+
+  @Get(':id/exam-cards')
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN_SEKOLAH, Role.GURU)
+  getExamCards(@Param('id') id: string) {
+    return this.rombelsService.getExamCardsData(id);
+  }
 }

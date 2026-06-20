@@ -586,7 +586,7 @@ export default function EditExamPage({ params }: EditExamPageProps) {
                     <Select.Root
                       collection={statusOptions}
                       value={[formData.status]}
-                      onValueChange={(details) => setFormData({ ...formData, status: details.value[0] })}
+                      onValueChange={(details) => setFormData({ ...formData, status: details.value[0] || 'DRAFT' })}
                       positioning={{ sameWidth: true }}
                     >
                       <Select.HiddenSelect />

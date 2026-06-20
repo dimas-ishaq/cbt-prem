@@ -13,7 +13,6 @@ const segmentLabels: Record<string, string> = {
   edit: 'edit',
   'question-banks': 'questionBanks',
   'exam-groups': 'examGroups',
-  'exam-cards': 'examCards',
   monitoring: 'monitoring',
   reports: 'reports',
   generate: 'generate',

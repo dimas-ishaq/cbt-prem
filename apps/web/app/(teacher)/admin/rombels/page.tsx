@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import {
   Box,
   Flex,
@@ -18,6 +18,8 @@ import {
   HStack,
   Badge,
   SimpleGrid,
+  Select,
+  createListCollection,
 } from '@chakra-ui/react';
 import { toast } from '@/lib/toaster';
 import { useConfirm } from '@/components/ui/confirmation-dialog';
@@ -149,6 +151,10 @@ export default function RombelsPage() {
       return Array.isArray(response.data) ? response.data : response.data?.data || [];
     },
   });
+
+  const majorOptions = useMemo(() => createListCollection({
+    items: (majors || []).map((item) => ({ label: item.name, value: item.id }))
+  }), [majors]);
 
   // Fetch single rombel detail (with students list) when selected
   const { data: rombelDetail, isLoading: isLoadingDetail } = useQuery<Rombel>({

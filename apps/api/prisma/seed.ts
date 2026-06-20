@@ -1079,7 +1079,7 @@ let answerCount = 0;
   // ========================================================================
   // 20b. NOTIFICATION PREFERENCES
   // ========================================================================
-  const notifPrefUsers = [...superUsers, ...teachers.slice(0, 3), pengawasUser];
+  const notifPrefUsers = [...superUsers, ...teacherUsers.slice(0, 3), pengawasUser];
   const allNotifTypes: string[] = [
     'EXAM_SUBMITTED', 'EXAM_AUTO_SUBMIT', 'VIOLATION_DETECTED', 'IMPORT_COMPLETED', 'IMPORT_FAILED', 'EXAM_REMINDER', 'SESSION_EXPIRED', 'SYSTEM_ANNOUNCEMENT'
   ];

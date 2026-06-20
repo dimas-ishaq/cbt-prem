@@ -4,10 +4,10 @@ import { AdminSidebar } from '@/components/admin/sidebar';
 import { useAuthStore } from '@/store/auth.store';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { Box, Flex, Heading, Text } from '@chakra-ui/react';
+import { Box, Flex, Heading, Text, IconButton, Spinner, Stack, useBreakpointValue } from '@chakra-ui/react';
 import { ColorModeToggle } from '@/components/ui/color-mode-toggle';
 import { Breadcrumb } from '@/components/ui/breadcrumb';
-import { Clock } from 'lucide-react';
+import { Clock, Menu, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { NotificationBell } from '@/components/ui/notification-bell';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
@@ -18,8 +18,11 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user } = useAuthStore();
+  const { user, hasHydrated } = useAuthStore();
   const router = useRouter();
+  const isDesktop = useBreakpointValue({ base: false, lg: true }) ?? false;
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const { i18n } = useTranslation();
   const { data: settings } = useQuery({
@@ -35,6 +38,14 @@ export default function AdminLayout({
       i18n.changeLanguage(settings.language);
     }
   }, [settings?.language, i18n]);
+
+  useEffect(() => {
+    if (isDesktop) {
+      setMobileSidebarOpen(false);
+    } else {
+      setSidebarCollapsed(false);
+    }
+  }, [isDesktop]);
 
   const [timeStr, setTimeStr] = useState<string>('');
 
@@ -65,30 +76,109 @@ export default function AdminLayout({
   }, [settings?.timezone]);
 
   useEffect(() => {
+    if (!hasHydrated) return;
+
     if (!user) {
       router.push('/login');
     } else if (user.role === 'SISWA') {
       router.push('/dashboard');
     }
-  }, [user, router]);
+  }, [hasHydrated, user, router]);
+
+  if (!hasHydrated) {
+    return (
+      <Flex minH="100vh" align="center" justify="center" px={6} bg="bg.canvas">
+        <Box
+          w="full"
+          maxW="lg"
+          borderRadius="3xl"
+          border="1px solid"
+          borderColor="border.default"
+          bg="bg.surface"
+          p={{ base: 6, md: 8 }}
+          shadow="xl"
+          textAlign="center"
+        >
+          <Stack gap={5} align="center">
+            <Flex
+              w={18}
+              h={18}
+              align="center"
+              justify="center"
+              borderRadius="2xl"
+              bg="indigo.500/10"
+              border="1px solid"
+              borderColor="indigo.500/20"
+            >
+              <Spinner size="lg" color="indigo.600" />
+            </Flex>
+            <Box>
+              <Heading size="lg" color="gray.900" fontWeight="black" mb={2}>
+                Menyiapkan sesi aman...
+              </Heading>
+              <Text color="gray.600" fontSize="sm" lineHeight="relaxed">
+                Kami sedang memulihkan status login Anda. Halaman admin akan dibuka kembali dalam beberapa detik tanpa perlu login ulang.
+              </Text>
+            </Box>
+            <Flex
+              align="center"
+              gap={2}
+              px={3}
+              py={1.5}
+              borderRadius="full"
+              bg="indigo.500/8"
+              border="1px solid"
+              borderColor="indigo.500/15"
+            >
+              <Clock size={13} className="text-indigo-500 animate-pulse" />
+              <Text fontSize="xs" fontWeight="bold" color="indigo.600">
+                Memverifikasi hak akses super admin
+              </Text>
+            </Flex>
+          </Stack>
+        </Box>
+      </Flex>
+    );
+  }
 
   if (!user || user.role === 'SISWA') return null;
 
+  const handleSidebarToggle = () => {
+    if (isDesktop) {
+      setSidebarCollapsed((prev) => !prev);
+    } else {
+      setMobileSidebarOpen((prev) => !prev);
+    }
+  };
+
   return (
     <Flex minH="screen" bg="bg.canvas">
-      <AdminSidebar />
-      <Box as="main" flex={1} overflowX="hidden" display="flex" flexDirection="column">
+      <AdminSidebar
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed((prev) => !prev)}
+        mobileOpen={mobileSidebarOpen}
+        onMobileClose={() => setMobileSidebarOpen(false)}
+      />
+      <Box
+        as="main"
+        flex={1}
+        overflowX="visible"
+        display="flex"
+        flexDirection="column"
+        ml={{ base: 0, lg: sidebarCollapsed ? '4rem' : '16rem' }}
+        transition="margin-left 0.25s ease"
+      >
         <Box
           as="header"
           borderBottom="1px solid"
           borderColor="border.default"
-          px={8}
+          px={{ base: 4, md: 6, lg: 8 }}
           py={4}
           position="sticky"
           top={0}
           zIndex={10}
           display="flex"
-          alignItems="flex-start"
+          alignItems="center"
           justifyContent="space-between"
           gap={4}
           style={{
@@ -96,12 +186,30 @@ export default function AdminLayout({
             backgroundColor: 'var(--header-bg)',
           }}
         >
-          <Box>
-            <Heading size="md" fontWeight="bold" color="text.primary" textTransform="capitalize">
-              Admin Management
-            </Heading>
-            <Breadcrumb />
-          </Box>
+          <Flex align="center" gap={3} minW={0}>
+            {!isDesktop && (
+              <IconButton
+                aria-label={mobileSidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+                onClick={handleSidebarToggle}
+                size="sm"
+                variant="ghost"
+                color="text.primary"
+              >
+                <Menu size={18} />
+              </IconButton>
+            )}
+            {isDesktop && (
+              <IconButton
+                aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Minimize sidebar'}
+                onClick={handleSidebarToggle}
+                size="sm"
+                variant="ghost"
+                color="text.primary"
+              >
+                {sidebarCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+              </IconButton>
+            )}
+          </Flex>
           <Flex align="center" gap={4}>
             {timeStr && (
               <Flex
@@ -126,7 +234,10 @@ export default function AdminLayout({
             <ColorModeToggle size="md" />
           </Flex>
         </Box>
-        <Box p={8} flex={1}>
+        <Box p={{ base: 4, md: 6, lg: 8 }} flex={1}>
+          <Box mb={{ base: 4, md: 5, lg: 6 }}>
+            <Breadcrumb />
+          </Box>
           {children}
         </Box>
       </Box>

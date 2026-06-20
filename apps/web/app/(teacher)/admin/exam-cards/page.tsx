@@ -1,10 +1,11 @@
 'use client';
 
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
+import { toast } from '@/lib/toaster';
 import { useAuthStore } from '@/store/auth.store';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
 import {
   Box,
   Flex,
@@ -13,480 +14,191 @@ import {
   Button,
   Stack,
   Spinner,
-  HStack,
-  SimpleGrid,
   Input,
-  Badge,
+  HStack,
   Select,
   createListCollection,
+  Grid,
 } from '@chakra-ui/react';
-import { Printer, Users, CheckSquare, Square, Info, ShieldAlert, Award } from 'lucide-react';
-import { toast } from '@/lib/toaster';
+import {
+  Download,
+  Printer,
+  Settings,
+  Users,
+  Calendar,
+  FileText,
+  UserCheck,
+  LayoutGrid,
+} from 'lucide-react';
+import { ExamCardTemplate, StudentCardData } from './exam-card-template';
+import { CARD_LAYOUTS, ExamCardLayout } from './exam-card.constants';
 
-interface Student {
-  id: string;
-  nis: string;
-  rombelId?: string | null;
-  majorId?: string | null;
-  user: {
-    fullName: string;
-    email: string;
-    username: string;
-  };
-  rombel?: {
-    name: string;
-  };
-  major?: {
-    name: string;
-  };
-}
-
-interface Rombel {
-  id: string;
-  name: string;
-}
+// Chunk students helper for paging/layout
+const chunkArray = <T,>(arr: T[], size: number): T[][] => {
+  const chunks: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) {
+    chunks.push(arr.slice(i, i + size));
+  }
+  return chunks;
+};
 
 export default function ExamCardsPage() {
   const { user } = useAuthStore();
   const router = useRouter();
 
-  // Redirect if not SUPER_ADMIN
+  // Redirect if not teacher/admin
   useEffect(() => {
-    if (user && user.role !== 'SUPER_ADMIN') {
+    if (user && !['SUPER_ADMIN', 'ADMIN_SEKOLAH', 'GURU'].includes(user.role)) {
       router.push('/admin');
     }
   }, [user, router]);
 
-  const [selectedRombelId, setSelectedRombelId] = useState<string>('');
+  // States
   const [selectedExamGroupId, setSelectedExamGroupId] = useState<string>('');
-  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
-  const [headmasterName, setHeadmasterName] = useState<string>('Kepala Sekolah');
-  const [cardLayout, setCardLayout] = useState<'grid-4' | 'grid-2'>('grid-4');
+  const [selectedRombelId, setSelectedRombelId] = useState<string>('');
+  const [cardLayout, setCardLayout] = useState<ExamCardLayout>('grid-6');
+  const [headmasterName, setHeadmasterName] = useState<string>('Drs. H. Ahmad Fauzi, M.Pd.');
+  const [headmasterNip, setHeadmasterNip] = useState<string>('197508122003121002');
+  const [cardDate, setCardDate] = useState<string>('Jakarta, 22 Juni 2026');
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState<boolean>(false);
 
-  // Fetch settings for school name / logo
-  const { data: settings } = useQuery({
-    queryKey: ['settings'],
+  // Queries
+  const { data: examGroups = [], isLoading: isLoadingExamGroups } = useQuery<any[]>({
+    queryKey: ['exam-groups-list'],
     queryFn: async () => {
-      const response = await api.get('/settings');
-      return response.data;
+      const res = await api.get('/exam-groups');
+      return Array.isArray(res.data) ? res.data : res.data?.data || [];
     },
   });
 
-  // Fetch exam groups for event title
-  const { data: examGroups } = useQuery<{ id: string; name: string }[]>({
-    queryKey: ['exam-groups'],
+  const { data: rombels = [], isLoading: isLoadingRombels } = useQuery<any[]>({
+    queryKey: ['rombels-list-exam-cards'],
     queryFn: async () => {
-      const response = await api.get('/exam-groups');
-      return Array.isArray(response.data) ? response.data : response.data?.data || [];
+      const res = await api.get('/rombels');
+      return Array.isArray(res.data) ? res.data : res.data?.data || [];
     },
   });
 
-  // Fetch rombels
-  const { data: rombels, isLoading: isLoadingRombels } = useQuery<Rombel[]>({
-    queryKey: ['rombels'],
+  const { data: students = [], isLoading: isLoadingStudents, refetch: refetchStudents } = useQuery<StudentCardData[]>({
+    queryKey: ['exam-cards-students', selectedRombelId],
     queryFn: async () => {
-      const response = await api.get('/rombels');
-      return Array.isArray(response.data) ? response.data : response.data?.data || [];
-    },
-  });
-
-  const selectedRombelList = Array.isArray(rombels) ? rombels : Array.isArray((rombels as any)?.data) ? (rombels as any).data : [];
-  const selectedExamGroupList = Array.isArray(examGroups) ? examGroups : Array.isArray((examGroups as any)?.data) ? (examGroups as any).data : [];
-  const selectedRombel = selectedRombelList.find((rombel) => rombel.id === selectedRombelId);
-  const selectedExamGroup = selectedExamGroupList.find((group) => group.id === selectedExamGroupId);
-  const activeEventTitle = selectedExamGroup?.name || 'BELUM ADA KELOMPOK UJIAN TERPILIH';
-
-  const cardLayoutOptions = createListCollection({
-    items: [
-      { label: 'Double Column (4 Kartu per Halaman)', value: 'grid-4' },
-      { label: 'Single Column (2 Kartu per Halaman)', value: 'grid-2' },
-    ],
-  });
-
-  const examGroupOptions = createListCollection({
-    items: selectedExamGroupList.map((group) => ({ label: group.name, value: group.id })),
-  });
-
-  const rombelOptions = createListCollection({
-    items: selectedRombelList.map((rombel) => ({ label: rombel.name, value: rombel.id })),
-  });
-
-  useEffect(() => {
-    if (!selectedExamGroupId && examGroups?.length) {
-      setSelectedExamGroupId(examGroups[0].id);
-    }
-  }, [examGroups, selectedExamGroupId]);
-
-  // Fetch students for selection only after rombel is chosen
-  const { data: students, isLoading: isLoadingStudents } = useQuery<Student[]>({
-    queryKey: ['students-for-cards', selectedRombelId],
-    queryFn: async () => {
-      const response = await api.get('/students', {
-        params: {
-          rombelId: selectedRombelId,
-        },
-      });
-      return Array.isArray(response.data) ? response.data : response.data?.data || [];
+      if (!selectedRombelId) return [];
+      const res = await api.get(`/rombels/${selectedRombelId}/exam-cards`);
+      return res.data || [];
     },
     enabled: !!selectedRombelId,
   });
 
-  // Automatically select all when students list updates
-  useEffect(() => {
-    if (students) {
-      setSelectedStudentIds(students.map((s) => s.id));
-    } else {
-      setSelectedStudentIds([]);
-    }
-  }, [students]);
+  // Collections for Chakra Select
+  const examGroupList = Array.isArray(examGroups) ? examGroups : [];
+  const rombelList = Array.isArray(rombels) ? rombels : [];
 
-  const handleSelectAll = () => {
-    if (students) {
-      setSelectedStudentIds(students.map((s) => s.id));
-    }
-  };
+  const examGroupCollection = createListCollection({
+    items: examGroupList.map((eg) => ({ label: eg.name, value: eg.id })),
+  });
 
-  const handleSelectNone = () => {
-    setSelectedStudentIds([]);
-  };
+  const rombelCollection = createListCollection({
+    items: rombelList.map((r) => ({ label: r.name, value: r.id })),
+  });
 
-  const handleToggleStudent = (studentId: string) => {
-    setSelectedStudentIds((prev) =>
-      prev.includes(studentId)
-        ? prev.filter((id) => id !== studentId)
-        : [...prev, studentId]
-    );
-  };
+  const layoutCollection = createListCollection({
+    items: CARD_LAYOUTS,
+  });
 
-  const handlePrint = () => {
-    if (selectedStudentIds.length === 0) {
-      toast.error('Pilih setidaknya satu siswa untuk dicetak!');
+  // Get active exam group name
+  const activeExamGroupName = examGroupList.find(eg => eg.id === selectedExamGroupId)?.name || 'UJIAN BERBASIS KOMPUTER';
+  const activeRombelName = rombelList.find(r => r.id === selectedRombelId)?.name || '';
+
+  // PDF Download Handler using dynamic html2pdf.js import
+  const handleDownloadPDF = async () => {
+    if (!selectedRombelId) {
+      toast.error('Silakan pilih rombel terlebih dahulu');
       return;
     }
-    window.print();
+    if (students.length === 0) {
+      toast.error('Tidak ada siswa di rombel ini');
+      return;
+    }
+
+    setIsGeneratingPdf(true);
+    try {
+      // Dynamic import to prevent SSR/window errors
+      const html2pdf = (await import('html2pdf.js')).default;
+      const element = document.getElementById('printable-exam-cards-container');
+
+      if (!element) {
+        throw new Error('Elemen kartu cetak tidak ditemukan');
+      }
+
+      const opt = {
+        margin: [10, 10, 10, 10] as [number, number, number, number],
+        filename: `kartu-ujian-${activeRombelName.toLowerCase().replace(/\s+/g, '-')}.pdf`,
+        image: { type: 'jpeg' as const, quality: 0.98 },
+        html2canvas: { scale: 2.5, useCORS: true, letterRendering: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
+      };
+
+      await html2pdf().from(element).set(opt).save();
+      toast.success('Kartu ujian berhasil diunduh dalam format PDF!');
+    } catch (error: any) {
+      console.error(error);
+      toast.error('Gagal membuat PDF: ' + error.message);
+    } finally {
+      setIsGeneratingPdf(false);
+    }
   };
 
-  const getAssetUrl = (url?: string) => {
-    if (!url) return '';
-    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
-      return url;
-    }
-    if (url.startsWith('/uploads/')) {
-      const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api').replace(/\/api$/, '');
-      return `${apiBase}${url}`;
-    }
-    return url;
-  };
-
-  const filteredStudentsForPrint = (students || []).filter((s) =>
-    selectedStudentIds.includes(s.id)
-  );
+  // Chunk students according to selected layout
+  const cardsPerPage = cardLayout === 'grid-6' ? 6 : 4;
+  const studentPages = chunkArray(students, cardsPerPage);
 
   return (
-    <Box minH="100vh" p={{ base: 4, md: 6 }} bg="bg.canvas">
-      {/* Dynamic print-only style overrides */}
-      <style jsx global>{`
-        @media print {
-          /* Hide all UI elements */
-          body, html {
-            background: #fff !important;
-            color: #000 !important;
-            font-family: 'Times New Roman', Times, serif;
-          }
-          nav, aside, header, footer, button, select, input, .no-print, .chakra-button, .chakra-select, .chakra-input {
-            display: none !important;
-          }
-          .main-content, #__next, .chakra-portal, [data-overlay] {
-            margin: 0 !important;
-            padding: 0 !important;
-            background: transparent !important;
-            box-shadow: none !important;
-          }
-          .print-container {
-            display: block !important;
-            width: 100% !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            background: #fff !important;
-          }
-          .print-grid {
-            display: grid !important;
-            grid-template-columns: repeat(2, 1fr) !important;
-            gap: 15px !important;
-            padding: 10px !important;
-            width: 100% !important;
-          }
-          .card-layout-grid-2 {
-            grid-template-columns: 1fr !important;
-            gap: 20px !important;
-          }
-          .print-card {
-            border: 1.5px dashed #000 !important;
-            border-radius: 8px !important;
-            padding: 12px !important;
-            background: #fff !important;
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-            font-size: 11px !important;
-            color: #000 !important;
-            display: flex !important;
-            flex-direction: column !important;
-            justify-content: space-between !important;
-            height: 280px !important;
-          }
-          .print-card-header {
-            border-bottom: 2px solid #000 !important;
-            padding-bottom: 6px !important;
-            margin-bottom: 8px !important;
-            display: flex !important;
-            align-items: center !important;
-            gap: 10px !important;
-          }
-          .print-school-logo {
-            width: 45px !important;
-            height: 45px !important;
-            object-fit: contain !important;
-          }
-          .print-header-text {
-            flex-grow: 1 !important;
-            text-align: center !important;
-          }
-          .print-school-name {
-            font-size: 11px !important;
-            font-weight: bold !important;
-            text-transform: uppercase !important;
-          }
-          .print-event-title {
-            font-size: 10px !important;
-            font-weight: bold !important;
-          }
-          .print-academic-year {
-            font-size: 8px !important;
-          }
-          .print-card-body {
-            display: flex !important;
-            gap: 10px !important;
-            flex-grow: 1 !important;
-          }
-          .print-student-avatar {
-            width: 70px !important;
-            height: 90px !important;
-            border: 1px solid #000 !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            font-size: 8px !important;
-            text-align: center !important;
-            background: #f8f8f8 !important;
-          }
-          .print-details-table {
-            flex-grow: 1 !important;
-            width: 100% !important;
-          }
-          .print-details-table td {
-            padding: 2px 0 !important;
-            vertical-align: top !important;
-          }
-          .print-credentials-box {
-            background: #f0f4f8 !important;
-            border: 1px solid #c8d6e5 !important;
-            padding: 6px !important;
-            border-radius: 4px !important;
-            margin-top: 6px !important;
-            font-family: monospace !important;
-            font-size: 10px !important;
-          }
-          .print-card-footer {
-            margin-top: 8px !important;
-            display: flex !important;
-            justify-content: space-between !important;
-            align-items: flex-end !important;
-          }
-          .print-qr-code {
-            width: 45px !important;
-            height: 45px !important;
-          }
-          .print-signature-space {
-            text-align: center !important;
-            width: 120px !important;
-            font-size: 8px !important;
-          }
-          .print-signature-line {
-            margin-top: 25px !important;
-            border-top: 1px solid #000 !important;
-            font-weight: bold !important;
-          }
-        }
-      `}</style>
+    <Stack gap={6} h="100%">
+      {/* Page Title */}
+      <Box>
+        <Heading size="xl" fontWeight="extrabold" color="gray.950" letterSpacing="tight">
+          Cetak Kartu Peserta Ujian
+        </Heading>
+        <Text color="gray.500" mt={1} fontSize="sm">
+          Cetak kartu ujian satu rombel sekaligus dengan layout presisi, tanda tangan kepala sekolah, dan barcode/QR Code.
+        </Text>
+      </Box>
 
-      {/* ── Screen UI: Non-Printable Elements ──────────────────── */}
-      <Box className="no-print" mb={6}>
-        {/* Header */}
-        <Flex justify="space-between" align="center" wrap="wrap" gap={4} mb={6}>
-          <Box>
-            <Heading size="xl" fontWeight="black" color="indigo.700">
-              Cetak Kartu Ujian Siswa
+      {/* Main Content Split Layout */}
+      <Grid templateColumns={{ base: '1fr', lg: '350px 1fr' }} gap={6} alignItems="stretch">
+        
+        {/* Left Side: Control Panel */}
+        <Stack gap={5}>
+          {/* Card Filter */}
+          <Box bg="white" p={5} borderRadius="2xl" shadow="sm" border="1px solid" borderColor="gray.100">
+            <Heading size="md" fontWeight="bold" mb={4} color="gray.900" display="flex" alignItems="center" gap={2}>
+              <Settings size={18} className="text-indigo-600" />
+              Filter & Pengaturan
             </Heading>
-            <Text color="text.muted" mt={1}>
-              Buat, filter, dan cetak kartu identitas ujian peserta CBT dengan layout A4 siap cetak.
-            </Text>
-          </Box>
-          <Button
-            onClick={handlePrint}
-            bg="indigo.600"
-            color="white"
-            _hover={{ bg: 'indigo.700' }}
-            borderRadius="xl"
-            shadow="lg"
-            fontWeight="bold"
-            gap={2}
-            px={5}
-            py={5.5}
-            cursor="pointer"
-            disabled={selectedStudentIds.length === 0}
-          >
-            <Printer size={18} />
-            Cetak Kartu ({selectedStudentIds.length})
-          </Button>
-        </Flex>
-
-        {/* Configurations Form */}
-        <SimpleGrid columns={{ base: 1, md: 3 }} gap={5} mb={6}>
-          {/* Card settings */}
-          <Box bg="white" p={5} borderRadius="2xl" borderWidth="1px" borderColor="border.default" shadow="sm">
-            <Text fontWeight="bold" fontSize="sm" color="gray.700" mb={3}>
-              ⚙️ Pengaturan Kartu
-            </Text>
-            <Stack gap={3.5}>
-              <Box>
-                <Text fontSize="2xs" fontWeight="black" color="gray.500" mb={1.5} textTransform="uppercase">
-                  Kelompok Ujian Aktif
-                </Text>
-                <Box
-                  px={3}
-                  py={2}
-                  borderRadius="lg"
-                  border="1px solid"
-                  borderColor="gray.200"
-                  bg="gray.50"
-                >
-                  <Text fontWeight="bold" color="gray.900" fontSize="sm">
-                    {selectedExamGroup?.name || 'Belum ada kelompok ujian terpilih'}
-                  </Text>
-                </Box>
-              </Box>
-
-              <Box>
-                <Text fontSize="2xs" fontWeight="black" color="gray.500" mb={1.5} textTransform="uppercase">
-                  Nama Kepala Sekolah
-                </Text>
-                <Input
-                  size="sm"
-                  value={headmasterName}
-                  onChange={(e) => setHeadmasterName(e.target.value)}
-                  borderRadius="lg"
-                  borderColor="gray.200"
-                />
-              </Box>
-
-              <Box>
-                <Text fontSize="2xs" fontWeight="black" color="gray.500" mb={1.5} textTransform="uppercase">
-                  Layout Cetak per Baris
-                </Text>
-                <Select.Root
-                  collection={cardLayoutOptions}
-                  value={[cardLayout]}
-                  onValueChange={(details) => setCardLayout(details.value[0] as 'grid-4' | 'grid-2')}
-                  positioning={{ sameWidth: true }}
-                >
-                  <Select.HiddenSelect />
-                  <Select.Control>
-                    <Select.Trigger>
-                      <Select.ValueText placeholder="Pilih layout" />
-                    </Select.Trigger>
-                    <Select.IndicatorGroup>
-                      <Select.Indicator />
-                      <Select.ClearTrigger />
-                    </Select.IndicatorGroup>
-                  </Select.Control>
-                  <Select.Positioner>
-                    <Select.Content>
-                      {cardLayoutOptions.items.map((item) => (
-                        <Select.Item key={item.value} item={item}>
-                          {item.label}
-                        </Select.Item>
-                      ))}
-                    </Select.Content>
-                  </Select.Positioner>
-                </Select.Root>
-              </Box>
-            </Stack>
-          </Box>
-
-          {/* Filter Student */}
-          <Box bg="white" p={5} borderRadius="2xl" borderWidth="1px" borderColor="border.default" shadow="sm">
-            <Text fontWeight="bold" fontSize="sm" color="gray.700" mb={3}>
-              📁 Filter Rombel
-            </Text>
+            
             <Stack gap={4}>
-              <Box>
-                <Text fontSize="2xs" fontWeight="black" color="gray.500" mb={1.5} textTransform="uppercase">
-                  Kelompok Ujian
-                </Text>
-                <Select.Root
-                  collection={examGroupOptions}
-                  value={selectedExamGroupId ? [selectedExamGroupId] : []}
-                  onValueChange={(details) => setSelectedExamGroupId(details.value[0] || '')}
-                  positioning={{ sameWidth: true }}
-                >
-                  <Select.HiddenSelect />
-                  <Select.Control>
-                    <Select.Trigger>
-                      <Select.ValueText placeholder="Pilih kelompok ujian" />
-                    </Select.Trigger>
-                    <Select.IndicatorGroup>
-                      <Select.Indicator />
-                      <Select.ClearTrigger />
-                    </Select.IndicatorGroup>
-                  </Select.Control>
-                  <Select.Positioner>
-                    <Select.Content>
-                      {examGroupOptions.items.map((item) => (
-                        <Select.Item key={item.value} item={item}>
-                          {item.label}
-                        </Select.Item>
-                      ))}
-                    </Select.Content>
-                  </Select.Positioner>
-                </Select.Root>
-              </Box>
-
-              <Box>
-                <Text fontSize="2xs" fontWeight="black" color="gray.500" mb={1.5} textTransform="uppercase">
-                  Rombongan Belajar
-                </Text>
-                {isLoadingRombels ? (
-                  <Spinner size="xs" />
-                ) : (
+              {/* Select Kegiatan Ujian */}
+              <Stack gap={1.5}>
+                <Text fontSize="xs" fontWeight="bold" color="gray.600">Kegiatan Ujian (Exam Group)</Text>
+                {isLoadingExamGroups ? <Spinner size="xs" /> : (
                   <Select.Root
-                    collection={rombelOptions}
-                    value={selectedRombelId ? [selectedRombelId] : []}
-                    onValueChange={(details) => setSelectedRombelId(details.value[0] || '')}
-                    positioning={{ sameWidth: true }}
+                    collection={examGroupCollection}
+                    value={selectedExamGroupId ? [selectedExamGroupId] : []}
+                    onValueChange={(details) => setSelectedExamGroupId(details.value[0] ?? '')}
+                    size="sm"
                   >
                     <Select.HiddenSelect />
                     <Select.Control>
                       <Select.Trigger>
-                        <Select.ValueText placeholder="Belum ada rombel terpilih" />
+                        <Select.ValueText placeholder="-- Pilih Kegiatan --" />
                       </Select.Trigger>
                       <Select.IndicatorGroup>
                         <Select.Indicator />
-                        <Select.ClearTrigger />
                       </Select.IndicatorGroup>
                     </Select.Control>
                     <Select.Positioner>
                       <Select.Content>
-                        {rombelOptions.items.map((item) => (
+                        {examGroupCollection.items.map((item) => (
                           <Select.Item key={item.value} item={item}>
                             {item.label}
                           </Select.Item>
@@ -495,371 +207,260 @@ export default function ExamCardsPage() {
                     </Select.Positioner>
                   </Select.Root>
                 )}
-              </Box>
+              </Stack>
 
-              <Box bg="blue.50" p={4} borderRadius="xl" border="1px solid" borderColor="blue.100">
-                <Text fontSize="xs" fontWeight="bold" color="blue.800" mb={1} textTransform="uppercase">
-                  Event Ujian Aktif
-                </Text>
-                <Text fontWeight="black" color="blue.900" fontSize="lg">
-                  {selectedExamGroup?.name || 'Pilih kelompok ujian dulu'}
-                </Text>
-                <Text fontSize="2xs" color="blue.700" mt={1}>
-                  Judul kartu mengikuti nama kelompok ujian yang sudah tersedia.
-                </Text>
-              </Box>
+              {/* Select Rombongan Belajar */}
+              <Stack gap={1.5}>
+                <Text fontSize="xs" fontWeight="bold" color="gray.600">Rombongan Belajar (Kelas)</Text>
+                {isLoadingRombels ? <Spinner size="xs" /> : (
+                  <Select.Root
+                    collection={rombelCollection}
+                    value={selectedRombelId ? [selectedRombelId] : []}
+                    onValueChange={(details) => setSelectedRombelId(details.value[0] ?? '')}
+                    size="sm"
+                  >
+                    <Select.HiddenSelect />
+                    <Select.Control>
+                      <Select.Trigger>
+                        <Select.ValueText placeholder="-- Pilih Rombel --" />
+                      </Select.Trigger>
+                      <Select.IndicatorGroup>
+                        <Select.Indicator />
+                      </Select.IndicatorGroup>
+                    </Select.Control>
+                    <Select.Positioner>
+                      <Select.Content>
+                        {rombelCollection.items.map((item) => (
+                          <Select.Item key={item.value} item={item}>
+                            {item.label}
+                          </Select.Item>
+                        ))}
+                      </Select.Content>
+                    </Select.Positioner>
+                  </Select.Root>
+                )}
+              </Stack>
 
-              <HStack gap={3} pt={2}>
-                <Button
-                  size="xs"
-                  variant="outline"
-                  borderRadius="lg"
-                  onClick={handleSelectAll}
-                  cursor="pointer"
-                  disabled={!students || students.length === 0}
-                  gap={1.5}
+              {/* Layout Cards */}
+              <Stack gap={1.5}>
+                <Text fontSize="xs" fontWeight="bold" color="gray.600">Tata Letak (Layout)</Text>
+                <Select.Root
+                  collection={layoutCollection}
+                  value={[cardLayout]}
+                  onValueChange={(details) => setCardLayout((details.value[0] as ExamCardLayout) ?? 'grid-6')}
+                  size="sm"
                 >
-                  <CheckSquare size={12} />
-                  Pilih Semua
-                </Button>
-                <Button
-                  size="xs"
-                  variant="outline"
-                  borderRadius="lg"
-                  onClick={handleSelectNone}
-                  cursor="pointer"
-                  disabled={!students || students.length === 0}
-                  gap={1.5}
-                >
-                  <Square size={12} />
-                  Kosongkan
-                </Button>
-              </HStack>
+                  <Select.HiddenSelect />
+                  <Select.Control>
+                    <Select.Trigger>
+                      <Select.ValueText />
+                    </Select.Trigger>
+                    <Select.IndicatorGroup>
+                      <Select.Indicator />
+                    </Select.IndicatorGroup>
+                  </Select.Control>
+                  <Select.Positioner>
+                    <Select.Content>
+                      {layoutCollection.items.map((item) => (
+                        <Select.Item key={item.value} item={item}>
+                          {item.label}
+                        </Select.Item>
+                      ))}
+                    </Select.Content>
+                  </Select.Positioner>
+                </Select.Root>
+              </Stack>
             </Stack>
           </Box>
 
-          {/* Info Banner */}
-          <Box
-            bg="blue.50"
-            p={5}
-            borderRadius="2xl"
-            border="1px solid"
-            borderColor="blue.100"
-            display="flex"
-            flexDirection="column"
-            justifyContent="space-between"
-            gap={3}
+          {/* Card Customization Info (Kepala Sekolah) */}
+          <Box bg="white" p={5} borderRadius="2xl" shadow="sm" border="1px solid" borderColor="gray.100">
+            <Heading size="md" fontWeight="bold" mb={4} color="gray.900" display="flex" alignItems="center" gap={2}>
+              <UserCheck size={18} className="text-indigo-600" />
+              Tanda Tangan & Detail
+            </Heading>
+
+            <Stack gap={4}>
+              <Stack gap={1}>
+                <Text fontSize="xs" fontWeight="bold" color="gray.600">Nama Kepala Sekolah</Text>
+                <Input
+                  size="sm"
+                  value={headmasterName}
+                  onChange={(e) => setHeadmasterName(e.target.value)}
+                  placeholder="Nama Kepala Sekolah beserta gelar"
+                  borderRadius="lg"
+                />
+              </Stack>
+
+              <Stack gap={1}>
+                <Text fontSize="xs" fontWeight="bold" color="gray.600">NIP Kepala Sekolah</Text>
+                <Input
+                  size="sm"
+                  value={headmasterNip}
+                  onChange={(e) => setHeadmasterNip(e.target.value)}
+                  placeholder="NIP Kepala Sekolah"
+                  borderRadius="lg"
+                />
+              </Stack>
+
+              <Stack gap={1}>
+                <Text fontSize="xs" fontWeight="bold" color="gray.600">Kota & Tanggal Kartu</Text>
+                <Input
+                  size="sm"
+                  value={cardDate}
+                  onChange={(e) => setCardDate(e.target.value)}
+                  placeholder="Contoh: Jakarta, 22 Juni 2026"
+                  borderRadius="lg"
+                />
+              </Stack>
+            </Stack>
+          </Box>
+
+          {/* Download Trigger */}
+          <Button
+            bg="indigo.650"
+            color="white"
+            _hover={{ bg: 'indigo.700' }}
+            h={12}
+            borderRadius="xl"
+            fontWeight="bold"
+            shadow="md"
+            cursor="pointer"
+            onClick={handleDownloadPDF}
+            loading={isGeneratingPdf || isLoadingStudents}
+            disabled={!selectedRombelId || students.length === 0}
+            gap={2}
           >
-            <Flex gap={2.5} align="flex-start">
-              <Info className="text-blue-600" size={20} style={{ flexShrink: 0, marginTop: '2px' }} />
-              <Box>
-                <Text fontWeight="bold" color="blue.800" fontSize="xs">
-                  Panduan Cetak
-                </Text>
-                <Text fontSize="2xs" color="blue.650" mt={1} lineHeight="relaxed">
-                  Gunakan browser Chrome/Edge, atur Paper Size ke <b>A4</b>, Margin ke <b>None / Default</b>, dan centang opsi <b>Background graphics</b> pada dialog cetak agar warna latar belakang tercetak.
-                </Text>
-              </Box>
-            </Flex>
-            <Text fontSize="3xs" fontWeight="semibold" color="blue.500">
-              * Password siswa yang dienkripsi akan diganti dengan instruksi penggunaan akun utama demi keamanan.
-            </Text>
-          </Box>
-        </SimpleGrid>
+            <Download size={18} />
+            Unduh Kartu (PDF)
+          </Button>
+        </Stack>
 
-        {/* Selection student list table */}
-        <Box bg="white" borderRadius="2xl" borderWidth="1px" borderColor="border.default" shadow="sm" overflow="hidden">
-          <Box px={5} py={4} borderBottom="1px solid" borderColor="gray.100" bg="gray.50/50">
-            <Text fontWeight="bold" color="gray.700" fontSize="sm">
-              Daftar Peserta Kelas ({students?.length || 0} Siswa ditemukan)
-            </Text>
-          </Box>
-          <Box maxH="400px" overflowY="auto" p={4}>
-            {isLoadingStudents ? (
-              <Flex justify="center" align="center" py={8}>
-                <Spinner size="md" color="indigo.600" />
-                <Text ml={3} color="gray.500">Memuat data siswa...</Text>
-              </Flex>
-            ) : !students || students.length === 0 ? (
-              <Flex direction="column" align="center" py={8}>
-                <Users size={32} className="text-gray-300 mb-2" />
-                <Text color="gray.500" fontSize="sm">
-                  Tidak ada siswa dalam rombel ini.
-                </Text>
-              </Flex>
-            ) : (
-              <SimpleGrid columns={{ base: 1, sm: 2, md: 3 }} gap={3}>
-                {students.map((student) => {
-                  const isChecked = selectedStudentIds.includes(student.id);
-                  return (
-                    <Flex
-                      key={student.id}
-                      align="center"
-                      gap={3}
-                      p={3}
-                      borderRadius="xl"
-                      borderWidth="1.5px"
-                      borderColor={isChecked ? 'indigo.500' : 'gray.100'}
-                      bg={isChecked ? 'indigo.50/15' : 'white'}
-                      cursor="pointer"
-                      onClick={() => handleToggleStudent(student.id)}
-                      _hover={{ bg: isChecked ? 'indigo.50/20' : 'gray.50/50' }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() => { }}
-                        style={{
-                          width: '16px',
-                          height: '16px',
-                          accentColor: '#4f46e5',
-                          cursor: 'pointer',
-                        }}
-                      />
-                      <Box overflow="hidden">
-                        <Text fontWeight="bold" fontSize="xs" color="gray.850" className="truncate">
-                          {student.user.fullName}
-                        </Text>
-                        <Text fontSize="3xs" color="gray.500">
-                          NIS: {student.nis} • {student.rombel?.name || 'Belum ada Rombel'}
-                        </Text>
-                      </Box>
-                    </Flex>
-                  );
-                })}
-              </SimpleGrid>
+        {/* Right Side: Virtual Sheet WYSIWYG Preview */}
+        <Box
+          bg="gray.50"
+          borderRadius="2xl"
+          p={6}
+          border="1px solid"
+          borderColor="gray.100"
+          minH="500px"
+          position="relative"
+        >
+          <Flex justify="space-between" align="center" mb={4}>
+            <Heading size="md" fontWeight="bold" color="gray.850" display="flex" alignItems="center" gap={2}>
+              <LayoutGrid size={18} className="text-indigo-600" />
+              Pratinjau Halaman Cetak
+            </Heading>
+            {students.length > 0 && (
+              <Text fontSize="xs" color="gray.500" fontWeight="semibold">
+                Total: {students.length} Siswa ({studentPages.length} Halaman PDF)
+              </Text>
             )}
-          </Box>
-        </Box>
-      </Box>
-
-      {/* ── Visual Screen Preview (Also the printable region) ────────────────── */}
-      <Box bg="white" p={{ base: 4, md: 6 }} borderRadius="2xl" borderWidth="1px" borderColor="border.default" shadow="sm" className="no-print">
-        <Flex justify="space-between" align="center" mb={4} borderBottom="1px solid" borderColor="gray.100" pb={3}>
-          <Text fontWeight="extrabold" fontSize="md" color="gray.700">
-            Pratinjau Halaman Cetak
-          </Text>
-          <Badge colorPalette="indigo" fontSize="2xs" px={2.5} py={0.5} borderRadius="md">
-            Preview
-          </Badge>
-        </Flex>
-        {selectedStudentIds.length === 0 ? (
-          <Flex justify="center" py={12} color="gray.450" fontStyle="italic">
-            Pilih siswa untuk menampilkan pratinjau kartu.
           </Flex>
-        ) : (
-          <Box bg="gray.100" p={4} borderRadius="xl" border="1px inset" borderColor="gray.200">
-            <SimpleGrid columns={cardLayout === 'grid-4' ? { base: 1, lg: 2 } : 1} gap={4}>
-              {filteredStudentsForPrint?.map((student) => (
+
+          {/* Loader or Empty State */}
+          {isLoadingStudents ? (
+            <Flex justify="center" align="center" h="400px" direction="column" gap={3}>
+              <Spinner size="xl" color="indigo.600" />
+              <Text fontSize="sm" color="gray.500">Memuat data siswa...</Text>
+            </Flex>
+          ) : !selectedRombelId ? (
+            <Flex justify="center" align="center" h="400px" direction="column" gap={3} border="2px dashed" borderColor="gray.200" borderRadius="2xl" p={8}>
+              <Users size={48} className="text-gray-300" />
+              <Text fontSize="sm" color="gray.500" textAlign="center" maxW="300px">
+                Silakan pilih Rombongan Belajar di panel kiri untuk memuat pratinjau kartu ujian.
+              </Text>
+            </Flex>
+          ) : students.length === 0 ? (
+            <Flex justify="center" align="center" h="400px" direction="column" gap={3} border="2px dashed" borderColor="gray.200" borderRadius="2xl" p={8}>
+              <Users size={48} className="text-gray-300" />
+              <Text fontSize="sm" color="gray.500">
+                Tidak ada data siswa ditemukan di rombel ini.
+              </Text>
+            </Flex>
+          ) : (
+            <Stack gap={8} maxW="794px" mx="auto">
+              {/* WYSIWYG Page View */}
+              {studentPages.map((pageChunk, pageIndex) => (
                 <Box
-                  key={student.id}
+                  key={pageIndex}
                   bg="white"
-                  border="2px solid"
-                  borderColor="gray.400"
-                  borderRadius="xl"
-                  p={0}
-                  shadow="sm"
-                  display="flex"
-                  flexDirection="column"
-                  justifyContent="space-between"
-                  h="560px"
-                  overflow="hidden"
+                  boxShadow="md"
+                  border="1px solid"
+                  borderColor="gray.200"
+                  p={6}
+                  borderRadius="lg"
+                  position="relative"
                 >
-                  <Box px={4} pt={3} pb={2} bg="blue.50" borderBottom="1px solid" borderColor="gray.300" position="relative">
-                    <Flex align="center" gap={3}>
-                      <Box w="48px" h="48px" borderRadius="md" overflow="hidden" flexShrink={0} bg="white" border="1px solid" borderColor="gray.300" display="flex" alignItems="center" justifyContent="center">
-                        {settings?.logoUrl ? (
-                          <img
-                            src={getAssetUrl(settings.logoUrl)}
-                            alt="School Logo"
-                            style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
-                          />
-                        ) : (
-                          <ShieldAlert size={28} className="text-indigo-600" />
-                        )}
-                      </Box>
-                      <Box textAlign="center" flex={1} pr={10}>
-                        <Text fontWeight="black" fontSize="xs" color="gray.900" textTransform="uppercase" letterSpacing="tight">
-                          {settings?.appName || 'SMK PLUS PELITA NUSANTARA BOGOR'}
-                        </Text>
-                        <Text fontWeight="extrabold" fontSize="sm" color="gray.900" textTransform="uppercase">
-                          KARTU PESERTA UJIAN {selectedExamGroup?.name || activeEventTitle}
-                        </Text>
-                        <Text fontSize="2xs" color="gray.700" fontWeight="bold">
-                          TAHUN PELAJARAN {settings?.academicYear || '2025 - 2026'}
-                        </Text>
-                      </Box>
-                      <Box position="absolute" top={2} right={3} w="72px" h="72px" borderRadius="full" bg="blue.100" border="2px solid" borderColor="blue.400" display="flex" alignItems="center" justifyContent="center">
-                        <Text fontWeight="black" color="blue.800" fontSize="2xl">
-                          {String(selectedStudentIds.length).padStart(2, '0')}
-                        </Text>
-                      </Box>
-                    </Flex>
+                  {/* Page indicator */}
+                  <Box
+                    position="absolute"
+                    top={2}
+                    right={4}
+                    fontSize="10px"
+                    fontWeight="bold"
+                    color="gray.400"
+                  >
+                    Halaman {pageIndex + 1} dari {studentPages.length}
                   </Box>
 
-                  <Box px={4} pt={3} pb={2}>
-                    <Flex justify="space-between" fontSize="xs" color="gray.800" mb={2}>
-                      <Text>No. Peserta</Text>
-                      <Text fontWeight="bold">: {student.nis || '-'}</Text>
-                    </Flex>
-                    <Flex justify="space-between" fontSize="xs" color="gray.800" mb={2}>
-                      <Text>Nama</Text>
-                      <Text fontWeight="bold" textTransform="capitalize">: {student.user.fullName}</Text>
-                    </Flex>
-                    <Flex justify="space-between" fontSize="xs" color="gray.800" mb={2}>
-                      <Text>Kelas</Text>
-                      <Text fontWeight="bold">: {student.rombel?.name || '-'}</Text>
-                    </Flex>
-                    <Flex justify="space-between" fontSize="xs" color="gray.800">
-                      <Text>Ruang</Text>
-                      <Text fontWeight="bold">: -</Text>
-                    </Flex>
-                  </Box>
-
-                  <Box px={4} pb={2}>
-                    <Box border="1px solid" borderColor="gray.500" borderRadius="sm" overflow="hidden">
-                      <Box bg="gray.100" px={3} py={2} borderBottom="1px solid" borderColor="gray.500">
-                        <Text fontWeight="black" textAlign="center" fontSize="sm" color="gray.900">
-                          JADWAL UJIAN {selectedExamGroup?.name || activeEventTitle}
-                        </Text>
-                        <Text fontWeight="black" textAlign="center" fontSize="xs" color="gray.900">
-                          TAHUN PELAJARAN {settings?.academicYear || '2025 - 2026'}
-                        </Text>
-                      </Box>
-                      <Box as="table" width="100%" fontSize="2xs">
-                        <Box as="tbody">
-                          <Box as="tr">
-                            <Box as="td" borderBottom="1px solid" borderColor="gray.500" p={2} w="28%" fontWeight="bold">Hari/Tanggal</Box>
-                            <Box as="td" borderBottom="1px solid" borderColor="gray.500" p={2} w="20%" fontWeight="bold">Waktu</Box>
-                            <Box as="td" borderBottom="1px solid" borderColor="gray.500" p={2} fontWeight="bold">Mata Pelajaran</Box>
-                            <Box as="td" borderBottom="1px solid" borderColor="gray.500" p={2} w="16%" fontWeight="bold">Tanda Tangan Pengawas</Box>
-                          </Box>
-                          {['Senin, 08-06-2026', 'Selasa, 09-06-2026', 'Rabu, 10-06-2026', 'Kamis, 11-06-2026', 'Jumat, 12-06-2026', 'Sabtu, 13-06-2026'].map((day, index) => (
-                            <Box as="tr" key={day}>
-                              <Box as="td" borderBottom="1px solid" borderColor="gray.300" p={2} verticalAlign="top">{day}</Box>
-                              <Box as="td" borderBottom="1px solid" borderColor="gray.300" p={2} verticalAlign="top">07.30 - 09.00</Box>
-                              <Box as="td" borderBottom="1px solid" borderColor="gray.300" p={2} verticalAlign="top">{index === 0 ? 'Pendidikan Agama dan Budi Pekerti' : index === 1 ? 'Bahasa Indonesia' : index === 2 ? 'Matematika' : index === 3 ? 'Bahasa Inggris' : index === 4 ? 'Pendidikan Pancasila' : 'Seni Budaya'}</Box>
-                              <Box as="td" borderBottom="1px solid" borderColor="gray.300" p={2} verticalAlign="top"></Box>
-                            </Box>
-                          ))}
-                        </Box>
-                      </Box>
-                    </Box>
-                  </Box>
-
-                  <Box px={4} pb={3}>
-                    <Box bg="gray.50" border="1px solid" borderColor="gray.300" borderRadius="md" p={2}>
-                      <Text fontSize="2xs" fontWeight="bold" color="gray.700" textTransform="uppercase">
-                        Akun CBT
-                      </Text>
-                      <Text fontSize="2xs" color="gray.800" mt={1}>
-                        Username: <b>{student.user.username}</b>
-                      </Text>
-                      <Text fontSize="2xs" color="gray.800">
-                        Password: <b>{student.user.username}</b>
-                      </Text>
-                    </Box>
-                  </Box>
-
-                  <Flex px={4} pb={4} align="flex-end" justify="space-between" gap={4}>
-                    <Box w="56px" h="56px" border="1px solid" borderColor="gray.300" borderRadius="md" p={0.5} bg="white">
-                      <img
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=56x56&data=${student.user.username}`}
-                        alt="QR Code"
-                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                  <Grid
+                    templateColumns="repeat(2, 1fr)"
+                    gap={4}
+                    mt={4}
+                  >
+                    {pageChunk.map((student) => (
+                      <ExamCardTemplate
+                        key={student.id}
+                        student={student}
+                        examGroupName={activeExamGroupName}
+                        headmasterName={headmasterName}
+                        headmasterNip={headmasterNip}
+                        cardDate={cardDate}
                       />
-                    </Box>
-                    <Box textAlign="center" w="45%" fontSize="2xs">
-                      <Text color="gray.600">Sibing, 8 Juni 2026</Text>
-                      <Text color="gray.600">Kepala Sekolah</Text>
-                      <Box h="34px" />
-                      <Text fontWeight="bold" borderTop="1px solid" borderColor="gray.700" pt={1} color="gray.900">
-                        {headmasterName}
-                      </Text>
-                    </Box>
-                  </Flex>
+                    ))}
+                  </Grid>
                 </Box>
               ))}
-            </SimpleGrid>
+            </Stack>
+          )}
+
+          {/* Hidden PDF Render Target (Specifically formatted for html2pdf.js A4 layout) */}
+          <Box style={{ display: 'none' }}>
+            <Box id="printable-exam-cards-container" style={{ width: '100%', color: 'black', background: 'white' }}>
+              {studentPages.map((pageChunk, pageIndex) => (
+                <Box
+                  key={pageIndex}
+                  style={{
+                    pageBreakAfter: pageIndex < studentPages.length - 1 ? 'always' : 'auto',
+                    breakAfter: pageIndex < studentPages.length - 1 ? 'page' : 'auto',
+                    paddingBottom: pageIndex < studentPages.length - 1 ? '10px' : '0px',
+                    boxSizing: 'border-box',
+                    width: '100%',
+                  }}
+                >
+                  <Grid
+                    templateColumns="repeat(2, 1fr)"
+                    gap="12px"
+                    style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}
+                  >
+                    {pageChunk.map((student) => (
+                      <ExamCardTemplate
+                        key={student.id}
+                        student={student}
+                        examGroupName={activeExamGroupName}
+                        headmasterName={headmasterName}
+                        headmasterNip={headmasterNip}
+                        cardDate={cardDate}
+                      />
+                    ))}
+                  </Grid>
+                </Box>
+              ))}
+            </Box>
           </Box>
-        )}
-      </Box>
-
-      {/* ── PRINT-ONLY CONTAINER (Fully hidden in standard screen view) ── */}
-      <Box display="none" className="print-container">
-        <div className={`print-grid ${cardLayout === 'grid-2' ? 'card-layout-grid-2' : ''}`}>
-          {filteredStudentsForPrint?.map((student) => (
-            <div key={student.id} className="print-card">
-              <div className="print-card-header">
-                {settings?.logoUrl ? (
-                  <img
-                    src={getAssetUrl(settings.logoUrl)}
-                    alt="Logo"
-                    className="print-school-logo"
-                  />
-                ) : (
-                  <div style={{ width: '45px', height: '45px', border: '1px solid #000' }} />
-                )}
-                <div className="print-header-text">
-                  <div className="print-school-name">{settings?.appName || 'SMK PLUS PELITA NUSANTARA BOGOR'}</div>
-                  <div className="print-event-title">KARTU PESERTA UJIAN {selectedExamGroup?.name || activeEventTitle}</div>
-                  <div className="print-academic-year">
-                    TAHUN PELAJARAN {settings?.academicYear || '2025 - 2026'}
-                  </div>
-                </div>
-              </div>
-
-              <div className="print-card-body">
-                <div className="print-participant-number">{String(selectedStudentIds.length).padStart(2, '0')}</div>
-                <table className="print-details-table">
-                  <tbody>
-                    <tr>
-                      <td style={{ width: '70px', fontWeight: 'bold' }}>No. Peserta</td>
-                      <td style={{ width: '8px' }}>:</td>
-                      <td>{student.nis || '-'}</td>
-                    </tr>
-                    <tr>
-                      <td style={{ fontWeight: 'bold' }}>Nama</td>
-                      <td>:</td>
-                      <td>{student.user.fullName}</td>
-                    </tr>
-                    <tr>
-                      <td style={{ fontWeight: 'bold' }}>Kelas</td>
-                      <td>:</td>
-                      <td>{student.rombel?.name || '-'}</td>
-                    </tr>
-                    <tr>
-                      <td style={{ fontWeight: 'bold' }}>Ruang</td>
-                      <td>:</td>
-                      <td>-</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="print-schedule-title">Jadwal Ujian {selectedExamGroup?.name || activeEventTitle}</div>
-              <div className="print-credentials-box">
-                <div><b>Akun CBT</b></div>
-                <div style={{ marginTop: '3px' }}>Username: <b>{student.user.username}</b></div>
-                <div>Password: <b>{student.user.username}</b></div>
-              </div>
-
-              <div className="print-card-footer">
-                <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=56x56&data=${student.user.username}`}
-                  alt="QR Code"
-                  className="print-qr-code"
-                />
-                <div className="print-signature-space">
-                  <div>Sibing, 8 Juni 2026</div>
-                  <div>Kepala Sekolah</div>
-                  <div className="print-signature-line">{headmasterName}</div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </Box>
-    </Box>
+        </Box>
+      </Grid>
+    </Stack>
   );
 }
