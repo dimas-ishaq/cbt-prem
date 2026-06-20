@@ -60,7 +60,7 @@ export function LoginForm() {
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
-          'Login gagal. Periksa kembali username dan password Anda.'
+        'Login gagal. Periksa kembali username dan password Anda.'
       );
     } finally {
       setIsLoading(false);
@@ -152,7 +152,7 @@ export function LoginForm() {
           <Stack gap={4}>
 
             {/* Username */}
-            <Field.Root invalid={!!errors.username}>
+            <Field.Root invalid={!!errors.username} w="full">
               <Field.Label
                 fontSize="xs"
                 fontWeight="bold"
@@ -163,7 +163,7 @@ export function LoginForm() {
               >
                 Username
               </Field.Label>
-              <Box position="relative">
+              <Box position="relative" w="full">
                 {/* Icon */}
                 <Box
                   position="absolute"
@@ -177,8 +177,8 @@ export function LoginForm() {
                     color: errors.username
                       ? '#be123c'
                       : focused === 'username'
-                      ? '#4f46e5'
-                      : '#94a3b8',
+                        ? '#4f46e5'
+                        : '#94a3b8',
                   }}
                 >
                   <User size={16} />
@@ -192,8 +192,7 @@ export function LoginForm() {
                   onFocus={() => setFocused('username')}
                   onBlur={() => setFocused(null)}
                   variant="subtle"
-                  invalid={!!errors.username}
-                  w="full"
+                  w={{ base: 'full', md: 'full' }}
                   pl="10"
                   pr="4"
                   h="11"
@@ -218,7 +217,7 @@ export function LoginForm() {
             </Field.Root>
 
             {/* Password */}
-            <Field.Root invalid={!!errors.password}>
+            <Field.Root invalid={!!errors.password} w="full">
               <Field.Label
                 fontSize="xs"
                 fontWeight="bold"
@@ -229,7 +228,7 @@ export function LoginForm() {
               >
                 Password
               </Field.Label>
-              <Box position="relative">
+              <Box position="relative" w="full">
                 {/* Lock icon */}
                 <Box
                   position="absolute"
@@ -243,8 +242,8 @@ export function LoginForm() {
                     color: errors.password
                       ? '#be123c'
                       : focused === 'password'
-                      ? '#4f46e5'
-                      : '#94a3b8',
+                        ? '#4f46e5'
+                        : '#94a3b8',
                   }}
                 >
                   <Lock size={16} />
@@ -259,7 +258,6 @@ export function LoginForm() {
                   onFocus={() => setFocused('password')}
                   onBlur={() => setFocused(null)}
                   variant="subtle"
-                  invalid={!!errors.password}
                   w="full"
                   pl="10"
                   pr="11"
@@ -335,9 +333,9 @@ export function LoginForm() {
               _hover={
                 !isLoading
                   ? {
-                      transform: 'translateY(-2px)',
-                      boxShadow: '0 6px 20px rgba(79,70,229,0.50)',
-                    }
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 6px 20px rgba(79,70,229,0.50)',
+                  }
                   : undefined
               }
               _active={{ transform: 'translateY(0)' }}
