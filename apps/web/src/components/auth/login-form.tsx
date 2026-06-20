@@ -19,6 +19,7 @@ import {
   Spinner,
   Flex,
   Badge,
+  Input,
 } from '@chakra-ui/react';
 
 const loginSchema = z.object({
@@ -112,7 +113,7 @@ export function LoginForm() {
             Masuk ke Akun Anda
           </Heading>
           <Text color="text.secondary" fontSize="sm">
-            CBT Enterprise &mdash; Platform Ujian Terpercaya
+            Novatech CBT &mdash; Platform Ujian Terpercaya
           </Text>
 
           {/* Secure badge */}
@@ -183,33 +184,29 @@ export function LoginForm() {
                   <User size={16} />
                 </Box>
 
-                <input
+                <Input
                   {...register('username')}
                   id="login-username"
                   autoComplete="username"
                   placeholder="Masukkan username Anda"
                   onFocus={() => setFocused('username')}
                   onBlur={() => setFocused(null)}
-                  style={{
-                    width: '100%',
-                    paddingLeft: '40px',
-                    paddingRight: '16px',
-                    paddingTop: '12px',
-                    paddingBottom: '12px',
-                    borderRadius: '10px',
-                    fontSize: '14px',
-                    border: errors.username
-                      ? '1.5px solid #f43f5e'
-                      : focused === 'username'
-                      ? '1.5px solid #4f46e5'
-                      : '1.5px solid var(--border-default)',
-                    background: 'var(--bg-elevated)',
-                    color: 'var(--text-primary)',
-                    outline: 'none',
-                    boxShadow: focused === 'username'
-                      ? '0 0 0 3px rgba(79,70,229,0.12)'
-                      : 'none',
-                    transition: 'all 0.15s ease',
+                  variant="subtle"
+                  invalid={!!errors.username}
+                  w="full"
+                  pl="10"
+                  pr="4"
+                  h="11"
+                  borderRadius="xl"
+                  bg="bg.elevated"
+                  borderColor="border.default"
+                  _focus={{
+                    borderColor: 'brand.solid',
+                    bg: 'bg.elevated',
+                    boxShadow: '0 0 0 3px rgba(79,70,229,0.12)'
+                  }}
+                  _invalid={{
+                    borderColor: 'status.danger.text',
                   }}
                 />
               </Box>
@@ -253,7 +250,7 @@ export function LoginForm() {
                   <Lock size={16} />
                 </Box>
 
-                <input
+                <Input
                   {...register('password')}
                   id="login-password"
                   type={showPassword ? 'text' : 'password'}
@@ -261,26 +258,22 @@ export function LoginForm() {
                   placeholder="Masukkan password Anda"
                   onFocus={() => setFocused('password')}
                   onBlur={() => setFocused(null)}
-                  style={{
-                    width: '100%',
-                    paddingLeft: '40px',
-                    paddingRight: '46px',
-                    paddingTop: '12px',
-                    paddingBottom: '12px',
-                    borderRadius: '10px',
-                    fontSize: '14px',
-                    border: errors.password
-                      ? '1.5px solid #f43f5e'
-                      : focused === 'password'
-                      ? '1.5px solid #4f46e5'
-                      : '1.5px solid var(--border-default)',
-                    background: 'var(--bg-elevated)',
-                    color: 'var(--text-primary)',
-                    outline: 'none',
-                    boxShadow: focused === 'password'
-                      ? '0 0 0 3px rgba(79,70,229,0.12)'
-                      : 'none',
-                    transition: 'all 0.15s ease',
+                  variant="subtle"
+                  invalid={!!errors.password}
+                  w="full"
+                  pl="10"
+                  pr="11"
+                  h="11"
+                  borderRadius="xl"
+                  bg="bg.elevated"
+                  borderColor="border.default"
+                  _focus={{
+                    borderColor: 'brand.solid',
+                    bg: 'bg.elevated',
+                    boxShadow: '0 0 0 3px rgba(79,70,229,0.12)'
+                  }}
+                  _invalid={{
+                    borderColor: 'status.danger.text',
                   }}
                 />
 

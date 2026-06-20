@@ -14,7 +14,7 @@ export class SettingsService {
     // Set defaults if not set in db
     if (!result.logoUrl) result.logoUrl = '';
     if (!result.timezone) result.timezone = 'Asia/Jakarta';
-    if (!result.appName) result.appName = 'CBT Enterprise';
+    if (!result.appName) result.appName = 'Novatech CBT';
     if (!result.language) result.language = 'id';
     if (!result.academicYear) result.academicYear = '2024/2025';
     return result;

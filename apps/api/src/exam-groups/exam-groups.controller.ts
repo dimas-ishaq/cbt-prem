@@ -14,7 +14,7 @@ export class ExamGroupsController {
   constructor(private readonly examGroupsService: ExamGroupsService) {}
 
   @Post()
-  @Roles(Role.SUPER_ADMIN, Role.GURU)
+  @Roles(Role.SUPER_ADMIN)
   create(@Body() createExamGroupDto: CreateExamGroupDto) {
     return this.examGroupsService.create(createExamGroupDto);
   }
@@ -30,7 +30,7 @@ export class ExamGroupsController {
   }
 
   @Patch(':id')
-  @Roles(Role.SUPER_ADMIN, Role.GURU)
+  @Roles(Role.SUPER_ADMIN)
   update(@Param('id') id: string, @Body() updateExamGroupDto: UpdateExamGroupDto) {
     return this.examGroupsService.update(id, updateExamGroupDto);
   }

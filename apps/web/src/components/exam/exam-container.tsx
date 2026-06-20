@@ -21,6 +21,8 @@ import {
   Spinner,
   SimpleGrid,
   Stack,
+  Checkbox,
+  Input,
 } from '@chakra-ui/react';
 import { useConfirm } from '@/components/ui/confirmation-dialog';
 
@@ -886,19 +888,15 @@ export function ExamContainer({ examId }: Props) {
                   onClick={() => setCheckedTerms(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
                   _hover={{ borderColor: 'indigo.500/50', bg: 'whiteAlpha.100' }}
                 >
-                  <input
-                    type="checkbox"
+                  <Checkbox.Root
                     checked={checkedTerms[item.id] || false}
-                    onChange={() => {}}
-                    style={{
-                      marginTop: '4px',
-                      marginRight: '18px',
-                      width: '20px',
-                      height: '20px',
-                      accentColor: '#6366f1',
-                      cursor: 'pointer'
-                    }}
-                  />
+                    onCheckedChange={() => {}}
+                    mr="18px"
+                    mt="4px"
+                  >
+                    <Checkbox.HiddenInput />
+                    <Checkbox.Control cursor="pointer" />
+                  </Checkbox.Root>
                   <Box>
                     <Text fontWeight="bold" color={checkedTerms[item.id] ? 'white' : 'gray.200'} fontSize="sm">
                       {item.title}
@@ -917,8 +915,7 @@ export function ExamContainer({ examId }: Props) {
                 <Text fontSize="xs" fontWeight="bold" color="indigo.300" mb={3} textTransform="uppercase" letterSpacing="wider">
                   Masukkan Token Ujian
                 </Text>
-                <input
-                  type="text"
+                <Input
                   placeholder={allChecked ? "Masukkan 8 digit token" : "Centang semua persetujuan di atas untuk mengisi token"}
                   value={tokenInput}
                   disabled={!allChecked}
@@ -926,22 +923,21 @@ export function ExamContainer({ examId }: Props) {
                     setTokenInput(e.target.value.toUpperCase());
                     setTokenError('');
                   }}
-                  style={{
-                    width: '100%',
-                    padding: '14px 18px',
-                    borderRadius: '14px',
-                    border: '2px solid',
-                    borderColor: tokenError ? '#ef4444' : (allChecked ? '#6366f1' : 'transparent'),
-                    backgroundColor: allChecked ? '#0f172a' : '#1e293b/30',
-                    color: allChecked ? '#ffffff' : '#64748b',
-                    fontSize: '18px',
-                    fontWeight: 'black',
-                    letterSpacing: allChecked ? '4px' : 'normal',
-                    textAlign: 'center',
-                    outline: 'none',
-                    transition: 'all 0.2s',
-                    cursor: allChecked ? 'text' : 'not-allowed',
-                  }}
+                  w="full"
+                  h="auto"
+                  py={3.5}
+                  px={4.5}
+                  borderRadius="xl"
+                  border="2px solid"
+                  borderColor={tokenError ? 'red.500' : (allChecked ? 'indigo.500' : 'transparent')}
+                  bg={allChecked ? 'gray.950' : 'whiteAlpha.50'}
+                  color={allChecked ? 'white' : 'whiteAlpha.400'}
+                  fontSize="lg"
+                  fontWeight="black"
+                  letterSpacing={allChecked ? '4px' : 'normal'}
+                  textAlign="center"
+                  _focus={{ outline: 'none', borderColor: 'indigo.500' }}
+                  cursor={allChecked ? 'text' : 'not-allowed'}
                 />
                 {!allChecked && (
                   <Text color="gray.500" fontSize="3xs" fontWeight="bold" mt={2.5} textAlign="center">

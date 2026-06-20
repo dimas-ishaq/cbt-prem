@@ -517,12 +517,13 @@ export default function EditExamPage({ params }: EditExamPageProps) {
                               bg={isChecked ? 'indigo.50/30' : 'transparent'}
                             >
                               <HStack gap={3} flex={1}>
-                                <input
-                                  type="checkbox"
+                                <Checkbox.Root
                                   checked={isChecked}
-                                  onChange={() => toggleQuestion(q.id)}
-                                  style={{ width: '16px', height: '16px', accentColor: '#4f46e5', cursor: 'pointer' }}
-                                />
+                                  onCheckedChange={() => toggleQuestion(q.id)}
+                                >
+                                  <Checkbox.HiddenInput />
+                                  <Checkbox.Control cursor="pointer" />
+                                </Checkbox.Root>
                                 <Box>
                                   <Text fontSize="xs" fontWeight="semibold" color="gray.800" lineClamp={2}>
                                     {q.content.replace(/<[^>]*>/g, '')}
@@ -612,34 +613,33 @@ export default function EditExamPage({ params }: EditExamPageProps) {
                   </Box>
 
                   <Stack gap={3}>
-                    <Flex as="label" align="center" gap={3} cursor="pointer">
-                      <input
-                        type="checkbox"
-                        checked={formData.randomizeSoal}
-                        onChange={(e) => setFormData({ ...formData, randomizeSoal: e.target.checked })}
-                        style={{ width: '16px', height: '16px', accentColor: '#4f46e5' }}
-                      />
-                      <Text fontSize="sm" color="gray.700">Acak Urutan Soal</Text>
-                    </Flex>
-                    <Flex as="label" align="center" gap={3} cursor="pointer">
-                      <input
-                        type="checkbox"
-                        checked={formData.randomizeOpsi}
-                        onChange={(e) => setFormData({ ...formData, randomizeOpsi: e.target.checked })}
-                        style={{ width: '16px', height: '16px', accentColor: '#4f46e5' }}
-                      />
-                      <Text fontSize="sm" color="gray.700">Acak Urutan Opsi</Text>
-                    </Flex>
+                    <Checkbox.Root
+                      checked={formData.randomizeSoal}
+                      onCheckedChange={(details) => setFormData({ ...formData, randomizeSoal: !!details.checked })}
+                    >
+                      <Checkbox.HiddenInput />
+                      <Checkbox.Control />
+                      <Checkbox.Label fontSize="sm" color="gray.700">Acak Urutan Soal</Checkbox.Label>
+                    </Checkbox.Root>
 
-                    <Flex as="label" align="center" gap={3} cursor="pointer">
-                      <input
-                        type="checkbox"
-                        checked={formData.requireSeb}
-                        onChange={(e) => setFormData({ ...formData, requireSeb: e.target.checked })}
-                        style={{ width: '16px', height: '16px', accentColor: '#4f46e5' }}
-                      />
-                      <Text fontSize="sm" fontWeight="bold" color="gray.700">Wajibkan Safe Exam Browser</Text>
-                    </Flex>
+                    <Checkbox.Root
+                      checked={formData.randomizeOpsi}
+                      onCheckedChange={(details) => setFormData({ ...formData, randomizeOpsi: !!details.checked })}
+                    >
+                      <Checkbox.HiddenInput />
+                      <Checkbox.Control />
+                      <Checkbox.Label fontSize="sm" color="gray.700">Acak Urutan Opsi</Checkbox.Label>
+                    </Checkbox.Root>
+
+                    <Checkbox.Root
+                      checked={formData.requireSeb}
+                      onCheckedChange={(details) => setFormData({ ...formData, requireSeb: !!details.checked })}
+                    >
+                      <Checkbox.HiddenInput />
+                      <Checkbox.Control />
+                      <Checkbox.Label fontSize="sm" fontWeight="bold" color="gray.700">Wajibkan Safe Exam Browser</Checkbox.Label>
+                    </Checkbox.Root>
+
                     {formData.requireSeb && (
                       <Stack gap={2.5} pl={7} className="animate-fade-in">
                         <Box>
@@ -665,24 +665,23 @@ export default function EditExamPage({ params }: EditExamPageProps) {
                       </Stack>
                     )}
 
-                    <Flex as="label" align="center" gap={3} cursor="pointer">
-                      <input
-                        type="checkbox"
-                        checked={formData.blockKeyCopyPaste}
-                        onChange={(e) => setFormData({ ...formData, blockKeyCopyPaste: e.target.checked })}
-                        style={{ width: '16px', height: '16px', accentColor: '#4f46e5' }}
-                      />
-                      <Text fontSize="sm" color="gray.700">Proteksi Keyboard & Mouse (Klik Kanan, Copy-Paste, DevTools)</Text>
-                    </Flex>
-                    <Flex as="label" align="center" gap={3} cursor="pointer">
-                      <input
-                        type="checkbox"
-                        checked={formData.forceFullscreen}
-                        onChange={(e) => setFormData({ ...formData, forceFullscreen: e.target.checked })}
-                        style={{ width: '16px', height: '16px', accentColor: '#4f46e5' }}
-                      />
-                      <Text fontSize="sm" color="gray.700">Wajibkan Layar Penuh (Forced Fullscreen)</Text>
-                    </Flex>
+                    <Checkbox.Root
+                      checked={formData.blockKeyCopyPaste}
+                      onCheckedChange={(details) => setFormData({ ...formData, blockKeyCopyPaste: !!details.checked })}
+                    >
+                      <Checkbox.HiddenInput />
+                      <Checkbox.Control />
+                      <Checkbox.Label fontSize="sm" color="gray.700">Proteksi Keyboard & Mouse (Klik Kanan, Copy-Paste, DevTools)</Checkbox.Label>
+                    </Checkbox.Root>
+
+                    <Checkbox.Root
+                      checked={formData.forceFullscreen}
+                      onCheckedChange={(details) => setFormData({ ...formData, forceFullscreen: !!details.checked })}
+                    >
+                      <Checkbox.HiddenInput />
+                      <Checkbox.Control />
+                      <Checkbox.Label fontSize="sm" color="gray.700">Wajibkan Layar Penuh (Forced Fullscreen)</Checkbox.Label>
+                    </Checkbox.Root>
                     <Box>
                       <Text fontSize="xs" fontWeight="semibold" color="gray.700" mb={1}>Batas Maksimum Pelanggaran (0 untuk Tidak Terbatas)</Text>
                       <Input

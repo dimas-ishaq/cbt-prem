@@ -22,6 +22,7 @@ import {
   Textarea,
   createListCollection,
   Select,
+  Checkbox,
 } from '@chakra-ui/react';
 import { toast } from '@/lib/toaster';
 import { useConfirm } from '@/components/ui/confirmation-dialog';
@@ -695,12 +696,13 @@ export default function RolesPage() {
                                             alignItems="center"
                                             gap={2}
                                           >
-                                            <input
-                                              type="checkbox"
+                                            <Checkbox.Root
                                               checked={isChecked}
-                                              onChange={() => {}} // handled by outer Box onClick
-                                              style={{ cursor: 'pointer' }}
-                                            />
+                                              onCheckedChange={() => {}} // handled by outer Box onClick
+                                            >
+                                              <Checkbox.HiddenInput />
+                                              <Checkbox.Control cursor="pointer" />
+                                            </Checkbox.Root>
                                             <Box>
                                               <HStack gap={1}>
                                                 <Text fontSize="xs" fontWeight="medium" color={isChecked ? (isCritical ? 'red.900' : 'indigo.900') : 'gray.700'}>

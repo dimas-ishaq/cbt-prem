@@ -125,7 +125,7 @@ export default function LoginPage() {
           w="full"
         >
           {/* Logo */}
-          <Flex align="center" gap={3}>
+          <Flex align="center" gap={3} pb={5}>
             <Flex
               align="center"
               justify="center"
@@ -155,7 +155,7 @@ export default function LoginPage() {
                 textTransform="uppercase"
                 lineHeight="1"
               >
-                {settings?.appName || 'CBT Enterprise'}
+                {settings?.appName || 'Novatech CBT'}
               </Text>
               <Text fontSize="2xs" color="blue.400" fontWeight="bold" letterSpacing="wider" textTransform="uppercase">
                 Secure Platform
@@ -293,7 +293,7 @@ export default function LoginPage() {
 
           {/* Footer */}
           <Text fontSize="2xs" color="blue.500" fontWeight="medium" letterSpacing="wide">
-            &copy; {new Date().getFullYear()} CBT Enterprise Platform &mdash; Hak Cipta Dilindungi
+            &copy; {new Date().getFullYear()} Novatech CBT Platform &mdash; Hak Cipta Dilindungi
           </Text>
         </Flex>
       </Box>
@@ -372,7 +372,7 @@ export default function LoginPage() {
               letterSpacing="wide"
               textTransform="uppercase"
             >
-              {settings?.appName || 'CBT Enterprise'}
+              {settings?.appName || 'Novatech CBT'}
             </Text>
           </Flex>
         </Box>

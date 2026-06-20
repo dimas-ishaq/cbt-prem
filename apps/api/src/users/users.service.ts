@@ -159,7 +159,7 @@ export class UsersService {
   }
 
   /** Update self profile (name, email, password) */
-  async updateSelfProfile(id: string, dto: { fullName?: string; email?: string; password?: string }) {
+  async updateSelfProfile(id: string, dto: { fullName?: string; email?: string; password?: string; photo?: string }) {
     const user = await this.findUserById(id);
 
     if (dto.email) {
@@ -172,6 +172,7 @@ export class UsersService {
     const data: Prisma.UserUpdateInput = {};
     if (dto.fullName) data.fullName = dto.fullName;
     if (dto.email) data.email = dto.email;
+    if (dto.photo !== undefined) data.photo = dto.photo;
     if (dto.password) {
       data.password = await bcrypt.hash(dto.password, 10);
       data.plainPassword = dto.password;
@@ -186,6 +187,7 @@ export class UsersService {
         email: true,
         fullName: true,
         role: true,
+        photo: true,
         isActive: true,
       },
     });

@@ -20,6 +20,7 @@ import {
   SimpleGrid,
   Select,
   createListCollection,
+  Checkbox,
 } from '@chakra-ui/react';
 import { toast } from '@/lib/toaster';
 import { useConfirm } from '@/components/ui/confirmation-dialog';
@@ -632,18 +633,14 @@ export default function RombelsPage() {
                                 }}
                               >
                                 <Flex align="center" gap={3}>
-                                  <input
-                                    type="checkbox"
+                                  <Checkbox.Root
                                     checked={isSelected}
-                                    onChange={() => {}} // handled by row onClick
-                                    style={{
-                                      width: '18px',
-                                      height: '18px',
-                                      cursor: 'pointer',
-                                      accentColor: 'var(--chakra-colors-indigo-600)',
-                                    }}
+                                    onCheckedChange={() => {}} // handled by row onClick
                                     onClick={(e) => e.stopPropagation()}
-                                  />
+                                  >
+                                    <Checkbox.HiddenInput />
+                                    <Checkbox.Control cursor="pointer" />
+                                  </Checkbox.Root>
                                   <Box>
                                     <Text fontWeight="semibold" color="gray.850" fontSize="sm">
                                       {student.user.fullName}

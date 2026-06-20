@@ -60,13 +60,13 @@ async function main() {
   const pwdPengawas = await bcrypt.hash('pengawas123', salt);
 
   const now = new Date();
-let answerCount = 0;
+  let answerCount = 0;
 
   // ========================================================================
   // 1. SETTINGS (10+)
   // ========================================================================
   const settingsData = [
-    { key: 'appName', value: 'CBT Excellence' }, // Nama meringkas, tidak perlu nama panjang
+    { key: 'appName', value: 'Novatech CBT' }, // Nama meringkas, tidak perlu nama panjang
     { key: 'logoUrl', value: '/images/logo.png' },
     { key: 'timezone', value: 'Asia/Jakarta' },
     { key: 'language', value: 'id' },

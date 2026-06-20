@@ -61,7 +61,7 @@ export default function SettingsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { t } = useTranslation();
 
-  const [appName, setAppName] = useState('CBT Enterprise');
+  const [appName, setAppName] = useState('Novatech CBT');
   const [logoUrl, setLogoUrl] = useState('');
   const [timezone, setTimezone] = useState('Asia/Jakarta');
   const [language, setLanguage] = useState('id');
@@ -85,7 +85,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (settings) {
-      setAppName(settings.appName || 'CBT Enterprise');
+      setAppName(settings.appName || 'Novatech CBT');
       setLogoUrl(settings.logoUrl || '');
       setTimezone(settings.timezone || 'Asia/Jakarta');
       setLanguage(settings.language || 'id');
@@ -271,7 +271,7 @@ export default function SettingsPage() {
               <Input
                 value={appName}
                 onChange={(e) => setAppName(e.target.value)}
-                placeholder="CBT Enterprise"
+                placeholder="Novatech CBT"
                 bg="bg.canvas"
                 borderRadius="xl"
                 h={12}

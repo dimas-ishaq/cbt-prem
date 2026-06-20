@@ -13,8 +13,8 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "CBT Enterprise",
-  description: "Computer Based Test Enterprise Platform",
+  title: "Novatech CBT",
+  description: "Novatech Computer Based Test Platform",
 };
 
 export default function RootLayout({

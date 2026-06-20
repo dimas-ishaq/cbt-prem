@@ -168,7 +168,7 @@ export default function DashboardPage() {
                   textTransform="uppercase"
                   lineHeight="1"
                 >
-                  {settings?.appName || 'CBT Enterprise'}
+                  {settings?.appName || 'Novatech CBT'}
                 </Text>
                 <Text
                   fontSize="2xs"
