@@ -258,6 +258,7 @@ model Answer {
   selectedOption String?     // ID of the option or JSON for multiple response
   essayAnswer    String?     @db.Text
   fileUrl        String?
+  isGraded       Boolean     @default(false)
   isCorrect      Boolean?
   score          Float?
   updatedAt      DateTime    @updatedAt

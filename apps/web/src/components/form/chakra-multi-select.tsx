@@ -5,9 +5,7 @@ import {
   Box,
   Button,
   Flex,
-  FormControl,
-  FormLabel,
-  FormErrorMessage,
+  Field,
   Input,
   Portal,
   Stack,
@@ -89,11 +87,11 @@ export const ChakraMultiSelect: FC<ChakraMultiSelectProps> = ({
   };
 
   return (
-    <FormControl isInvalid={!!error}>
+    <Field.Root invalid={!!error}>
       {label && (
-        <FormLabel fontSize="sm" fontWeight="medium" color="gray.700">
+        <Field.Label fontSize="sm" fontWeight="medium" color="gray.700">
           {label} {isRequired && <span style={{ color: 'red' }}>*</span>}
-        </FormLabel>
+        </Field.Label>
       )}
 
       <Box ref={containerRef} position="relative">
@@ -101,7 +99,7 @@ export const ChakraMultiSelect: FC<ChakraMultiSelectProps> = ({
           ref={buttonRef}
           w="full"
           onClick={() => setIsOpen(!isOpen)}
-          isDisabled={isDisabled}
+          disabled={isDisabled}
           borderRadius="lg"
           borderColor="gray.200"
           borderWidth="1px"
@@ -227,7 +225,7 @@ export const ChakraMultiSelect: FC<ChakraMultiSelectProps> = ({
         )}
       </Box>
 
-      {error && <FormErrorMessage fontSize="xs" mt={1}>{error}</FormErrorMessage>}
-    </FormControl>
+      {error && <Field.ErrorText fontSize="xs" mt={1}>{error}</Field.ErrorText>}
+    </Field.Root>
   );
 };

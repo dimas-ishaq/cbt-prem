@@ -5,9 +5,7 @@ import {
   Box,
   Button,
   Flex,
-  FormControl,
-  FormLabel,
-  FormErrorMessage,
+  Field,
   HStack,
   Text,
   VStack,
@@ -57,7 +55,10 @@ export const ChakraFileInput: FC<ChakraFileInputProps> = ({
     });
 
     if (!multiple && validFiles.length > 0) {
-      onChange?.([validFiles[0]]);
+      const firstFile = validFiles[0];
+      if (firstFile) {
+        onChange?.([firstFile]);
+      }
     } else if (multiple) {
       onChange?.([...value, ...validFiles]);
     }
@@ -82,16 +83,16 @@ export const ChakraFileInput: FC<ChakraFileInputProps> = ({
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB'];
-    const i = Math.floor(Math.log(bytes, k));
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
     return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
   };
 
   return (
-    <FormControl isInvalid={!!error}>
+    <Field.Root invalid={!!error}>
       {label && (
-        <FormLabel fontSize="sm" fontWeight="medium" color="gray.700">
+        <Field.Label fontSize="sm" fontWeight="medium" color="gray.700">
           {label} {isRequired && <span style={{ color: 'red' }}>*</span>}
-        </FormLabel>
+        </Field.Label>
       )}
 
       {/* File Input (Hidden) */}
@@ -169,18 +170,19 @@ export const ChakraFileInput: FC<ChakraFileInputProps> = ({
                 <Button
                   size="sm"
                   variant="ghost"
-                  colorScheme="red"
+                  colorPalette="red"
                   onClick={() => onRemove(idx)}
-                  icon={<Trash2 size={14} />}
                   aria-label="Remove file"
-                />
+                >
+                  <Trash2 size={14} />
+                </Button>
               )}
             </HStack>
           ))}
         </VStack>
       )}
 
-      {error && <FormErrorMessage fontSize="xs" mt={1}>{error}</FormErrorMessage>}
-    </FormControl>
+      {error && <Field.ErrorText fontSize="xs" mt={1}>{error}</Field.ErrorText>}
+    </Field.Root>
   );
 };

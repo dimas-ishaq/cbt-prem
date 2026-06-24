@@ -179,7 +179,7 @@ export function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onMobile
               </Flex>
               {!collapsed && (
                 <Box minW={0}>
-                  <Text fontSize="sm" fontWeight="extrabold" color="white" letterSpacing="wide" textTransform="uppercase" lineHeight="1" noOfLines={1}>
+                  <Text fontSize="sm" fontWeight="extrabold" color="white" letterSpacing="wide" textTransform="uppercase" lineHeight="1" lineClamp={1}>
                     {settings?.appName || 'Novatech CBT'}
                   </Text>
                   <Flex align="center" gap={1.5} mt={0.5} wrap="wrap">
@@ -198,7 +198,7 @@ export function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onMobile
           </Flex>
         </Box>
 
-        <Stack flex={1} px={collapsed ? 2 : 3} pt={4} gap={5} as="nav" overflowY="auto" pb={4} sx={{ scrollbarGutter: 'stable' }}>
+        <Stack flex={1} px={collapsed ? 2 : 3} pt={4} gap={5} as="nav" overflowY="auto" pb={4}>
           {visibleMenuGroups.map((group) => (
             <Stack key={group.titleKey} gap={1} flexShrink={0}>
               {!collapsed && (
@@ -212,7 +212,7 @@ export function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onMobile
                   <Flex
                     key={item.name}
                     as="button"
-                    type="button"
+                    {...({ type: 'button' } as any)}
                     onClick={() => {
                       router.push(item.href);
                       if (!isDesktop) onMobileClose();
@@ -320,8 +320,8 @@ export function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onMobile
               </Flex>
               {!collapsed && (
                 <Box overflow="hidden" flex={1} minW={0}>
-                  <Text fontSize="sm" fontWeight="bold" color="white" noOfLines={1} lineHeight="1.2">{user?.fullName}</Text>
-                  <Text fontSize="2xs" color="blue.500" fontWeight="bold" textTransform="uppercase" letterSpacing="widest" noOfLines={1} mt={0.5}>{user?.role}</Text>
+                  <Text fontSize="sm" fontWeight="bold" color="white" lineClamp={1} lineHeight="1.2">{user?.fullName}</Text>
+                  <Text fontSize="2xs" color="blue.500" fontWeight="bold" textTransform="uppercase" letterSpacing="widest" lineClamp={1} mt={0.5}>{user?.role}</Text>
                 </Box>
               )}
             </Flex>

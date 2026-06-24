@@ -2,7 +2,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuthStore } from '../store/auth.store';
 
-export function useSocket() {
+export function useSocket(): Socket | null {
   const socketRef = useRef<Socket | null>(null);
   const token = useAuthStore((s) => s.access_token);
 

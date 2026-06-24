@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Param, Patch, Delete, UseGuards, Request, Headers, UnauthorizedException, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Patch, Delete, UseGuards, Request, Headers, UnauthorizedException, Query, Res } from '@nestjs/common';
+import { Response } from 'express';
 import { ExamsService } from './exams.service';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { CreateExamDto } from './dto/create-exam.dto';
@@ -47,6 +48,21 @@ export class ExamsController {
       }
     }
     return this.examsService.findOne(id, req.user);
+  }
+
+  @Get(':id/analytics')
+  @Roles(Role.GURU, Role.SUPER_ADMIN)
+  analytics(@Param('id') id: string) {
+    return this.examsService.analytics(id);
+  }
+
+  @Get(':id/analytics/pdf')
+  @Roles(Role.GURU, Role.SUPER_ADMIN)
+  async downloadPdf(@Param('id') id: string, @Res() res: Response) {
+    const pdfBuffer = await this.examsService.generatePdf(id);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=hasil-ujian-${id}.pdf`);
+    res.send(pdfBuffer);
   }
 
   @Patch(':id')

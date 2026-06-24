@@ -1,7 +1,8 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { RealtimeGateway } from './realtime.gateway';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ExamSessionsModule } from '../exam-sessions/exam-sessions.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       }),
       inject: [ConfigService],
     }),
+    forwardRef(() => ExamSessionsModule),
   ],
   providers: [RealtimeGateway],
   exports: [RealtimeGateway],

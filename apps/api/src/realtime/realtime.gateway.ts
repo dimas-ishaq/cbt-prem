@@ -10,7 +10,10 @@ import {
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
-import { Logger } from '@nestjs/common';
+import { Logger, Inject, forwardRef } from '@nestjs/common';
+
+import { SessionStatus } from '@prisma/client';
+import { ExamSessionsService } from '../exam-sessions/exam-sessions.service';
 
 @WebSocketGateway({
   cors: {
@@ -28,6 +31,8 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
   constructor(
     private jwtService: JwtService,
     private prisma: PrismaService,
+    @Inject(forwardRef(() => ExamSessionsService))
+    private examSessionsService: ExamSessionsService,
   ) {}
 
   sendToUser(userId: string, event: string, payload: any) {
@@ -155,6 +160,105 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
       type: data.type,
       description: data.description,
       timestamp: new Date(),
+    });
+  }
+
+  @SubscribeMessage('lock_student')
+  async handleLockStudent(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { examId: string, studentId: string },
+  ) {
+    if (client.data.user.role !== 'GURU' && client.data.user.role !== 'SUPER_ADMIN') {
+      return;
+    }
+
+    const student = await this.prisma.student.findUnique({
+      where: { userId: data.studentId },
+    });
+    if (!student) return;
+
+    await this.prisma.examSession.update({
+      where: {
+        examId_studentId: {
+          examId: data.examId,
+          studentId: student.id,
+        },
+      },
+      data: {
+        status: SessionStatus.LOCKED,
+      },
+    });
+
+    this.sendToUser(data.studentId, 'session_locked', { examId: data.examId });
+
+    this.server.to(`proctor_${data.examId}`).emit('student_locked', {
+      studentId: data.studentId,
+    });
+  }
+
+  @SubscribeMessage('unlock_student')
+  async handleUnlockStudent(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { examId: string, studentId: string },
+  ) {
+    if (client.data.user.role !== 'GURU' && client.data.user.role !== 'SUPER_ADMIN') {
+      return;
+    }
+
+    const student = await this.prisma.student.findUnique({
+      where: { userId: data.studentId },
+    });
+    if (!student) return;
+
+    await this.prisma.examSession.update({
+      where: {
+        examId_studentId: {
+          examId: data.examId,
+          studentId: student.id,
+        },
+      },
+      data: {
+        status: SessionStatus.IN_PROGRESS,
+      },
+    });
+
+    this.sendToUser(data.studentId, 'session_unlocked', { examId: data.examId });
+
+    this.server.to(`proctor_${data.examId}`).emit('student_unlocked', {
+      studentId: data.studentId,
+    });
+  }
+
+  @SubscribeMessage('force_submit_student')
+  async handleForceSubmitStudent(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { examId: string, studentId: string },
+  ) {
+    if (client.data.user.role !== 'GURU' && client.data.user.role !== 'SUPER_ADMIN') {
+      return;
+    }
+
+    const student = await this.prisma.student.findUnique({
+      where: { userId: data.studentId },
+    });
+    if (!student) return;
+
+    const session = await this.prisma.examSession.findUnique({
+      where: {
+        examId_studentId: {
+          examId: data.examId,
+          studentId: student.id,
+        },
+      },
+    });
+    if (!session) return;
+
+    await this.examSessionsService.finishSession(session.id);
+
+    this.sendToUser(data.studentId, 'session_submitted', { examId: data.examId });
+
+    this.server.to(`proctor_${data.examId}`).emit('student_submitted', {
+      studentId: data.studentId,
     });
   }
 }

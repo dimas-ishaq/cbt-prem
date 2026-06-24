@@ -157,9 +157,9 @@ export default function SubjectsPage() {
           <Text color="gray.500" mt={1}>{t('subjectsDesc')}</Text>
         </Box>
         <HStack gap={3} wrap="wrap">
-          <Button as="a" href="/templates/subjects-template.csv" download bg="white" borderWidth="1px" borderColor="gray.200" color="gray.700" _hover={{ bg: 'gray.50' }} borderRadius="lg" cursor="pointer"><Download size={18} style={{ marginRight: '6px' }} />{t('downloadTemplate')}</Button>
+          <Button as="a" {...({ href: "/templates/subjects-template.csv", download: true } as any)} bg="white" borderWidth="1px" borderColor="gray.200" color="gray.700" _hover={{ bg: 'gray.50' }} borderRadius="lg" cursor="pointer"><Download size={18} style={{ marginRight: '6px' }} />{t('downloadTemplate')}</Button>
           <Button as="label" bg="white" borderWidth="1px" borderColor="gray.200" color="gray.700" _hover={{ bg: 'gray.50' }} borderRadius="lg" cursor="pointer"><Upload size={18} style={{ marginRight: '6px' }} />{t('importCsv')}<Input hidden type="file" accept=".csv,text/csv" onChange={(e) => setImportFile(e.target.files?.[0] || null)} /></Button>
-          <Button isDisabled={!importFile || importMutation.isPending} onClick={() => importFile && importMutation.mutate(importFile)} bg="indigo.600" color="white" _hover={{ bg: 'indigo.700' }} borderRadius="lg" cursor="pointer">{t('uploadBtn')}</Button>
+          <Button disabled={!importFile || importMutation.isPending} onClick={() => importFile && importMutation.mutate(importFile)} bg="indigo.600" color="white" _hover={{ bg: 'indigo.700' }} borderRadius="lg" cursor="pointer">{t('uploadBtn')}</Button>
           <Button bg="indigo.600" color="white" _hover={{ bg: 'indigo.700' }} borderRadius="lg" onClick={() => { resetForm(); setIsModalOpen(true); }} cursor="pointer"><Plus size={20} style={{ marginRight: '6px' }} />{t('addSubject')}</Button>
         </HStack>
       </Flex>
@@ -180,7 +180,7 @@ export default function SubjectsPage() {
               <Table.Row key={subject.id} _hover={{ bg: 'gray.50' }}>
                 <Table.Cell px={6} py={4} fontFamily="mono" fontWeight="bold" color="indigo.600">{subject.code}</Table.Cell>
                 <Table.Cell px={6} py={4} fontWeight="semibold" color="gray.900">{subject.name}</Table.Cell>
-                <Table.Cell px={6} py={4}><Wrap>{(subject.teachers || []).length > 0 ? subject.teachers!.map((teacher) => <WrapItem key={teacher.id}><Badge colorPalette="blue" variant="subtle" borderRadius="md" px={2} py={1}>{teacher.user?.fullName || teacher.user?.username || teacher.id}</Badge></WrapItem>) : <Badge colorPalette="gray" variant="subtle">Belum ada guru</Badge>}</Wrap></Table.Cell>
+                <Table.Cell px={6} py={4}><Wrap>{(subject.teachers || []).length > 0 ? subject.teachers!.map((teacher: any) => <WrapItem key={teacher.id}><Badge colorPalette="blue" variant="subtle" borderRadius="md" px={2} py={1}>{teacher.user?.fullName || teacher.user?.username || teacher.id}</Badge></WrapItem>) : <Badge colorPalette="gray" variant="subtle">Belum ada guru</Badge>}</Wrap></Table.Cell>
                 <Table.Cell px={6} py={4} fontSize="sm" color="gray.500" maxW="xs" truncate>{subject.description || '-'}</Table.Cell>
                 <Table.Cell px={6} py={4} textAlign="end"><HStack gap={2} justify="flex-end"><IconButton aria-label="Edit mata pelajaran" variant="ghost" color="indigo.600" _hover={{ bg: 'indigo.50' }} size="sm" borderRadius="lg" onClick={() => handleEdit(subject)} cursor="pointer"><Pencil size={18} /></IconButton><IconButton aria-label="Delete mata pelajaran" variant="ghost" color="red.600" _hover={{ bg: 'red.50' }} size="sm" borderRadius="lg" onClick={async () => { const confirmed = await confirmDialog({ title: 'Hapus Mata Pelajaran', description: `Apakah Anda yakin ingin menghapus mata pelajaran "${subject.name}"? Relasi guru dan data turunannya akan ikut terpengaruh.`, confirmText: 'Hapus' }); if (confirmed) deleteMutation.mutate(subject.id); }} cursor="pointer"><Trash2 size={18} /></IconButton></HStack></Table.Cell>
               </Table.Row>

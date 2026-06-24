@@ -1,5 +1,35 @@
 // apps/api/src/utils/security.util.ts
 import { Injectable } from '@nestjs/common';
+import * as crypto from 'crypto';
+
+const ALGORITHM = 'aes-256-cbc';
+const ENCRYPTION_KEY = (process.env.ENCRYPTION_KEY || 'cbt-enterprise-secret-key-32bytes!').substring(0, 32).padEnd(32, '0'); // Ensures exactly 32 bytes
+const IV_LENGTH = 16;
+
+export function encrypt(text: string): string {
+  if (!text) return '';
+  const iv = crypto.randomBytes(IV_LENGTH);
+  const cipher = crypto.createCipheriv(ALGORITHM, Buffer.from(ENCRYPTION_KEY), iv);
+  let encrypted = cipher.update(text);
+  encrypted = Buffer.concat([encrypted, cipher.final()]);
+  return iv.toString('hex') + ':' + encrypted.toString('hex');
+}
+
+export function decrypt(text: string): string {
+  if (!text) return '';
+  try {
+    const textParts = text.split(':');
+    if (textParts.length < 2) return text; // fallback for unencrypted old data
+    const iv = Buffer.from(textParts.shift()!, 'hex');
+    const encryptedText = Buffer.from(textParts.join(':'), 'hex');
+    const decipher = crypto.createDecipheriv(ALGORITHM, Buffer.from(ENCRYPTION_KEY), iv);
+    let decrypted = decipher.update(encryptedText);
+    decrypted = Buffer.concat([decrypted, decipher.final()]);
+    return decrypted.toString();
+  } catch (e) {
+    return text;
+  }
+}
 
 @Injectable()
 export class SecurityUtil {

@@ -98,6 +98,7 @@ export function ExamContainer({ examId }: Props) {
   const [showViolationModal, setShowViolationModal] = useState(false);
   const [violationMessage, setViolationMessage] = useState('');
   const [violationCount, setViolationCount] = useState(0);
+  const [isLocked, setIsLocked] = useState(false);
   
   const [tokenInput, setTokenInput] = useState('');
   const [tokenError, setTokenError] = useState('');
@@ -165,6 +166,9 @@ export function ExamContainer({ examId }: Props) {
     onSuccess: (data) => {
       setSessionId(data.id);
       setTokenError('');
+      if (data.status === 'LOCKED') {
+        setIsLocked(true);
+      }
       if (data.answers) {
         const existingAnswers: Record<string, string> = {};
         data.answers.forEach((ans: any) => {
@@ -338,6 +342,24 @@ export function ExamContainer({ examId }: Props) {
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
 
+    if (socket) {
+      socket.on('session_locked', (data: any) => {
+        if (data.examId === examId) {
+          setIsLocked(true);
+        }
+      });
+      socket.on('session_unlocked', (data: any) => {
+        if (data.examId === examId) {
+          setIsLocked(false);
+        }
+      });
+      socket.on('session_submitted', (data: any) => {
+        if (data.examId === examId) {
+          finishExamMutation.mutate();
+        }
+      });
+    }
+
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('blur', handleBlur);
@@ -349,6 +371,11 @@ export function ExamContainer({ examId }: Props) {
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
       document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      if (socket) {
+        socket.off('session_locked');
+        socket.off('session_unlocked');
+        socket.off('session_submitted');
+      }
     };
   }, [examId, socket, playViolation, sessionId, exam, finishExamMutation]);
 
@@ -497,12 +524,11 @@ export function ExamContainer({ examId }: Props) {
             </Text>
             <Stack gap={3}>
               <Flex gap={3} align="flex-start">
-                <Box 
+                <Flex 
                   w={8}
                   h={8}
                   bg="indigo.600"
                   borderRadius="full"
-                  display="flex"
                   align="center"
                   justify="center"
                   fontWeight="black"
@@ -510,7 +536,7 @@ export function ExamContainer({ examId }: Props) {
                   flexShrink={0}
                 >
                   1
-                </Box>
+                </Flex>
                 <Box>
                   <Text fontWeight="bold" color="white" mb={1}>Unduh Safe Exam Browser</Text>
                   <Text color="gray.400" fontSize="sm">Klik tombol download di bawah untuk mengunduh aplikasi SEB untuk platform Anda (Windows, macOS, atau Linux).</Text>
@@ -518,12 +544,11 @@ export function ExamContainer({ examId }: Props) {
               </Flex>
 
               <Flex gap={3} align="flex-start">
-                <Box 
+                <Flex 
                   w={8}
                   h={8}
                   bg="indigo.600"
                   borderRadius="full"
-                  display="flex"
                   align="center"
                   justify="center"
                   fontWeight="black"
@@ -531,7 +556,7 @@ export function ExamContainer({ examId }: Props) {
                   flexShrink={0}
                 >
                   2
-                </Box>
+                </Flex>
                 <Box>
                   <Text fontWeight="bold" color="white" mb={1}>Unduh Konfigurasi SEB Ujian</Text>
                   <Text color="gray.400" fontSize="sm">Klik tombol download konfigurasi (.seb) untuk mendapatkan file pengaturan khusus ujian ini.</Text>
@@ -539,12 +564,11 @@ export function ExamContainer({ examId }: Props) {
               </Flex>
 
               <Flex gap={3} align="flex-start">
-                <Box 
+                <Flex 
                   w={8}
                   h={8}
                   bg="indigo.600"
                   borderRadius="full"
-                  display="flex"
                   align="center"
                   justify="center"
                   fontWeight="black"
@@ -552,7 +576,7 @@ export function ExamContainer({ examId }: Props) {
                   flexShrink={0}
                 >
                   3
-                </Box>
+                </Flex>
                 <Box>
                   <Text fontWeight="bold" color="white" mb={1}>Buka Berkas Konfigurasi</Text>
                   <Text color="gray.400" fontSize="sm">Buka/double-click file konfigurasi (.seb) untuk meluncurkan SEB dan otomatis mengarahkan ke halaman ujian ini.</Text>
@@ -566,9 +590,11 @@ export function ExamContainer({ examId }: Props) {
             {/* Download SEB Button */}
             <Button
               as="a"
-              href="https://safeexambrowser.org/download_en.html"
-              target="_blank"
-              rel="noopener noreferrer"
+              {...({
+                href: "https://safeexambrowser.org/download_en.html",
+                target: "_blank",
+                rel: "noopener noreferrer"
+              } as any)}
               w="full"
               py={6}
               bg="gradient-to-r from-red-600 to-red-700"
@@ -577,8 +603,8 @@ export function ExamContainer({ examId }: Props) {
               borderRadius="2xl"
               fontSize="md"
               display="flex"
-              align="center"
-              justify="center"
+              alignItems="center"
+              justifyContent="center"
               gap={3}
               boxShadow="0 8px 24px rgba(220, 38, 38, 0.3)"
               _hover={{
@@ -591,9 +617,9 @@ export function ExamContainer({ examId }: Props) {
                 background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)'
               }}
             >
-              <Box as="svg" w={5} h={5} fill="currentColor" viewBox="0 0 20 20">
+              <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20" style={{ display: 'inline-block', flexShrink: 0 }}>
                 <path d="M10 2C5.58 2 2 5.58 2 10s3.58 8 8 8 8-3.58 8-8-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6zm3.5-9H10.5V5h-1v2H7.5v1h2v2h1v-2h2.5v-1z" />
-              </Box>
+              </svg>
               Unduh Safe Exam Browser
             </Button>
 
@@ -620,8 +646,8 @@ export function ExamContainer({ examId }: Props) {
               borderRadius="2xl"
               fontSize="md"
               display="flex"
-              align="center"
-              justify="center"
+              alignItems="center"
+              justifyContent="center"
               gap={3}
               boxShadow="0 8px 24px rgba(79, 70, 229, 0.3)"
               _hover={{
@@ -632,9 +658,9 @@ export function ExamContainer({ examId }: Props) {
               transition="all 0.3s ease"
               cursor="pointer"
             >
-              <Box as="svg" w={5} h={5} fill="currentColor" viewBox="0 0 20 20">
+              <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20" style={{ display: 'inline-block', flexShrink: 0 }}>
                 <path d="M13 8V2H7v6H2l8 8 8-8h-5zM0 18h20v2H0z" />
-              </Box>
+              </svg>
               Unduh Konfigurasi SEB Ujian ({exam.title})
             </Button>
           </Stack>
@@ -649,9 +675,9 @@ export function ExamContainer({ examId }: Props) {
             mb={6}
           >
             <Flex gap={2} align="flex-start">
-              <Box as="svg" w={5} h={5} fill="currentColor" color="amber.400" flexShrink={0} mt={0.5} viewBox="0 0 20 20">
+              <svg width="20" height="20" fill="currentColor" style={{ color: 'var(--chakra-colors-amber-400)', flexShrink: 0, marginTop: '2px' }} viewBox="0 0 20 20">
                 <path d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" />
-              </Box>
+              </svg>
               <Box>
                 <Text fontWeight="bold" color="amber.300" fontSize="sm">Sistem Keamanan Tingkat Tinggi</Text>
                 <Text color="gray.400" fontSize="xs" mt={1}>SEB akan mendeteksi aktivitas mencurigakan seperti tab switching, screenshot, DevTools, dan upaya copy-paste.</Text>
@@ -1193,6 +1219,58 @@ export function ExamContainer({ examId }: Props) {
             >
               Saya Mengerti & Kembali ke Ujian
             </Button>
+          </Box>
+        </Flex>
+      )}
+
+      {/* Proctor Session Lock Overlay */}
+      {isLocked && (
+        <Flex 
+          position="fixed" 
+          inset={0} 
+          zIndex={99999} 
+          bg="black/80" 
+          backdropFilter="blur(16px)" 
+          align="center" 
+          justify="center" 
+          p={4}
+        >
+          <Box 
+            bg="gray.900" 
+            w="full" 
+            maxW="md" 
+            borderRadius="3xl" 
+            p={8} 
+            boxShadow="2xl" 
+            border="1px solid" 
+            borderColor="red.500/30" 
+            textAlign="center"
+          >
+            <Flex 
+              w={16} 
+              h={16} 
+              bg="red.500/10" 
+              borderRadius="full" 
+              align="center" 
+              justify="center" 
+              mx="auto" 
+              mb={6} 
+              border="2px solid" 
+              borderColor="red.500/30"
+            >
+              <ShieldAlert className="text-red-500 animate-pulse" size={32} />
+            </Flex>
+            <Heading size="lg" fontWeight="black" color="white" mb={2}>
+              Sesi Ujian Dikunci
+            </Heading>
+            <Text color="gray.300" fontSize="sm" lineHeight="relaxed" mb={6}>
+              Akses pengerjaan ujian Anda telah ditangguhkan sementara oleh pengawas. Hubungi pengawas ruangan untuk memulihkan sesi ujian Anda.
+            </Text>
+            <Box p={4} bg="whiteAlpha.100" borderRadius="2xl" border="1px solid" borderColor="whiteAlpha.200">
+              <Text fontSize="xs" fontWeight="bold" color="red.300">
+                STATUS: LINDUNGI INTEGRITAS UJIAN
+              </Text>
+            </Box>
           </Box>
         </Flex>
       )}

@@ -5,9 +5,7 @@ import {
   Box,
   Button,
   Flex,
-  FormControl,
-  FormLabel,
-  FormErrorMessage,
+  Field,
   Input,
   Portal,
   Stack,
@@ -80,11 +78,11 @@ export const ChakraComboBox: FC<ChakraComboBoxProps> = ({
   );
 
   return (
-    <FormControl isInvalid={!!error}>
+    <Field.Root invalid={!!error}>
       {label && (
-        <FormLabel fontSize="sm" fontWeight="medium" color="gray.700">
+        <Field.Label fontSize="sm" fontWeight="medium" color="gray.700">
           {label} {isRequired && <span style={{ color: 'red' }}>*</span>}
-        </FormLabel>
+        </Field.Label>
       )}
 
       <Box ref={containerRef} position="relative">
@@ -92,7 +90,7 @@ export const ChakraComboBox: FC<ChakraComboBoxProps> = ({
           ref={buttonRef}
           w="full"
           onClick={() => setIsOpen(!isOpen)}
-          isDisabled={isDisabled}
+          disabled={isDisabled}
           borderRadius="lg"
           borderColor="gray.200"
           borderWidth="1px"
@@ -204,7 +202,7 @@ export const ChakraComboBox: FC<ChakraComboBoxProps> = ({
                       transition="background 0.15s"
                     >
                       {value === option.value && (
-                        <Check size={18} color="indigo.500" flexShrink={0} />
+                        <Check size={18} color="var(--chakra-colors-indigo-500)" style={{ flexShrink: 0 }} />
                       )}
                       <Box flex={1}>
                         <Text fontSize="sm" fontWeight="medium" color="gray.900">
@@ -225,7 +223,7 @@ export const ChakraComboBox: FC<ChakraComboBoxProps> = ({
         )}
       </Box>
 
-      {error && <FormErrorMessage fontSize="xs" mt={1}>{error}</FormErrorMessage>}
-    </FormControl>
+      {error && <Field.ErrorText fontSize="xs" mt={1}>{error}</Field.ErrorText>}
+    </Field.Root>
   );
 };

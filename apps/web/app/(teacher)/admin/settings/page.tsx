@@ -67,6 +67,11 @@ export default function SettingsPage() {
   const [language, setLanguage] = useState('id');
   const [academicYear, setAcademicYear] = useState('2024/2025');
   const [dragActive, setDragActive] = useState(false);
+  const [redisEnabled, setRedisEnabled] = useState(false);
+  const [redisHost, setRedisHost] = useState('127.0.0.1');
+  const [redisPort, setRedisPort] = useState('6379');
+  const [redisPassword, setRedisPassword] = useState('');
+  const [redisSyncLoading, setRedisSyncLoading] = useState(false);
 
   // Strict role check
   useEffect(() => {
@@ -90,6 +95,10 @@ export default function SettingsPage() {
       setTimezone(settings.timezone || 'Asia/Jakarta');
       setLanguage(settings.language || 'id');
       setAcademicYear(settings.academicYear || '2024/2025');
+      setRedisEnabled(settings.redisEnabled === 'true');
+      setRedisHost(settings.redisHost || '127.0.0.1');
+      setRedisPort(settings.redisPort || '6379');
+      setRedisPassword(settings.redisPassword || '');
     }
   }, [settings]);
 
@@ -182,6 +191,23 @@ export default function SettingsPage() {
 
   const handleRemoveLogo = () => {
     setLogoUrl('');
+  };
+
+  const handleSyncRedis = async () => {
+    setRedisSyncLoading(true);
+    try {
+      await api.post('/settings/redis/sync', {
+        host: redisHost,
+        port: Number(redisPort),
+        password: redisPassword,
+      });
+      toast.success('Redis berhasil diuji dan disinkronkan.');
+      queryClient.invalidateQueries({ queryKey: ['settings'] });
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Gagal menguji koneksi Redis.');
+    } finally {
+      setRedisSyncLoading(false);
+    }
   };
 
   if (!user || user.role !== 'SUPER_ADMIN') {
@@ -557,6 +583,58 @@ export default function SettingsPage() {
                   </Select.Content>
                 </Select.Positioner>
               </Select.Root>
+            </Stack>
+          </Stack>
+        </Box>
+
+        {/* Redis & BullMQ Card */}
+        <Box
+          bg="bg.surface"
+          borderRadius="2xl"
+          border="1px solid"
+          borderColor="border.default"
+          boxShadow="0 10px 30px -10px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.01)"
+          p={8}
+          transition="all 0.25s"
+          _hover={{ borderColor: 'indigo.200', boxShadow: '0 12px 36px -8px rgba(99,102,241,0.06)' }}
+        >
+          <Stack gap={6}>
+            <Box pb={4} borderBottom="1px solid" borderColor="border.default">
+              <Heading size="md" fontWeight="bold" color="text.primary">
+                Integrasi Redis & BullMQ (Opsional)
+              </Heading>
+              <Text fontSize="xs" color="text.secondary" mt={0.5}>
+                Redis dipakai untuk antrian tugas berat seperti import soal besar, proses PDF, dan sinkronisasi event realtime.
+              </Text>
+            </Box>
+
+            <Stack gap={4}>
+              <Flex align="center" justify="space-between" gap={4} wrap="wrap">
+                <Box>
+                  <Text fontWeight="bold" color="text.primary" fontSize="sm">Aktifkan Integrasi Redis</Text>
+                  <Text fontSize="xs" color="text.secondary">Status saat ini: {redisEnabled ? 'Aktif' : 'Nonaktif'}</Text>
+                </Box>
+                <Button variant={redisEnabled ? 'solid' : 'outline'} colorPalette="indigo" onClick={() => setRedisEnabled(!redisEnabled)}>
+                  {redisEnabled ? 'Aktif' : 'Nonaktif'}
+                </Button>
+              </Flex>
+
+              <Stack gap={3}>
+                <Input value={redisHost} onChange={(e) => setRedisHost(e.target.value)} placeholder="127.0.0.1" />
+                <Input value={redisPort} onChange={(e) => setRedisPort(e.target.value)} placeholder="6379" inputMode="numeric" />
+                <Input value={redisPassword} onChange={(e) => setRedisPassword(e.target.value)} type="password" placeholder="Redis Password" />
+              </Stack>
+
+              <Box bg="gray.50" borderRadius="xl" p={4} borderWidth="1px" borderColor="gray.100">
+                <Text fontSize="sm" fontWeight="semibold" mb={2}>Panduan Singkat</Text>
+                <Text fontSize="sm" color="gray.600">
+                  Redis + BullMQ membantu memindahkan proses berat ke background worker, sehingga ujian tetap responsif walau ada import file besar atau proses laporan.
+                </Text>
+              </Box>
+
+              <Button colorPalette="indigo" onClick={handleSyncRedis} loading={redisSyncLoading}>
+                Uji & Sinkronkan Koneksi
+              </Button>
             </Stack>
           </Stack>
         </Box>

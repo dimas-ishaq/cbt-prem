@@ -2,12 +2,10 @@
 
 import { FC, ReactNode } from 'react';
 import {
-  FormControl,
-  FormLabel,
-  FormErrorMessage,
+  Field,
   Input,
   Textarea,
-  Select,
+  NativeSelect,
   Box,
 } from '@chakra-ui/react';
 
@@ -19,11 +17,11 @@ interface FormFieldProps {
 }
 
 export const FormField: FC<FormFieldProps> = ({ label, error, isRequired, children }) => (
-  <FormControl isInvalid={!!error}>
-    {label && <FormLabel fontSize="sm" fontWeight="medium" color="gray.700">{label} {isRequired && <span style={{ color: 'red' }}>*</span>}</FormLabel>}
+  <Field.Root invalid={!!error}>
+    {label && <Field.Label fontSize="sm" fontWeight="medium" color="gray.700">{label} {isRequired && <span style={{ color: 'red' }}>*</span>}</Field.Label>}
     {children}
-    {error && <FormErrorMessage fontSize="xs" mt={1}>{error}</FormErrorMessage>}
-  </FormControl>
+    {error && <Field.ErrorText fontSize="xs" mt={1}>{error}</Field.ErrorText>}
+  </Field.Root>
 );
 
 interface ChakraInputProps extends React.ComponentProps<typeof Input> {
@@ -61,7 +59,7 @@ export const ChakraTextarea: FC<ChakraTextareaProps> = ({ label, error, isRequir
   </FormField>
 );
 
-interface ChakraSelectProps extends React.ComponentProps<typeof Select> {
+interface ChakraSelectProps extends React.ComponentProps<typeof NativeSelect.Field> {
   label?: string;
   error?: string;
   isRequired?: boolean;
@@ -78,18 +76,21 @@ export const ChakraSelect: FC<ChakraSelectProps> = ({
   ...props
 }) => (
   <FormField label={label} error={error} isRequired={isRequired}>
-    <Select
-      borderRadius="lg"
-      borderColor="gray.200"
-      _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
-      placeholder={placeholder}
-      {...props}
-    >
-      {options.map((opt) => (
-        <option key={opt.value} value={opt.value}>
-          {opt.label}
-        </option>
-      ))}
-    </Select>
+    <NativeSelect.Root>
+      <NativeSelect.Field
+        borderRadius="lg"
+        borderColor="gray.200"
+        _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
+        placeholder={placeholder}
+        {...props}
+      >
+        {options.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </NativeSelect.Field>
+      <NativeSelect.Indicator />
+    </NativeSelect.Root>
   </FormField>
 );

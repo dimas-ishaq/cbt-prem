@@ -22,6 +22,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useConfirm } from '@/components/ui/confirmation-dialog';
 import {
   Box,
   Flex,
@@ -75,8 +76,32 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
   const { id } = use(params);
   const socket = useSocket();
   const { playViolation, playNotification } = useSound();
+  const confirmDialog = useConfirm();
 
   const [students, setStudents] = useState<Record<string, Student>>({});
+
+  const lockStudent = (studentId: string) => {
+    if (socket) {
+      socket.emit('lock_student', { examId: id, studentId });
+    }
+  };
+
+  const unlockStudent = (studentId: string) => {
+    if (socket) {
+      socket.emit('unlock_student', { examId: id, studentId });
+    }
+  };
+
+  const forceSubmitStudent = async (studentId: string, studentName: string) => {
+    const confirmed = await confirmDialog({
+      title: 'Paksa Kumpulkan Jawaban?',
+      description: `Apakah Anda yakin ingin memaksa mengumpulkan jawaban untuk siswa ${studentName}? Sesi ujian siswa ini akan selesai dan tidak dapat diubah lagi.`,
+      confirmText: 'Kumpulkan Sekarang',
+    });
+    if (confirmed && socket) {
+      socket.emit('force_submit_student', { examId: id, studentId });
+    }
+  };
   const [violations, setViolations] = useState<Violation[]>([]);
   const [connection, setConnection] = useState<'connected' | 'connecting' | 'disconnected'>('connecting');
   const [fullscreen, setFullscreen] = useState(false);
@@ -84,6 +109,7 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
   const [sortKey, setSortKey] = useState<SortKey>('progress');
   const [sortAsc, setSortAsc] = useState(false);
   const [prevCount, setPrevCount] = useState(0);
+  const [violationFilter, setViolationFilter] = useState<string>('ALL');
 
   const { data: exam, isLoading } = useQuery({
     queryKey: ['exam-monitoring', id],
@@ -122,18 +148,27 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
           [d.userId]: {
             userId: d.userId,
             username: d.username,
-            fullName: d.username,
-            status: 'Online',
+            fullName: prev[d.userId]?.fullName || d.username,
+            status: prev[d.userId]?.status === 'Locked' ? 'Locked' : 'Online',
             progress: prev[d.userId]?.progress || 0,
             lastActive: new Date().toISOString(),
             currentQuestionIndex: prev[d.userId]?.currentQuestionIndex,
+            violationCount: prev[d.userId]?.violationCount || 0,
           },
         }));
       },
       student_offline: (d) =>
-        setStudents((prev) =>
-          prev[d.userId] ? { ...prev, [d.userId]: { ...prev[d.userId], status: 'Offline' } } : prev,
-        ),
+        setStudents((prev) => {
+          const s = prev[d.userId];
+          if (!s) return prev;
+          return {
+            ...prev,
+            [d.userId]: {
+              ...s,
+              status: s.status === 'Locked' ? 'Locked' : 'Offline',
+            },
+          };
+        }),
       student_answer_update: (d) =>
         setStudents((prev) => {
           const s = prev[d.studentId];
@@ -164,6 +199,27 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
           return s ? { ...prev, [d.studentId]: { ...s, violationCount: (s.violationCount || 0) + 1 } } : prev;
         });
       },
+      student_locked: (d) => {
+        setStudents((prev) => {
+          const s = prev[d.studentId];
+          if (!s) return prev;
+          return { ...prev, [d.studentId]: { ...s, status: 'Locked' } };
+        });
+      },
+      student_unlocked: (d) => {
+        setStudents((prev) => {
+          const s = prev[d.studentId];
+          if (!s) return prev;
+          return { ...prev, [d.studentId]: { ...s, status: 'Online' } };
+        });
+      },
+      student_submitted: (d) => {
+        setStudents((prev) => {
+          const s = prev[d.studentId];
+          if (!s) return prev;
+          return { ...prev, [d.studentId]: { ...s, status: 'Selesai', progress: 100 } };
+        });
+      },
     };
 
     Object.entries(handlers).forEach(([ev, fn]) => socket.on(ev, fn));
@@ -174,6 +230,50 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
       Object.keys(handlers).forEach((ev) => socket.off(ev));
     };
   }, [socket, id, totalQ]);
+
+  // Synchronize student data from the initial HTTP API load
+  useEffect(() => {
+    if (exam && exam.examSessions) {
+      const initialStudents: Record<string, Student> = {};
+      exam.examSessions.forEach((session: any) => {
+        const studentUser = session.student?.user;
+        if (studentUser) {
+          const isSubmitted = session.status === 'SUBMITTED' || session.status === 'FINISHED';
+          const isLocked = session.status === 'LOCKED';
+          initialStudents[studentUser.id] = {
+            userId: studentUser.id,
+            username: studentUser.username,
+            fullName: studentUser.fullName,
+            status: isSubmitted ? 'Selesai' : (isLocked ? 'Locked' : 'Online'),
+            progress: (session.answers?.length || 0) > 0 ? (session.answers.length / (exam.examQuestions?.length || 1)) * 100 : 0,
+            lastActive: session.lastActiveAt || session.startTime || new Date().toISOString(),
+            violationCount: session.violations?.length || 0,
+          };
+        }
+      });
+
+      setStudents((prev) => {
+        const merged = { ...initialStudents };
+        Object.keys(prev).forEach((key) => {
+          const prevStudent = prev[key];
+          if (!prevStudent) return;
+
+          if (merged[key]) {
+            merged[key] = {
+              ...merged[key],
+              status: prevStudent.status === 'Offline' && merged[key].status === 'Online' ? 'Offline' : prevStudent.status,
+              progress: Math.max(merged[key].progress, prevStudent.progress),
+              violationCount: Math.max(merged[key].violationCount || 0, prevStudent.violationCount || 0),
+              currentQuestionIndex: prevStudent.currentQuestionIndex || merged[key].currentQuestionIndex,
+            };
+          } else {
+            merged[key] = prevStudent;
+          }
+        });
+        return merged;
+      });
+    }
+  }, [exam]);
 
   /* ─── Auto-scroll violations ─── */
   useEffect(() => {
@@ -397,8 +497,10 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
           <SimpleGrid columns={{ base: 1, sm: 2 }} gap={3} maxH="70vh" overflowY="auto" pr={1} css={{ '&::-webkit-scrollbar': { width: '6px' }, '&::-webkit-scrollbar-thumb': { background: 'var(--chakra-colors-gray-300)', borderRadius: '10px' } }}>
             {displayed.map((s) => {
               const offline = s.status === 'Offline';
+              const locked = s.status === 'Locked';
+              const finished = s.status === 'Selesai' || s.progress >= 100;
               const alerted = (s.violationCount || 0) > 0;
-              const done = s.progress >= 100;
+              const done = s.progress >= 100 || finished;
 
               return (
                 <Box
@@ -408,15 +510,26 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
                   borderRadius="xl"
                   borderWidth="1px"
                   transition="all 0.2s"
-                  bg={offline ? 'gray.50' : alerted ? 'red.50' : 'white'}
-                  borderColor={offline ? 'gray.200' : alerted ? 'red.200' : 'gray.200'}
-                  opacity={offline ? 0.6 : 1}
-                  _hover={!offline && !alerted ? { shadow: 'md', borderColor: 'indigo.500' } : undefined}
+                  bg={finished ? 'green.50/50' : locked ? 'red.50/30' : offline ? 'gray.50' : alerted ? 'red.50' : 'white'}
+                  borderColor={finished ? 'green.200' : locked ? 'red.200' : offline ? 'gray.200' : alerted ? 'red.200' : 'gray.200'}
+                  opacity={offline ? 0.7 : 1}
+                  _hover={!offline && !alerted && !locked && !finished ? { shadow: 'md', borderColor: 'indigo.500' } : undefined}
                 >
                   {/* Top row */}
                   <Flex align="start" justify="space-between" mb={3}>
                     <Flex align="center" gap={2.5} minW={0}>
-                      <Box w="10px" h="10px" borderRadius="full" mt={1} flexShrink={0} bg={offline ? 'gray.400' : 'green.500'} />
+                      <Box 
+                        w="10px" 
+                        h="10px" 
+                        borderRadius="full" 
+                        mt={1} 
+                        flexShrink={0} 
+                        bg={
+                          finished ? 'green.500' :
+                          locked ? 'red.500' :
+                          offline ? 'gray.400' : 'green.500'
+                        } 
+                      />
                       <Box minW={0}>
                         <Text fontWeight="semibold" fontSize="sm" color="gray.800" truncate>
                           {s.fullName || s.username}
@@ -432,8 +545,19 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
                           {s.violationCount}
                         </Badge>
                       )}
-                      <Badge colorPalette={offline ? 'gray' : 'green'} borderRadius="full" px={2} py={0.5} fontSize="11px">
-                        {offline ? 'OFFLINE' : 'LIVE'}
+                      <Badge 
+                        colorPalette={
+                          finished ? 'green' : 
+                          locked ? 'red' : 
+                          offline ? 'gray' : 'green'
+                        } 
+                        borderRadius="full" 
+                        px={2} 
+                        py={0.5} 
+                        fontSize="11px"
+                        textTransform="uppercase"
+                      >
+                        {finished ? 'SELESAI' : locked ? 'TERKUNCI' : offline ? 'OFFLINE' : 'LIVE'}
                       </Badge>
                     </Flex>
                   </Flex>
@@ -454,9 +578,54 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
                       />
                     </Box>
                     <Text fontSize="11px" fontWeight="semibold" color="indigo.650">
-                      Sedang Mengerjakan: Soal #{s.currentQuestionIndex || 1}
+                      {finished ? 'Ujian telah dikumpulkan' : `Sedang Mengerjakan: Soal #${s.currentQuestionIndex || 1}`}
                     </Text>
                   </Box>
+
+                  {/* Action Control Panel */}
+                  {!finished && (
+                    <Flex gap={2} mt={4} borderTop="1px solid" borderColor="gray.100" pt={3}>
+                      {locked ? (
+                        <Button
+                          size="xs"
+                          variant="solid"
+                          colorPalette="green"
+                          borderRadius="lg"
+                          flex={1}
+                          onClick={() => unlockStudent(s.userId)}
+                          fontWeight="bold"
+                          cursor="pointer"
+                        >
+                          Buka Kunci
+                        </Button>
+                      ) : (
+                        <Button
+                          size="xs"
+                          variant="outline"
+                          colorPalette="red"
+                          borderRadius="lg"
+                          flex={1}
+                          onClick={() => lockStudent(s.userId)}
+                          fontWeight="bold"
+                          cursor="pointer"
+                        >
+                          Kunci Sesi
+                        </Button>
+                      )}
+                      <Button
+                        size="xs"
+                        variant="subtle"
+                        colorPalette="gray"
+                        borderRadius="lg"
+                        flex={1}
+                        onClick={() => forceSubmitStudent(s.userId, s.fullName || s.username)}
+                        fontWeight="bold"
+                        cursor="pointer"
+                      >
+                        Kumpulkan
+                      </Button>
+                    </Flex>
+                  )}
                 </Box>
               );
             })}
@@ -479,15 +648,35 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
               <AlertTriangle size={20} color="var(--chakra-colors-red-600)" />
               Pelanggaran
             </Heading>
-            {violations.length > 0 && (
-              <Button size="xs" variant="ghost" color="gray.500" _hover={{ color: 'red.600' }} onClick={() => setViolations([])}>
-                Bersihkan
-              </Button>
-            )}
+            <Flex align="center" gap={2}>
+              <select 
+                value={violationFilter} 
+                onChange={(e) => setViolationFilter(e.target.value)}
+                style={{ fontSize: '12px', padding: '4px 8px', borderRadius: '6px', border: '1px solid #e5e7eb', background: 'white', color: '#374151', cursor: 'pointer' }}
+              >
+                <option value="ALL">Semua</option>
+                <option value="TAB_SWITCH">Tab Switch</option>
+                <option value="FULLSCREEN_EXIT">Keluar Fullscreen</option>
+                <option value="DEVTOOLS">Buka DevTools</option>
+              </select>
+              {violations.length > 0 && (
+                <Button size="xs" variant="ghost" color="gray.500" _hover={{ color: 'red.600' }} onClick={() => setViolations([])}>
+                  Bersihkan
+                </Button>
+              )}
+            </Flex>
           </Flex>
 
           <Stack id="violation-logs" gap={2} h="70vh" overflowY="auto" pr={1} css={{ '&::-webkit-scrollbar': { width: '6px' }, '&::-webkit-scrollbar-thumb': { background: 'var(--chakra-colors-red-200)', borderRadius: '10px' } }}>
-            {violations.map((v) => (
+            {violations
+              .filter((v) => {
+                if (violationFilter === 'ALL') return true;
+                if (violationFilter === 'TAB_SWITCH') return v.type.toLowerCase().includes('tab') || v.type.toLowerCase().includes('blur');
+                if (violationFilter === 'FULLSCREEN_EXIT') return v.type.toLowerCase().includes('fullscreen') || v.type.toLowerCase().includes('screen');
+                if (violationFilter === 'DEVTOOLS') return v.type.toLowerCase().includes('devtools') || v.type.toLowerCase().includes('inspect');
+                return true;
+              })
+              .map((v) => (
               <Box key={v.id} p={3} bg="red.50" border="1px solid" borderColor="red.100" borderRadius="xl" className="animate-fade-up">
                 <Flex justify="space-between" align="start" mb={1}>
                   <Text fontWeight="semibold" fontSize="sm" color="red.900">{v.username}</Text>

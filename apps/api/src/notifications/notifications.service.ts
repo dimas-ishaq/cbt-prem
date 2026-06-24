@@ -1,4 +1,4 @@
-import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException, Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateNotificationDto, NotificationTargetType } from './dto/create-notification.dto';
 import { Role } from '@prisma/client';
@@ -9,6 +9,7 @@ import { RealtimeGateway } from '../realtime/realtime.gateway';
 export class NotificationsService {
   constructor(
     private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => RealtimeGateway))
     private readonly realtimeGateway: RealtimeGateway,
   ) {}
 

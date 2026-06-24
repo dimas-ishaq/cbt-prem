@@ -3,7 +3,7 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { use } from 'react';
-import { ChevronLeft, User, Award, Clock, FileText, FileDown } from 'lucide-react';
+import { ChevronLeft, User, Award, Clock, FileText, FileDown, BarChart3 } from 'lucide-react';
 import Link from 'next/link';
 import {
   Box,
@@ -103,20 +103,52 @@ export default function ExamResultsPage({ params }: { params: Promise<{ id: stri
             </Text>
           </Box>
         </Flex>
-        <Button
-          onClick={() => exportMutation.mutate()}
-          disabled={exportMutation.isPending}
-          colorPalette="green"
-          borderRadius="xl"
-          fontWeight="bold"
-          fontSize="sm"
-          px={4}
-          py={5}
-          cursor="pointer"
-        >
-          <FileDown size={20} />
-          <Text>{exportMutation.isPending ? 'Mengekspor...' : 'Ekspor Excel'}</Text>
-        </Button>
+        <HStack gap={3}>
+          <Link href={`/admin/results/${id}/essay-grading`} passHref>
+            <Button
+              variant="outline"
+              colorPalette="orange"
+              borderRadius="xl"
+              fontWeight="bold"
+              fontSize="sm"
+              px={4}
+              py={5}
+              cursor="pointer"
+            >
+              <FileText size={20} />
+              <Text>Koreksi Essay</Text>
+            </Button>
+          </Link>
+          <Link href={`/admin/results/${id}/analytics`} passHref>
+            <Button
+              variant="outline"
+              colorPalette="indigo"
+              borderRadius="xl"
+              fontWeight="bold"
+              fontSize="sm"
+              px={4}
+              py={5}
+              cursor="pointer"
+            >
+              <BarChart3 size={20} />
+              <Text>Analisis Grafik</Text>
+            </Button>
+          </Link>
+          <Button
+            onClick={() => exportMutation.mutate()}
+            disabled={exportMutation.isPending}
+            colorPalette="green"
+            borderRadius="xl"
+            fontWeight="bold"
+            fontSize="sm"
+            px={4}
+            py={5}
+            cursor="pointer"
+          >
+            <FileDown size={20} />
+            <Text>{exportMutation.isPending ? 'Mengekspor...' : 'Ekspor Excel'}</Text>
+          </Button>
+        </HStack>
       </Flex>
 
       <Box bg="white" borderRadius="2xl" shadow="sm" border="1px solid" borderColor="gray.100" overflow="hidden">

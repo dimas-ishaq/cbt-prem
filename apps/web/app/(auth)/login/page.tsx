@@ -6,7 +6,7 @@ import { Shield, Zap, BookOpen, Clock, CheckCircle2 } from 'lucide-react';
 import { Box, Flex, Heading, Text, Stack, Image } from '@chakra-ui/react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth.store';
 
@@ -40,9 +40,14 @@ const trustBadges = [
 export default function LoginPage() {
   const { user, access_token, hasHydrated } = useAuthStore();
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (!hasHydrated) return;
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hasHydrated || !mounted) return;
 
     if (access_token && user) {
       if (user.role === 'SISWA') {
@@ -51,7 +56,7 @@ export default function LoginPage() {
         router.push('/admin');
       }
     }
-  }, [hasHydrated, user, access_token, router]);
+  }, [hasHydrated, mounted, user, access_token, router]);
 
   const { data: settings } = useQuery({
     queryKey: ['settings'],
@@ -60,6 +65,10 @@ export default function LoginPage() {
       return response.data;
     },
   });
+
+  if (!mounted || !hasHydrated) {
+    return null;
+  }
   return (
     <Flex minH="100vh" direction={{ base: 'column', lg: 'row' }}>
 

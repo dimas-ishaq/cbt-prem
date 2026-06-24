@@ -62,6 +62,22 @@ export class ExamSessionsController {
     return this.examSessionsService.getExamSessions(examId);
   }
 
+  @Get('exam/:examId/essay-answers')
+  @Roles(Role.GURU, Role.SUPER_ADMIN)
+  async getEssayAnswers(@Param('examId') examId: string) {
+    return this.examSessionsService.getEssayAnswersByExam(examId);
+  }
+
+  @Post('exam/:examId/essay-answers/:answerId/grade')
+  @Roles(Role.GURU, Role.SUPER_ADMIN)
+  async gradeEssayAnswer(
+    @Param('examId') examId: string,
+    @Param('answerId') answerId: string,
+    @Body() dto: GradeAnswerDto,
+  ) {
+    return this.examSessionsService.gradeEssayAnswer(answerId, dto);
+  }
+
   @Get('exam/:examId/export')
   @Roles(Role.GURU, Role.SUPER_ADMIN)
   async exportResults(

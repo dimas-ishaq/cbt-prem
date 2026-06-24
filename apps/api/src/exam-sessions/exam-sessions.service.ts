@@ -6,6 +6,8 @@ import {
   OnModuleInit,
   OnModuleDestroy,
   Logger,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { StartSessionDto } from './dto/start-session.dto';
@@ -23,6 +25,7 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
 
   constructor(
     private prisma: PrismaService,
+    @Inject(forwardRef(() => NotificationsService))
     private notificationsService: NotificationsService,
   ) {}
 
@@ -208,8 +211,8 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
       throw new NotFoundException('Session not found');
     }
 
-    if (session.status !== SessionStatus.IN_PROGRESS) {
-      throw new BadRequestException('Session is not in progress');
+    if (session.status !== SessionStatus.IN_PROGRESS && session.status !== SessionStatus.LOCKED) {
+      throw new BadRequestException('Session is not in progress or locked');
     }
 
     // Calculate score for multiple choice
@@ -286,11 +289,27 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
   }
 
   async gradeAnswer(answerId: string, dto: GradeAnswerDto) {
+    const answerRecord = await this.prisma.answer.findUnique({
+      where: { id: answerId },
+      include: { question: true },
+    });
+
+    if (!answerRecord) {
+      throw new NotFoundException('Jawaban tidak ditemukan');
+    }
+
+    if (dto.score > answerRecord.question.points) {
+      throw new BadRequestException(
+        `Skor (${dto.score}) melebihi batas maksimum poin untuk pertanyaan ini (${answerRecord.question.points} poin).`
+      );
+    }
+
     const answer = await this.prisma.answer.update({
       where: { id: answerId },
       data: {
         score: dto.score,
         isCorrect: dto.score > 0, // Simplified: any score > 0 is correct-ish
+        isGraded: true,
       },
       include: {
         examSession: true,
@@ -310,6 +329,50 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
     });
 
     return answer;
+  }
+
+  async getEssayAnswersByExam(examId: string) {
+    return this.prisma.answer.findMany({
+      where: {
+        examSession: { examId },
+        question: { type: 'ESSAY' },
+      },
+      include: {
+        examSession: {
+          include: {
+            student: {
+              include: {
+                user: {
+                  select: {
+                    fullName: true,
+                    username: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        question: {
+          select: {
+            content: true,
+            points: true,
+          },
+        },
+      },
+      orderBy: {
+        examSession: {
+          student: {
+            user: {
+              fullName: 'asc',
+            },
+          },
+        },
+      },
+    });
+  }
+
+  async gradeEssayAnswer(answerId: string, dto: GradeAnswerDto) {
+    return this.gradeAnswer(answerId, dto);
   }
 
   async getExamSessions(examId: string) {

@@ -180,7 +180,7 @@ export default function UsersManagementPage() {
   const rombelList = Array.isArray(rombels) ? rombels : Array.isArray((rombels as any)?.data) ? (rombels as any).data : [];
 
   const rombelOptions = createListCollection({
-    items: rombelList.map((r) => ({ label: r.name, value: r.id })),
+    items: rombelList.map((r: any) => ({ label: r.name, value: r.id })),
   });
 
   // ── Mutations ──────────────────────────────────────────────────────────────
@@ -290,7 +290,7 @@ export default function UsersManagementPage() {
         return;
       }
 
-      const headers = parseCsvLine(lines[0]).map((h) => h.trim().toLowerCase());
+      const headers = parseCsvLine(lines[0] || '').map((h) => h.trim().toLowerCase());
       const users = lines.slice(1).map((line) => {
         const values = parseCsvLine(line);
         const row: Record<string, string> = {};
@@ -451,7 +451,7 @@ export default function UsersManagementPage() {
             size="sm"
             onClick={() => document.getElementById('import-users-input')?.click()}
             cursor="pointer"
-            isLoading={isImporting}
+            loading={isImporting}
           >
             <Upload size={16} style={{ marginRight: 6 }} />
             Import CSV
@@ -965,7 +965,7 @@ export default function UsersManagementPage() {
                         </Select.Control>
                         <Select.Positioner>
                           <Select.Content>
-                            {rombelOptions.items.map((item) => (
+                            {rombelOptions.items.map((item: any) => (
                               <Select.Item key={item.value} item={item}>
                                 {item.label}
                               </Select.Item>

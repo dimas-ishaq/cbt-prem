@@ -147,8 +147,9 @@ export default function ProfilePage() {
         {/* Left Side: Avatar Upload card */}
         <Stack gap={6}>
           <Card.Root bg="bg.surface" border="1px solid" borderColor="border.default" borderRadius="2xl" p={6}>
-            <Card.Body as={Flex} direction="column" align="center" justify="center" p={0}>
-              <Box position="relative" w={32} h={32} borderRadius="full" overflow="hidden" mb={4} cursor="pointer" onClick={() => fileInputRef.current?.click()}>
+            <Card.Body p={0}>
+              <Flex direction="column" align="center" justify="center">
+                <Box position="relative" w={32} h={32} borderRadius="full" overflow="hidden" mb={4} cursor="pointer" onClick={() => fileInputRef.current?.click()}>
                 <Flex
                   w="full"
                   h="full"
@@ -189,7 +190,7 @@ export default function ProfilePage() {
                 _hover={{ bg: 'bg.subtle', borderColor: 'border.strong' }}
                 borderRadius="xl"
                 onClick={() => fileInputRef.current?.click()}
-                isLoading={uploadingPhoto}
+                loading={uploadingPhoto}
                 mb={3}
               >
                 Ganti Foto
@@ -197,6 +198,7 @@ export default function ProfilePage() {
               <Text fontSize="2xs" color="text.secondary" textAlign="center">
                 Mendukung JPG, PNG, atau WebP. Maksimal 2MB.
               </Text>
+              </Flex>
             </Card.Body>
           </Card.Root>
 
@@ -324,7 +326,7 @@ export default function ProfilePage() {
                   color="white"
                   _hover={{ bg: 'linear-gradient(135deg, #4338ca 0%, #1d4ed8 100%)' }}
                   borderRadius="xl"
-                  isLoading={saving}
+                  loading={saving}
                   px={6}
                   h={10}
                 >
