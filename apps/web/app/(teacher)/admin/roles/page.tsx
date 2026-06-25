@@ -4,7 +4,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
+
 import {
   Box,
   Flex,
@@ -26,6 +27,8 @@ import {
 } from '@chakra-ui/react';
 import { toast } from '@/lib/toaster';
 import { useConfirm } from '@/components/ui/confirmation-dialog';
+import { TablePagination } from '@/components/ui/pagination';
+
 import {
   Plus,
   Pencil,
@@ -98,6 +101,14 @@ export default function RolesPage() {
   // States
   const [searchTerm, setSearchTerm] = useState('');
   const [matrixSearch, setMatrixSearch] = useState('');
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
   const [selectedRole, setSelectedRole] = useState<RoleDetail | null>(null);
   
   // Modal states
@@ -298,10 +309,17 @@ export default function RolesPage() {
     }
   };
 
-  const filteredRoles = (roles || []).filter((r) =>
-    r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (r.description && r.description.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredRoles = useMemo(() => {
+    return (roles || []).filter((r) =>
+      r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (r.description && r.description.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+  }, [roles, searchTerm]);
+
+  const paginatedRoles = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredRoles.slice(start, start + pageSize);
+  }, [filteredRoles, currentPage, pageSize]);
 
   const getRiskBadgeColor = (level: string) => {
     switch (level) {
@@ -393,7 +411,7 @@ export default function RolesPage() {
                 </Table.Row>
               </Table.Header>
               <Table.Body>
-                {filteredRoles?.map((role) => (
+                {paginatedRoles?.map((role) => (
                   <Table.Row key={role.id} _hover={{ bg: 'gray.50' }} transition="background 0.15s">
                     <Table.Cell px={6} py={4} fontWeight="medium" color="gray.900">
                       <HStack gap={2}>
@@ -487,6 +505,13 @@ export default function RolesPage() {
                 )}
               </Table.Body>
             </Table.Root>
+            <TablePagination
+              currentPage={currentPage}
+              totalCount={filteredRoles.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+            />
           </Box>
         </Stack>
 

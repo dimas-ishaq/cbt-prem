@@ -21,7 +21,7 @@ import {
   createListCollection,
 } from '@chakra-ui/react';
 import { toast } from '@/lib/toaster';
-import { Settings, Save, ShieldAlert, Upload, Trash2, Globe, Heart, Languages, Bookmark } from 'lucide-react';
+import { Settings, Save, ShieldAlert, Upload, Trash2, Globe, BookOpen, Languages, Bookmark } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 const timezones = [
@@ -408,7 +408,7 @@ export default function SettingsPage() {
                   ) : (
                     <Flex direction="column" align="center" justify="center" gap={1}>
                       <Box p={2.5} borderRadius="xl" bg="bg.surface" border="1px solid" borderColor="border.default">
-                        <Heart size={18} className="text-gray-400" />
+                        <BookOpen size={18} className="text-gray-400" />
                       </Box>
                       <Text fontSize="2xs" color="text.secondary" fontWeight="bold" mt={1}>LOGO DEFAULT</Text>
                     </Flex>

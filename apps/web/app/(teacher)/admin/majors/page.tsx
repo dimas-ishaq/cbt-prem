@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import {
   Box,
   Flex,
@@ -24,6 +24,7 @@ import {
 import { toast } from '@/lib/toaster';
 import { useConfirm } from '@/components/ui/confirmation-dialog';
 import { Plus, Pencil, Trash2, Search, GraduationCap } from 'lucide-react';
+import { TablePagination } from '@/components/ui/pagination';
 
 interface Major {
   id: string;
@@ -51,6 +52,14 @@ export default function MajorsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMajor, setEditingMajor] = useState<Major | null>(null);
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
   const [formData, setFormData] = useState({
     name: '',
     code: '',
@@ -131,10 +140,17 @@ export default function MajorsPage() {
     }
   };
 
-  const filteredMajors = majors?.filter((m) =>
-    m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    m.code.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredMajors = useMemo(() => {
+    return (majors || []).filter((m) =>
+      m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      m.code.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [majors, searchTerm]);
+
+  const paginatedMajors = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredMajors.slice(start, start + pageSize);
+  }, [filteredMajors, currentPage, pageSize]);
 
   if (isLoading) {
     return (
@@ -214,7 +230,7 @@ export default function MajorsPage() {
             </Table.Row>
           </Table.Header>
           <Table.Body>
-            {filteredMajors?.map((major) => (
+            {paginatedMajors?.map((major) => (
               <Table.Row key={major.id} _hover={{ bg: 'gray.50' }} transition="background 0.15s">
                 <Table.Cell px={6} py={4} fontFamily="mono" fontSize="sm" fontWeight="bold" color="indigo.600">
                   {major.code}
@@ -278,6 +294,13 @@ export default function MajorsPage() {
             )}
           </Table.Body>
         </Table.Root>
+        <TablePagination
+          currentPage={currentPage}
+          totalCount={filteredMajors.length}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={setPageSize}
+        />
       </Box>
 
       {/* CREATE / EDIT MODAL */}

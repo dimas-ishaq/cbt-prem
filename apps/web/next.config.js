@@ -3,6 +3,21 @@ const nextConfig = {
   // Matikan header X-Powered-By
   poweredByHeader: false,
 
+  // Alias html2canvas to html2canvas-pro to resolve "unsupported color function" error on Tailwind CSS v4 color tokens
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      html2canvas: 'html2canvas-pro',
+    };
+    return config;
+  },
+
+  turbopack: {
+    resolveAlias: {
+      html2canvas: 'html2canvas-pro',
+    },
+  },
+
   async headers() {
     return [
       {

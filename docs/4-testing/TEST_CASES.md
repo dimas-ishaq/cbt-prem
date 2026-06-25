@@ -43,6 +43,29 @@
 | `TC-EXAM-007` | Empty Questions | Create exam with empty `questionIds` | Either reject or allow empty exam |
 | `TC-EXAM-008` | Time Overrun | Update `startTime` > `endTime` | Validation error |
 
+### 2.3 QA Scope for First Increment
+
+Target feature: **Create Exam** (`/admin/exams/create` + `POST /exams`).
+
+| Level | Coverage | Status |
+| :--- | :--- | :--- |
+| Unit | `ExamsService.create()` payload mapping and relation creation | Planned |
+| Unit | `ExamsController.create()` teacher resolution and fallback logic | Planned |
+| Integration | Payload shape from UI to API | Planned |
+| UI | Mandatory validation: soal and rombel | Planned |
+| Security | Role restriction and invalid teacher fallback | Planned |
+
+### 2.4 Create Exam Test Cases
+
+| TC-ID | Scenario | Pre-Condition | Steps | Expected Result |
+| :--- | :--- | :--- | :--- | :--- |
+| `TC-EXAM-CREATE-001` | Create exam sukses | Guru login, teacher tersedia | Isi form lengkap lalu submit | Exam tersimpan, redirect ke daftar ujian |
+| `TC-EXAM-CREATE-002` | Tolak tanpa soal | Guru login | Submit tanpa memilih soal | Muncul error "Pilih minimal satu soal." |
+| `TC-EXAM-CREATE-003` | Tolak tanpa rombel | Guru login | Submit tanpa memilih target peserta | Muncul error "Pilih minimal satu rombel target peserta." |
+| `TC-EXAM-CREATE-004` | Mapping payload start/end time | Guru login | Submit form dengan tanggal dan waktu | API menerima `startTime` dan `endTime` ISO string |
+| `TC-EXAM-CREATE-005` | Super admin fallback teacher | Super admin login, teacher user tidak ditemukan | Submit create exam | Exam dibuat memakai teacher pertama |
+| `TC-EXAM-CREATE-006` | Teacher missing ditolak | Guru login tanpa record teacher | Submit create exam | 401 Unauthorized |
+
 ---
 
 ## 3. Students Module
@@ -122,7 +145,29 @@
 
 ---
 
-## 7. Settings Module
+## 7. Majors Module (Jurusan)
+
+### 7.1 Functional
+
+| TC-ID | Scenario | Steps | Expected Result |
+| :--- | :--- | :--- | :--- |
+| `TC-MAJ-001` | List Majors | GET `/api/majors` | 200 OK + data + total |
+| `TC-MAJ-002` | Get Major Detail | GET `/api/majors/:id` | 200 OK + major + students |
+| `TC-MAJ-003` | Create Major | POST `/api/majors` | 201 Created + major |
+| `TC-MAJ-004` | Update Major | PUT `/api/majors/:id` | 200 OK + updated major |
+| `TC-MAJ-005` | Delete Major | DELETE `/api/majors/:id` | 200 OK + success message |
+
+### 7.2 Edge Cases / Security
+
+| TC-ID | Scenario | Steps | Expected Result |
+| :--- | :--- | :--- | :--- |
+| `TC-MAJ-006` | Duplicate Name | Create major with same name | 400 Bad Request |
+| `TC-MAJ-007` | Duplicate Code | Create major with same code | 400 Bad Request |
+| `TC-MAJ-008` | Not Found | Access unknown major id | 404 Not Found |
+
+---
+
+## 8. Settings Module
 
 ### 7.1 Admin Only
 
@@ -134,7 +179,7 @@
 
 ---
 
-## 8. Integration Test Scenarios (E2E)
+## 9. Integration Test Scenarios (E2E)
 
 | ITC-ID | Flow | Steps | Expected Result |
 | :--- | :--- | :--- | :--- |
@@ -145,7 +190,7 @@
 
 ---
 
-## 9. Performance Benchmarks (Targets)
+## 10. Performance Benchmarks (Targets)
 
 | Endpoint | Method | Target <100ms | Target <500ms (100 rps) | Max Latency |
 | :--- | :--- | :--- | :--- | :--- |
@@ -158,7 +203,7 @@
 
 ---
 
-## 10. Security Test Vectors
+## 11. Security Test Vectors
 
 | Vector | Description | Tool |
 | :--- | :--- | :--- |

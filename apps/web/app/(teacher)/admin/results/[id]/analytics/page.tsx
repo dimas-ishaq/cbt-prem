@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { use, useState, useEffect } from 'react';
+import { use, useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, FileDown, Award, Users, CheckCircle, BarChart3, BookOpen, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import {
@@ -19,6 +19,8 @@ import {
   Badge,
 } from '@chakra-ui/react';
 import { toast } from '@/lib/toaster';
+import { TablePagination } from '@/components/ui/pagination';
+
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 
 interface AnalyticsData {
@@ -48,6 +50,8 @@ interface AnalyticsData {
 export default function ExamAnalyticsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [isMounted, setIsMounted] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   useEffect(() => {
     setIsMounted(true);
@@ -113,6 +117,12 @@ export default function ExamAnalyticsPage({ params }: { params: Promise<{ id: st
     { name: 'Tuntas KKM', value: summary.passed, color: '#10b981' }, // emerald.500
     { name: 'Belum Tuntas', value: summary.failed, color: '#ef4444' }, // red.500
   ];
+
+  const paginatedItemAnalysis = useMemo(() => {
+    const list = itemAnalysis || [];
+    const start = (currentPage - 1) * pageSize;
+    return list.slice(start, start + pageSize);
+  }, [itemAnalysis, currentPage, pageSize]);
 
   return (
     <Stack gap={8} maxW="7xl" mx="auto" px={{ base: 4, lg: 8 }} py={6} position="relative">
@@ -317,7 +327,7 @@ export default function ExamAnalyticsPage({ params }: { params: Promise<{ id: st
               </Table.Row>
             </Table.Header>
             <Table.Body color="gray.700">
-              {itemAnalysis.map((item, index) => {
+              {paginatedItemAnalysis.map((item, index) => {
                 const diffPercent = item.difficulty * 100;
                 let difficultyLabel = 'Sedang';
                 let difficultyColor = 'orange';
@@ -332,7 +342,7 @@ export default function ExamAnalyticsPage({ params }: { params: Promise<{ id: st
 
                 return (
                   <Table.Row key={item.questionId} _hover={{ bg: 'gray.50/40' }} transition="all 0.15s">
-                    <Table.Cell px={6} py={4.5} fontWeight="bold" color="gray.500">{index + 1}</Table.Cell>
+                    <Table.Cell px={6} py={4.5} fontWeight="bold" color="gray.500">{(currentPage - 1) * pageSize + index + 1}</Table.Cell>
                     <Table.Cell px={6} py={4.5} maxW="md">
                       <Text lineClamp={2} fontSize="sm" fontWeight="medium" color="gray.800" dangerouslySetInnerHTML={{ __html: item.content }} />
                     </Table.Cell>
@@ -352,6 +362,13 @@ export default function ExamAnalyticsPage({ params }: { params: Promise<{ id: st
               })}
             </Table.Body>
           </Table.Root>
+          <TablePagination
+            currentPage={currentPage}
+            totalCount={itemAnalysis.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={setPageSize}
+          />
         </Box>
       </Box>
     </Stack>

@@ -382,6 +382,7 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
         student: {
           include: {
             user: true,
+            rombel: true,
           },
         },
         answers: {
@@ -517,6 +518,20 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
 
     return this.prisma.examSession.delete({
       where: { id: sessionId },
+    });
+  }
+
+  async bulkResetSessions(sessionIds: string[]) {
+    if (!Array.isArray(sessionIds) || sessionIds.length === 0) {
+      throw new BadRequestException('Session IDs must be a non-empty array');
+    }
+
+    return this.prisma.examSession.deleteMany({
+      where: {
+        id: {
+          in: sessionIds,
+        },
+      },
     });
   }
 

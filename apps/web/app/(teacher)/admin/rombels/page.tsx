@@ -21,6 +21,7 @@ import {
   Select,
   createListCollection,
   Checkbox,
+  ButtonGroup,
 } from '@chakra-ui/react';
 import { toast } from '@/lib/toaster';
 import { useConfirm } from '@/components/ui/confirmation-dialog';
@@ -116,6 +117,8 @@ export default function RombelsPage() {
   }, [user, router]);
 
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterMajorId, setFilterMajorId] = useState('');
+  const [filterGrade, setFilterGrade] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRombel, setEditingRombel] = useState<Rombel | null>(null);
   const [formData, setFormData] = useState({
@@ -131,8 +134,8 @@ export default function RombelsPage() {
   const [isManageOpen, setIsManageOpen] = useState(false);
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [allStudentsSearchTerm, setAllStudentsSearchTerm] = useState('');
-  const [filterMajorId, setFilterMajorId] = useState<string>('');
-  const [filterGrade, setFilterGrade] = useState<string>('');
+  const [modalFilterMajorId, setModalFilterMajorId] = useState<string>('');
+  const [modalFilterGrade, setModalFilterGrade] = useState<string>('');
   const [filterRombelId, setFilterRombelId] = useState<string>('');
 
   // Fetch rombels
@@ -170,13 +173,13 @@ export default function RombelsPage() {
 
   // Fetch all students in the school for assignment
   const { data: allStudents, isLoading: isLoadingAllStudents } = useQuery<Student[]>({
-    queryKey: ['all-students', filterMajorId, filterRombelId, filterGrade],
+    queryKey: ['all-students', modalFilterMajorId, filterRombelId, modalFilterGrade],
     queryFn: async () => {
       const response = await api.get('/students', {
         params: {
-          majorId: filterMajorId || undefined,
+          majorId: modalFilterMajorId || undefined,
           rombelId: filterRombelId || undefined,
-          grade: filterGrade || undefined,
+          grade: modalFilterGrade || undefined,
         },
       });
       return response.data;
@@ -275,10 +278,15 @@ export default function RombelsPage() {
     }
   };
 
-  const filteredRombels = rombels?.filter((r) =>
-    r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    r.major?.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredRombels = rombels?.filter((r) => {
+    const matchesSearch =
+      r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      r.major?.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesMajor = !filterMajorId || r.majorId === filterMajorId;
+    const matchesGrade =
+      !filterGrade || r.name.toLowerCase().startsWith(`${filterGrade.toLowerCase()} `);
+    return matchesSearch && matchesMajor && matchesGrade;
+  });
 
   const filteredStudents = rombelDetail?.students?.filter((student) =>
     student.user.fullName.toLowerCase().includes(studentSearchTerm.toLowerCase()) ||
@@ -327,8 +335,8 @@ export default function RombelsPage() {
               size="sm"
               onClick={() => {
                 setAllStudentsSearchTerm('');
-                setFilterMajorId(rombelDetail?.majorId || '');
-                setFilterGrade('');
+                setModalFilterMajorId(rombelDetail?.majorId || '');
+                setModalFilterGrade('');
                 setFilterRombelId('no-class');
                 setIsManageOpen(true);
               }}
@@ -490,8 +498,8 @@ export default function RombelsPage() {
                       <Box>
                         <Text fontSize="xs" fontWeight="bold" color="gray.500" mb={1}>Filter Jurusan</Text>
                         <select
-                          value={filterMajorId}
-                          onChange={(e) => setFilterMajorId(e.target.value)}
+                          value={modalFilterMajorId}
+                          onChange={(e) => setModalFilterMajorId(e.target.value)}
                           style={{
                             width: '100%',
                             padding: '6px 10px',
@@ -512,9 +520,9 @@ export default function RombelsPage() {
                       <Box>
                         <Text fontSize="xs" fontWeight="bold" color="gray.500" mb={1}>Tingkat Kelas</Text>
                         <select
-                          value={filterGrade}
+                          value={modalFilterGrade}
                           onChange={(e) => {
-                            setFilterGrade(e.target.value);
+                            setModalFilterGrade(e.target.value);
                             setFilterRombelId(''); // Reset rombel selection when grade changes
                           }}
                           style={{
@@ -552,7 +560,7 @@ export default function RombelsPage() {
                           <option value="">Semua Rombel</option>
                           <option value="no-class">Belum Memiliki Rombel</option>
                           {rombels
-                            ?.filter((r) => !filterGrade || r.name.toLowerCase().startsWith(filterGrade.toLowerCase() + ' '))
+                            ?.filter((r) => !modalFilterGrade || r.name.toLowerCase().startsWith(modalFilterGrade.toLowerCase() + ' '))
                             ?.map((r) => (
                               <option key={r.id} value={r.id}>{r.name}</option>
                             ))}
@@ -584,7 +592,7 @@ export default function RombelsPage() {
                         const matchesSearch = student.user.fullName.toLowerCase().includes(allStudentsSearchTerm.toLowerCase()) ||
                           student.nis.includes(allStudentsSearchTerm);
 
-                        const matchesMajor = !filterMajorId || student.majorId === filterMajorId;
+                        const matchesMajor = !modalFilterMajorId || student.majorId === modalFilterMajorId;
 
                         let matchesRombel = true;
                         if (filterRombelId === 'no-class') {
@@ -751,23 +759,90 @@ export default function RombelsPage() {
         </HStack>
       </Flex>
 
-      {/* Search Bar */}
-      <Box bg="white" borderRadius="xl" shadow="sm" borderWidth="1px" borderColor="gray.100" p={4}>
-        <Box position="relative" flex={1} maxW="md">
-          <Box position="absolute" left={3} top="50%" transform="translateY(-50%)" color="gray.400">
-            <Search size={18} />
+      <Stack gap={4}>
+        <Flex gap={3} wrap="wrap">
+          <Box flex="1" minW={{ base: 'full', md: '18rem' }}>
+            <Text fontSize="xs" fontWeight="bold" color="gray.500" mb={2}>
+              Filter Tingkatan
+            </Text>
+            <ButtonGroup size="sm" variant="outline" flexWrap="wrap">
+              {['', 'X', 'XI', 'XII'].map((grade) => {
+                const active = filterGrade === grade;
+                return (
+                  <Button
+                    key={grade || 'all-grade'}
+                    onClick={() => setFilterGrade(grade)}
+                    variant={active ? 'solid' : 'outline'}
+                    bg={active ? 'indigo.600' : 'white'}
+                    color={active ? 'white' : 'gray.700'}
+                    borderColor={active ? 'indigo.600' : 'gray.200'}
+                    _hover={{ bg: active ? 'indigo.700' : 'gray.50' }}
+                    borderRadius="full"
+                    mb={2}
+                  >
+                    {grade === '' ? 'Semua Tingkatan' : `Kelas ${grade}`}
+                  </Button>
+                );
+              })}
+            </ButtonGroup>
           </Box>
-          <Input
-            pl={10}
-            placeholder="Cari kelas (contoh: RPL, X, dsb)..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            borderRadius="lg"
-            borderColor="gray.200"
-            _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
-          />
+
+          <Box flex="1" minW={{ base: 'full', md: '20rem' }}>
+            <Text fontSize="xs" fontWeight="bold" color="gray.500" mb={2}>
+              Filter Jurusan
+            </Text>
+            <ButtonGroup size="sm" variant="outline" flexWrap="wrap">
+              <Button
+                onClick={() => setFilterMajorId('')}
+                variant={filterMajorId === '' ? 'solid' : 'outline'}
+                bg={filterMajorId === '' ? 'indigo.600' : 'white'}
+                color={filterMajorId === '' ? 'white' : 'gray.700'}
+                borderColor={filterMajorId === '' ? 'indigo.600' : 'gray.200'}
+                _hover={{ bg: filterMajorId === '' ? 'indigo.700' : 'gray.50' }}
+                borderRadius="full"
+                mb={2}
+              >
+                Semua Jurusan
+              </Button>
+              {majors?.map((m) => {
+                const active = filterMajorId === m.id;
+                return (
+                  <Button
+                    key={m.id}
+                    onClick={() => setFilterMajorId(m.id)}
+                    variant={active ? 'solid' : 'outline'}
+                    bg={active ? 'indigo.600' : 'white'}
+                    color={active ? 'white' : 'gray.700'}
+                    borderColor={active ? 'indigo.600' : 'gray.200'}
+                    _hover={{ bg: active ? 'indigo.700' : 'gray.50' }}
+                    borderRadius="full"
+                    mb={2}
+                  >
+                    {m.name}
+                  </Button>
+                );
+              })}
+            </ButtonGroup>
+          </Box>
+        </Flex>
+
+        <Box bg="white" borderRadius="xl" shadow="sm" borderWidth="1px" borderColor="gray.100" p={4}>
+          <Box position="relative" flex={1} maxW="md">
+            <Box position="absolute" left={3} top="50%" transform="translateY(-50%)" color="gray.400">
+              <Search size={18} />
+            </Box>
+            <Input
+              pl={10}
+              placeholder="Cari kelas (contoh: RPL, X, dsb)..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              borderRadius="lg"
+              borderColor="gray.200"
+              _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
+            />
+          </Box>
         </Box>
-      </Box>
+      </Stack>
 
       {/* Grid of Rombels */}
       {filteredRombels?.length === 0 ? (

@@ -29,6 +29,8 @@ const resources = {
       subjectsDesc: 'Kelola daftar mata pelajaran dan relasi guru pengampu.',
       admin: 'Admin',
       detail: 'Detail',
+      create: 'Buat Baru',
+      edit: 'Ubah',
       
       // Users
       usersTitle: 'Manajemen Pengguna',
@@ -296,6 +298,8 @@ const resources = {
       subjectsDesc: 'Manage school subjects and codes.',
       admin: 'Admin',
       detail: 'Detail',
+      create: 'Create',
+      edit: 'Edit',
       addSubject: 'Add Subject',
       searchSubjects: 'Search subjects...',
       subjectCodeLabel: 'Subject Code',

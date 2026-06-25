@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Patch, Delete, UseGuards, Request, Headers, UnauthorizedException, Query, Res } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Patch, Delete, UseGuards, Request, Headers, UnauthorizedException, BadRequestException, Query, Res } from '@nestjs/common';
 import { Response } from 'express';
 import { ExamsService } from './exams.service';
 import { PaginationDto } from '../common/dto/pagination.dto';
@@ -17,11 +17,19 @@ export class ExamsController {
   @Post()
   @Roles(Role.GURU, Role.SUPER_ADMIN)
   async create(@Body() dto: CreateExamDto, @Request() req) {
-    const teacher = await this.examsService['prisma'].teacher.findUnique({
+    let teacher = await this.examsService['prisma'].teacher.findUnique({
       where: { userId: req.user.userId }
     });
     if (!teacher) {
-      throw new UnauthorizedException('User is not a teacher');
+      if (req.user.role === Role.SUPER_ADMIN) {
+        const firstTeacher = await this.examsService['prisma'].teacher.findFirst();
+        if (!firstTeacher) {
+          throw new BadRequestException('No teachers registered in the system. Please add a teacher first.');
+        }
+        teacher = firstTeacher;
+      } else {
+        throw new UnauthorizedException('User is not a teacher');
+      }
     }
     return this.examsService.create(dto, teacher.id);
   }

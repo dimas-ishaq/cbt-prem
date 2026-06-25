@@ -31,8 +31,11 @@ import {
   IconButton,
   SimpleGrid,
   Grid,
+  RadioGroup,
+  Checkbox,
+  Dialog,
+  Portal,
 } from '@chakra-ui/react';
-import html2pdf from 'html2pdf.js';
 import { toast } from '@/lib/toaster';
 
 export default function SessionDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -86,28 +89,13 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
     const element = document.getElementById('session-export') as HTMLElement | null;
     if (!element) return;
 
-    await html2pdf()
-      .set({
-        margin: [8, 8, 8, 8],
-        filename: `lembar-jawaban-${session?.student?.user?.fullName || 'siswa'}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          backgroundColor: '#ffffff',
-          scrollX: 0,
-          scrollY: 0,
-        },
-        jsPDF: {
-          unit: 'mm',
-          format: 'a4',
-          orientation: 'portrait',
-        },
-        pagebreak: { mode: ['css', 'legacy'] },
-      } as any)
-      .from(element)
-      .toPdf()
-      .save();
+    const { generatePdfFromHtml } = await import('@/lib/pdf-helper');
+
+    await generatePdfFromHtml(element, {
+      margin: [8, 8, 8, 8],
+      filename: `lembar-jawaban-${session?.student?.user?.fullName || 'siswa'}.pdf`,
+      scale: 2,
+    });
   };
 
   if (isLoading) {
@@ -145,11 +133,11 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
     : 'Sedang berjalan / belum selesai';
 
   return (
-    <Stack gap={6} p={2} className="session-export">
+    <Stack gap={6} p={4} id="session-export" className="print-area paper-template paper-template-a4" style={{ width: '100%', maxWidth: '100%', margin: 0 }}>
       {/* Header bar */}
       <Flex justify="space-between" align={{ base: 'start', md: 'center' }} direction={{ base: 'column', md: 'row' }} gap={4} pb={4} borderBottom="1px solid" borderColor="gray.100">
         <Flex align="center" gap={4}>
-          <Link href={`/admin/results/${session.examId}`} passHref className="no-export">
+          <Link href={`/admin/results/${session.examId}`} passHref className="no-print">
             <Button variant="ghost" p={2} borderRadius="xl" border="1px solid" borderColor="gray.200" cursor="pointer" bg="white" _hover={{ bg: 'gray.50' }}>
               <ChevronLeft size={20} />
             </Button>
@@ -158,13 +146,13 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
             <Heading size="xl" fontWeight="black" color="gray.900" letterSpacing="tight">
               Lembar Jawaban Siswa
             </Heading>
-            <Text fontSize="sm" color="gray.500" mt={0.5} className="no-export">
+            <Text fontSize="sm" color="gray.500" mt={0.5} className="no-print">
               Evaluasi jawaban mandiri dan rekap nilai hasil ujian.
             </Text>
           </Box>
         </Flex>
 
-        <HStack gap={3} className="no-export">
+        <HStack gap={3} className="no-print">
           <Button
             onClick={handleExportPdf}
             variant="solid"
@@ -204,7 +192,7 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
       <Grid templateColumns={{ base: '1fr', lg: '1fr 2fr' }} gap={6}>
         {/* Left Side: Score & Status Card */}
         <Flex bg="white" border="1px solid" borderColor="gray.100" borderRadius="2xl" shadow="sm" p={6} flexDirection="column" justify="center" align="center" position="relative" overflow="hidden">
-          <Box position="absolute" top={0} left={0} right={0} h="4px" bg="indigo.600" className="no-export" />
+          <Box position="absolute" top={0} left={0} right={0} h="4px" bg="indigo.600" className="no-print" />
           <Text fontSize="2xs" color="gray.400" fontWeight="bold" textTransform="uppercase" letterSpacing="widest" mb={2}>TOTAL NILAI AKHIR</Text>
           <Heading fontSize="6xl" fontWeight="black" color="indigo.600" lineHeight="1">{session.score ?? '--'}</Heading>
           <Box mt={4} mb={2}>
@@ -212,7 +200,7 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
               {session.status}
             </Badge>
           </Box>
-          <Text fontSize="xs" color="gray.400" mt={2} textAlign="center" className="no-export">
+          <Text fontSize="xs" color="gray.400" mt={2} textAlign="center" className="no-print">
             Dinilai otomatis oleh sistem untuk Pilihan Ganda & Multi-respons.
           </Text>
         </Flex>
@@ -222,7 +210,7 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
           <SimpleGrid columns={{ base: 1, md: 2 }} gap={6}>
             <Stack gap={4}>
               <HStack gap={3}>
-                <Flex w={8} h={8} borderRadius="lg" bg="indigo.50" align="center" justify="center" color="indigo.600" className="no-export">
+                <Flex w={8} h={8} borderRadius="lg" bg="indigo.50" align="center" justify="center" color="indigo.600" className="no-print">
                   <User size={16} />
                 </Flex>
                 <Box>
@@ -233,7 +221,7 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
               </HStack>
 
               <HStack gap={3}>
-                <Flex w={8} h={8} borderRadius="lg" bg="indigo.50" align="center" justify="center" color="indigo.600" className="no-export">
+                <Flex w={8} h={8} borderRadius="lg" bg="indigo.50" align="center" justify="center" color="indigo.600" className="no-print">
                   <BookOpen size={16} />
                 </Flex>
                 <Box>
@@ -246,7 +234,7 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
 
             <Stack gap={4}>
               <HStack gap={3}>
-                <Flex w={8} h={8} borderRadius="lg" bg="indigo.50" align="center" justify="center" color="indigo.600" className="no-export">
+                <Flex w={8} h={8} borderRadius="lg" bg="indigo.50" align="center" justify="center" color="indigo.600" className="no-print">
                   <Clock size={16} />
                 </Flex>
                 <Box>
@@ -259,7 +247,7 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
               </HStack>
 
               <HStack gap={3}>
-                <Flex w={8} h={8} borderRadius="lg" bg="indigo.50" align="center" justify="center" color="indigo.600" className="no-export">
+                <Flex w={8} h={8} borderRadius="lg" bg="indigo.50" align="center" justify="center" color="indigo.600" className="no-print">
                   <CheckCircle2 size={16} />
                 </Flex>
                 <Box>
@@ -373,12 +361,11 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
                   <Text fontSize="2xs" fontWeight="black" color="gray.400" textTransform="uppercase" letterSpacing="widest" mb={3}>
                     JAWABAN SISWA:
                   </Text>
-                  
                   {isEssay ? (
                     <Text fontSize="sm" color="gray.800" whiteSpace="pre-wrap" lineHeight="relaxed" fontWeight="medium">
                       {answer.essayAnswer || <span className="italic text-gray-400">Tidak ada jawaban yang dikirimkan.</span>}
                     </Text>
-                  ) : (
+                  ) : question.type === 'MULTIPLE_RESPONSE' ? (
                     <Stack gap={2.5}>
                       {question.options.map((opt: any) => {
                         const isSelected = answer.selectedOption?.split(',').includes(opt.id);
@@ -409,36 +396,30 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
                         }
 
                         return (
-                          <Flex 
-                            key={opt.id} 
-                            align="center" 
-                            justify="space-between" 
-                            p={3} 
-                            bg={optionBg} 
-                            border={optionBorder} 
-                            borderColor={optionBorderColor} 
+                          <Checkbox.Root
+                            key={opt.id}
+                            checked={!!isSelected}
+                            disabled
+                            as="div"
+                            display="flex"
+                            alignItems="center"
+                            justifyContent="space-between"
+                            p={3}
+                            bg={optionBg}
+                            border={optionBorder}
+                            borderColor={optionBorderColor}
                             borderRadius="xl"
                             gap={3}
                             className="print-card"
                           >
+                            <Checkbox.HiddenInput />
                             <HStack gap={3} flex={1}>
-                              <Flex
-                                w={4}
-                                h={4}
-                                borderRadius="full"
-                                border="1.5px solid"
-                                align="center"
-                                justify="center"
-                                borderColor={isSelected ? 'indigo.500' : 'gray.400'}
-                                bg={isSelected ? 'indigo.500' : 'transparent'}
-                                flexShrink={0}
-                              >
-                                {isSelected && <Box w={1.5} h={1.5} bg="white" borderRadius="full" />}
-                              </Flex>
-                              <Box
+                              <Checkbox.Control colorPalette={isSelected ? (opt.isCorrect ? 'green' : 'red') : 'gray'} />
+                              <Checkbox.Label
                                 fontSize="xs"
                                 fontWeight={opt.isCorrect ? 'bold' : 'medium'}
                                 color={opt.isCorrect ? 'green.800' : 'gray.750'}
+                                as="span"
                                 dangerouslySetInnerHTML={{ __html: opt.content }}
                               />
                             </HStack>
@@ -448,10 +429,83 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
                                 {badgeText}
                               </Badge>
                             )}
-                          </Flex>
+                          </Checkbox.Root>
                         );
                       })}
                     </Stack>
+                  ) : (
+                    <RadioGroup.Root
+                      value={answer.selectedOption || ''}
+                      readOnly
+                      width="full"
+                    >
+                      <Stack gap={2.5}>
+                        {question.options.map((opt: any) => {
+                          const isSelected = answer.selectedOption === opt.id;
+                          
+                          let optionBg = 'transparent';
+                          const optionBorder = '1px solid';
+                          let optionBorderColor = 'gray.200';
+                          let badgeText = '';
+                          let badgeColor = '';
+
+                          if (isSelected) {
+                            if (opt.isCorrect) {
+                              optionBg = 'green.50';
+                              optionBorderColor = 'green.350';
+                              badgeText = 'Jawaban Siswa (Benar)';
+                              badgeColor = 'green';
+                            } else {
+                              optionBg = 'red.50';
+                              optionBorderColor = 'red.350';
+                              badgeText = 'Jawaban Siswa (Salah)';
+                              badgeColor = 'red';
+                            }
+                          } else if (opt.isCorrect) {
+                            optionBg = 'green.50/40';
+                            optionBorderColor = 'green.200';
+                            badgeText = 'Kunci Jawaban';
+                            badgeColor = 'green';
+                          }
+
+                          return (
+                            <RadioGroup.Item
+                              key={opt.id}
+                              value={opt.id}
+                              as="div"
+                              display="flex"
+                              alignItems="center"
+                              justifyContent="space-between"
+                              p={3}
+                              bg={optionBg}
+                              border={optionBorder}
+                              borderColor={optionBorderColor}
+                              borderRadius="xl"
+                              gap={3}
+                              className="print-card"
+                            >
+                              <RadioGroup.ItemHiddenInput />
+                              <HStack gap={3} flex={1}>
+                                <RadioGroup.ItemIndicator colorPalette={isSelected ? (opt.isCorrect ? 'green' : 'red') : 'gray'} />
+                                <RadioGroup.ItemText
+                                  fontSize="xs"
+                                  fontWeight={opt.isCorrect ? 'bold' : 'medium'}
+                                  color={opt.isCorrect ? 'green.800' : 'gray.750'}
+                                  as="span"
+                                  dangerouslySetInnerHTML={{ __html: opt.content }}
+                                />
+                              </HStack>
+
+                              {badgeText && (
+                                <Badge colorPalette={badgeColor} size="sm" variant="subtle" borderRadius="md">
+                                  {badgeText}
+                                </Badge>
+                              )}
+                            </RadioGroup.Item>
+                          );
+                        })}
+                      </Stack>
+                    </RadioGroup.Root>
                   )}
                 </Box>
               </Box>
@@ -461,72 +515,74 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
       </Stack>
 
       {/* Custom Reset Confirmation Modal */}
-      {isResetModalOpen && (
-        <Box
-          position="fixed"
-          inset={0}
-          bg="blackAlpha.600"
-          backdropFilter="blur(4px)"
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-          zIndex={50}
-          p={4}
-        >
-          <Box bg="white" borderRadius="2xl" shadow="xl" w="full" maxW="md" overflow="hidden">
-            <Flex px={6} py={4} borderBottom="1px solid" borderColor="gray.100" justify="space-between" align="center" bg="gray.50">
-              <Heading size="md" fontWeight="bold" color="red.600" display="flex" alignItems="center" gap={2}>
-                <RotateCcw size={18} />
-                Reset Pengerjaan Siswa
-              </Heading>
-              <Button variant="ghost" color="gray.400" onClick={() => setIsResetModalOpen(false)} fontSize="xl" p={0} minW={0} cursor="pointer">×</Button>
-            </Flex>
-            <Stack gap={4} p={6}>
-              <Text fontSize="sm" color="gray.600" lineHeight="relaxed">
-                Apakah Anda yakin ingin me-reset pengerjaan untuk siswa <strong>{session?.student?.user?.fullName}</strong>? Semua jawaban, skor, dan riwayat pelanggaran proctoring akan dihapus secara permanen. Siswa akan diizinkan untuk mengulang ujian ini dari awal.
-              </Text>
-              
-              <Box>
-                <Text fontSize="xs" fontWeight="bold" color="gray.550" mb={2} textTransform="uppercase" letterSpacing="wider">
-                  Ketik "reset" untuk mengonfirmasi:
-                </Text>
-                <Input
-                  value={resetConfirmationInput}
-                  onChange={(e) => setResetConfirmationInput(e.target.value)}
-                  placeholder="Ketik 'reset'"
-                  borderRadius="lg"
-                  borderColor="gray.350"
-                  _focus={{ borderColor: 'red.500', boxShadow: '0 0 0 1px var(--chakra-colors-red-500)' }}
-                />
-              </Box>
-
-              <Flex gap={3} pt={4}>
-                <Button type="button" onClick={() => setIsResetModalOpen(false)} flex={1} variant="outline" borderRadius="lg" cursor="pointer">
-                  Batal
-                </Button>
-                <Button
-                  onClick={() => {
-                    if (resetConfirmationInput.toLowerCase() === 'reset') {
-                      resetMutation.mutate();
-                      setIsResetModalOpen(false);
-                    }
-                  }}
-                  disabled={resetConfirmationInput.toLowerCase() !== 'reset' || resetMutation.isPending}
-                  flex={1}
-                  bg="red.600"
-                  color="white"
-                  _hover={{ bg: 'red.700' }}
-                  borderRadius="lg"
-                  cursor="pointer"
-                  loading={resetMutation.isPending}
-                >
-                  Reset Sekarang
-                </Button>
-              </Flex>
-            </Stack>
-          </Box>
-        </Box>
-      )}
+      <Dialog.Root
+        open={isResetModalOpen}
+        onOpenChange={(details: any) => setIsResetModalOpen(details.open)}
+        size="md"
+      >
+        <Portal>
+          <Dialog.Backdrop />
+          <Dialog.Positioner>
+            <Dialog.Content borderRadius="2xl" overflow="hidden">
+              <Dialog.Header bg="gray.50" py={4} borderBottom="1px solid" borderColor="gray.100">
+                <Dialog.Title fontSize="md" fontWeight="bold" color="red.600" display="flex" alignItems="center" gap={2}>
+                  <RotateCcw size={18} />
+                  Reset Pengerjaan Siswa
+                </Dialog.Title>
+              </Dialog.Header>
+              <Dialog.Body p={6}>
+                <Stack gap={4}>
+                  <Text fontSize="sm" color="gray.600" lineHeight="relaxed">
+                    Apakah Anda yakin ingin me-reset pengerjaan untuk siswa <strong>{session?.student?.user?.fullName}</strong>? Semua jawaban, skor, dan riwayat pelanggaran proctoring akan dihapus secara permanen. Siswa akan diizinkan untuk mengulang ujian ini dari awal.
+                  </Text>
+                  
+                  <Box>
+                    <Text fontSize="xs" fontWeight="bold" color="gray.550" mb={2} textTransform="uppercase" letterSpacing="wider">
+                      Ketik "reset" untuk mengonfirmasi:
+                    </Text>
+                    <Input
+                      value={resetConfirmationInput}
+                      onChange={(e) => setResetConfirmationInput(e.target.value)}
+                      placeholder="Ketik 'reset'"
+                      borderRadius="lg"
+                      borderColor="gray.350"
+                      _focus={{ borderColor: 'red.500', boxShadow: '0 0 0 1px var(--chakra-colors-red-500)' }}
+                    />
+                  </Box>
+                </Stack>
+              </Dialog.Body>
+              <Dialog.Footer p={6} borderTop="1px solid" borderColor="gray.100">
+                <Flex gap={3} width="full">
+                  <Dialog.ActionTrigger asChild>
+                    <Button type="button" variant="outline" borderRadius="lg" cursor="pointer" flex={1}>
+                      Batal
+                    </Button>
+                  </Dialog.ActionTrigger>
+                  <Button
+                    onClick={() => {
+                      if (resetConfirmationInput.toLowerCase() === 'reset') {
+                        resetMutation.mutate();
+                        setIsResetModalOpen(false);
+                      }
+                    }}
+                    disabled={resetConfirmationInput.toLowerCase() !== 'reset' || resetMutation.isPending}
+                    flex={1}
+                    bg="red.600"
+                    color="white"
+                    _hover={{ bg: 'red.700' }}
+                    borderRadius="lg"
+                    cursor="pointer"
+                    loading={resetMutation.isPending}
+                  >
+                    Reset Sekarang
+                  </Button>
+                </Flex>
+              </Dialog.Footer>
+              <Dialog.CloseTrigger />
+            </Dialog.Content>
+          </Dialog.Positioner>
+        </Portal>
+      </Dialog.Root>
 
       {/* Styles for printing and custom DOM formatting */}
       <style>{`

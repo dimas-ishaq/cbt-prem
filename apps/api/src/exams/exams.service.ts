@@ -8,7 +8,7 @@ export class ExamsService {
   constructor(private prisma: PrismaService) {}
 
   async create(dto: CreateExamDto, teacherId: string) {
-    const { questionIds, ...examData } = dto;
+    const { questionIds, rombelIds, majorIds, ...examData } = dto;
     return this.prisma.exam.create({
       data: {
         ...examData,
@@ -19,6 +19,16 @@ export class ExamsService {
           create: questionIds?.map((id, index) => ({
             questionId: id,
             order: index,
+          })),
+        },
+        targetRombels: {
+          create: rombelIds?.map((rombelId) => ({
+            rombelId,
+          })),
+        },
+        targetMajors: {
+          create: majorIds?.map((majorId) => ({
+            majorId,
           })),
         },
       },
@@ -40,7 +50,42 @@ export class ExamsService {
       };
     }
 
+    const where: any = {};
+
+    if (user && user.role === 'SISWA') {
+      where.status = { not: 'DRAFT' };
+      const student = await this.prisma.student.findUnique({
+        where: { userId: user.userId },
+      });
+      if (student) {
+        where.OR = [
+          // Open to all (no target rombel AND no target major)
+          {
+            targetRombels: { none: {} },
+            targetMajors: { none: {} },
+          },
+          // Targeted to student's rombel
+          ...(student.rombelId ? [{
+            targetRombels: {
+              some: {
+                rombelId: student.rombelId,
+              },
+            },
+          }] : []),
+          // Targeted to student's major
+          ...(student.majorId ? [{
+            targetMajors: {
+              some: {
+                majorId: student.majorId,
+              },
+            },
+          }] : []),
+        ];
+      }
+    }
+
     return this.prisma.exam.findMany({
+      where,
       include,
       orderBy: { createdAt: 'desc' },
       skip,
@@ -58,7 +103,9 @@ export class ExamsService {
             include: { options: true }
           }
         }
-      }
+      },
+      targetRombels: true,
+      targetMajors: true,
     };
 
     if (user && (user.role === 'GURU' || user.role === 'SUPER_ADMIN')) {
@@ -81,6 +128,10 @@ export class ExamsService {
     });
 
     if (!exam) return null;
+
+    if (user && user.role === 'SISWA' && exam.status === 'DRAFT') {
+      return null;
+    }
 
     // Seeded random number generator
     const seedRandom = (seedStr: string) => {
@@ -164,7 +215,7 @@ export class ExamsService {
   }
 
   async update(id: string, data: any) {
-    const { questionIds, startDate, startTimeField, endDate, endTimeField, ...examData } = data;
+    const { questionIds, rombelIds, majorIds, startDate, startTimeField, endDate, endTimeField, ...examData } = data;
 
     // Eksplisit petakan boolean security flags agar tidak pernah ter-drop
     const updateData: any = {
@@ -208,6 +259,32 @@ export class ExamsService {
       };
     }
 
+    if (Array.isArray(rombelIds)) {
+      await this.prisma.examTargetRombel.deleteMany({
+        where: { examId: id },
+      });
+      if (rombelIds.length > 0) {
+        updateData.targetRombels = {
+          create: rombelIds.map((rombelId: string) => ({
+            rombelId,
+          })),
+        };
+      }
+    }
+
+    if (Array.isArray(majorIds)) {
+      await this.prisma.examTargetMajor.deleteMany({
+        where: { examId: id },
+      });
+      if (majorIds.length > 0) {
+        updateData.targetMajors = {
+          create: majorIds.map((majorId: string) => ({
+            majorId,
+          })),
+        };
+      }
+    }
+
     return this.prisma.exam.update({
       where: { id },
       data: updateData,
@@ -217,6 +294,8 @@ export class ExamsService {
         examQuestions: {
           include: { question: { include: { options: true } } },
         },
+        targetRombels: true,
+        targetMajors: true,
       },
     });
   }

@@ -11,6 +11,8 @@ import {
   Badge,
   Textarea,
   Image,
+  RadioGroup,
+  Checkbox,
 } from '@chakra-ui/react';
 
 interface Option {
@@ -105,63 +107,66 @@ export function QuestionCard({ question, index, onAnswer, selectedAnswer, isFlag
       case 'PILIHAN_GANDA':
       case 'BENAR_SALAH':
         return (
-          <Stack gap={3.5}>
-            {question.options.map((option, idx) => {
-              const label = String.fromCharCode(65 + idx);
-              const isSelected = selectedAnswer === option.id;
-              return (
-                <Box
-                  key={option.id}
-                  as="label"
-                  display="flex"
-                  alignItems="center"
-                  p={4}
-                  border="1px solid"
-                  borderRadius="xl"
-                  cursor="pointer"
-                  transition="all 0.2s"
-                  borderColor={isSelected ? 'indigo.650' : 'gray.200'}
-                  bg={isSelected ? 'indigo.50/40' : 'white'}
-                  _hover={isSelected ? {} : { bg: 'gray.50/60', borderColor: 'gray.300' }}
-                  boxShadow={isSelected ? '0 0 0 2px rgba(79, 70, 229, 0.1)' : 'none'}
-                >
-                  <input
-                    type="radio"
-                    name={`question-${question.id}`}
-                    className="hidden"
-                    checked={isSelected}
-                    onChange={() => onAnswer(option.id)}
-                  />
-                  <Flex
-                    flexShrink={0}
-                    w={8.5}
-                    h={8.5}
-                    align="center"
-                    justify="center"
-                    borderRadius="xl"
+          <RadioGroup.Root
+            value={selectedAnswer || ''}
+            onValueChange={(details) => onAnswer(details.value || '')}
+            width="full"
+          >
+            <Stack gap={3.5}>
+              {question.options.map((option, idx) => {
+                const label = String.fromCharCode(65 + idx);
+                const isSelected = selectedAnswer === option.id;
+                return (
+                  <RadioGroup.Item
+                    key={option.id}
+                    value={option.id}
+                    as="label"
+                    display="flex"
+                    alignItems="center"
+                    p={4}
                     border="1px solid"
-                    mr={4}
-                    fontWeight="bold"
-                    fontSize="sm"
+                    borderRadius="xl"
+                    cursor="pointer"
                     transition="all 0.2s"
-                    bg={isSelected ? 'indigo.600' : 'white'}
-                    color={isSelected ? 'white' : 'gray.500'}
-                    borderColor={isSelected ? 'indigo.650' : 'gray.250'}
-                    boxShadow={isSelected ? 'md' : 'none'}
+                    borderColor={isSelected ? 'indigo.650' : 'gray.200'}
+                    bg={isSelected ? 'indigo.50/40' : 'white'}
+                    _hover={isSelected ? {} : { bg: 'gray.50/60', borderColor: 'gray.300' }}
+                    boxShadow={isSelected ? '0 0 0 2px rgba(79, 70, 229, 0.1)' : 'none'}
                   >
-                    {label}
-                  </Flex>
-                  <Box 
-                    color="gray.700"
-                    fontSize="sm"
-                    fontWeight="semibold"
-                    lineHeight="relaxed"
-                    dangerouslySetInnerHTML={{ __html: option.content }}
-                  />
-                </Box>
-              );
-            })}
-          </Stack>
+                    <RadioGroup.ItemHiddenInput />
+                    <RadioGroup.ItemIndicator colorPalette="indigo" mr={3} />
+                    <Flex
+                      flexShrink={0}
+                      w={8.5}
+                      h={8.5}
+                      align="center"
+                      justify="center"
+                      borderRadius="xl"
+                      border="1px solid"
+                      mr={4}
+                      fontWeight="bold"
+                      fontSize="sm"
+                      transition="all 0.2s"
+                      bg={isSelected ? 'indigo.600' : 'white'}
+                      color={isSelected ? 'white' : 'gray.500'}
+                      borderColor={isSelected ? 'indigo.650' : 'gray.250'}
+                      boxShadow={isSelected ? 'md' : 'none'}
+                    >
+                      {label}
+                    </Flex>
+                    <RadioGroup.ItemText
+                      color="gray.700"
+                      fontSize="sm"
+                      fontWeight="semibold"
+                      lineHeight="relaxed"
+                      as="span"
+                      dangerouslySetInnerHTML={{ __html: option.content }}
+                    />
+                  </RadioGroup.Item>
+                );
+              })}
+            </Stack>
+          </RadioGroup.Root>
         );
 
       case 'MULTIPLE_RESPONSE':
@@ -174,8 +179,10 @@ export function QuestionCard({ question, index, onAnswer, selectedAnswer, isFlag
               const label = String.fromCharCode(65 + idx);
               const isSelected = selectedAnswer?.split(',').includes(option.id);
               return (
-                <Box
+                <Checkbox.Root
                   key={option.id}
+                  checked={!!isSelected}
+                  onCheckedChange={() => handleMultipleResponseChange(option.id)}
                   as="label"
                   display="flex"
                   alignItems="center"
@@ -189,12 +196,8 @@ export function QuestionCard({ question, index, onAnswer, selectedAnswer, isFlag
                   _hover={isSelected ? {} : { bg: 'gray.50/60', borderColor: 'gray.300' }}
                   boxShadow={isSelected ? '0 0 0 2px rgba(79, 70, 229, 0.1)' : 'none'}
                 >
-                  <input
-                    type="checkbox"
-                    className="hidden"
-                    checked={!!isSelected}
-                    onChange={() => handleMultipleResponseChange(option.id)}
-                  />
+                  <Checkbox.HiddenInput />
+                  <Checkbox.Control colorPalette="indigo" mr={3} />
                   <Flex
                     flexShrink={0}
                     w={8.5}
@@ -214,14 +217,15 @@ export function QuestionCard({ question, index, onAnswer, selectedAnswer, isFlag
                   >
                     {label}
                   </Flex>
-                  <Box 
+                  <Checkbox.Label
                     color="gray.700"
                     fontSize="sm"
                     fontWeight="semibold"
                     lineHeight="relaxed"
+                    as="span"
                     dangerouslySetInnerHTML={{ __html: option.content }}
                   />
-                </Box>
+                </Checkbox.Root>
               );
             })}
           </Stack>

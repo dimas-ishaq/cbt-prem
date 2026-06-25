@@ -120,7 +120,7 @@ export default function QuestionBankDetailPage({ params }: { params: Promise<{ i
     queryKey: ['subjects'],
     queryFn: async () => {
       const res = await api.get('/subjects');
-      return res.data;
+      return Array.isArray(res.data) ? res.data : res.data?.data || [];
     },
   });
 

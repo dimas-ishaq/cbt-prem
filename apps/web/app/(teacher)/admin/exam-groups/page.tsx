@@ -3,8 +3,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { Plus, Trash2, Pencil, Calendar, Bookmark, Clock, Search, Filter } from 'lucide-react';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { ChakraDatePicker } from '@/components/ui/chakra-date-picker';
+import { TablePagination } from '@/components/ui/pagination';
+
 import {
   Box,
   Flex,
@@ -45,6 +47,14 @@ export default function ExamGroupsPage() {
   const [searchText, setSearchText] = useState('');
   const [selectedYear, setSelectedYear] = useState('');
   const [selectedSemester, setSelectedSemester] = useState('');
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchText, selectedYear, selectedSemester]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState<ExamGroup | null>(null);
   const [formData, setFormData] = useState({
@@ -65,12 +75,19 @@ export default function ExamGroupsPage() {
     },
   });
 
-  const filteredGroups = (groups || []).filter((group) => {
-    const matchesSearch = group.name.toLowerCase().includes(searchText.toLowerCase());
-    const matchesYear = selectedYear ? group.academicYear === selectedYear : true;
-    const matchesSemester = selectedSemester ? group.semester === selectedSemester : true;
-    return matchesSearch && matchesYear && matchesSemester;
-  });
+  const filteredGroups = useMemo(() => {
+    return (groups || []).filter((group) => {
+      const matchesSearch = group.name.toLowerCase().includes(searchText.toLowerCase());
+      const matchesYear = selectedYear ? group.academicYear === selectedYear : true;
+      const matchesSemester = selectedSemester ? group.semester === selectedSemester : true;
+      return matchesSearch && matchesYear && matchesSemester;
+    });
+  }, [groups, searchText, selectedYear, selectedSemester]);
+
+  const paginatedGroups = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredGroups.slice(start, start + pageSize);
+  }, [filteredGroups, currentPage, pageSize]);
   const yearOptions = createListCollection({
     items: [
       { label: 'Semua Tahun', value: '' },
@@ -290,7 +307,8 @@ export default function ExamGroupsPage() {
             <Text ml={3} color="gray.500">Loading...</Text>
           </Flex>
         ) : (
-          <Table.Root size="md">
+          <>
+            <Table.Root size="md">
             <Table.Header>
               <Table.Row bg="gray.50">
                 <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600" fontSize="xs" textTransform="uppercase">
@@ -308,7 +326,7 @@ export default function ExamGroupsPage() {
               </Table.Row>
             </Table.Header>
             <Table.Body>
-              {filteredGroups?.map((group) => (
+              {paginatedGroups?.map((group) => (
                 <Table.Row key={group.id} _hover={{ bg: 'gray.50' }} transition="background 0.15s">
                   <Table.Cell px={6} py={4}>
                     <Text fontWeight="medium" color="gray.900">{group.name}</Text>
@@ -379,6 +397,14 @@ export default function ExamGroupsPage() {
               )}
             </Table.Body>
           </Table.Root>
+          <TablePagination
+            currentPage={currentPage}
+            totalCount={filteredGroups.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={setPageSize}
+          />
+          </>
         )}
       </Box>
 

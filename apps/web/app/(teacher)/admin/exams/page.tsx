@@ -1,8 +1,9 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import api from "@/lib/api";
+import { TablePagination } from "@/components/ui/pagination";
 import {
   Plus,
   FileText,
@@ -74,6 +75,14 @@ export default function ExamsPage() {
   const [searchText, setSearchText] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchText, selectedStatus]);
+
   const { data: exams, isLoading } = useQuery<Exam[]>({
     queryKey: ["exams"],
     queryFn: async () => {
@@ -82,17 +91,24 @@ export default function ExamsPage() {
     },
   });
 
-  const filteredExams = (exams || []).filter((exam) => {
-    const matchesSearch = searchText
-      ? `${exam.title} ${exam.subject.name} ${exam.examGroup?.name ?? ""}`
-          .toLowerCase()
-          .includes(searchText.toLowerCase())
-      : true;
-    const matchesStatus = selectedStatus
-      ? exam.status === selectedStatus
-      : true;
-    return matchesSearch && matchesStatus;
-  });
+  const filteredExams = useMemo(() => {
+    return (exams || []).filter((exam) => {
+      const matchesSearch = searchText
+        ? `${exam.title} ${exam.subject.name} ${exam.examGroup?.name ?? ""}`
+            .toLowerCase()
+            .includes(searchText.toLowerCase())
+        : true;
+      const matchesStatus = selectedStatus
+        ? exam.status === selectedStatus
+        : true;
+      return matchesSearch && matchesStatus;
+    });
+  }, [exams, searchText, selectedStatus]);
+
+  const paginatedExams = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredExams.slice(start, start + pageSize);
+  }, [filteredExams, currentPage, pageSize]);
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/exams/${id}`),
@@ -276,7 +292,7 @@ export default function ExamsPage() {
             </Table.Row>
           </Table.Header>
           <Table.Body>
-            {filteredExams?.map((exam) => {
+            {paginatedExams?.map((exam) => {
               const sc = statusColorMap[exam.status] ?? {
                 bg: "yellow.100",
                 color: "yellow.700",
@@ -413,6 +429,13 @@ export default function ExamsPage() {
             )}
           </Table.Body>
         </Table.Root>
+        <TablePagination
+          currentPage={currentPage}
+          totalCount={filteredExams.length}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={setPageSize}
+        />
       </Box>
     </Stack>
   );

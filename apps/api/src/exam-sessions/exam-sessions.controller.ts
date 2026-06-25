@@ -105,4 +105,10 @@ export class ExamSessionsController {
   async resetSession(@Param('id') id: string) {
     return this.examSessionsService.resetSession(id);
   }
+
+  @Post('bulk-reset')
+  @Roles(Role.GURU, Role.SUPER_ADMIN)
+  async bulkResetSessions(@Body('ids') ids: string[]) {
+    return this.examSessionsService.bulkResetSessions(ids);
+  }
 }

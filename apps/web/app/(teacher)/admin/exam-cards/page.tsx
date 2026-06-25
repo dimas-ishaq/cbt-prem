@@ -122,23 +122,18 @@ export default function ExamCardsPage() {
 
     setIsGeneratingPdf(true);
     try {
-      // Dynamic import to prevent SSR/window errors
-      const html2pdf = (await import('html2pdf.js')).default;
+      const { generatePdfFromHtml } = await import('@/lib/pdf-helper');
       const element = document.getElementById('printable-exam-cards-container');
 
       if (!element) {
         throw new Error('Elemen kartu cetak tidak ditemukan');
       }
 
-      const opt = {
-        margin: [10, 10, 10, 10] as [number, number, number, number],
+      await generatePdfFromHtml(element, {
+        margin: [10, 10, 10, 10],
         filename: `kartu-ujian-${activeRombelName.toLowerCase().replace(/\s+/g, '-')}.pdf`,
-        image: { type: 'jpeg' as const, quality: 0.98 },
-        html2canvas: { scale: 2.5, useCORS: true, letterRendering: true },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
-      };
-
-      await html2pdf().from(element).set(opt).save();
+        scale: 2.5,
+      });
       toast.success('Kartu ujian berhasil diunduh dalam format PDF!');
     } catch (error: any) {
       console.error(error);

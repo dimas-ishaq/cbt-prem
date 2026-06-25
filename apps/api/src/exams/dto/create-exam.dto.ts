@@ -73,4 +73,18 @@ export class CreateExamDto {
   @IsUUID()
   @IsNotEmpty()
   examGroupId: string;
+
+  @IsArray()
+  @IsUUID(undefined, { each: true })
+  @IsOptional()
+  rombelIds?: string[];
+
+  @IsArray()
+  @IsUUID(undefined, { each: true })
+  @IsOptional()
+  majorIds?: string[];
+
+  @IsEnum(ExamStatus)
+  @IsOptional()
+  status?: ExamStatus;
 }

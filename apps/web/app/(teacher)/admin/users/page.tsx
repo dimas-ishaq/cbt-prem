@@ -5,7 +5,7 @@ import api from '@/lib/api';
 import { toast } from '@/lib/toaster';
 import { useAuthStore } from '@/store/auth.store';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Box, Flex, Heading, Text, Button, Stack, Spinner, Badge, Table, Input, HStack, IconButton, Select, createListCollection } from '@chakra-ui/react';
 import { useConfirm } from '@/components/ui/confirmation-dialog';
 import {
@@ -23,6 +23,7 @@ import {
   Download,
   Upload,
 } from 'lucide-react';
+import { TablePagination } from '@/components/ui/pagination';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -146,6 +147,15 @@ export default function UsersManagementPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [importFileName, setImportFileName] = useState('');
   const [isImporting, setIsImporting] = useState(false);
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  // Reset to page 1 when search or tab filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, activeTab]);
 
   // Modal state
   type ModalMode = 'create' | 'edit' | 'reset-password' | null;
@@ -393,10 +403,9 @@ export default function UsersManagementPage() {
       toast.error('Gagal mengekspor: ' + (error.response?.data?.message || error.message));
     }
   };
-
   // ── Filter ─────────────────────────────────────────────────────────────────
-  const filtered = users
-    .filter((u) => {
+  const filtered = useMemo(() => {
+    return users.filter((u) => {
       if (activeTab !== 'ALL' && u.role !== activeTab) return false;
       if (!searchTerm) return true;
       const q = searchTerm.toLowerCase();
@@ -406,8 +415,12 @@ export default function UsersManagementPage() {
         u.email.toLowerCase().includes(q)
       );
     });
+  }, [users, activeTab, searchTerm]);
 
-  // ── Tab counts ─────────────────────────────────────────────────────────────
+  const paginated = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, currentPage, pageSize]);  // ── Tab counts ─────────────────────────────────────────────────────────────
   const counts: Record<ActiveTab, number> = {
     ALL: users.length,
     SUPER_ADMIN: users.filter((u) => u.role === 'SUPER_ADMIN').length,
@@ -602,7 +615,8 @@ export default function UsersManagementPage() {
             <Spinner size="lg" color="indigo.600" />
           </Flex>
         ) : (
-          <Table.Root size="sm">
+          <>
+            <Table.Root size="sm">
             <Table.Header>
               <Table.Row bg="gray.50">
                 <Table.ColumnHeader px={5} py={3} fontWeight="semibold" color="gray.500" fontSize="xs" textTransform="uppercase">
@@ -626,7 +640,7 @@ export default function UsersManagementPage() {
               </Table.Row>
             </Table.Header>
             <Table.Body>
-              {filtered.map((u) => (
+              {paginated.map((u) => (
                 <Table.Row key={u.id} _hover={{ bg: 'gray.50/60' }} transition="background 0.1s">
                   {/* Pengguna */}
                   <Table.Cell px={5} py={3}>
@@ -778,6 +792,14 @@ export default function UsersManagementPage() {
               )}
             </Table.Body>
           </Table.Root>
+          <TablePagination
+            currentPage={currentPage}
+            totalCount={filtered.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={setPageSize}
+          />
+          </>
         )}
       </Box>
 

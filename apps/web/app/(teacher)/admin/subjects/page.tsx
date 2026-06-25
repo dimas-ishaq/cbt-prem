@@ -9,9 +9,11 @@ import { useRouter } from 'next/navigation';
 import {
   Box, Flex, Heading, Text, Button, Table, Stack, Input, Textarea, Spinner, IconButton, HStack, Badge, SimpleGrid, Wrap, WrapItem, Checkbox,
 } from '@chakra-ui/react';
+
 import { toast } from '@/lib/toaster';
 import { useConfirm } from '@/components/ui/confirmation-dialog';
 import { Plus, Pencil, Trash2, Search, BookOpen, GraduationCap, Link2, Upload, Download } from 'lucide-react';
+import { TablePagination } from '@/components/ui/pagination';
 
 interface TeacherSummary {
   id: string;
@@ -37,6 +39,14 @@ export default function SubjectsPage() {
   const confirmDialog = useConfirm();
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
   const [teacherSearch, setTeacherSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
@@ -143,6 +153,11 @@ export default function SubjectsPage() {
     );
   }, [subjectList, searchTerm]);
 
+  const paginatedSubjects = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredSubjects.slice(start, start + pageSize);
+  }, [filteredSubjects, currentPage, pageSize]);
+
   const totalSubjects = subjectList.length;
   const totalRelations = subjectList.reduce((acc, subject) => acc + (subject._count?.teachers || 0), 0);
   const subjectsWithTeachers = subjectList.filter((subject) => (subject._count?.teachers || 0) > 0).length;
@@ -176,7 +191,7 @@ export default function SubjectsPage() {
         <Table.Root size="md">
           <Table.Header><Table.Row bg="gray.50"><Table.ColumnHeader px={6} py={4}>Kode</Table.ColumnHeader><Table.ColumnHeader px={6} py={4}>Nama Mata Pelajaran</Table.ColumnHeader><Table.ColumnHeader px={6} py={4}>Guru Pengampu</Table.ColumnHeader><Table.ColumnHeader px={6} py={4}>Deskripsi</Table.ColumnHeader><Table.ColumnHeader px={6} py={4} textAlign="end">Aksi</Table.ColumnHeader></Table.Row></Table.Header>
           <Table.Body>
-            {filteredSubjects.map((subject) => (
+            {paginatedSubjects.map((subject) => (
               <Table.Row key={subject.id} _hover={{ bg: 'gray.50' }}>
                 <Table.Cell px={6} py={4} fontFamily="mono" fontWeight="bold" color="indigo.600">{subject.code}</Table.Cell>
                 <Table.Cell px={6} py={4} fontWeight="semibold" color="gray.900">{subject.name}</Table.Cell>
@@ -188,6 +203,13 @@ export default function SubjectsPage() {
             {filteredSubjects.length === 0 && <Table.Row><Table.Cell colSpan={5} px={6} py={12} textAlign="center" color="gray.500" fontStyle="italic">Tidak ada mata pelajaran yang ditemukan.</Table.Cell></Table.Row>}
           </Table.Body>
         </Table.Root>
+        <TablePagination
+          currentPage={currentPage}
+          totalCount={filteredSubjects.length}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={setPageSize}
+        />
       </Box>
 
       {isModalOpen && (<Box position="fixed" inset={0} bg="blackAlpha.600" display="flex" alignItems="center" justifyContent="center" zIndex={50} px={4}><Box bg="white" borderRadius="xl" p={8} w="full" maxW="lg" shadow="2xl"><Heading size="lg" fontWeight="bold" mb={6}>{editingSubject ? 'Ubah Mata Pelajaran' : 'Tambah Mata Pelajaran Baru'}</Heading><form onSubmit={handleSubmit}><Stack gap={4}><Box><Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Kode <span style={{ color: 'red' }}>*</span></Text><Input required value={formData.code} onChange={(e) => setFormData({ ...formData, code: e.target.value })} placeholder="MTK" borderRadius="lg" /></Box><Box><Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Nama <span style={{ color: 'red' }}>*</span></Text><Input required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="Matematika" borderRadius="lg" /></Box><Box><Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Deskripsi</Text><Textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Deskripsi singkat..." borderRadius="lg" rows={3} /></Box><Box><Flex justify="space-between" align="center" mb={2}><Text fontSize="sm" fontWeight="medium" color="gray.700">Guru Pengampu</Text><Text fontSize="xs" color="gray.500">Ketik minimal 3 karakter</Text></Flex><Input value={teacherSearch} onChange={(e) => setTeacherSearch(e.target.value)} placeholder="Cari nama guru / username..." borderRadius="lg" pl={10} /><Box position="relative" mt={2}><Box position="absolute" left={3} top={3} color="gray.400"><Search size={16} /></Box></Box>{teacherSearchEnabled && (<Box mt={3} borderWidth="1px" borderColor="gray.200" borderRadius="lg" maxH="260px" overflowY="auto"><Stack gap={0}>{isSearchingTeachers ? <Box px={4} py={3}><Text fontSize="sm" color="gray.500">Mencari guru...</Text></Box> : selectedTeachers.map((teacher) => { const checked = formData.teacherIds.includes(teacher.id); return (<Box key={teacher.id} px={4} py={3} borderBottomWidth="1px" borderColor="gray.100" _last={{ borderBottomWidth: 0 }} bg={checked ? 'indigo.50' : 'white'}><Checkbox.Root checked={checked} onCheckedChange={(details) => setFormData({ ...formData, teacherIds: details.checked ? [...formData.teacherIds, teacher.id] : formData.teacherIds.filter((id) => id !== teacher.id) })}><Checkbox.HiddenInput /><Checkbox.Control /><Checkbox.Label><Stack gap={0}><Text fontWeight="medium" color="gray.800">{teacher.user?.fullName || teacher.user?.username || teacher.id}</Text><Text fontSize="xs" color="gray.500">Username: {teacher.user?.username || '-'}{teacher.nip ? ` • NIP: ${teacher.nip}` : ' • NIP: -'}</Text></Stack></Checkbox.Label></Checkbox.Root></Box>); })}</Stack></Box>)}{teacherSearchEnabled && !isSearchingTeachers && selectedTeachers.length === 0 && <Text mt={2} fontSize="sm" color="gray.500">Tidak ada guru yang cocok.</Text>}<Wrap mt={3}>{formData.teacherIds.map((id) => { const teacher = selectedTeachers.find((item) => item.id === id); return teacher ? <WrapItem key={id}><Badge colorPalette="indigo" variant="subtle" borderRadius="md" px={2} py={1}>{teacher.user?.fullName || teacher.user?.username || teacher.id}</Badge></WrapItem> : null; })}</Wrap></Box><Flex gap={3} pt={4}><Button type="button" onClick={() => { setIsModalOpen(false); resetForm(); }} flex={1} variant="outline" borderRadius="lg" cursor="pointer">Batal</Button><Button type="submit" flex={1} bg="indigo.600" color="white" _hover={{ bg: 'indigo.700' }} borderRadius="lg" cursor="pointer" loading={createMutation.isPending || updateMutation.isPending}>Simpan</Button></Flex></Stack></form></Box></Box>)}

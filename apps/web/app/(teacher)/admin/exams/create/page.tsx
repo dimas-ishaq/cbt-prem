@@ -48,6 +48,18 @@ interface Question {
   points: number;
 }
 
+interface Rombel {
+  id: string;
+  name: string;
+  majorId: string;
+}
+
+interface Major {
+  id: string;
+  name: string;
+  code: string;
+}
+
 export default function CreateExamPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -77,12 +89,31 @@ export default function CreateExamPage() {
 
   const [selectedQuestionIds, setSelectedQuestionIds] = useState<string[]>([]);
   const [selectedBankId, setSelectedBankId] = useState<string>('');
+  const [selectedRombelIds, setSelectedRombelIds] = useState<string[]>([]);
+  const [filterTingkat, setFilterTingkat] = useState<string>('');
+  const [filterMajorId, setFilterMajorId] = useState<string>('');
 
   const { data: subjects } = useQuery<Subject[]>({
     queryKey: ['subjects'],
     queryFn: async () => {
       const response = await api.get('/subjects');
-      return response.data;
+      return Array.isArray(response.data) ? response.data : response.data?.data || [];
+    },
+  });
+
+  const { data: rombels } = useQuery<Rombel[]>({
+    queryKey: ['rombels'],
+    queryFn: async () => {
+      const response = await api.get('/rombels');
+      return Array.isArray(response.data) ? response.data : response.data?.data || [];
+    },
+  });
+
+  const { data: majors } = useQuery<Major[]>({
+    queryKey: ['majors'],
+    queryFn: async () => {
+      const response = await api.get('/majors');
+      return Array.isArray(response.data) ? response.data : response.data?.data || [];
     },
   });
 
@@ -148,6 +179,35 @@ export default function CreateExamPage() {
     );
   };
 
+  const handleSelectAll = () => {
+    if (!questions) return;
+    const qIds = questions.map((q) => q.id);
+    setSelectedQuestionIds((prev) => Array.from(new Set([...prev, ...qIds])));
+  };
+
+  const handleDeselectAll = () => {
+    if (!questions) return;
+    const qIds = new Set(questions.map((q) => q.id));
+    setSelectedQuestionIds((prev) => prev.filter((id) => !qIds.has(id)));
+  };
+
+  const getFilteredRombels = () => {
+    if (!rombels || !filterTingkat || !filterMajorId) return [];
+    return rombels.filter((r) => r.majorId === filterMajorId && r.name.toLowerCase().startsWith(filterTingkat.toLowerCase() + ' '));
+  };
+
+  const handleSelectAllFilteredRombels = () => {
+    const visible = getFilteredRombels();
+    const visibleIds = visible.map((r) => r.id);
+    setSelectedRombelIds((prev) => Array.from(new Set([...prev, ...visibleIds])));
+  };
+
+  const handleDeselectAllFilteredRombels = () => {
+    const visible = getFilteredRombels();
+    const visibleIds = new Set(visible.map((r) => r.id));
+    setSelectedRombelIds((prev) => prev.filter((id) => !visibleIds.has(id)));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedQuestionIds.length === 0) {
@@ -155,10 +215,20 @@ export default function CreateExamPage() {
       return;
     }
 
+    if (selectedRombelIds.length === 0) {
+      toast.error('Pilih minimal satu rombel target peserta.');
+      return;
+    }
+
+    const selectedRombels = rombels?.filter((r) => selectedRombelIds.includes(r.id)) || [];
+    const computedMajorIds = Array.from(new Set(selectedRombels.map((r) => r.majorId)));
+
     // Clean up empty optional fields
     const payload: any = {
       ...formData,
       questionIds: selectedQuestionIds,
+      rombelIds: selectedRombelIds,
+      majorIds: computedMajorIds,
       startTime: `${formData.startDate}T${formData.startTimeField}:00`,
       endTime: `${formData.endDate}T${formData.endTimeField}:00`,
       sebConfigKey: formData.requireSeb ? (formData.sebConfigKey?.trim() || undefined) : undefined,
@@ -308,7 +378,7 @@ export default function CreateExamPage() {
                       <Input
                         type="number"
                         required
-                        value={formData.duration}
+                        value={isNaN(formData.duration) ? '' : formData.duration}
                         onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) })}
                         borderRadius="lg"
                         borderColor="gray.200"
@@ -368,6 +438,171 @@ export default function CreateExamPage() {
                       />
                     </Box>
                   </SimpleGrid>
+                  <Box>
+                    <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Status Ujian</Text>
+                    <Select.Root
+                      collection={statusOptions}
+                      value={[formData.status]}
+                      onValueChange={(details) => setFormData({ ...formData, status: details.value[0] || 'DRAFT' })}
+                      positioning={{ sameWidth: true }}
+                    >
+                      <Select.HiddenSelect />
+                      <Select.Control>
+                        <Select.Trigger>
+                          <Select.ValueText placeholder="Pilih Status" />
+                        </Select.Trigger>
+                        <Select.IndicatorGroup>
+                          <Select.Indicator />
+                          <Select.ClearTrigger />
+                        </Select.IndicatorGroup>
+                      </Select.Control>
+                      <Select.Positioner>
+                        <Select.Content>
+                          {statusOptions.items.map((item) => (
+                            <Select.Item key={item.value} item={item}>
+                              {item.label}
+                            </Select.Item>
+                          ))}
+                        </Select.Content>
+                      </Select.Positioner>
+                    </Select.Root>
+                  </Box>
+                </Stack>
+              </Box>
+
+              {/* Target Peserta Card */}
+              <Box bg="white" p={6} borderRadius="xl" shadow="sm" borderWidth="1px" borderColor="gray.100">
+                <Heading size="md" fontWeight="bold" color="gray.900" borderBottom="1px solid" borderColor="gray.100" pb={2} mb={4}>
+                  Target Peserta Ujian <span style={{ color: 'red' }}>*</span>
+                </Heading>
+                <Text fontSize="xs" color="gray.500" mb={4}>
+                  Pilih tingkat kelas dan jurusan terlebih dahulu untuk menampilkan daftar rombel kelas.
+                </Text>
+                <Stack gap={5}>
+                  <SimpleGrid columns={2} gap={4}>
+                    <Box>
+                      <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Tingkat Kelas</Text>
+                      <select
+                        value={filterTingkat}
+                        onChange={(e) => setFilterTingkat(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '8px',
+                          backgroundColor: 'white',
+                          outline: 'none',
+                          fontSize: '14px',
+                        }}
+                      >
+                        <option value="">-- Pilih Tingkat --</option>
+                        <option value="X">Kelas X</option>
+                        <option value="XI">Kelas XI</option>
+                        <option value="XII">Kelas XII</option>
+                      </select>
+                    </Box>
+                    <Box>
+                      <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Jurusan</Text>
+                      <select
+                        value={filterMajorId}
+                        onChange={(e) => setFilterMajorId(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '8px',
+                          backgroundColor: 'white',
+                          outline: 'none',
+                          fontSize: '14px',
+                        }}
+                      >
+                        <option value="">-- Pilih Jurusan --</option>
+                        {majors?.map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.name} ({m.code})
+                          </option>
+                        ))}
+                      </select>
+                    </Box>
+                  </SimpleGrid>
+
+                  {filterTingkat && filterMajorId ? (
+                    <Box border="1px solid" borderColor="gray.200" borderRadius="lg" p={4} bg="gray.50/30">
+                      <Flex justify="space-between" align="center" mb={3}>
+                        <Text fontSize="xs" fontWeight="bold" color="gray.600">
+                          Daftar Rombel Terfilter (Total terpilih: {selectedRombelIds.length})
+                        </Text>
+                        {getFilteredRombels().length > 0 && (
+                          <HStack gap={2}>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="2xs"
+                              color="indigo.600"
+                              _hover={{ bg: 'indigo.50' }}
+                              onClick={handleSelectAllFilteredRombels}
+                            >
+                              Pilih Semua
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="2xs"
+                              color="red.600"
+                              _hover={{ bg: 'red.50' }}
+                              onClick={handleDeselectAllFilteredRombels}
+                            >
+                              Hapus Semua
+                            </Button>
+                          </HStack>
+                        )}
+                      </Flex>
+                      {getFilteredRombels().length > 0 ? (
+                        <SimpleGrid columns={{ base: 2, md: 3 }} gap={3}>
+                          {getFilteredRombels().map((r) => {
+                            const isChecked = selectedRombelIds.includes(r.id);
+                            return (
+                              <Checkbox.Root
+                                key={r.id}
+                                checked={isChecked}
+                                onCheckedChange={() => {
+                                  setSelectedRombelIds((prev) =>
+                                    prev.includes(r.id) ? prev.filter((id) => id !== r.id) : [...prev, r.id]
+                                  );
+                                }}
+                              >
+                                <Checkbox.HiddenInput />
+                                <Checkbox.Control cursor="pointer" />
+                                <Checkbox.Label fontSize="xs" fontWeight="medium" color="gray.700">
+                                  {r.name}
+                                </Checkbox.Label>
+                              </Checkbox.Root>
+                            );
+                          })}
+                        </SimpleGrid>
+                      ) : (
+                        <Text fontSize="xs" color="gray.500" py={2}>
+                          Tidak ada rombel yang sesuai dengan filter tingkat {filterTingkat} dan jurusan terpilih.
+                        </Text>
+                      )}
+                    </Box>
+                  ) : (
+                    <Flex
+                      direction="column"
+                      align="center"
+                      justify="center"
+                      py={8}
+                      borderWidth="2px"
+                      borderStyle="dashed"
+                      borderColor="gray.200"
+                      borderRadius="lg"
+                      bg="gray.50/20"
+                    >
+                      <Text fontSize="xs" color="gray.500" textAlign="center">
+                        Silakan pilih Tingkat Kelas dan Jurusan terlebih dahulu untuk menampilkan daftar rombel.
+                      </Text>
+                    </Flex>
+                  )}
                 </Stack>
               </Box>
 
@@ -405,8 +640,39 @@ export default function CreateExamPage() {
                       </select>
                     </Box>
 
+                    {selectedBankId && questions && questions.length > 0 && (
+                      <Flex justify="space-between" align="center" px={1} py={1}>
+                        <Text fontSize="xs" color="gray.500" fontWeight="medium">
+                          {questions.filter((q) => selectedQuestionIds.includes(q.id)).length} dari {questions.length} soal terpilih
+                        </Text>
+                        <HStack gap={2}>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="xs"
+                            onClick={handleSelectAll}
+                            color="indigo.600"
+                            _hover={{ bg: 'indigo.50' }}
+                          >
+                            Pilih Semua
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="xs"
+                            onClick={handleDeselectAll}
+                            color="red.600"
+                            _hover={{ bg: 'red.50' }}
+                          >
+                            Hapus Semua
+                          </Button>
+                        </HStack>
+                      </Flex>
+                    )}
+
                     {selectedBankId && (
                       <Box maxH="96" overflowY="auto" borderWidth="1px" borderRadius="lg" borderColor="gray.200">
+
                         {questions?.map((q) => (
                           <Flex
                             key={q.id}
@@ -421,21 +687,13 @@ export default function CreateExamPage() {
                             transition="background 0.1s"
                             onClick={() => toggleQuestion(q.id)}
                           >
-                            <Flex
-                              mt={1}
-                              flexShrink={0}
-                              w={5}
-                              h={5}
-                              borderWidth="2px"
-                              borderRadius="sm"
-                              align="center"
-                              justify="center"
-                              bg={selectedQuestionIds.includes(q.id) ? 'indigo.600' : 'transparent'}
-                              borderColor={selectedQuestionIds.includes(q.id) ? 'indigo.600' : 'gray.300'}
-                              color="white"
+                            <Checkbox.Root
+                              checked={selectedQuestionIds.includes(q.id)}
+                              onCheckedChange={() => toggleQuestion(q.id)}
                             >
-                              {selectedQuestionIds.includes(q.id) && <CheckCircle2 size={14} />}
-                            </Flex>
+                              <Checkbox.HiddenInput />
+                              <Checkbox.Control cursor="pointer" />
+                            </Checkbox.Root>
                             <Box flex={1}>
                               <Box
                                 fontSize="sm"
