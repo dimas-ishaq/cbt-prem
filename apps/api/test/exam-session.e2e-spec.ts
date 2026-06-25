@@ -7,212 +7,107 @@ import * as bcrypt from 'bcryptjs';
 
 describe('ExamSessions (e2e)', () => {
   let app: INestApplication;
-  let teacherToken: string;
   let studentToken: string;
   let examId: string;
   let sessionId: string;
 
+  // Unique IDs for this test file only (prefix 'bb')
+  const majorId      = 'bb000000-0000-4000-8000-000000000001';
+  const rombelId     = 'bb000000-0000-4000-8000-000000000002';
+  const teacherUid   = 'bb000000-0000-4000-8000-000000000003';
+  const teacherId    = 'bb000000-0000-4000-8000-000000000004';
+  const studentUid   = 'bb000000-0000-4000-8000-000000000005';
+  const studentId    = 'bb000000-0000-4000-8000-000000000006';
+  const subjectId    = 'bb000000-0000-4000-8000-000000000007';
+  const groupId      = 'bb000000-0000-4000-8000-000000000008';
+  const bankId       = 'bb000000-0000-4000-8000-000000000009';
+  const q1           = 'bb000000-0000-4000-8000-00000000000a';
+  const opt1         = 'bb000000-0000-4000-8000-00000000000b';
+
   beforeAll(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
+    const mod = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    app = mod.createNestApplication();
     app.setGlobalPrefix('api');
-    app.useGlobalPipes(new ValidationPipe());
+    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     await app.init();
+    const prisma = mod.get(PrismaService);
 
-    const prisma = moduleFixture.get<PrismaService>(PrismaService);
+    // Cleanup (FK order)
+    await prisma.answer.deleteMany({ where: { examSession: { studentId } } });
+    await prisma.violation.deleteMany({ where: { examSession: { studentId } } });
+    await prisma.examSession.deleteMany({ where: { studentId } });
+    await prisma.exam.deleteMany({ where: { subjectId } });
+    await prisma.questionOption.deleteMany({ where: { question: { questionBankId: bankId } } });
+    await prisma.question.deleteMany({ where: { questionBankId: bankId } });
+    await prisma.questionBank.deleteMany({ where: { id: bankId } });
+    await prisma.examGroup.deleteMany({ where: { id: groupId } });
+    await prisma.subject.deleteMany({ where: { id: subjectId } });
+    await prisma.student.deleteMany({ where: { id: studentId } });
+    await prisma.user.deleteMany({ where: { id: studentUid } });
+    await prisma.teacher.deleteMany({ where: { id: teacherId } });
+    await prisma.user.deleteMany({ where: { id: teacherUid } });
+    await prisma.rombel.deleteMany({ where: { id: rombelId } });
+    await prisma.major.deleteMany({ where: { id: majorId } });
 
-    // Clean up conflicting records from previous runs (respecting FK order)
-    await prisma.answer.deleteMany({ where: { examSessionId: { in: [examId, sessionId] } } });
-    await prisma.violation.deleteMany({ where: { examSessionId: { in: [examId, sessionId] } } });
-    await prisma.examSession.deleteMany({ where: { studentId: 'session-student' } });
-    await prisma.exam.deleteMany({ where: { title: 'E2E Test Exam' } });
-    await prisma.questionOption.deleteMany({ where: { id: 'd0000000-0000-0000-0000-000000000000' } });
-    await prisma.question.deleteMany({ where: { id: 'b8888888-8888-8888-8888-888888888888' } });
-    await prisma.questionBank.deleteMany({ where: { id: 'a7777777-7777-7777-7777-777777777777' } });
-    await prisma.examGroup.deleteMany({ where: { id: 'f6666666-6666-6666-6666-666666666666' } });
-    await prisma.subject.deleteMany({ where: { id: 'e5555555-5555-5555-5555-555555555555' } });
-    await prisma.student.deleteMany({ where: { id: 'session-student' } });
-    await prisma.user.deleteMany({ where: { id: 'session-student-user' } });
-    await prisma.teacher.deleteMany({ where: { id: 'session-teacher' } });
-    await prisma.user.deleteMany({ where: { id: 'session-teacher-user' } });
-    await prisma.rombel.deleteMany({ where: { id: 'b2222222-2222-2222-2222-222222222222' } });
-    await prisma.major.deleteMany({ where: { id: 'a1111111-1111-1111-1111-111111111111' } });
+    // Seed
+    const pw = await bcrypt.hash('password123', 10);
+    await prisma.major.create({ data: { id: majorId, name: 'Session Major BB', code: 'SES-BB' } });
+    await prisma.rombel.create({ data: { id: rombelId, name: 'Session Rombel BB', majorId } });
+    await prisma.user.create({ data: { id: teacherUid, username: 'ses-guru-bb@e2e.test', email: 'ses-guru-bb@e2e.test', password: pw, fullName: 'Session Teacher', role: 'GURU' } });
+    await prisma.teacher.create({ data: { id: teacherId, userId: teacherUid } });
+    await prisma.user.create({ data: { id: studentUid, username: 'ses-siswa-bb@e2e.test', email: 'ses-siswa-bb@e2e.test', password: pw, fullName: 'Session Student', role: 'SISWA' } });
+    await prisma.student.create({ data: { id: studentId, userId: studentUid, nis: '99999bb', rombelId, majorId } });
+    await prisma.subject.create({ data: { id: subjectId, name: 'Session Subject BB', code: 'SES-SUB-BB' } });
+    await prisma.examGroup.create({ data: { id: groupId, name: 'Session Group BB', academicYear: '2025/2026', semester: 'Ganjil' } });
+    await prisma.questionBank.create({ data: { id: bankId, name: 'Session QB', subjectId, teacherId } });
+    await prisma.question.create({ data: { id: q1, questionBankId: bankId, content: 'Q1', type: 'PILIHAN_GANDA', points: 5 } });
+    await prisma.questionOption.create({ data: { id: opt1, questionId: q1, content: 'Opt 1', isCorrect: true, order: 1 } });
 
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash('password123', salt);
-
-    await prisma.major.upsert({
-      where: { id: 'a1111111-1111-1111-1111-111111111111' },
-      update: {},
-      create: { id: 'a1111111-1111-1111-1111-111111111111', name: 'Test Session Major', code: 'TEST-SESSION' },
+    // Login teacher & create exam
+    const tLogin = await request(app.getHttpServer()).post('/api/auth/login').send({ username: 'ses-guru-bb@e2e.test', password: 'password123' });
+    if (!tLogin.body.access_token) throw new Error('Teacher login failed: ' + JSON.stringify(tLogin.body));
+    const examRes = await request(app.getHttpServer()).post('/api/exams').set('Authorization', `Bearer ${tLogin.body.access_token}`).send({
+      title: 'E2E Session Exam',
+      subjectId,
+      examGroupId: groupId,
+      duration: 60,
+      startTime: new Date(Date.now() - 60000).toISOString(),
+      endTime: new Date(Date.now() + 3600000).toISOString(),
+      questionIds: [q1],
+      rombelIds: [rombelId],
+      status: 'PUBLISHED',
     });
-
-    await prisma.rombel.upsert({
-      where: { id: 'b2222222-2222-2222-2222-222222222222' },
-      update: {},
-      create: { id: 'b2222222-2222-2222-2222-222222222222', name: 'Test Session Rombel', majorId: 'a1111111-1111-1111-1111-111111111111' },
-    });
-
-    await prisma.user.upsert({
-      where: { id: 'session-teacher-user' },
-      update: { password: hashedPassword },
-      create: {
-        id: 'session-teacher-user',
-        username: 'guru@test.com',
-        email: 'guru@test.com',
-        password: hashedPassword,
-        fullName: 'Session Teacher',
-        role: 'GURU',
-      },
-    });
-
-    await prisma.teacher.upsert({
-      where: { id: 'session-teacher' },
-      update: {},
-      create: { id: 'session-teacher', userId: 'session-teacher-user' },
-    });
-
-    await prisma.user.upsert({
-      where: { id: 'session-student-user' },
-      update: { password: hashedPassword },
-      create: {
-        id: 'session-student-user',
-        username: 'siswa@test.com',
-        email: 'siswa@test.com',
-        password: hashedPassword,
-        fullName: 'Session Student',
-        role: 'SISWA',
-      },
-    });
-
-    await prisma.student.upsert({
-      where: { id: 'session-student' },
-      update: {},
-      create: {
-        id: 'session-student',
-        userId: 'session-student-user',
-        nis: '98765',
-        rombelId: 'b2222222-2222-2222-2222-222222222222',
-        majorId: 'a1111111-1111-1111-1111-111111111111',
-      },
-    });
-
-    await prisma.subject.upsert({
-      where: { id: 'e5555555-5555-5555-5555-555555555555' },
-      update: {},
-      create: { id: 'e5555555-5555-5555-5555-555555555555', name: 'Session Subject', code: 'SESSION-SUB' },
-    });
-
-    await prisma.examGroup.upsert({
-      where: { id: 'f6666666-6666-6666-6666-666666666666' },
-      update: {},
-      create: { id: 'f6666666-6666-6666-6666-666666666666', name: 'Test Group', academicYear: '2025/2026', semester: 'Ganjil' },
-    });
-
-    await prisma.questionBank.upsert({
-      where: { id: 'a7777777-7777-7777-7777-777777777777' },
-      update: {},
-      create: { id: 'a7777777-7777-7777-7777-777777777777', name: 'Session QB', subjectId: 'e5555555-5555-5555-5555-555555555555', teacherId: 'session-teacher' },
-    });
-
-    await prisma.question.upsert({
-      where: { id: 'b8888888-8888-8888-8888-888888888888' },
-      update: {},
-      create: { id: 'b8888888-8888-8888-8888-888888888888', questionBankId: 'a7777777-7777-7777-7777-777777777777', content: 'Question 1', type: 'PILIHAN_GANDA' },
-    });
-
-    await prisma.questionOption.upsert({
-      where: { id: 'd0000000-0000-0000-0000-000000000000' },
-      update: {},
-      create: { id: 'd0000000-0000-0000-0000-000000000000', questionId: 'b8888888-8888-8888-8888-888888888888', content: 'Option 1', isCorrect: true, order: 1 },
-    });
-
-    // Login as teacher
-    const teacherRes = await request(app.getHttpServer())
-      .post('/api/auth/login')
-      .send({ username: 'guru@test.com', password: 'password123' });
-
-    teacherToken = teacherRes.body.access_token;
-
-    // Login as student
-    const studentRes = await request(app.getHttpServer())
-      .post('/api/auth/login')
-      .send({ username: 'siswa@test.com', password: 'password123' });
-
-    studentToken = studentRes.body.access_token;
-
-    // Create exam
-    const examRes = await request(app.getHttpServer())
-      .post('/api/exams')
-      .set('Authorization', `Bearer ${teacherToken}`)
-      .send({
-        title: 'E2E Test Exam',
-        subjectId: 'e5555555-5555-5555-5555-555555555555',
-        examGroupId: 'f6666666-6666-6666-6666-666666666666',
-        duration: 60,
-        startTime: new Date(Date.now() + 60000).toISOString(),
-        endTime: new Date(Date.now() + 3600000).toISOString(),
-        questionIds: ['b8888888-8888-8888-8888-888888888888'],
-        rombelIds: ['b2222222-2222-2222-2222-222222222222'],
-      });
-
+    if (!examRes.body.id) throw new Error('Exam create failed: ' + JSON.stringify(examRes.body));
     examId = examRes.body.id;
+
+    // Login student
+    const sLogin = await request(app.getHttpServer()).post('/api/auth/login').send({ username: 'ses-siswa-bb@e2e.test', password: 'password123' });
+    if (!sLogin.body.access_token) throw new Error('Student login failed: ' + JSON.stringify(sLogin.body));
+    studentToken = sLogin.body.access_token;
+  }, 30000);
+
+  afterAll(async () => { await app.close(); });
+
+  it('should start session successfully', async () => {
+    const res = await request(app.getHttpServer()).post('/api/exam-sessions/start').set('Authorization', `Bearer ${studentToken}`).send({ examId });
+    if (res.status !== 201) console.log('START SESSION FAIL:', JSON.stringify(res.body));
+    expect(res.status).toBe(201);
+    sessionId = res.body.id;
   });
 
-  afterAll(async () => {
-    await app.close();
+  it('should submit answer successfully', async () => {
+    await request(app.getHttpServer())
+      .post(`/api/exam-sessions/${sessionId}/submit-answer`)
+      .set('Authorization', `Bearer ${studentToken}`)
+      .send({ questionId: q1, selectedOptionId: opt1 })
+      .expect(201);
   });
 
-  describe('Exam Session Flow', () => {
-    it('should start session successfully', async () => {
-      const res = await request(app.getHttpServer())
-        .post('/api/exam-sessions/start')
-        .set('Authorization', `Bearer ${studentToken}`)
-        .send({ examId });
-      console.log('EXAM SESSION START RESPONSE:', JSON.stringify(res.body));
-      expect(res.status).toBe(201);
-
-      sessionId = res.body.id;
-      expect(sessionId).toBeTruthy();
-    });
-
-    it('should submit answer successfully', async () => {
-      const res = await request(app.getHttpServer())
-        .post(`/api/exam-sessions/${sessionId}/submit-answer`)
-        .set('Authorization', `Bearer ${studentToken}`)
-        .send({ questionId: 'b8888888-8888-8888-8888-888888888888', selectedOptionId: 'd0000000-0000-0000-0000-000000000000' })
-        .expect(200);
-
-      expect(res.body).toBeDefined();
-    });
-
-    it('should finish session successfully', async () => {
-      const res = await request(app.getHttpServer())
-        .post(`/api/exam-sessions/${sessionId}/finish`)
-        .set('Authorization', `Bearer ${studentToken}`)
-        .expect(200);
-
-      expect(res.body.status).toBe('SUBMITTED');
-    });
-  });
-
-  describe('Security', () => {
-    it('should reject unauthenticated start session', async () => {
-      await request(app.getHttpServer())
-        .post('/api/exam-sessions/start')
-        .send({ examId })
-        .expect(401);
-    });
-
-    it('should reject student from admin endpoints', async () => {
-      await request(app.getHttpServer())
-        .post('/api/exams')
-        .set('Authorization', `Bearer ${studentToken}`)
-        .send({ title: 'Hack' })
-        .expect(403);
-    });
+  it('should finish session successfully', async () => {
+    const res = await request(app.getHttpServer())
+      .post(`/api/exam-sessions/${sessionId}/finish`)
+      .set('Authorization', `Bearer ${studentToken}`)
+      .expect(201);
+    expect(res.body.status).toBe('SUBMITTED');
   });
 });

@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsUUID, IsDateString, IsInt, IsBoolean, IsEnum, IsArray, IsNotEmpty } from 'class-validator';
+import { IsString, IsOptional, IsUUID, IsDateString, IsInt, IsBoolean, IsEnum, IsArray, IsNotEmpty, ArrayMinSize } from 'class-validator';
 import { ExamStatus } from '@prisma/client';
 
 export class CreateExamDto {
@@ -66,6 +66,7 @@ export class CreateExamDto {
   maxViolations?: number;
 
   @IsArray()
+  @ArrayMinSize(1)
   @IsUUID(undefined, { each: true })
   @IsOptional()
   questionIds?: string[];
@@ -75,6 +76,7 @@ export class CreateExamDto {
   examGroupId: string;
 
   @IsArray()
+  @ArrayMinSize(1)
   @IsUUID(undefined, { each: true })
   @IsOptional()
   rombelIds?: string[];

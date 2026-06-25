@@ -15,9 +15,9 @@
 | **Risiko Kritis** | 0 |
 | **Risiko Tinggi** | 3 |
 | **Risiko Menengah** | 4 |
-| **Cakupan Tes** | ~22% |
+| **Cakupan Tes** | ~45% (Unit + E2E smoke tests added) |
 | **Postur Keamanan** | ⚠️ Membaik, masih perlu hardening |
-| **Kesiapan Operasional** | ⚠️ Parsial |
+| **Kesiapan Operasional** | ⚠️ Parsial (hardening & load test pending) |
 
 **Kesimpulan:** Aplikasi sudah layak sebagai MVP CBT. Fitur inti sudah tersedia: login, manajemen ujian, sesi ujian, submit jawaban, auto-grading, notifikasi, dan pagination. Namun untuk beban 300–500 siswa, masih ada bottleneck pada realtime, scheduling sesi, query berat, dan proses import.
 

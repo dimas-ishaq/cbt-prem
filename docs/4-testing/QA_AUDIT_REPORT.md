@@ -14,7 +14,7 @@
 | **Critical Risks** | 2 items |
 | **High Risks** | 4 items |
 | **Medium Risks** | 7 items |
-| **Test Coverage** | ~65% (unit tests exist for controllers/services) |
+| **Test Coverage** | ~65% (unit tests exist for controllers/services; E2E smoke added) |
 | **Security Posture** | ⚠️ **NEEDS ATTENTION** |
 
 ---
