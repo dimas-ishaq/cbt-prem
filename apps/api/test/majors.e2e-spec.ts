@@ -1,8 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { MajorsController } from '../src/majors/majors.controller';
 import { MajorsService } from '../src/majors/majors.service';
+import { JwtAuthGuard } from '../src/auth/guards/jwt-auth.guard';
+import { PermissionsGuard } from '../src/auth/guards/permissions.guard';
 
 @Injectable()
 class AllowAllGuard implements CanActivate {
@@ -26,7 +28,9 @@ describe('MajorsController (light e2e)', () => {
       controllers: [MajorsController],
       providers: [{ provide: MajorsService, useValue: majorsServiceMock }],
     })
-      .overrideGuard(AllowAllGuard)
+      .overrideGuard(JwtAuthGuard)
+      .useClass(AllowAllGuard)
+      .overrideGuard(PermissionsGuard)
       .useClass(AllowAllGuard)
       .compile();
 

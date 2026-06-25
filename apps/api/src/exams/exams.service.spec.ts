@@ -91,7 +91,7 @@ describe('ExamsService', () => {
           { order: 0, question: { type: 'PILIHAN_GANDA' } },
         ],
       });
-      const result = await service.findOne('e1');
+      const result = await service.findOne('e1') as any;
       // Non-essay first, then essay
       expect(result!.examQuestions[0].question.type).toBe('PILIHAN_GANDA');
       expect(result!.examQuestions[1].question.type).toBe('ESSAY');

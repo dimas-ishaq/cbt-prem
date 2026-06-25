@@ -1,3 +1,12 @@
+jest.mock('fs', () => ({
+  __esModule: true,
+  ...jest.requireActual('fs'),
+  existsSync: jest.fn(),
+  readdirSync: jest.fn(),
+  statSync: jest.fn(),
+  readFileSync: jest.fn(),
+}));
+
 import { LogsService } from './logs.service';
 import { NotFoundException } from '@nestjs/common';
 import * as fs from 'fs';
