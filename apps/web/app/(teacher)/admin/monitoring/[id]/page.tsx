@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useConfirm } from '@/components/ui/confirmation-dialog';
+import { toast } from '@/lib/toaster';
 import {
   Box,
   Flex,
@@ -51,6 +52,7 @@ interface Student {
   status: string;
   violationCount?: number;
   currentQuestionIndex?: number;
+  endTime?: string;
 }
 
 interface Violation {
@@ -72,10 +74,19 @@ const sortOptions = createListCollection({
   ],
 });
 
+const violationFilterOptions = createListCollection({
+  items: [
+    { label: 'Semua Pelanggaran', value: 'ALL' },
+    { label: 'Tab Switch / Blur', value: 'TAB_SWITCH' },
+    { label: 'Keluar Fullscreen', value: 'FULLSCREEN_EXIT' },
+    { label: 'Buka DevTools', value: 'DEVTOOLS' },
+  ],
+});
+
 export default function ExamMonitoringPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const socket = useSocket();
-  const { playViolation, playNotification } = useSound();
+  const { playViolation, playNotification, playSuccess } = useSound();
   const confirmDialog = useConfirm();
 
   const [students, setStudents] = useState<Record<string, Student>>({});
@@ -111,7 +122,7 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
   const [prevCount, setPrevCount] = useState(0);
   const [violationFilter, setViolationFilter] = useState<string>('ALL');
 
-  const { data: exam, isLoading } = useQuery({
+  const { data: exam, isLoading, refetch, isFetching } = useQuery({
     queryKey: ['exam-monitoring', id],
     queryFn: async () => (await api.get(`/exams/${id}`)).data,
     refetchInterval: 10_000,
@@ -220,6 +231,18 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
           return { ...prev, [d.studentId]: { ...s, status: 'Selesai', progress: 100 } };
         });
       },
+      student_time_added: (d) => {
+        setStudents((prev) => {
+          const s = prev[d.studentId];
+          if (!s) return prev;
+          toast.success({
+            title: 'Waktu Ditambahkan',
+            description: `Waktu ujian ${s.fullName || s.username} berhasil ditambah 5 menit.`
+          });
+          playSuccess();
+          return { ...prev, [d.studentId]: { ...s, endTime: d.newEndTime } };
+        });
+      },
     };
 
     Object.entries(handlers).forEach(([ev, fn]) => socket.on(ev, fn));
@@ -229,12 +252,14 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
       socket.off('disconnect', onDisconnect);
       Object.keys(handlers).forEach((ev) => socket.off(ev));
     };
-  }, [socket, id, totalQ]);
+  }, [socket, id, totalQ, playSuccess]);
 
-  // Synchronize student data from the initial HTTP API load
+  // Synchronize student data and violations from the initial HTTP API load
   useEffect(() => {
     if (exam && exam.examSessions) {
       const initialStudents: Record<string, Student> = {};
+      const initialViolations: Violation[] = [];
+
       exam.examSessions.forEach((session: any) => {
         const studentUser = session.student?.user;
         if (studentUser) {
@@ -248,9 +273,27 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
             progress: (session.answers?.length || 0) > 0 ? (session.answers.length / (exam.examQuestions?.length || 1)) * 100 : 0,
             lastActive: session.lastActiveAt || session.startTime || new Date().toISOString(),
             violationCount: session.violations?.length || 0,
+            endTime: session.endTime,
           };
+
+          // Collect historical violations
+          if (Array.isArray(session.violations)) {
+            session.violations.forEach((v: any) => {
+              initialViolations.push({
+                id: v.id || `${v.timestamp}-${Math.random()}`,
+                username: studentUser.fullName || studentUser.username,
+                type: v.type,
+                description: v.description || '',
+                timestamp: v.timestamp,
+              });
+            });
+          }
         }
       });
+
+      // Sort violations descending by timestamp
+      initialViolations.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      setViolations(initialViolations);
 
       setStudents((prev) => {
         const merged = { ...initialStudents };
@@ -265,6 +308,7 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
               progress: Math.max(merged[key].progress, prevStudent.progress),
               violationCount: Math.max(merged[key].violationCount || 0, prevStudent.violationCount || 0),
               currentQuestionIndex: prevStudent.currentQuestionIndex || merged[key].currentQuestionIndex,
+              endTime: prevStudent.endTime || merged[key].endTime,
             };
           } else {
             merged[key] = prevStudent;
@@ -301,10 +345,19 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
     return () => window.removeEventListener('keydown', handler);
   }, [toggleFS]);
 
+  /* ─── Realtime ticking timer ─── */
+  const [nowTime, setNowTime] = useState(Date.now());
+  useEffect(() => {
+    const timerInterval = setInterval(() => {
+      setNowTime(Date.now());
+    }, 1000);
+    return () => clearInterval(timerInterval);
+  }, []);
+
   /* ─── Timer ─── */
   const timer = (() => {
     if (!exam?.endTime) return { text: '-', urgent: false };
-    const diff = new Date(exam.endTime).getTime() - Date.now();
+    const diff = new Date(exam.endTime).getTime() - nowTime;
     if (diff <= 0) return { text: 'Selesai', urgent: true };
     const h = Math.floor(diff / 3_600_000);
     const m = Math.floor((diff % 3_600_000) / 60_000);
@@ -350,12 +403,12 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
               <ChevronLeft size={22} />
             </IconButton>
           </Link>
-          <Box>
-            <Heading size="lg" fontWeight="bold" letterSpacing="tight" color="gray.800" display="flex" alignItems="center" gap={3}>
-              <Monitor size={24} color="var(--chakra-colors-indigo-500)" />
-              {exam?.title}
+          <Box minW={0} flex="1">
+            <Heading size="lg" fontWeight="bold" letterSpacing="tight" color="gray.800" display="flex" alignItems="center" gap={3} lineClamp={1}>
+              <Box as="span" flexShrink={0} display="inline-flex"><Monitor size={24} color="var(--chakra-colors-indigo-500)" /></Box>
+              <Box as="span" className="truncate">{exam?.title}</Box>
             </Heading>
-            <Text fontSize="sm" color="gray.500" mt={1}>
+            <Text fontSize="sm" color="gray.500" mt={1} lineClamp={1}>
               {exam?.subject?.name} &middot; {exam?.examQuestions?.length} Soal &middot; ID: {id.slice(0, 8)}…
             </Text>
           </Box>
@@ -417,6 +470,19 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
           </Badge>
 
           {/* Actions */}
+          <IconButton
+            onClick={() => refetch()}
+            disabled={isFetching}
+            variant="outline"
+            size="sm"
+            borderRadius="xl"
+            aria-label="Sinkronisasi Data"
+            title="Sinkronisasi Data"
+            cursor="pointer"
+          >
+            <RefreshCw size={16} className={isFetching ? 'animate-spin' : ''} />
+          </IconButton>
+
           <Link href={`/admin/results/${id}`}>
             <Button size="sm" borderRadius="xl" colorPalette="indigo" variant="subtle" fontWeight="semibold">
               <Award size={16} /> Hasil
@@ -429,11 +495,22 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
       </Flex>
 
       {/* ─── BODY ─── */}
-      <SimpleGrid columns={{ base: 1, xl: 3 }} gap={6}>
-        {/* ─── Student Grid ─── */}
-        <Box gridColumn={{ xl: 'span 2' }} display="flex" flexDirection="column" gap={4}>
-          <Flex flexWrap="wrap" align="center" justify="space-between" gap={3}>
-            <Heading size="md" fontWeight="bold" color="gray.800">Progres Siswa</Heading>
+      <SimpleGrid columns={{ base: 1, lg: 3 }} gap={6}>
+        {/* ─── Student Grid Panel (Card) ─── */}
+        <Box
+          gridColumn={{ lg: 'span 2' }}
+          bg="white"
+          borderRadius="2xl"
+          borderWidth="1px"
+          borderColor="gray.200"
+          shadow="sm"
+          p={6}
+          display="flex"
+          flexDirection="column"
+          gap={5}
+        >
+          <Flex flexWrap="wrap" align="center" justify="space-between" gap={3} pb={2} borderBottom="1px solid" borderColor="gray.150">
+            <Heading size="md" fontWeight="bold" color="gray.850">Progres Siswa</Heading>
             <Flex align="center" gap={2}>
               {/* Search */}
               <Box position="relative">
@@ -494,7 +571,7 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
           </Flex>
 
           {/* Cards */}
-          <SimpleGrid columns={{ base: 1, sm: 2 }} gap={3} maxH="70vh" overflowY="auto" pr={1} css={{ '&::-webkit-scrollbar': { width: '6px' }, '&::-webkit-scrollbar-thumb': { background: 'var(--chakra-colors-gray-300)', borderRadius: '10px' } }}>
+          <SimpleGrid columns={{ base: 1, sm: 2, '2xl': 3 }} gap={4} maxH="65vh" overflowY="auto" pr={2} css={{ '&::-webkit-scrollbar': { width: '6px' }, '&::-webkit-scrollbar-thumb': { background: 'var(--chakra-colors-gray-300)', borderRadius: '10px' } }}>
             {displayed.map((s) => {
               const offline = s.status === 'Offline';
               const locked = s.status === 'Locked';
@@ -517,7 +594,7 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
                 >
                   {/* Top row */}
                   <Flex align="start" justify="space-between" mb={3}>
-                    <Flex align="center" gap={2.5} minW={0}>
+                    <Flex align="center" gap={2.5} minW={0} flex="1">
                       <Box 
                         w="10px" 
                         h="10px" 
@@ -530,8 +607,8 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
                           offline ? 'gray.400' : 'green.500'
                         } 
                       />
-                      <Box minW={0}>
-                        <Text fontWeight="semibold" fontSize="sm" color="gray.800" truncate>
+                      <Box minW={0} flex="1">
+                        <Text fontWeight="semibold" fontSize="sm" color="gray.800" lineClamp={1}>
                           {s.fullName || s.username}
                         </Text>
                         <Text fontSize="xs" color="gray.500">
@@ -624,6 +701,21 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
                       >
                         Kumpulkan
                       </Button>
+                      <Button
+                        size="xs"
+                        variant="solid"
+                        colorPalette="amber"
+                        borderRadius="lg"
+                        onClick={() => {
+                          if (socket) {
+                            socket.emit('add_student_time', { examId: id, studentId: s.userId, minutes: 5 });
+                          }
+                        }}
+                        fontWeight="bold"
+                        cursor="pointer"
+                      >
+                        +5m
+                      </Button>
                     </Flex>
                   )}
                 </Box>
@@ -641,33 +733,73 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
           </SimpleGrid>
         </Box>
 
-        {/* ─── Violation Logs ─── */}
-        <Stack gap={4}>
-          <Flex align="center" justify="space-between">
-            <Heading size="md" fontWeight="bold" color="gray.800" display="flex" alignItems="center" gap={2}>
-              <AlertTriangle size={20} color="var(--chakra-colors-red-600)" />
-              Pelanggaran
-            </Heading>
-            <Flex align="center" gap={2}>
-              <select 
-                value={violationFilter} 
-                onChange={(e) => setViolationFilter(e.target.value)}
-                style={{ fontSize: '12px', padding: '4px 8px', borderRadius: '6px', border: '1px solid #e5e7eb', background: 'white', color: '#374151', cursor: 'pointer' }}
-              >
-                <option value="ALL">Semua</option>
-                <option value="TAB_SWITCH">Tab Switch</option>
-                <option value="FULLSCREEN_EXIT">Keluar Fullscreen</option>
-                <option value="DEVTOOLS">Buka DevTools</option>
-              </select>
+        {/* ─── Violation Logs Panel (Card) ─── */}
+        <Box
+          bg="white"
+          borderRadius="2xl"
+          borderWidth="1px"
+          borderColor="gray.200"
+          shadow="sm"
+          p={6}
+          display="flex"
+          flexDirection="column"
+          gap={5}
+        >
+          <Flex direction="column" gap={3} pb={3} borderBottom="1px solid" borderColor="gray.150">
+            <Flex align="center" justify="space-between">
+              <Heading size="md" fontWeight="bold" color="gray.855" display="flex" alignItems="center" gap={2}>
+                <AlertTriangle size={20} color="var(--chakra-colors-red-600)" />
+                Pelanggaran
+              </Heading>
               {violations.length > 0 && (
-                <Button size="xs" variant="ghost" color="gray.500" _hover={{ color: 'red.600' }} onClick={() => setViolations([])}>
-                  Bersihkan
+                <Button 
+                  size="xs" 
+                  variant="ghost" 
+                  color="red.500" 
+                  _hover={{ bg: 'red.50', color: 'red.700' }} 
+                  onClick={() => setViolations([])}
+                  borderRadius="md"
+                  px={2}
+                  py={1}
+                  fontWeight="bold"
+                  cursor="pointer"
+                >
+                  Bersihkan Log
                 </Button>
               )}
             </Flex>
+            
+            <Box w="full">
+              <Select.Root
+                collection={violationFilterOptions}
+                value={[violationFilter]}
+                onValueChange={(details) => setViolationFilter(details.value[0] || 'ALL')}
+                positioning={{ sameWidth: true }}
+                size="sm"
+              >
+                <Select.HiddenSelect />
+                <Select.Control>
+                  <Select.Trigger borderRadius="lg">
+                    <Select.ValueText placeholder="Semua Pelanggaran" />
+                  </Select.Trigger>
+                  <Select.IndicatorGroup>
+                    <Select.Indicator />
+                  </Select.IndicatorGroup>
+                </Select.Control>
+                <Select.Positioner>
+                  <Select.Content zIndex={100}>
+                    {violationFilterOptions.items.map((item) => (
+                      <Select.Item key={item.value} item={item}>
+                        {item.label}
+                      </Select.Item>
+                    ))}
+                  </Select.Content>
+                </Select.Positioner>
+              </Select.Root>
+            </Box>
           </Flex>
 
-          <Stack id="violation-logs" gap={2} h="70vh" overflowY="auto" pr={1} css={{ '&::-webkit-scrollbar': { width: '6px' }, '&::-webkit-scrollbar-thumb': { background: 'var(--chakra-colors-red-200)', borderRadius: '10px' } }}>
+          <Stack id="violation-logs" gap={2} h="65vh" overflowY="auto" pr={1} css={{ '&::-webkit-scrollbar': { width: '6px' }, '&::-webkit-scrollbar-thumb': { background: 'var(--chakra-colors-red-200)', borderRadius: '10px' } }}>
             {violations
               .filter((v) => {
                 if (violationFilter === 'ALL') return true;
@@ -692,7 +824,7 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
             ))}
 
             {violations.length === 0 && (
-              <Flex h="full" direction="column" align="center" justify="center" textAlign="center" px={4}>
+              <Flex h="full" direction="column" align="center" justify="center" textAlign="center" py={12} px={4}>
                 <Flex w="16" h="16" bg="green.50" borderRadius="full" align="center" justify="center" mb={4}>
                   <CheckCircle2 size={32} color="var(--chakra-colors-green-500)" />
                 </Flex>
@@ -703,7 +835,7 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
               </Flex>
             )}
           </Stack>
-        </Stack>
+        </Box>
 
       </SimpleGrid>
     </Stack>

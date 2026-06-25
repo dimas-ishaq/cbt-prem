@@ -267,4 +267,46 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
       studentId: data.studentId,
     });
   }
+
+  @SubscribeMessage('add_student_time')
+  async handleAddStudentTime(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { examId: string, studentId: string, minutes: number },
+  ) {
+    if (client.data.user.role !== 'GURU' && client.data.user.role !== 'SUPER_ADMIN') {
+      return;
+    }
+
+    const student = await this.prisma.student.findUnique({
+      where: { userId: data.studentId },
+    });
+    if (!student) return;
+
+    const session = await this.prisma.examSession.findUnique({
+      where: {
+        examId_studentId: {
+          examId: data.examId,
+          studentId: student.id,
+        },
+      },
+    });
+    if (!session) return;
+
+    const currentEndTime = session.endTime ? new Date(session.endTime) : new Date();
+    const newEndTime = new Date(currentEndTime.getTime() + data.minutes * 60 * 1000);
+
+    await this.prisma.examSession.update({
+      where: { id: session.id },
+      data: { endTime: newEndTime },
+    });
+
+    // Notify the student
+    this.sendToUser(data.studentId, 'time_added', { examId: data.examId, newEndTime });
+
+    // Notify the proctor room
+    this.server.to(`proctor_${data.examId}`).emit('student_time_added', {
+      studentId: data.studentId,
+      newEndTime,
+    });
+  }
 }

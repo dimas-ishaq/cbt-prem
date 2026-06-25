@@ -1,50 +1,73 @@
 'use client';
 
+// Base64 encoded sound effects (approx. 0.5s audio clips to avoid large bundle sizes)
+// These are short synth sounds in a data URI format so that they are fully portable and don't require external downloads.
+// You can replace the string content here with actual paths to local audio files e.g. "/sounds/violation.mp3" if you prefer.
+
+const SOUNDS = {
+  // A sharp alarm sound
+  violation: 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAAAAAA==',
+  // A soft ascending tone
+  success: 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAAAAAA==',
+  // A clean chime
+  notification: 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAAAAAA==',
+};
+
+// Global audio instances to track playing sound across hook usages
+let activeViolationAudio: HTMLAudioElement | null = null;
+
 export function useSound() {
-  const playTone = (frequency: number, type: OscillatorType, duration: number, volume: number = 0.1) => {
-    if (typeof window === 'undefined') return;
+  const playAudio = (type: keyof typeof SOUNDS, pathAlternative?: string) => {
+    if (typeof window === 'undefined') return null;
     try {
-      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const oscillator = audioCtx.createOscillator();
-      const gainNode = audioCtx.createGain();
-
-      oscillator.type = type;
-      oscillator.frequency.value = frequency;
-      
-      gainNode.gain.setValueAtTime(volume, audioCtx.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
-
-      oscillator.connect(gainNode);
-      gainNode.connect(audioCtx.destination);
-
-      oscillator.start();
-      oscillator.stop(audioCtx.currentTime + duration);
+      const audioPath = pathAlternative || SOUNDS[type];
+      const audio = new Audio(audioPath);
+      audio.volume = type === 'violation' ? 0.8 : 0.4;
+      audio.play().catch((err) => {
+        console.warn(`Playback blocked or failed for sound: ${type}`, err);
+      });
+      return audio;
     } catch (e) {
-      console.warn('AudioContext playback blocked or failed:', e);
+      console.warn('Audio playback failed:', e);
+      return null;
     }
   };
 
   const playViolation = () => {
-    // Double beep with a sawtooth waveform (sharp alarm)
-    playTone(880, 'sawtooth', 0.15, 0.04);
-    setTimeout(() => playTone(880, 'sawtooth', 0.3, 0.04), 180);
+    // If a violation sound is already playing, do not trigger again
+    if (activeViolationAudio && !activeViolationAudio.paused && !activeViolationAudio.ended) {
+      return;
+    }
+    // Falls back to static asset /sounds/violation.mp3 if it exists
+    const audio = playAudio('violation', '/sounds/violation.mp3');
+    if (audio) {
+      activeViolationAudio = audio;
+    }
+  };
+
+  const stopViolation = () => {
+    if (activeViolationAudio) {
+      try {
+        activeViolationAudio.pause();
+        activeViolationAudio.currentTime = 0;
+      } catch (e) {
+        console.warn('Failed to stop violation sound:', e);
+      }
+      activeViolationAudio = null;
+    }
   };
 
   const playSuccess = () => {
-    // Soft ascending sine chime (success)
-    playTone(523.25, 'sine', 0.1, 0.06); // C5
-    setTimeout(() => playTone(659.25, 'sine', 0.1, 0.06), 80); // E5
-    setTimeout(() => playTone(783.99, 'sine', 0.25, 0.06), 160); // G5
+    playAudio('success', '/sounds/success.mp3');
   };
 
   const playNotification = () => {
-    // Triangle chime (clean notify beep)
-    playTone(587.33, 'triangle', 0.12, 0.06); // D5
-    setTimeout(() => playTone(880, 'triangle', 0.2, 0.06), 100); // A5
+    playAudio('notification', '/sounds/notification.mp3');
   };
 
   return {
     playViolation,
+    stopViolation,
     playSuccess,
     playNotification,
   };

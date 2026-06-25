@@ -36,9 +36,10 @@ interface Props {
   selectedAnswer?: string;
   isFlagged: boolean;
   onToggleFlag: () => void;
+  isDisabled?: boolean;
 }
 
-export function QuestionCard({ question, index, onAnswer, selectedAnswer, isFlagged, onToggleFlag }: Props) {
+export function QuestionCard({ question, index, onAnswer, selectedAnswer, isFlagged, onToggleFlag, isDisabled = false }: Props) {
   const [essayText, setEssayText] = useState(selectedAnswer || '');
 
   useEffect(() => {
@@ -109,8 +110,9 @@ export function QuestionCard({ question, index, onAnswer, selectedAnswer, isFlag
         return (
           <RadioGroup.Root
             value={selectedAnswer || ''}
-            onValueChange={(details) => onAnswer(details.value || '')}
+            onValueChange={(details) => !isDisabled && onAnswer(details.value || '')}
             width="full"
+            disabled={isDisabled}
           >
             <Stack gap={3.5}>
               {question.options.map((option, idx) => {
@@ -126,12 +128,13 @@ export function QuestionCard({ question, index, onAnswer, selectedAnswer, isFlag
                     p={4}
                     border="1px solid"
                     borderRadius="xl"
-                    cursor="pointer"
+                    cursor={isDisabled ? 'not-allowed' : 'pointer'}
                     transition="all 0.2s"
                     borderColor={isSelected ? 'indigo.650' : 'gray.200'}
                     bg={isSelected ? 'indigo.50/40' : 'white'}
-                    _hover={isSelected ? {} : { bg: 'gray.50/60', borderColor: 'gray.300' }}
+                    _hover={isSelected || isDisabled ? {} : { bg: 'gray.50/60', borderColor: 'gray.300' }}
                     boxShadow={isSelected ? '0 0 0 2px rgba(79, 70, 229, 0.1)' : 'none'}
+                    disabled={isDisabled}
                   >
                     <RadioGroup.ItemHiddenInput />
                     <RadioGroup.ItemIndicator colorPalette="indigo" mr={3} />
@@ -182,19 +185,20 @@ export function QuestionCard({ question, index, onAnswer, selectedAnswer, isFlag
                 <Checkbox.Root
                   key={option.id}
                   checked={!!isSelected}
-                  onCheckedChange={() => handleMultipleResponseChange(option.id)}
+                  onCheckedChange={() => !isDisabled && handleMultipleResponseChange(option.id)}
                   as="label"
                   display="flex"
                   alignItems="center"
                   p={4}
                   border="1px solid"
                   borderRadius="xl"
-                  cursor="pointer"
+                  cursor={isDisabled ? 'not-allowed' : 'pointer'}
                   transition="all 0.2s"
                   borderColor={isSelected ? 'indigo.650' : 'gray.200'}
                   bg={isSelected ? 'indigo.50/40' : 'white'}
-                  _hover={isSelected ? {} : { bg: 'gray.50/60', borderColor: 'gray.300' }}
+                  _hover={isSelected || isDisabled ? {} : { bg: 'gray.50/60', borderColor: 'gray.300' }}
                   boxShadow={isSelected ? '0 0 0 2px rgba(79, 70, 229, 0.1)' : 'none'}
+                  disabled={isDisabled}
                 >
                   <Checkbox.HiddenInput />
                   <Checkbox.Control colorPalette="indigo" mr={3} />
@@ -251,8 +255,9 @@ export function QuestionCard({ question, index, onAnswer, selectedAnswer, isFlag
               _focus={{ ring: '4px', ringColor: 'indigo.50', borderColor: 'indigo.650' }}
               placeholder="Tuliskan lembar jawaban esai Anda di sini secara lengkap..."
               value={essayText}
-              onChange={(e) => setEssayText(e.target.value)}
-              onBlur={() => onAnswer(essayText)}
+              disabled={isDisabled}
+              onChange={(e) => !isDisabled && setEssayText(e.target.value)}
+              onBlur={() => !isDisabled && onAnswer(essayText)}
             />
             <Flex justify="between" align="center" fontSize="2xs" color="gray.400" fontWeight="semibold" px={1}>
               <Text>Jawaban disimpan otomatis saat Anda beralih nomor atau mengklik area luar.</Text>

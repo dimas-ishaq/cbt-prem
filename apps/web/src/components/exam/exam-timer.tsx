@@ -7,19 +7,29 @@ import { Flex, Text } from '@chakra-ui/react';
 interface Props {
   startTime: string;
   duration: number; // in minutes
+  overrideEndTime?: string;
   onTimeUp: () => void;
 }
 
-export function ExamTimer({ startTime, duration, onTimeUp }: Props) {
-  const [timeLeft, setTimeLeft] = useState<number>(() => {
+export function ExamTimer({ startTime, duration, overrideEndTime, onTimeUp }: Props) {
+  const getEndTime = () => {
+    if (overrideEndTime) {
+      return new Date(overrideEndTime).getTime();
+    }
     const start = new Date(startTime).getTime();
-    const end = start + duration * 60 * 1000;
+    return start + duration * 60 * 1000;
+  };
+
+  const [timeLeft, setTimeLeft] = useState<number>(() => {
+    const end = getEndTime();
     return Math.max(0, Math.floor((end - Date.now()) / 1000));
   });
 
   useEffect(() => {
-    const start = new Date(startTime).getTime();
-    const end = start + duration * 60 * 1000;
+    const end = getEndTime();
+
+    // Initial sync
+    setTimeLeft(Math.max(0, Math.floor((end - Date.now()) / 1000)));
 
     const timer = setInterval(() => {
       const now = Date.now();
@@ -34,7 +44,7 @@ export function ExamTimer({ startTime, duration, onTimeUp }: Props) {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [startTime, duration, onTimeUp]);
+  }, [startTime, duration, overrideEndTime, onTimeUp]);
 
   const hours = Math.floor(timeLeft / 3600);
   const minutes = Math.floor((timeLeft % 3600) / 60);

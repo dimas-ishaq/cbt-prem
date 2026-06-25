@@ -156,7 +156,7 @@ export default function MonitoringListPage() {
 
       {/* ─── Exam Grid ─── */}
       {!isLoading && (
-        <SimpleGrid columns={{ base: 1, sm: 2, lg: 3 }} gap={6}>
+        <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} gap={6}>
           {filteredExams.map((exam) => {
             const ongoing = exam.status === 'ONGOING';
             return (
@@ -169,67 +169,72 @@ export default function MonitoringListPage() {
                 borderRadius="2xl"
                 shadow="sm"
                 transition="all 0.3s"
-                _hover={{ shadow: 'lg', borderColor: 'indigo.500' }}
+                _hover={{ shadow: 'lg', borderColor: 'indigo.500', transform: 'translateY(-2px)' }}
                 display="flex"
                 flexDirection="column"
+                h="100%"
               >
-                <Box p={6} display="flex" flexDirection="column" h="full">
-                  {/* Top row */}
-                  <Flex align="start" justify="space-between" mb={4}>
-                    <Flex
-                      p={3}
-                      borderRadius="xl"
-                      bg={ongoing ? 'green.50' : 'indigo.50'}
-                      color={ongoing ? 'green.600' : 'indigo.600'}
-                    >
-                      <Activity size={22} className={ongoing ? 'animate-pulse' : ''} />
-                    </Flex>
-                    <Badge
-                      colorPalette={ongoing ? 'green' : 'blue'}
-                      size="sm"
-                      px={2}
-                      py={1}
-                      borderRadius="full"
-                    >
-                      {ongoing ? 'BERLANGSUNG' : 'TERSEDIA'}
-                    </Badge>
-                  </Flex>
-
-                  {/* Content */}
-                  <Heading
-                    size="md"
-                    color="gray.800"
-                    _groupHover={{ color: 'indigo.600' }}
-                    transition="colors"
-                    lineClamp={2}
-                  >
-                    {exam.title}
-                  </Heading>
-                  <Text fontSize="sm" color="gray.500" mt={1}>
-                    {exam.subject.name}
-                  </Text>
-
-                  <Stack mt={5} gap={2} flex="1">
-                    <Flex align="center" gap={2} fontSize="sm" color="gray.600">
-                      <Icon as={Users} color="gray.400" />
-                      <Text>{exam._count?.examSessions ?? 0} siswa terdaftar</Text>
-                    </Flex>
-                    <Flex align="center" gap={2} fontSize="sm" color="gray.600">
-                      <Icon as={Calendar} color="gray.400" />
-                      <Text>{new Date(exam.startTime).toLocaleString('id-ID')}</Text>
-                    </Flex>
-                    {ongoing && (
-                      <Flex align="center" gap={2} fontSize="sm" fontWeight="medium" color="amber.600">
-                        <Icon as={Clock} />
-                        <Text>{remaining(exam.endTime)} lagi</Text>
+                <Flex p={6} direction="column" justify="space-between" h="100%" flex="1">
+                  <Box>
+                    {/* Top row */}
+                    <Flex align="center" justify="space-between" mb={4}>
+                      <Flex
+                        p={3}
+                        borderRadius="xl"
+                        bg={ongoing ? 'green.50' : 'indigo.50'}
+                        color={ongoing ? 'green.600' : 'indigo.600'}
+                      >
+                        <Activity size={22} className={ongoing ? 'animate-pulse' : ''} />
                       </Flex>
-                    )}
-                  </Stack>
+                      <Badge
+                        colorPalette={ongoing ? 'green' : 'blue'}
+                        size="sm"
+                        px={2.5}
+                        py={1}
+                        borderRadius="full"
+                        fontWeight="extrabold"
+                      >
+                        {ongoing ? 'BERLANGSUNG' : 'TERSEDIA'}
+                      </Badge>
+                    </Flex>
+
+                    {/* Content */}
+                    <Heading
+                      size="md"
+                      color="gray.800"
+                      _groupHover={{ color: 'indigo.600' }}
+                      transition="colors"
+                      lineClamp={2}
+                      fontWeight="bold"
+                    >
+                      {exam.title}
+                    </Heading>
+                    <Text fontSize="sm" color="gray.500" mt={1}>
+                      {exam.subject.name}
+                    </Text>
+
+                    <Stack mt={5} gap={2.5}>
+                      <Flex align="center" gap={2.5} fontSize="sm" color="gray.600">
+                        <Icon as={Users} color="gray.400" />
+                        <Text>{exam._count?.examSessions ?? 0} siswa terdaftar</Text>
+                      </Flex>
+                      <Flex align="center" gap={2.5} fontSize="sm" color="gray.600">
+                        <Icon as={Calendar} color="gray.400" />
+                        <Text className="truncate">{new Date(exam.startTime).toLocaleString('id-ID')}</Text>
+                      </Flex>
+                      {ongoing && (
+                        <Flex align="center" gap={2.5} fontSize="sm" fontWeight="semibold" color="amber.600">
+                          <Icon as={Clock} />
+                          <Text>{remaining(exam.endTime)} lagi</Text>
+                        </Flex>
+                      )}
+                    </Stack>
+                  </Box>
 
                   {/* Action */}
                   <Link href={`/admin/monitoring/${exam.id}`} style={{ width: '100%' }}>
                     <Button
-                      mt={5}
+                      mt={6}
                       w="full"
                       bg="gray.900"
                       color="white"
@@ -237,12 +242,13 @@ export default function MonitoringListPage() {
                       _hover={{ bg: 'indigo.600' }}
                       transition="colors"
                       className="group/btn"
+                      size="md"
                     >
                       <Text>Masuk Proktor</Text>
                       <ChevronRight size={18} className="group-hover/btn:translate-x-1 transition-transform" />
                     </Button>
                   </Link>
-                </Box>
+                </Flex>
               </Box>
             );
           })}

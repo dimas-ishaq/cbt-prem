@@ -150,6 +150,9 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
       }
 
       if (session.status !== SessionStatus.IN_PROGRESS) {
+        if (session.status === SessionStatus.LOCKED) {
+          throw new BadRequestException('Session is locked by proctor');
+        }
         throw new BadRequestException('Session is not in progress');
       }
 

@@ -12,6 +12,7 @@ import { ExamNav } from './exam-nav';
 import { ExamTimer } from './exam-timer';
 import { useRouter } from 'next/navigation';
 import { AlertTriangle, ChevronLeft, ChevronRight, LogOut, ShieldAlert, ArrowLeft, User, Clock, BookOpen, Award, CheckCircle2, Bookmark, HelpCircle } from 'lucide-react';
+import { toast } from '@/lib/toaster';
 import {
   Box,
   Flex,
@@ -99,6 +100,7 @@ export function ExamContainer({ examId }: Props) {
   const [violationMessage, setViolationMessage] = useState('');
   const [violationCount, setViolationCount] = useState(0);
   const [isLocked, setIsLocked] = useState(false);
+  const [sessionEndTime, setSessionEndTime] = useState<string | undefined>(undefined);
   
   const [tokenInput, setTokenInput] = useState('');
   const [tokenError, setTokenError] = useState('');
@@ -123,7 +125,7 @@ export function ExamContainer({ examId }: Props) {
   const router = useRouter();
   const socket = useSocket();
   const confirmDialog = useConfirm();
-  const { playViolation } = useSound();
+  const { playViolation, stopViolation, playSuccess } = useSound();
 
   const token = useAuthStore((state) => state.access_token);
 
@@ -165,6 +167,7 @@ export function ExamContainer({ examId }: Props) {
     },
     onSuccess: (data) => {
       setSessionId(data.id);
+      setSessionEndTime(data.endTime);
       setTokenError('');
       if (data.status === 'LOCKED') {
         setIsLocked(true);
@@ -358,6 +361,16 @@ export function ExamContainer({ examId }: Props) {
           finishExamMutation.mutate();
         }
       });
+      socket.on('time_added', (data: any) => {
+        if (data.examId === examId) {
+          setSessionEndTime(data.newEndTime);
+          toast.success({
+            title: 'Waktu Ditambahkan',
+            description: 'Pengawas telah menambahkan 5 menit ke waktu ujian Anda.'
+          });
+          playSuccess();
+        }
+      });
     }
 
     return () => {
@@ -377,7 +390,7 @@ export function ExamContainer({ examId }: Props) {
         socket.off('session_submitted');
       }
     };
-  }, [examId, socket, playViolation, sessionId, exam, finishExamMutation]);
+  }, [examId, socket, playViolation, playSuccess, sessionId, exam, finishExamMutation]);
 
   useEffect(() => {
     if (socket && sessionId) {
@@ -1043,6 +1056,7 @@ export function ExamContainer({ examId }: Props) {
         <ExamTimer 
           startTime={startSessionMutation.data?.startTime || new Date().toISOString()} 
           duration={exam.duration} 
+          overrideEndTime={sessionEndTime}
           onTimeUp={() => finishExamMutation.mutate()} 
         />
 
@@ -1096,6 +1110,7 @@ export function ExamContainer({ examId }: Props) {
               })}
               isFlagged={flaggedQuestions.includes(currentQuestion.id)}
               onToggleFlag={() => toggleFlagQuestion(currentQuestion.id)}
+              isDisabled={isLocked}
             />
           </Box>
           
@@ -1204,6 +1219,7 @@ export function ExamContainer({ examId }: Props) {
                 if (exam?.forceFullscreen) {
                   enterFullScreen();
                 }
+                stopViolation();
                 setShowViolationModal(false);
               }}
               mt={6}
