@@ -1,22 +1,41 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MajorsController } from './majors.controller';
 import { MajorsService } from './majors.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+
+@Injectable()
+class MockGuard implements CanActivate {
+  canActivate(_context: ExecutionContext): boolean {
+    return true;
+  }
+}
+
+@Injectable()
+class MockPermissionsGuard extends MockGuard {}
+
+const majorsServiceMock = {
+  findAll: jest.fn(),
+  findOne: jest.fn(),
+  create: jest.fn(),
+  update: jest.fn(),
+  remove: jest.fn(),
+};
 
 describe('MajorsController', () => {
   let controller: MajorsController;
-  const majorsServiceMock = {
-    findAll: jest.fn(),
-    findOne: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-    remove: jest.fn(),
-  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [MajorsController],
       providers: [{ provide: MajorsService, useValue: majorsServiceMock }],
-    }).compile();
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useClass(MockGuard)
+      .overrideGuard(PermissionsGuard)
+      .useClass(MockPermissionsGuard)
+      .compile();
 
     controller = module.get<MajorsController>(MajorsController);
     jest.clearAllMocks();

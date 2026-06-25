@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Body, Param, Patch, Delete, UseGuards, Request, Headers, UnauthorizedException, BadRequestException, Query, Res } from '@nestjs/common';
-import { Response } from 'express';
+import type { Response } from 'express';
 import { ExamsService } from './exams.service';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { CreateExamDto } from './dto/create-exam.dto';

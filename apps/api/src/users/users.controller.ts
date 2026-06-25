@@ -20,7 +20,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 import { PaginationDto } from '../common/dto/pagination.dto';
-import { Response } from 'express';
+import type { Response } from 'express';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard, RolesGuard)

@@ -111,10 +111,10 @@ export function TablePagination({
   const sizeCollection = React.useMemo(() => {
     return createListCollection({
       items: [
-        { label: '10 / Halaman', value: '10' },
-        { label: '25 / Halaman', value: '25' },
-        { label: '50 / Halaman', value: '50' },
-        { label: '100 / Halaman', value: '100' },
+        { label: '10', value: '10' },
+        { label: '25', value: '25' },
+        { label: '50', value: '50' },
+        { label: '100', value: '100' },
       ],
     });
   }, []);
@@ -155,7 +155,7 @@ export function TablePagination({
             <Select.HiddenSelect />
             <Select.Control>
               <Select.Trigger>
-                <Select.ValueText placeholder="10 / Halaman" />
+                <Select.ValueText placeholder="10" />
               </Select.Trigger>
             </Select.Control>
             <Select.Positioner>

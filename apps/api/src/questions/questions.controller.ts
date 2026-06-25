@@ -13,7 +13,7 @@ import {
   Req,
   Res,
 } from '@nestjs/common';
-import { Response } from 'express';
+import type { Response } from 'express';
 import { QuestionsService } from './questions.service';
 import { CreateQuestionDto } from './dto/create-question.dto';
 import { UpdateQuestionDto } from './dto/update-question.dto';
@@ -28,7 +28,7 @@ import { SecurityUtil } from '../utils/security.util';
 import { join } from 'path';
 import { promises as fs } from 'fs';
 import { randomUUID } from 'crypto';
-import { Request } from 'express';
+import type { Request } from 'express';
 
 function sanitizeFilename(name: string): string {
   return name.replace(/[^a-zA-Z0-9_.-]/g, '_').replace(/\.{2,}/g, '');
