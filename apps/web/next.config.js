@@ -19,19 +19,23 @@ const nextConfig = {
   },
 
   async headers() {
-    return [
+    const isProd = process.env.NODE_ENV === 'production';
+    const staticHeaders = [
       {
-        // Static chunks Next.js/Turbopack — HARUS bisa di-cache browser
-        // Tanpa ini, shared module chunks (e.g. Chakra UI Table) tidak bisa
-        // ditemukan antar halaman → "module factory is not available"
         source: '/_next/static/:path*',
         headers: [
           {
             key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
+            value: isProd 
+              ? 'public, max-age=31536000, immutable'
+              : 'no-store, max-age=0, must-revalidate',
           },
         ],
       },
+    ];
+
+    return [
+      ...staticHeaders,
       {
         // Terapkan ke semua route KECUALI _next/static
         source: '/((?!_next/).*)',

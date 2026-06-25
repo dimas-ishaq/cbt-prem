@@ -23,9 +23,12 @@ import { LogsModule } from './logs/logs.module';
 import { ReportsModule } from './reports/reports.module';
 import { SubjectsModule } from './subjects/subjects.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { DashboardModule } from './dashboard/dashboard.module';
+import { ScheduleModule } from '@nestjs/schedule';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ScheduleModule.forRoot(),
     MulterModule.registerAsync({
       useFactory: () => ({
         dest: 'uploads/tmp',
@@ -56,6 +59,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     LogsModule,
     ReportsModule,
     NotificationsModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],

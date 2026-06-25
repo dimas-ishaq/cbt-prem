@@ -759,90 +759,118 @@ export default function RombelsPage() {
         </HStack>
       </Flex>
 
-      <Stack gap={4}>
-        <Flex gap={3} wrap="wrap">
-          <Box flex="1" minW={{ base: 'full', md: '18rem' }}>
-            <Text fontSize="xs" fontWeight="bold" color="gray.500" mb={2}>
-              Filter Tingkatan
-            </Text>
-            <ButtonGroup size="sm" variant="outline" flexWrap="wrap">
-              {['', 'X', 'XI', 'XII'].map((grade) => {
-                const active = filterGrade === grade;
-                return (
-                  <Button
-                    key={grade || 'all-grade'}
-                    onClick={() => setFilterGrade(grade)}
-                    variant={active ? 'solid' : 'outline'}
-                    bg={active ? 'indigo.600' : 'white'}
-                    color={active ? 'white' : 'gray.700'}
-                    borderColor={active ? 'indigo.600' : 'gray.200'}
-                    _hover={{ bg: active ? 'indigo.700' : 'gray.50' }}
-                    borderRadius="full"
-                    mb={2}
-                  >
-                    {grade === '' ? 'Semua Tingkatan' : `Kelas ${grade}`}
-                  </Button>
-                );
-              })}
-            </ButtonGroup>
-          </Box>
-
-          <Box flex="1" minW={{ base: 'full', md: '20rem' }}>
-            <Text fontSize="xs" fontWeight="bold" color="gray.500" mb={2}>
-              Filter Jurusan
-            </Text>
-            <ButtonGroup size="sm" variant="outline" flexWrap="wrap">
-              <Button
-                onClick={() => setFilterMajorId('')}
-                variant={filterMajorId === '' ? 'solid' : 'outline'}
-                bg={filterMajorId === '' ? 'indigo.600' : 'white'}
-                color={filterMajorId === '' ? 'white' : 'gray.700'}
-                borderColor={filterMajorId === '' ? 'indigo.600' : 'gray.200'}
-                _hover={{ bg: filterMajorId === '' ? 'indigo.700' : 'gray.50' }}
-                borderRadius="full"
-                mb={2}
-              >
-                Semua Jurusan
-              </Button>
-              {majors?.map((m) => {
-                const active = filterMajorId === m.id;
-                return (
-                  <Button
-                    key={m.id}
-                    onClick={() => setFilterMajorId(m.id)}
-                    variant={active ? 'solid' : 'outline'}
-                    bg={active ? 'indigo.600' : 'white'}
-                    color={active ? 'white' : 'gray.700'}
-                    borderColor={active ? 'indigo.600' : 'gray.200'}
-                    _hover={{ bg: active ? 'indigo.700' : 'gray.50' }}
-                    borderRadius="full"
-                    mb={2}
-                  >
-                    {m.name}
-                  </Button>
-                );
-              })}
-            </ButtonGroup>
-          </Box>
-        </Flex>
-
-        <Box bg="white" borderRadius="xl" shadow="sm" borderWidth="1px" borderColor="gray.100" p={4}>
-          <Box position="relative" flex={1} maxW="md">
-            <Box position="absolute" left={3} top="50%" transform="translateY(-50%)" color="gray.400">
-              <Search size={18} />
+        <Box bg="white" borderRadius="xl" shadow="sm" borderWidth="1px" borderColor="gray.100" p={5}>
+          <Flex gap={4} wrap="wrap" align="flex-end">
+            <Box flex="1" minW={{ base: 'full', md: '18rem' }}>
+              <Text fontSize="xs" fontWeight="bold" color="gray.500" mb={2}>
+                Pencarian
+              </Text>
+              <Box position="relative" w="full">
+                <Box position="absolute" left={3} top="50%" transform="translateY(-50%)" color="gray.400" pointerEvents="none">
+                  <Search size={16} />
+                </Box>
+                <Input
+                  pl={10}
+                  size="sm"
+                  placeholder="Cari kelas (contoh: RPL, X, dsb)..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  borderRadius="lg"
+                  borderColor="gray.200"
+                  _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
+                />
+              </Box>
             </Box>
-            <Input
-              pl={10}
-              placeholder="Cari kelas (contoh: RPL, X, dsb)..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              borderRadius="lg"
-              borderColor="gray.200"
-              _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
-            />
-          </Box>
+
+            <Box minW={{ base: 'full', sm: '180px' }} flex={{ base: '1', sm: 'none' }}>
+              <Text fontSize="xs" fontWeight="bold" color="gray.500" mb={2}>
+                Filter Tingkatan
+              </Text>
+              {(() => {
+                const gradeItems = [
+                  { label: 'Semua Tingkatan', value: '' },
+                  { label: 'Kelas X', value: 'X' },
+                  { label: 'Kelas XI', value: 'XI' },
+                  { label: 'Kelas XII', value: 'XII' },
+                ];
+                const gradeCollection = createListCollection({ items: gradeItems });
+                const currentItem = gradeItems.find(item => item.value === filterGrade);
+                return (
+                  <Select.Root
+                    collection={gradeCollection}
+                    value={[filterGrade]}
+                    onValueChange={(details) => setFilterGrade(details.value[0] || '')}
+                    size="sm"
+                  >
+                    <Select.HiddenSelect />
+                    <Select.Control>
+                      <Select.Trigger>
+                        <Select.ValueText placeholder="Semua Tingkatan">
+                          {currentItem?.label}
+                        </Select.ValueText>
+                      </Select.Trigger>
+                      <Select.IndicatorGroup>
+                        <Select.Indicator />
+                      </Select.IndicatorGroup>
+                    </Select.Control>
+                    <Select.Positioner>
+                      <Select.Content zIndex={100}>
+                        {gradeCollection.items.map((item) => (
+                          <Select.Item key={item.value} item={item}>
+                            {item.label}
+                          </Select.Item>
+                        ))}
+                      </Select.Content>
+                    </Select.Positioner>
+                  </Select.Root>
+                );
+              })()}
+            </Box>
+
+            <Box minW={{ base: 'full', sm: '220px' }} flex={{ base: '1', sm: 'none' }}>
+              <Text fontSize="xs" fontWeight="bold" color="gray.500" mb={2}>
+                Filter Jurusan
+              </Text>
+              {(() => {
+                const items = [
+                  { label: 'Semua Jurusan', value: '' },
+                  ...(majors || []).map((m) => ({ label: m.name, value: m.id })),
+                ];
+                const majorCollection = createListCollection({ items });
+                const currentItem = items.find(item => item.value === filterMajorId);
+                return (
+                  <Select.Root
+                    collection={majorCollection}
+                    value={[filterMajorId]}
+                    onValueChange={(details) => setFilterMajorId(details.value[0] || '')}
+                    size="sm"
+                  >
+                    <Select.HiddenSelect />
+                    <Select.Control>
+                      <Select.Trigger>
+                        <Select.ValueText placeholder="Semua Jurusan">
+                          {currentItem?.label}
+                        </Select.ValueText>
+                      </Select.Trigger>
+                      <Select.IndicatorGroup>
+                        <Select.Indicator />
+                      </Select.IndicatorGroup>
+                    </Select.Control>
+                    <Select.Positioner>
+                      <Select.Content zIndex={100}>
+                        {majorCollection.items.map((item) => (
+                          <Select.Item key={item.value} item={item}>
+                            {item.label}
+                          </Select.Item>
+                        ))}
+                      </Select.Content>
+                    </Select.Positioner>
+                  </Select.Root>
+                );
+              })()}
+            </Box>
+          </Flex>
         </Box>
-      </Stack>
 
       {/* Grid of Rombels */}
       {filteredRombels?.length === 0 ? (

@@ -95,6 +95,7 @@ export function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onMobile
       const response = await api.get('/settings');
       return response.data;
     },
+    enabled: !!useAuthStore.getState().access_token,
   });
 
   const handleLogout = () => {
