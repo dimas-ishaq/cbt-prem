@@ -10,7 +10,8 @@ import {
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
-import { Logger, Inject, forwardRef } from '@nestjs/common';
+import { Logger, Inject, forwardRef, OnModuleInit as NestOnModuleInit } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 
 import { SessionStatus } from '@prisma/client';
 import { ExamSessionsService } from '../exam-sessions/exam-sessions.service';
@@ -22,18 +23,23 @@ import { ExamSessionsService } from '../exam-sessions/exam-sessions.service';
     credentials: true,
   },
 })
-export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect, NestOnModuleInit {
   @WebSocketServer()
   server: Server;
 
   private readonly logger = new Logger('RealtimeGateway');
 
+  private examSessionsService: ExamSessionsService;
+
   constructor(
     private jwtService: JwtService,
     private prisma: PrismaService,
-    @Inject(forwardRef(() => ExamSessionsService))
-    private examSessionsService: ExamSessionsService,
+    private moduleRef: ModuleRef,
   ) {}
+
+  onModuleInit() {
+    this.examSessionsService = this.moduleRef.get(ExamSessionsService, { strict: false });
+  }
 
   sendToUser(userId: string, event: string, payload: any) {
     this.server.to(`user_${userId}`).emit(event, payload);
