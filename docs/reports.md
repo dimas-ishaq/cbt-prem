@@ -15,9 +15,9 @@
 | **Risiko Kritis** | 0 |
 | **Risiko Tinggi** | 3 |
 | **Risiko Menengah** | 4 |
-| **Cakupan Tes** | ~22% |
+| **Cakupan Tes** | ~22% (Unit tests exist, E2E missing) |
 | **Postur Keamanan** | ⚠️ Membaik, masih perlu hardening |
-| **Kesiapan Operasional** | ⚠️ Parsial |
+| **Kesiapan Operasional** | ⚠️ Parsial (health check added; observability & backup still missing) |
 
 **Kesimpulan:** Aplikasi sudah layak sebagai MVP CBT. Fitur inti sudah tersedia: login, manajemen ujian, sesi ujian, submit jawaban, auto-grading, notifikasi, dan pagination. Namun untuk beban 300–500 siswa, masih ada bottleneck pada realtime, scheduling sesi, query berat, dan proses import.
 
@@ -91,6 +91,7 @@ Aplikasi **bisa dipakai** untuk ujian 300–500 siswa, tetapi dengan syarat depl
 | R-13 | Belum ada idempotency key | Exam Sessions | 🟡 Menengah | Risiko submit ganda | Tambahkan `Idempotency-Key` |
 | R-16 | Strict mode TypeScript belum aktif | Build | 🟡 Menengah | Bug runtime lebih mudah lolos | Aktifkan mode strict |
 | R-17 | Endpoint reports masih placeholder | Reports | 🟡 Menengah | Laporan belum benar-benar siap dipakai | Implementasi generator PDF/Excel |
+| R-18 | Health check endpoint belum ada | Core | 🟡 Menengah | Monitoring production belum lengkap | `/health` endpoint |
 
 ---
 
@@ -152,6 +153,8 @@ Aplikasi bisa dipakai jika deployment single-instance, trafik terkendali, dan se
 1. Redis adapter untuk realtime,
 2. scheduler auto-submit yang robust,
 3. optimasi query dan load test.
+
+Catatan: E2E test belum tersedia; load test nyata belum dilakukan sehingga kapasitas 300–500 siswa belum divalidasi empiris.
 
 ---
 

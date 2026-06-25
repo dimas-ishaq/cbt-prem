@@ -71,6 +71,10 @@ export default function ExamResultsPage({ params }: { params: Promise<{ id: stri
   const [selectedSessionIds, setSelectedSessionIds] = useState<string[]>([]);
   const [isBulkResetModalOpen, setIsBulkResetModalOpen] = useState(false);
   const [resetConfirmationInput, setResetConfirmationInput] = useState('');
+  
+  const [targetSingleResetSession, setTargetSingleResetSession] = useState<{ id: string; fullName: string } | null>(null);
+  const [isSingleResetModalOpen, setIsSingleResetModalOpen] = useState(false);
+  const [singleResetConfirmationInput, setSingleResetConfirmationInput] = useState('');
 
   const { data: exam } = useQuery<any>({
     queryKey: ['exam', id],
@@ -98,6 +102,22 @@ export default function ExamResultsPage({ params }: { params: Promise<{ id: stri
       setIsBulkResetModalOpen(false);
       setResetConfirmationInput('');
       toast.success('Pengerjaan ujian siswa yang dipilih berhasil direset');
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || 'Gagal mereset pengerjaan ujian');
+    },
+  });
+
+  const singleResetMutation = useMutation({
+    mutationFn: async (sessionId: string) => {
+      return api.delete(`/exam-sessions/${sessionId}/reset`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['exam-sessions', id] });
+      setIsSingleResetModalOpen(false);
+      setTargetSingleResetSession(null);
+      setSingleResetConfirmationInput('');
+      toast.success('Pengerjaan ujian siswa berhasil direset');
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.message || 'Gagal mereset pengerjaan ujian');
@@ -139,6 +159,7 @@ export default function ExamResultsPage({ params }: { params: Promise<{ id: stri
       items: [
         { label: 'Semua Status', value: 'ALL' },
         { label: 'Sedang Mengerjakan', value: 'IN_PROGRESS' },
+        { label: 'Terkunci', value: 'LOCKED' },
         { label: 'Selesai', value: 'SUBMITTED' },
       ],
     });
@@ -154,15 +175,7 @@ export default function ExamResultsPage({ params }: { params: Promise<{ id: stri
 
     // Filter by Status
     if (filterStatus && filterStatus !== 'ALL') {
-      if (filterStatus === 'IN_PROGRESS') {
-        list = list.filter(
-          (session) => session.status === 'IN_PROGRESS' || session.status === 'ONGOING'
-        );
-      } else if (filterStatus === 'SUBMITTED') {
-        list = list.filter(
-          (session) => session.status === 'SUBMITTED' || session.status === 'FINISHED'
-        );
-      }
+      list = list.filter((session) => session.status === filterStatus);
     }
 
     // Filter by Search Query (min 3 chars)
@@ -203,7 +216,7 @@ export default function ExamResultsPage({ params }: { params: Promise<{ id: stri
     return (
       <Flex direction="column" align="center" justify="center" minH="50vh">
         <Spinner size="lg" color="indigo.600" />
-        <Text color="gray.600" mt={3} fontWeight="semibold">Loading results...</Text>
+        <Text color="gray.600" mt={3} fontWeight="semibold">Memuat hasil ujian...</Text>
       </Flex>
     );
   }
@@ -425,7 +438,7 @@ export default function ExamResultsPage({ params }: { params: Promise<{ id: stri
                 <Checkbox.Root
                   checked={filteredSessions.length > 0 && selectedSessionIds.length === filteredSessions.length}
                   onCheckedChange={(details) => {
-                    if (details.checked) {
+                    if (details.checked === true) {
                       setSelectedSessionIds(filteredSessions.map(s => s.id));
                     } else {
                       setSelectedSessionIds([]);
@@ -433,6 +446,7 @@ export default function ExamResultsPage({ params }: { params: Promise<{ id: stri
                   }}
                   colorPalette="indigo"
                 >
+                  <Checkbox.HiddenInput />
                   <Checkbox.Control />
                 </Checkbox.Root>
               </Table.ColumnHeader>
@@ -456,7 +470,7 @@ export default function ExamResultsPage({ params }: { params: Promise<{ id: stri
                     <Checkbox.Root
                       checked={selectedSessionIds.includes(session.id)}
                       onCheckedChange={(details) => {
-                        if (details.checked) {
+                        if (details.checked === true) {
                           setSelectedSessionIds(prev => [...prev, session.id]);
                         } else {
                           setSelectedSessionIds(prev => prev.filter(id => id !== session.id));
@@ -464,6 +478,7 @@ export default function ExamResultsPage({ params }: { params: Promise<{ id: stri
                       }}
                       colorPalette="indigo"
                     >
+                      <Checkbox.HiddenInput />
                       <Checkbox.Control />
                     </Checkbox.Root>
                   </Table.Cell>
@@ -512,22 +527,44 @@ export default function ExamResultsPage({ params }: { params: Promise<{ id: stri
                     </HStack>
                   </Table.Cell>
                   <Table.Cell px={6} py={4} textAlign="right">
-                    <Link href={`/admin/results/sessions/${session.id}`} passHref>
+                    <HStack gap={2} justify="end">
+                      <Link href={`/admin/results/sessions/${session.id}`} passHref>
+                        <Button
+                          as="span"
+                          variant="ghost"
+                          size="sm"
+                          color="indigo.650"
+                          _hover={{ bg: 'indigo.50', color: 'indigo.700' }}
+                          borderRadius="lg"
+                          fontWeight="bold"
+                          fontSize="xs"
+                          cursor="pointer"
+                        >
+                          <FileText size={16} />
+                          <Text>Detail & Nilai</Text>
+                        </Button>
+                      </Link>
                       <Button
-                        as="span"
-                        variant="ghost"
                         size="sm"
-                        color="indigo.650"
-                        _hover={{ bg: 'indigo.50', color: 'indigo.700' }}
+                        variant="ghost"
+                        colorPalette="red"
+                        color="red.650"
+                        _hover={{ bg: 'red.50', color: 'red.700' }}
                         borderRadius="lg"
                         fontWeight="bold"
                         fontSize="xs"
                         cursor="pointer"
+                        loading={singleResetMutation.isPending && singleResetMutation.variables === session.id}
+                        onClick={() => {
+                          setTargetSingleResetSession({ id: session.id, fullName: session.student.user.fullName });
+                          setSingleResetConfirmationInput('');
+                          setIsSingleResetModalOpen(true);
+                        }}
                       >
-                        <FileText size={16} />
-                        <Text>Detail & Nilai</Text>
+                        <RotateCcw size={14} />
+                        <Text>Reset</Text>
                       </Button>
-                    </Link>
+                    </HStack>
                   </Table.Cell>
                 </Table.Row>
               );
@@ -603,6 +640,75 @@ export default function ExamResultsPage({ params }: { params: Promise<{ id: stri
                     loading={bulkResetMutation.isPending}
                   >
                     Reset Sekarang ({selectedSessionIds.length})
+                  </Button>
+                </Flex>
+              </Dialog.Footer>
+              <Dialog.CloseTrigger />
+            </Dialog.Content>
+          </Dialog.Positioner>
+        </Portal>
+      </Dialog.Root>
+
+      {/* Single Reset Confirmation Dialog */}
+      <Dialog.Root
+        open={isSingleResetModalOpen}
+        onOpenChange={(details: any) => setIsSingleResetModalOpen(details.open)}
+        size="md"
+      >
+        <Portal>
+          <Dialog.Backdrop />
+          <Dialog.Positioner>
+            <Dialog.Content borderRadius="2xl" overflow="hidden">
+              <Dialog.Header bg="gray.50" py={4} borderBottom="1px solid" borderColor="gray.100">
+                <Dialog.Title fontSize="md" fontWeight="bold" color="red.600" display="flex" alignItems="center" gap={2}>
+                  <RotateCcw size={18} />
+                  Reset Pengerjaan Ujian Siswa
+                </Dialog.Title>
+              </Dialog.Header>
+              <Dialog.Body p={6}>
+                <Stack gap={4}>
+                  <Text fontSize="sm" color="gray.600" lineHeight="relaxed">
+                    Apakah Anda yakin ingin me-reset pengerjaan ujian untuk siswa <strong>{targetSingleResetSession?.fullName}</strong>? Semua jawaban, nilai, dan riwayat pelanggaran proctoring siswa tersebut akan dihapus secara permanen. Siswa akan diizinkan untuk mengulang ujian ini dari awal.
+                  </Text>
+                  
+                  <Box>
+                    <Text fontSize="xs" fontWeight="bold" color="gray.550" mb={2} textTransform="uppercase" letterSpacing="wider">
+                      Ketik "reset" untuk mengonfirmasi:
+                    </Text>
+                    <Input
+                      value={singleResetConfirmationInput}
+                      onChange={(e) => setSingleResetConfirmationInput(e.target.value)}
+                      placeholder="Ketik 'reset'"
+                      borderRadius="lg"
+                      borderColor="gray.350"
+                      _focus={{ borderColor: 'red.500', boxShadow: '0 0 0 1px var(--chakra-colors-red-500)' }}
+                    />
+                  </Box>
+                </Stack>
+              </Dialog.Body>
+              <Dialog.Footer p={6} borderTop="1px solid" borderColor="gray.100">
+                <Flex gap={3} width="full">
+                  <Dialog.ActionTrigger asChild>
+                    <Button type="button" variant="outline" borderRadius="lg" cursor="pointer" flex={1}>
+                      Batal
+                    </Button>
+                  </Dialog.ActionTrigger>
+                  <Button
+                    onClick={() => {
+                      if (singleResetConfirmationInput.toLowerCase() === 'reset' && targetSingleResetSession) {
+                        singleResetMutation.mutate(targetSingleResetSession.id);
+                      }
+                    }}
+                    disabled={singleResetConfirmationInput.toLowerCase() !== 'reset' || singleResetMutation.isPending}
+                    flex={1}
+                    bg="red.600"
+                    color="white"
+                    _hover={{ bg: 'red.700' }}
+                    borderRadius="lg"
+                    cursor="pointer"
+                    loading={singleResetMutation.isPending}
+                  >
+                    Reset Sekarang
                   </Button>
                 </Flex>
               </Dialog.Footer>

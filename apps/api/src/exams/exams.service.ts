@@ -104,7 +104,11 @@ export class ExamsService {
           }
         }
       },
-      targetRombels: true,
+      targetRombels: {
+        include: {
+          rombel: true
+        }
+      },
       targetMajors: true,
     };
 

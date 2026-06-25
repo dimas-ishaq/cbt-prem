@@ -134,7 +134,7 @@ export function TablePagination({
       bg="white"
       width="full"
     >
-      <HStack gap={4}>
+      <HStack gap={2}>
         <Text fontSize="xs" color="gray.500" fontWeight="medium">
           Menampilkan <Text as="span" fontWeight="bold" color="gray.700">{fromIndex}-{toIndex}</Text> dari <Text as="span" fontWeight="bold" color="gray.700">{totalCount}</Text> data
         </Text>
