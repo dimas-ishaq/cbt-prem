@@ -1,13 +1,10 @@
-import { Box, Button, Form, IconButton, Spinner, SimpleGrid, Text, Textarea, Input } from '@chakra-ui/react';
-import { Plus, Pencil, Trash2, Search, Upload, Download } from 'lucide-react';
-import { useConfirm } from '@/components/ui/confirmation-dialog';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Box, Button, Checkbox, Flex, Heading, Input, SimpleGrid, Stack, Text, Textarea } from '@chakra-ui/react';
+import { Search, Upload, Download } from 'lucide-react';
 import api from '@/lib/api';
 import { toast } from '@/lib/toaster';
-import { useAuthStore } from '@/store/auth.store';
 import { useTranslation } from 'react-i18next';
-import { SubjectActions } from './SubjectActions';
-import { SubjectSearch } from './SubjectSearch';
 
 interface Teacher {
   id: string;
@@ -30,9 +27,6 @@ interface SubjectModalProps {
 
 export function SubjectModal({ isOpen, onClose, editingSubject }: SubjectModalProps) {
   const { t } = useTranslation();
-  const { user } = useAuthStore();
-  const queryClient = useQueryClient();
-  const confirmDialog = useConfirm();
   const [formData, setFormData] = useState<SubjectFormData>({
     name: '',
     code: '',
@@ -40,10 +34,8 @@ export function SubjectModal({ isOpen, onClose, editingSubject }: SubjectModalPr
     teacherIds: [],
   });
   const [teacherSearch, setTeacherSearch] = useState('');
-  const [teacherResults, setTeacherResults] = useState<Teacher[]>([]);
   const [selectedTeachers, setSelectedTeachers] = useState<Teacher[]>([]);
   const [importFile, setImportFile] = useState<File | null>(null);
-  const [isSearchingTeachers, setIsSearchingTeachers] = useState(false);
   const [isModalSubmitting, setIsModalSubmitting] = useState(false);
 
   // Reset form when modal opens/closes
@@ -61,17 +53,6 @@ export function SubjectModal({ isOpen, onClose, editingSubject }: SubjectModalPr
     setSelectedTeachers([]);
   };
 
-  const handleEdit = (subject: any) => {
-    setFormData({
-      name: subject.name,
-      code: subject.code,
-      description: subject.description ?? '',
-      teacherIds: subject.teachers?.map((t: any) => t.id) ?? [],
-    });
-    setTeacherSearch(subject.teachers?.[0]?.user?.fullName ?? '');
-    setSelectedTeachers(subject.teachers ?? []);
-    setIsOpen(true);
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -142,7 +123,7 @@ export function SubjectModal({ isOpen, onClose, editingSubject }: SubjectModalPr
   };
 
   const teacherSearchEnabled = teacherSearch.trim().length >= 3;
-  const { data: teacherResults: fetchedTeachers, isFetching: isFetchingTeachers } = useQuery<Teacher[], Error>({
+  const { data: fetchedTeachers = [], isFetching: isFetchingTeachers } = useQuery<Teacher[], Error>({
     queryKey: ['teachers', teacherSearch],
     queryFn: async () => {
       const res = await api.get('/teachers', { params: { search: teacherSearch.trim() } });
@@ -160,9 +141,9 @@ export function SubjectModal({ isOpen, onClose, editingSubject }: SubjectModalPr
   const selectedTeachersMemo = useMemo<Teacher[]>(() => {
     const memo = new Map<string, Teacher>();
     (editingSubject?.teachers ?? []).forEach((t: any) => memo.set(t.id, t));
-    (teacherResults ?? []).forEach((t: Teacher) => memo.set(t.id, t));
+    fetchedTeachers.forEach((t: Teacher) => memo.set(t.id, t));
     return Array.from(memo.values());
-  }, [editingSubject?.teachers, teacherResults]);
+  }, [editingSubject?.teachers, fetchedTeachers]);
 
   if (!isOpen) return null;
 
@@ -241,7 +222,7 @@ export function SubjectModal({ isOpen, onClose, editingSubject }: SubjectModalPr
                           <Box key={teacher.id} px={4} py={3} borderBottomWidth="1px" borderColor="gray.100" _last={{ borderBottomWidth: 0 }}>
                             <Checkbox.Root
                               checked={checked}
-                              onCheckedChange={(details) => handleTeacherSelect(teacher, details.checked)}
+                              onCheckedChange={(details) => handleTeacherSelect(teacher, !!details.checked)}
                             >
                               <Checkbox.HiddenInput />
                               <Checkbox.Control />
@@ -261,6 +242,10 @@ export function SubjectModal({ isOpen, onClose, editingSubject }: SubjectModalPr
                         );
                       })}
                     </Stack>
+                  ) : (
+                    <Box px={4} py={3}>
+                      <Text fontSize="sm" color="gray.500">Tidak ada guru yang cocok.</Text>
+                    </Box>
                   )}
                 </Box>
               )}
@@ -269,9 +254,7 @@ export function SubjectModal({ isOpen, onClose, editingSubject }: SubjectModalPr
             {/* Import CSV */}
             <Box mt={3}>
               <Button
-                as="a"
-                href="/templates/subjects-template.csv"
-                download
+                {...({ as: 'a', href: '/templates/subjects-template.csv', download: true } as any)}
                 bg="white"
                 borderWidth="1px"
                 borderColor="gray.200"

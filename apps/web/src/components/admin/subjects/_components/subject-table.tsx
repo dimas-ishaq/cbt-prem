@@ -1,6 +1,6 @@
 import { Badge, Box, Table, Text, Wrap, WrapItem } from '@chakra-ui/react';
 import { TablePagination } from '@/components/ui/pagination';
-import { SubjectActions } from './SubjectActions';
+import { SubjectActions } from './subject-actions';
 
 export interface Subject {
   id: string;

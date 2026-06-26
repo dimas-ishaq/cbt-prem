@@ -1,18 +1,10 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+﻿import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { toast } from '@/lib/toaster';
 import { useTranslation } from 'react-i18next';
+import type { Subject, SubjectFormData, TeacherSummary } from '../subject-types';
 
-export interface Subject {
-  id: string;
-  name: string;
-  code: string;
-  description: string | null;
-  teachers?: { id: string; user?: { fullName: string; username?: string } }[];
-  _count?: { teachers: number; questionBanks: number; exams: number };
-}
-
-export function useSubjects() {
+export function useSubjects(onSaved?: () => void) {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
 
@@ -25,18 +17,20 @@ export function useSubjects() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: Omit<Subject, 'id' | 'teachers' | '_count'> & { teacherIds?: string[] }) => api.post('/subjects', data),
+    mutationFn: (data: SubjectFormData) => api.post('/subjects', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subjects'] });
+      onSaved?.();
       toast.success(t('subjectCreateSuccess'));
     },
     onError: (err: any) => toast.error(err.response?.data?.message ?? t('subjectCreateError')),
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => api.put(`/subjects/${id}`, data),
+    mutationFn: ({ id, data }: { id: string; data: SubjectFormData }) => api.put(`/subjects/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subjects'] });
+      onSaved?.();
       toast.success(t('subjectUpdateSuccess'));
     },
     onError: (err: any) => toast.error(err.response?.data?.message ?? t('subjectUpdateError')),
@@ -67,12 +61,19 @@ export function useSubjects() {
     },
   });
 
+  const searchTeachers = useQuery<TeacherSummary[]>({
+    queryKey: ['teachers', 'search'],
+    enabled: false,
+    queryFn: async () => [],
+  });
+
   return {
     subjects: subjects ?? [],
     isLoading,
-    createSubject: createMutation.mutate,
-    updateSubject: updateMutation.mutate,
-    deleteSubject: deleteMutation.mutate,
-    importSubjects: importMutation.mutate,
+    createMutation,
+    updateMutation,
+    deleteMutation,
+    importMutation,
+    searchTeachers,
   };
 }

@@ -76,12 +76,12 @@ export default function NotificationSettingsPage() {
         
         // Buat default: true untuk setiap tipe
         NOTIFICATION_TYPES.forEach((t) => {
-          newMatrix[role.id][t.value] = true;
+          newMatrix[role.id]![t.value] = true;
         });
 
         // Terapkan data dari database
         role.notificationPolicies?.forEach((policy) => {
-          newMatrix[role.id][policy.type] = policy.isEnabled;
+          newMatrix[role.id]![policy.type] = policy.isEnabled ?? false;
         });
       });
       setMatrix(newMatrix);
@@ -117,7 +117,7 @@ export default function NotificationSettingsPage() {
 
     const policiesPayload: NotificationPolicy[] = Object.keys(rolePolicies).map((type) => ({
       type,
-      isEnabled: rolePolicies[type],
+      isEnabled: rolePolicies[type] ?? false,
     }));
 
     updateMutation.mutate({ roleId, policies: policiesPayload });
@@ -175,7 +175,7 @@ export default function NotificationSettingsPage() {
         </Box>
 
         <Box overflowX="auto">
-          <Table.Root variant="simple" size="md">
+          <Table.Root variant="outline" size="md">
             <Table.Header bg="gray.50/50">
               <Table.Row>
                 <Table.ColumnHeader color="gray.700" fontWeight="bold">Jenis Notifikasi</Table.ColumnHeader>

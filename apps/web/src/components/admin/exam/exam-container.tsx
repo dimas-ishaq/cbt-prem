@@ -3,16 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import api from '@/lib/api';
-import { useSocket } from '@/hooks/useSocket';
-import { useSound } from '@/hooks/useSound';
-import { useAuthStore } from '@/store/auth.store';
-import { QuestionCard } from './question-card';
-import { ExamNav } from './exam-nav';
-import { ExamTimer } from './exam-timer';
 import { useRouter } from 'next/navigation';
-import { AlertTriangle, ChevronLeft, ChevronRight, LogOut, ShieldAlert, ArrowLeft, User, Clock, BookOpen, Award, CheckCircle2, Bookmark, HelpCircle } from 'lucide-react';
-import { toast } from '@/lib/toaster';
+import { ChevronLeft, ChevronRight, LogOut, ShieldAlert, ArrowLeft, User, Clock, BookOpen, Award, CheckCircle2, Bookmark, HelpCircle } from 'lucide-react';
 import {
   Box,
   Flex,
@@ -24,72 +16,23 @@ import {
   Stack,
   Checkbox,
   Input,
-  Dialog,
-  Portal,
 } from '@chakra-ui/react';
+import api from '@/lib/api';
+import { useSocket } from '@/hooks/useSocket';
+import { useSound } from '@/hooks/useSound';
+import { useAuthStore } from '@/store/auth.store';
+import { toast } from '@/lib/toaster';
 import { useConfirm } from '@/components/ui/confirmation-dialog';
+import { parseSessionAnswers, generateSEBConfig } from './exam-utils';
+import { QuestionCard } from './_components/question-card';
+import { ExamNav } from './_components/exam-nav';
+import { ExamTimer } from './_components/exam-timer';
+import { ViolationWarningModal } from './_components/violation-warning-modal';
+import { ExamLockedOverlay } from './_components/exam-locked-overlay';
+import { TimeAddedDialog } from './_components/time-added-dialog';
 
 interface Props {
   examId: string;
-}
-
-function generateSEBConfig(exam: any): string {
-  const config = {
-    'general': {
-      'startURL': typeof window !== 'undefined' ? window.location.origin + '/exams/' + exam.id : '',
-      'sebServerURL': '',
-      'browserExamKeys': exam.sebBrowserKey ? [exam.sebBrowserKey] : [],
-      'sebConfigKey': exam.sebConfigKey || '',
-      'allowQuit': true,
-      'quitURL': typeof window !== 'undefined' ? window.location.origin + '/dashboard' : '',
-      'quitURLConfirm': true,
-    },
-    'browser': {
-      'allowBrowsingBackForward': false,
-      'allowNavigationToDataURL': false,
-      'allowNavigationToNewBrowserWindow': false,
-      'allowSpellCheck': false,
-      'userAgent': 'SEB_CBT_Enterprise',
-    },
-    'downUploads': {
-      'allowUploads': false,
-      'downloadPDFFiles': false,
-      'downloadDirectory': '',
-      'openSaveDialogAs': false,
-    },
-    'examSession': {
-      'allowReconfiguring': true,
-      'clearBrowserSession': 1,
-      'browserSessionToken': exam.id,
-      'examKeySalt': exam.sebConfigKey || 'cbt-enterprise',
-    },
-    'keys': {
-      'escKeyQuit': 1,
-      'insertKeyQuit': 0,
-    },
-    'printing': {
-      'allowPrint': false,
-    },
-    'security': {
-      'enableAppSwitcherBlacklist': true,
-      'enableCopy': false,
-      'enableCut': false,
-      'enablePaste': false,
-      'enableRightClick': false,
-      'showKeyboardButton': false,
-    },
-    'window': {
-      'allowFullScreen': true,
-      'enableCursorLocation': true,
-      'mainBrowserWindowPosition': [0, 0],
-      'mainBrowserWindowSize': [0, 0],
-      'allowChangingWindowPosition': false,
-      'enableAltEnterFullScreen': false,
-      'forceQuitInTimeInSeconds': 0,
-    },
-  };
-
-  return JSON.stringify(config, null, 2);
 }
 
 export function ExamContainer({ examId }: Props) {
@@ -495,12 +438,12 @@ export function ExamContainer({ examId }: Props) {
         });
         if (refreshedEndTime) {
           confirmedEndTime = new Date(refreshedEndTime).toISOString();
-          setSessionEndTime(confirmedEndTime);
+          setSessionEndTime(confirmedEndTime ?? undefined);
         } else if (data.newEndTime) {
           confirmedEndTime = typeof data.newEndTime === 'string'
             ? data.newEndTime
             : new Date(data.newEndTime).toISOString();
-          setSessionEndTime(confirmedEndTime);
+          setSessionEndTime(confirmedEndTime ?? undefined);
         }
       } catch (error) {
         console.error('[exam:time_added] refetch failed', {
@@ -513,7 +456,7 @@ export function ExamContainer({ examId }: Props) {
           confirmedEndTime = typeof data.newEndTime === 'string'
             ? data.newEndTime
             : new Date(data.newEndTime).toISOString();
-          setSessionEndTime(confirmedEndTime);
+          setSessionEndTime(confirmedEndTime ?? undefined);
         }
       }
 
@@ -1369,129 +1312,26 @@ export function ExamContainer({ examId }: Props) {
         </Flex>
       </Flex>
 
-      {/* Proctoring Warning Modal */}
       {showViolationModal && (
-        <Flex position="fixed" inset={0} zIndex={50} bg="black/60" backdropFilter="blur(4px)" align="center" justify="center" p={4}>
-          <Box bg="white" w="full" maxW="md" borderRadius="2xl" p={6} boxShadow="2xl" border="1px solid" borderColor="red.50" textAlign="center" className="animate-bounce-short">
-            <Flex w={14} h={14} bg="red-50" borderRadius="full" align="center" justify="center" mx="auto" mb={4} border="1px solid" borderColor="red.100">
-              <AlertTriangle className="text-red-600" size={28} />
-            </Flex>
-            <Heading size="md" fontWeight="bold" color="gray.850">Peringatan Keamanan Ujian</Heading>
-            <Text color="gray.500" fontSize="sm" mt={2} lineHeight="relaxed">
-              {violationMessage}
-            </Text>
-            <Box mt={4} p={3} bg="amber-50" border="1px solid" borderColor="amber-100" borderRadius="xl" fontSize="xs" color="amber-700" fontWeight="medium">
-              Aktivitas perpindahan layar dicatat oleh sistem pengawas (proctoring). Pelanggaran berulang dapat membatalkan sesi ujian Anda.
-            </Box>
-            <Button
-              onClick={() => {
-                if (exam?.forceFullscreen) {
-                  enterFullScreen();
-                }
-                stopViolation();
-                setShowViolationModal(false);
-              }}
-              mt={6}
-              w="full"
-              py={5}
-              bg="gray.850"
-              color="white"
-              fontWeight="bold"
-              borderRadius="xl"
-              _hover={{ bg: 'gray.900' }}
-              cursor="pointer"
-              fontSize="sm"
-            >
-              Saya Mengerti & Kembali ke Ujian
-            </Button>
-          </Box>
-        </Flex>
+        <ViolationWarningModal
+          message={violationMessage}
+          onAcknowledge={() => {
+            if (exam?.forceFullscreen) {
+              enterFullScreen();
+            }
+            stopViolation();
+            setShowViolationModal(false);
+          }}
+        />
       )}
 
-      {/* Proctor Session Lock Overlay */}
-      {isLocked && (
-        <Flex 
-          position="fixed" 
-          inset={0} 
-          zIndex={99999} 
-          bg="black/80" 
-          backdropFilter="blur(16px)" 
-          align="center" 
-          justify="center" 
-          p={4}
-        >
-          <Box 
-            bg="gray.900" 
-            w="full" 
-            maxW="md" 
-            borderRadius="3xl" 
-            p={8} 
-            boxShadow="2xl" 
-            border="1px solid" 
-            borderColor="red.500/30" 
-            textAlign="center"
-          >
-            <Flex 
-              w={16} 
-              h={16} 
-              bg="red.500/10" 
-              borderRadius="full" 
-              align="center" 
-              justify="center" 
-              mx="auto" 
-              mb={6} 
-              border="2px solid" 
-              borderColor="red.500/30"
-            >
-              <ShieldAlert className="text-red-500 animate-pulse" size={32} />
-            </Flex>
-            <Heading size="lg" fontWeight="black" color="white" mb={2}>
-              Sesi Ujian Dikunci
-            </Heading>
-            <Text color="gray.300" fontSize="sm" lineHeight="relaxed" mb={6}>
-              Akses pengerjaan ujian Anda telah ditangguhkan sementara oleh pengawas. Hubungi pengawas ruangan untuk memulihkan sesi ujian Anda.
-            </Text>
-            <Box p={4} bg="whiteAlpha.100" borderRadius="2xl" border="1px solid" borderColor="whiteAlpha.200">
-              <Text fontSize="xs" fontWeight="bold" color="red.300">
-                STATUS: LINDUNGI INTEGRITAS UJIAN
-              </Text>
-            </Box>
-          </Box>
-        </Flex>
-      )}
+      {isLocked && <ExamLockedOverlay />}
 
-      <Dialog.Root open={showTimeAddedDialog} onOpenChange={(details: any) => setShowTimeAddedDialog(details.open)} size="md">
-        <Portal>
-          <Dialog.Backdrop />
-          <Dialog.Positioner>
-            <Dialog.Content borderRadius="2xl" overflow="hidden">
-              <Dialog.Header bg="green.50" py={4} borderBottom="1px solid" borderColor="green.100">
-                <Dialog.Title fontSize="md" fontWeight="bold" color="green.700" display="flex" alignItems="center" gap={2}>
-                  <CheckCircle2 size={18} />
-                  Waktu Ujian Diperpanjang
-                </Dialog.Title>
-              </Dialog.Header>
-              <Dialog.Body p={6}>
-                <Stack gap={3}>
-                  <Text fontSize="sm" color="gray.700" lineHeight="relaxed">
-                    Pengawas telah menambahkan <strong>{timeAddedMinutes} menit</strong> ke waktu ujian Anda.
-                  </Text>
-                  <Text fontSize="sm" color="gray.500">
-                    Waktu ujian Anda sudah diperbarui dari server dan timer akan mengikuti durasi terbaru.
-                  </Text>
-                </Stack>
-              </Dialog.Body>
-              <Dialog.Footer p={6} borderTop="1px solid" borderColor="gray.100">
-                <Dialog.ActionTrigger asChild>
-                  <Button colorPalette="green" borderRadius="lg" w="full">
-                    Mengerti
-                  </Button>
-                </Dialog.ActionTrigger>
-              </Dialog.Footer>
-            </Dialog.Content>
-          </Dialog.Positioner>
-        </Portal>
-      </Dialog.Root>
+      <TimeAddedDialog
+        open={showTimeAddedDialog}
+        minutes={timeAddedMinutes}
+        onOpenChange={setShowTimeAddedDialog}
+      />
     </Box>
   );
 }

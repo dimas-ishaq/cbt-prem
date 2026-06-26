@@ -226,7 +226,7 @@ export default function ReportsPage() {
               {categoryLabel[cat.key]}
             </Heading>
             <Box overflowX="auto">
-              <Table.Root variant="simple" size="sm">
+              <Table.Root variant="outline" size="sm">
                 <Table.Header bg="gray.50/50">
                   <Table.Row>
                     <Table.ColumnHeader color="gray.700" fontWeight="bold">Nama Laporan</Table.ColumnHeader>
