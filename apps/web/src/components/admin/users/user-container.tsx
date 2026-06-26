@@ -242,7 +242,7 @@ export function UserContainer() {
             Manajemen Akun Pengguna
           </Heading>
           <Text color="gray.500" mt={1} fontSize="sm">
-            Kelola semua akun pengguna sistem ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Super Admin, Guru, dan Siswa
+            Kelola semua akun pengguna sistem — Super Admin, Guru, dan Siswa
           </Text>
         </Box>
         <HStack gap={3} flexWrap="wrap">
