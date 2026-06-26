@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import api from '@/lib/api';
@@ -232,6 +232,10 @@ export function ExamContainer({ examId }: Props) {
     },
   });
 
+  // Keep a stable ref so socket listeners don't need finishExamMutation in their dep array
+  const finishExamMutationRef = useRef(finishExamMutation);
+  useEffect(() => { finishExamMutationRef.current = finishExamMutation; });
+
   useEffect(() => {
     if (!sessionId) return;
 
@@ -345,33 +349,7 @@ export function ExamContainer({ examId }: Props) {
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
 
-    if (socket) {
-      socket.on('session_locked', (data: any) => {
-        if (data.examId === examId) {
-          setIsLocked(true);
-        }
-      });
-      socket.on('session_unlocked', (data: any) => {
-        if (data.examId === examId) {
-          setIsLocked(false);
-        }
-      });
-      socket.on('session_submitted', (data: any) => {
-        if (data.examId === examId) {
-          finishExamMutation.mutate();
-        }
-      });
-      socket.on('time_added', (data: any) => {
-        if (data.examId === examId) {
-          setSessionEndTime(data.newEndTime);
-          toast.success({
-            title: 'Waktu Ditambahkan',
-            description: 'Pengawas telah menambahkan 5 menit ke waktu ujian Anda.'
-          });
-          playSuccess();
-        }
-      });
-    }
+
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
@@ -384,14 +362,53 @@ export function ExamContainer({ examId }: Props) {
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
       document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
-      if (socket) {
-        socket.off('session_locked');
-        socket.off('session_unlocked');
-        socket.off('session_submitted');
-        socket.off('time_added');
+
+    };
+  }, [examId, socket, playViolation, sessionId, exam]);
+
+  // Dedicated stable useEffect for proctor-driven socket events.
+  // Only depends on [socket, examId] so it never re-registers mid-exam.
+  useEffect(() => {
+    if (!socket) return;
+
+    const onSessionLocked = (data: any) => {
+      if (data.examId === examId) {
+        setIsLocked(true);
       }
     };
-  }, [examId, socket, playViolation, playSuccess, sessionId, exam, finishExamMutation]);
+    const onSessionUnlocked = (data: any) => {
+      if (data.examId === examId) {
+        setIsLocked(false);
+      }
+    };
+    const onSessionSubmitted = (data: any) => {
+      if (data.examId === examId) {
+        finishExamMutationRef.current.mutate();
+      }
+    };
+    const onTimeAdded = (data: any) => {
+      if (data.examId === examId) {
+        setSessionEndTime(data.newEndTime);
+        toast.success({
+          title: 'Waktu Ditambahkan',
+          description: 'Pengawas telah menambahkan 5 menit ke waktu ujian Anda.',
+        });
+        playSuccess();
+      }
+    };
+
+    socket.on('session_locked', onSessionLocked);
+    socket.on('session_unlocked', onSessionUnlocked);
+    socket.on('session_submitted', onSessionSubmitted);
+    socket.on('time_added', onTimeAdded);
+
+    return () => {
+      socket.off('session_locked', onSessionLocked);
+      socket.off('session_unlocked', onSessionUnlocked);
+      socket.off('session_submitted', onSessionSubmitted);
+      socket.off('time_added', onTimeAdded);
+    };
+  }, [socket, examId, playSuccess]);
 
   useEffect(() => {
     if (socket && sessionId) {

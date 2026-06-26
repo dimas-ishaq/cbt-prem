@@ -392,9 +392,11 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
           },
         },
         answers: {
-          include: {
-            question: true,
-          },
+          select: { id: true }, // lightweight — just need count
+        },
+        violations: {
+          select: { id: true, type: true, description: true, timestamp: true },
+          orderBy: { timestamp: 'desc' },
         },
       },
       orderBy: {

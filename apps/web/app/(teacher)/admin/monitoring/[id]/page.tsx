@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useSocket } from '@/hooks/useSocket';
 import { useSound } from '@/hooks/useSound';
-import { useEffect, useState, use, useCallback } from 'react';
+import { useEffect, useState, use, useCallback, useRef } from 'react';
 import {
   ChevronLeft,
   Users,
@@ -122,11 +122,71 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
   const [prevCount, setPrevCount] = useState(0);
   const [violationFilter, setViolationFilter] = useState<string>('ALL');
 
-  const { data: exam, isLoading, refetch, isFetching } = useQuery({
+  const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
+  const studentsRef = useRef(students);
+  useEffect(() => { studentsRef.current = students; }, [students]);
+
+  const { data: exam, isLoading } = useQuery({
     queryKey: ['exam-monitoring', id],
     queryFn: async () => (await api.get(`/exams/${id}`)).data,
-    refetchInterval: 10_000,
+    refetchInterval: 60_000,
   });
+
+  // Dedicated sync query — fetches live session data every 60 s
+  const { data: sessionsData, refetch: syncSessions, isFetching: isSyncing } = useQuery({
+    queryKey: ['exam-sessions-sync', id],
+    queryFn: async () => {
+      const res = await api.get(`/exam-sessions/exam/${id}`);
+      return res.data as any[];
+    },
+    refetchInterval: 60_000,
+    enabled: !!id,
+  });
+
+  // Merge fresh session data into students state (runs whenever sessionsData changes)
+  useEffect(() => {
+    if (!sessionsData) return;
+    const totalQuestions = exam?.examQuestions?.length || 1;
+    setStudents((prev) => {
+      const merged = { ...prev };
+      sessionsData.forEach((session: any) => {
+        const studentUser = session.student?.user;
+        if (!studentUser) return;
+        const uid = studentUser.id;
+        const isSubmitted = session.status === 'SUBMITTED' || session.status === 'FINISHED';
+        const isLocked = session.status === 'LOCKED';
+        const freshProgress = session.answers?.length
+          ? Math.min(100, (session.answers.length / totalQuestions) * 100)
+          : 0;
+        const existing = merged[uid];
+        merged[uid] = {
+          userId: uid,
+          username: studentUser.username,
+          fullName: studentUser.fullName,
+          // Preserve live socket status unless DB explicitly says Locked/Selesai
+          status: isSubmitted
+            ? 'Selesai'
+            : isLocked
+            ? 'Locked'
+            : existing?.status || 'Online',
+          progress: Math.max(freshProgress, existing?.progress || 0),
+          lastActive: session.lastActiveAt || existing?.lastActive || session.startTime,
+          violationCount: Math.max(
+            session.violations?.length || 0,
+            existing?.violationCount || 0,
+          ),
+          currentQuestionIndex: existing?.currentQuestionIndex,
+          endTime: existing?.endTime || session.endTime,
+        };
+      });
+      return merged;
+    });
+    setLastSyncedAt(new Date());
+  }, [sessionsData]);
+
+  const handleManualSync = useCallback(() => {
+    syncSessions();
+  }, [syncSessions]);
 
   const { data: settings } = useQuery({
     queryKey: ['settings'],
@@ -448,7 +508,7 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
           <Flex align="center" gap={1.5} px={3} py={1.5} borderRadius="xl" bg="white" border="1px solid" borderColor="gray.200" fontSize="sm">
             <Users size={15} color="var(--chakra-colors-gray-400)" />
             <Text fontWeight="bold" color="gray.800">{online}</Text>
-            <Text color="gray.500">/ {total} online</Text>
+            <Text color="gray.500">/ {total} siswa</Text>
           </Flex>
 
           {/* Violations */}
@@ -469,19 +529,28 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
             <Text fontSize="xs" fontWeight="normal">pelanggaran</Text>
           </Badge>
 
-          {/* Actions */}
-          <IconButton
-            onClick={() => refetch()}
-            disabled={isFetching}
-            variant="outline"
-            size="sm"
-            borderRadius="xl"
-            aria-label="Sinkronisasi Data"
-            title="Sinkronisasi Data"
-            cursor="pointer"
-          >
-            <RefreshCw size={16} className={isFetching ? 'animate-spin' : ''} />
-          </IconButton>
+          {/* Sync button + last synced time */}
+          <Flex align="center" gap={1.5}>
+            {lastSyncedAt && (
+              <Text fontSize="11px" color="gray.400" whiteSpace="nowrap">
+                Sinkron:{' '}
+                {lastSyncedAt.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+              </Text>
+            )}
+            <Tooltip content="Sinkronisasi data siswa dari server">
+              <IconButton
+                onClick={handleManualSync}
+                disabled={isSyncing}
+                variant="outline"
+                size="sm"
+                borderRadius="xl"
+                aria-label="Sinkronisasi Data"
+                cursor="pointer"
+              >
+                <RefreshCw size={16} className={isSyncing ? 'animate-spin' : ''} />
+              </IconButton>
+            </Tooltip>
+          </Flex>
 
           <Link href={`/admin/results/${id}`}>
             <Button size="sm" borderRadius="xl" colorPalette="indigo" variant="subtle" fontWeight="semibold">
