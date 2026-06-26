@@ -1,27 +1,30 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuthStore } from '../store/auth.store';
 
 export function useSocket(): Socket | null {
-  const socketRef = useRef<Socket | null>(null);
+  const [socket, setSocket] = useState<Socket | null>(null);
   const token = useAuthStore((s) => s.access_token);
 
   useEffect(() => {
-    if (!token) return;
+    if (!token) {
+      setSocket(null);
+      return;
+    }
 
     const s = io(process.env.NEXT_PUBLIC_WS_URL || 'http://localhost:3001', {
       auth: { token },
     });
 
-    socketRef.current = s;
+    setSocket(s);
 
     return () => {
       s.disconnect();
-      socketRef.current = null;
+      setSocket(null);
     };
   }, [token]);
 
-  return socketRef.current;
+  return socket;
 }
 
 export function useNotificationListener(

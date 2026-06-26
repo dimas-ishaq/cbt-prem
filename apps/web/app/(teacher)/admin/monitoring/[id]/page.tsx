@@ -38,7 +38,6 @@ import {
   HStack,
   Icon,
   IconButton,
-  Tooltip,
   Select,
   createListCollection,
 } from '@chakra-ui/react';
@@ -123,8 +122,29 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
   const [violationFilter, setViolationFilter] = useState<string>('ALL');
 
   const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
+  const [nowTick, setNowTick] = useState(Date.now());
   const studentsRef = useRef(students);
   useEffect(() => { studentsRef.current = students; }, [students]);
+  useEffect(() => {
+    const timer = setInterval(() => setNowTick(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatRemainingTime = (endTime?: string) => {
+    if (!endTime) return '--:--:--';
+    const remaining = Math.max(0, Math.floor((new Date(endTime).getTime() - nowTick) / 1000));
+    const hours = Math.floor(remaining / 3600);
+    const minutes = Math.floor((remaining % 3600) / 60);
+    const seconds = remaining % 60;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  const isEndingSoon = (endTime?: string) => {
+    if (!endTime) return false;
+    return Math.max(0, Math.floor((new Date(endTime).getTime() - nowTick) / 1000)) < 300;
+  };
+
+
 
   const { data: exam, isLoading } = useQuery({
     queryKey: ['exam-monitoring', id],
@@ -143,49 +163,77 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
     enabled: !!id,
   });
 
-  // Merge fresh session data into students state (runs whenever sessionsData changes)
+  // Synchronize student data and violations from the HTTP sync payload
   useEffect(() => {
     if (!sessionsData) return;
     const totalQuestions = exam?.examQuestions?.length || 1;
+
+    const syncedStudents: Record<string, Student> = {};
+    const syncedViolations: Violation[] = [];
+
+    sessionsData.forEach((session: any) => {
+      const studentUser = session.student?.user;
+      if (!studentUser) return;
+
+      const uid = studentUser.id;
+      const isSubmitted = session.status === 'SUBMITTED' || session.status === 'FINISHED';
+      const isLocked = session.status === 'LOCKED';
+      const freshProgress = session.answers?.length
+        ? Math.min(100, (session.answers.length / totalQuestions) * 100)
+        : 0;
+
+      syncedStudents[uid] = {
+        userId: uid,
+        username: studentUser.username,
+        fullName: studentUser.fullName,
+        status: isSubmitted ? 'Selesai' : (isLocked ? 'Locked' : 'Online'),
+        progress: freshProgress,
+        lastActive: session.lastActiveAt || session.startTime || new Date().toISOString(),
+        violationCount: session.violations?.length || 0,
+        currentQuestionIndex: undefined,
+        endTime: session.endTime,
+      };
+
+      if (Array.isArray(session.violations)) {
+        session.violations.forEach((v: any) => {
+          syncedViolations.push({
+            id: v.id || `${v.timestamp}-${Math.random()}`,
+            username: studentUser.fullName || studentUser.username,
+            type: v.type,
+            description: v.description || '',
+            timestamp: v.timestamp,
+          });
+        });
+      }
+    });
+
+    syncedViolations.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
     setStudents((prev) => {
-      const merged = { ...prev };
-      sessionsData.forEach((session: any) => {
-        const studentUser = session.student?.user;
-        if (!studentUser) return;
-        const uid = studentUser.id;
-        const isSubmitted = session.status === 'SUBMITTED' || session.status === 'FINISHED';
-        const isLocked = session.status === 'LOCKED';
-        const freshProgress = session.answers?.length
-          ? Math.min(100, (session.answers.length / totalQuestions) * 100)
-          : 0;
-        const existing = merged[uid];
+      const merged = { ...syncedStudents };
+      Object.entries(prev).forEach(([uid, prevStudent]) => {
+        if (!merged[uid]) {
+          merged[uid] = prevStudent;
+          return;
+        }
+
+        const current = merged[uid];
         merged[uid] = {
-          userId: uid,
-          username: studentUser.username,
-          fullName: studentUser.fullName,
-          // Preserve live socket status unless DB explicitly says Locked/Selesai
-          status: isSubmitted
-            ? 'Selesai'
-            : isLocked
-            ? 'Locked'
-            : existing?.status || 'Online',
-          progress: Math.max(freshProgress, existing?.progress || 0),
-          lastActive: session.lastActiveAt || existing?.lastActive || session.startTime,
-          violationCount: Math.max(
-            session.violations?.length || 0,
-            existing?.violationCount || 0,
-          ),
-          currentQuestionIndex: existing?.currentQuestionIndex,
-          endTime: existing?.endTime || session.endTime,
+          ...current,
+          status: current.status === 'Online' && prevStudent.status === 'Offline' ? 'Offline' : current.status,
+          currentQuestionIndex: prevStudent.currentQuestionIndex ?? current.currentQuestionIndex,
+          endTime: current.endTime || prevStudent.endTime,
         };
       });
       return merged;
     });
-    setLastSyncedAt(new Date());
-  }, [sessionsData]);
 
-  const handleManualSync = useCallback(() => {
-    syncSessions();
+    setViolations(syncedViolations);
+    setLastSyncedAt(new Date());
+  }, [sessionsData, exam?.examQuestions?.length]);
+
+  const handleManualSync = useCallback(async () => {
+    await syncSessions();
   }, [syncSessions]);
 
   const { data: settings } = useQuery({
@@ -202,7 +250,7 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
       return;
     }
 
-    setConnection('connecting');
+    setConnection(socket.connected ? 'connected' : 'connecting');
 
     const onConnect = () => setConnection('connected');
     const onDisconnect = () => setConnection('disconnected');
@@ -455,89 +503,89 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
 
   return (
     <Stack gap={6}>
-      {/* ─── HEADER ─── */}
-      <Flex direction={{ base: 'column', xl: 'row' }} align={{ xl: 'center' }} justify="space-between" gap={4}>
-        <Flex align="center" gap={4}>
-          <Link href="/admin/monitoring">
-            <IconButton variant="ghost" aria-label="Back" borderRadius="xl">
-              <ChevronLeft size={22} />
-            </IconButton>
-          </Link>
-          <Box minW={0} flex="1">
-            <Heading size="lg" fontWeight="bold" letterSpacing="tight" color="gray.800" display="flex" alignItems="center" gap={3} lineClamp={1}>
-              <Box as="span" flexShrink={0} display="inline-flex"><Monitor size={24} color="var(--chakra-colors-indigo-500)" /></Box>
-              <Box as="span" className="truncate">{exam?.title}</Box>
-            </Heading>
-            <Text fontSize="sm" color="gray.500" mt={1} lineClamp={1}>
-              {exam?.subject?.name} &middot; {exam?.examQuestions?.length} Soal &middot; ID: {id.slice(0, 8)}…
-            </Text>
-          </Box>
+      <Flex direction="column" gap={4}>
+        <Flex direction="column" gap={1.5}>
+          <Flex align="left" gap={0}>
+            <Link href="/admin/monitoring">
+              <IconButton variant="ghost" aria-label="Back" borderRadius="xl" border={1} flexShrink={0}>
+                <ChevronLeft size={22} />
+              </IconButton>
+            </Link>
+            <Box minW={0} flex="1">
+              <Heading size="lg" fontWeight="bold" letterSpacing="tight" color="gray.800" display="flex" gap={3} lineClamp={1} mt={1}>
+                <Box as="span" flexShrink={0} display="inline-flex">
+                  <Monitor size={24} color="var(--chakra-colors-indigo-500)" />
+                </Box>
+                <Box as="span" className="truncate">{exam?.title}</Box>
+              </Heading>
+            </Box>
+          </Flex>
+          <Text fontSize="sm" color="gray.500" lineClamp={1}>
+            {exam?.subject?.name} &middot; {exam?.examQuestions?.length} Soal &middot; ID: {id.slice(0, 8)}…
+          </Text>
         </Flex>
 
-        <Flex align="center" flexWrap="wrap" gap={3}>
-          {/* Timer */}
-          <Flex align="center" gap={1.5} px={3} py={1.5} borderRadius="xl" bg="white" border="1px solid" borderColor="gray.200" fontSize="sm" fontWeight="medium">
-            <Timer size={15} color="var(--chakra-colors-gray-400)" />
-            <Text color={timer.urgent ? 'red.600' : 'gray.800'}>{timer.text}</Text>
+        <Flex direction="column" gap={3}>
+          <Flex align="center" justify="space-between" wrap="wrap" gap={3}>
+            <Flex align="center" gap={1.5} px={3} py={1.5} borderRadius="xl" bg="gray.50" border="1px solid" borderColor="gray.200" fontSize="sm" fontWeight="medium">
+              <Timer size={15} color="var(--chakra-colors-gray-400)" />
+              <Text color={timer.urgent ? 'red.600' : 'gray.800'}>{timer.text}</Text>
+            </Flex>
+
+            <Badge
+              colorPalette={connection === 'connected' ? 'green' : connection === 'connecting' ? 'amber' : 'red'}
+              px={3}
+              py={1.5}
+              borderRadius="xl"
+              fontSize="xs"
+              fontWeight="semibold"
+              display="flex"
+              alignItems="center"
+              gap={1.5}
+              textTransform="none"
+            >
+              {connection === 'connected' ? (
+                <Wifi size={15} />
+              ) : connection === 'connecting' ? (
+                <RefreshCw size={15} className="animate-spin" />
+              ) : (
+                <WifiOff size={15} />
+              )}
+              {connection === 'connected' ? 'Online' : connection === 'connecting' ? 'Menghubungkan…' : 'Offline'}
+            </Badge>
           </Flex>
 
-          {/* Connection */}
-          <Badge
-            colorPalette={connection === 'connected' ? 'green' : connection === 'connecting' ? 'amber' : 'red'}
-            px={3}
-            py={1.5}
-            borderRadius="xl"
-            fontSize="xs"
-            fontWeight="semibold"
-            display="flex"
-            alignItems="center"
-            gap={1.5}
-            textTransform="none"
-          >
-            {connection === 'connected' ? (
-              <Wifi size={15} />
-            ) : connection === 'connecting' ? (
-              <RefreshCw size={15} className="animate-spin" />
-            ) : (
-              <WifiOff size={15} />
-            )}
-            {connection === 'connected' ? 'Online' : connection === 'connecting' ? 'Menghubungkan…' : 'Offline'}
-          </Badge>
+          <Flex wrap="wrap" gap={3} align="center">
+            <Flex align="center" gap={1.5} px={3} py={1.5} borderRadius="xl" bg="gray.50" border="1px solid" borderColor="gray.200" fontSize="sm">
+              <Users size={15} color="var(--chakra-colors-gray-400)" />
+              <Text fontWeight="bold" color="gray.800">{online}</Text>
+              <Text color="gray.500">/ {total} siswa</Text>
+            </Flex>
 
-          {/* Online count */}
-          <Flex align="center" gap={1.5} px={3} py={1.5} borderRadius="xl" bg="white" border="1px solid" borderColor="gray.200" fontSize="sm">
-            <Users size={15} color="var(--chakra-colors-gray-400)" />
-            <Text fontWeight="bold" color="gray.800">{online}</Text>
-            <Text color="gray.500">/ {total} siswa</Text>
-          </Flex>
+            <Badge
+              colorPalette="red"
+              px={3}
+              py={1.5}
+              borderRadius="xl"
+              fontSize="sm"
+              fontWeight="semibold"
+              display="flex"
+              alignItems="center"
+              gap={1.5}
+              textTransform="none"
+            >
+              <AlertTriangle size={15} />
+              <Text>{violations.length}</Text>
+              <Text fontSize="xs" fontWeight="normal">pelanggaran</Text>
+            </Badge>
 
-          {/* Violations */}
-          <Badge
-            colorPalette="red"
-            px={3}
-            py={1.5}
-            borderRadius="xl"
-            fontSize="sm"
-            fontWeight="semibold"
-            display="flex"
-            alignItems="center"
-            gap={1.5}
-            textTransform="none"
-          >
-            <AlertTriangle size={15} />
-            <Text>{violations.length}</Text>
-            <Text fontSize="xs" fontWeight="normal">pelanggaran</Text>
-          </Badge>
-
-          {/* Sync button + last synced time */}
-          <Flex align="center" gap={1.5}>
-            {lastSyncedAt && (
-              <Text fontSize="11px" color="gray.400" whiteSpace="nowrap">
-                Sinkron:{' '}
-                {lastSyncedAt.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-              </Text>
-            )}
-            <Tooltip content="Sinkronisasi data siswa dari server">
+            <Flex align="center" gap={1.5} ml="auto">
+              {lastSyncedAt && (
+                <Text fontSize="11px" color="gray.400" whiteSpace="nowrap">
+                  Sinkron:{' '}
+                  {lastSyncedAt.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                </Text>
+              )}
               <IconButton
                 onClick={handleManualSync}
                 disabled={isSyncing}
@@ -549,17 +597,17 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
               >
                 <RefreshCw size={16} className={isSyncing ? 'animate-spin' : ''} />
               </IconButton>
-            </Tooltip>
-          </Flex>
+            </Flex>
 
-          <Link href={`/admin/results/${id}`}>
-            <Button size="sm" borderRadius="xl" colorPalette="indigo" variant="subtle" fontWeight="semibold">
-              <Award size={16} /> Hasil
-            </Button>
-          </Link>
-          <IconButton onClick={toggleFS} variant="outline" size="sm" borderRadius="xl" aria-label="Fullscreen">
-            {fullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
-          </IconButton>
+            <Link href={`/admin/results/${id}`}>
+              <Button size="sm" borderRadius="xl" colorPalette="indigo" variant="subtle" fontWeight="semibold">
+                <Award size={16} /> Hasil
+              </Button>
+            </Link>
+            <IconButton onClick={toggleFS} variant="outline" size="sm" borderRadius="xl" aria-label="Fullscreen">
+              {fullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
+            </IconButton>
+          </Flex>
         </Flex>
       </Flex>
 
@@ -664,17 +712,17 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
                   {/* Top row */}
                   <Flex align="start" justify="space-between" mb={3}>
                     <Flex align="center" gap={2.5} minW={0} flex="1">
-                      <Box 
-                        w="10px" 
-                        h="10px" 
-                        borderRadius="full" 
-                        mt={1} 
-                        flexShrink={0} 
+                      <Box
+                        w="10px"
+                        h="10px"
+                        borderRadius="full"
+                        mt={1}
+                        flexShrink={0}
                         bg={
                           finished ? 'green.500' :
-                          locked ? 'red.500' :
-                          offline ? 'gray.400' : 'green.500'
-                        } 
+                            locked ? 'red.500' :
+                              offline ? 'gray.400' : 'green.500'
+                        }
                       />
                       <Box minW={0} flex="1">
                         <Text fontWeight="semibold" fontSize="sm" color="gray.800" lineClamp={1}>
@@ -691,15 +739,15 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
                           {s.violationCount}
                         </Badge>
                       )}
-                      <Badge 
+                      <Badge
                         colorPalette={
-                          finished ? 'green' : 
-                          locked ? 'red' : 
-                          offline ? 'gray' : 'green'
-                        } 
-                        borderRadius="full" 
-                        px={2} 
-                        py={0.5} 
+                          finished ? 'green' :
+                            locked ? 'red' :
+                              offline ? 'gray' : 'green'
+                        }
+                        borderRadius="full"
+                        px={2}
+                        py={0.5}
                         fontSize="11px"
                         textTransform="uppercase"
                       >
@@ -726,6 +774,19 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
                     <Text fontSize="11px" fontWeight="semibold" color="indigo.650">
                       {finished ? 'Ujian telah dikumpulkan' : `Sedang Mengerjakan: Soal #${s.currentQuestionIndex || 1}`}
                     </Text>
+                    <Flex align="center" justify="space-between" mt={1}>
+                      <Text fontSize="11px" color="gray.500">
+                        Sisa waktu
+                      </Text>
+                      <Text
+                        fontSize="11px"
+                        fontWeight="bold"
+                        color={finished ? 'green.600' : isEndingSoon(s.endTime) ? 'red.600' : 'gray.800'}
+                        fontFamily="mono"
+                      >
+                        {finished ? '00:00:00' : formatRemainingTime(s.endTime)}
+                      </Text>
+                    </Flex>
                   </Box>
 
                   {/* Action Control Panel */}
@@ -821,11 +882,11 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
                 Pelanggaran
               </Heading>
               {violations.length > 0 && (
-                <Button 
-                  size="xs" 
-                  variant="ghost" 
-                  color="red.500" 
-                  _hover={{ bg: 'red.50', color: 'red.700' }} 
+                <Button
+                  size="xs"
+                  variant="ghost"
+                  color="red.500"
+                  _hover={{ bg: 'red.50', color: 'red.700' }}
                   onClick={() => setViolations([])}
                   borderRadius="md"
                   px={2}
@@ -837,7 +898,7 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
                 </Button>
               )}
             </Flex>
-            
+
             <Box w="full">
               <Select.Root
                 collection={violationFilterOptions}
@@ -878,19 +939,19 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
                 return true;
               })
               .map((v) => (
-              <Box key={v.id} p={3} bg="red.50" border="1px solid" borderColor="red.100" borderRadius="xl" className="animate-fade-up">
-                <Flex justify="space-between" align="start" mb={1}>
-                  <Text fontWeight="semibold" fontSize="sm" color="red.900">{v.username}</Text>
-                  <Text fontSize="xs" color="red.500" whiteSpace="nowrap" ml={2}>
-                    {new Date(v.timestamp).toLocaleTimeString('id-ID', { timeZone: settings?.timezone || 'Asia/Jakarta' })}
+                <Box key={v.id} p={3} bg="red.50" border="1px solid" borderColor="red.100" borderRadius="xl" className="animate-fade-up">
+                  <Flex justify="space-between" align="start" mb={1}>
+                    <Text fontWeight="semibold" fontSize="sm" color="red.900">{v.username}</Text>
+                    <Text fontSize="xs" color="red.500" whiteSpace="nowrap" ml={2}>
+                      {new Date(v.timestamp).toLocaleTimeString('id-ID', { timeZone: settings?.timezone || 'Asia/Jakarta' })}
+                    </Text>
+                  </Flex>
+                  <Text fontSize="11px" fontWeight="bold" color="red.700" textTransform="uppercase" letterSpacing="wider" mb={1}>
+                    {v.type}
                   </Text>
-                </Flex>
-                <Text fontSize="11px" fontWeight="bold" color="red.700" textTransform="uppercase" letterSpacing="wider" mb={1}>
-                  {v.type}
-                </Text>
-                <Text fontSize="xs" color="red.600">{v.description}</Text>
-              </Box>
-            ))}
+                  <Text fontSize="xs" color="red.600">{v.description}</Text>
+                </Box>
+              ))}
 
             {violations.length === 0 && (
               <Flex h="full" direction="column" align="center" justify="center" textAlign="center" py={12} px={4}>

@@ -24,6 +24,8 @@ import {
   Stack,
   Checkbox,
   Input,
+  Dialog,
+  Portal,
 } from '@chakra-ui/react';
 import { useConfirm } from '@/components/ui/confirmation-dialog';
 
@@ -104,6 +106,8 @@ export function ExamContainer({ examId }: Props) {
   
   const [tokenInput, setTokenInput] = useState('');
   const [tokenError, setTokenError] = useState('');
+  const [showTimeAddedDialog, setShowTimeAddedDialog] = useState(false);
+  const [timeAddedMinutes, setTimeAddedMinutes] = useState(5);
   const [checkedTerms, setCheckedTerms] = useState<Record<number, boolean>>({
     0: false,
     1: false,
@@ -184,9 +188,6 @@ export function ExamContainer({ examId }: Props) {
           }
         });
         setAnswers(existingAnswers);
-      }
-      if (socket) {
-        socket.emit('join_exam', { examId });
       }
     },
     onError: (err: any) => {
@@ -386,12 +387,35 @@ export function ExamContainer({ examId }: Props) {
         finishExamMutationRef.current.mutate();
       }
     };
-    const onTimeAdded = (data: any) => {
+    const onTimeAdded = async (data: any) => {
       if (data.examId === examId) {
-        setSessionEndTime(data.newEndTime);
+        try {
+          const response = await api.get(`/exam-sessions/${sessionId}`);
+          const refreshedEndTime = response.data?.endTime;
+          if (refreshedEndTime) {
+            setSessionEndTime(refreshedEndTime);
+            setTimeAddedMinutes(data.addedMinutes || 5);
+            setShowTimeAddedDialog(true);
+          } else if (data.newEndTime) {
+            const normalizedEndTime = typeof data.newEndTime === 'string'
+              ? data.newEndTime
+              : new Date(data.newEndTime).toISOString();
+            setSessionEndTime(normalizedEndTime);
+            setTimeAddedMinutes(data.addedMinutes || 5);
+            setShowTimeAddedDialog(true);
+          }
+        } catch {
+          const normalizedEndTime = typeof data.newEndTime === 'string'
+            ? data.newEndTime
+            : new Date(data.newEndTime).toISOString();
+          setSessionEndTime(normalizedEndTime);
+          setTimeAddedMinutes(data.addedMinutes || 5);
+          setShowTimeAddedDialog(true);
+        }
+
         toast.success({
           title: 'Waktu Ditambahkan',
-          description: 'Pengawas telah menambahkan 5 menit ke waktu ujian Anda.',
+          description: `Pengawas telah menambahkan ${data.addedMinutes || 5} menit ke waktu ujian Anda.`,
         });
         playSuccess();
       }
@@ -408,7 +432,13 @@ export function ExamContainer({ examId }: Props) {
       socket.off('session_submitted', onSessionSubmitted);
       socket.off('time_added', onTimeAdded);
     };
-  }, [socket, examId, playSuccess]);
+  }, [socket, examId, playSuccess, sessionId]);
+
+  useEffect(() => {
+    if (socket && sessionId) {
+      socket.emit('join_exam', { examId });
+    }
+  }, [socket, sessionId, examId]);
 
   useEffect(() => {
     if (socket && sessionId) {
@@ -1052,6 +1082,9 @@ export function ExamContainer({ examId }: Props) {
   const answeredCount = Object.keys(answers).filter(key => answers[key] && answers[key].trim() !== '').length;
   const totalQuestions = exam.examQuestions.length;
 
+  const timerStartTime = sessionEndTime || startSessionMutation.data?.endTime;
+  const timerBaseStartTime = startSessionMutation.data?.startTime || exam.startTime || timerStartTime || new Date().toISOString();
+
   return (
     <Box display="flex" flexDirection="column" h="screen" bg="gray.50" userSelect="none">
       {/* Header */}
@@ -1072,9 +1105,9 @@ export function ExamContainer({ examId }: Props) {
 
         {/* Timer */}
         <ExamTimer 
-          startTime={startSessionMutation.data?.startTime || new Date().toISOString()} 
+          startTime={timerBaseStartTime} 
           duration={exam.duration} 
-          overrideEndTime={sessionEndTime}
+          overrideEndTime={timerStartTime}
           onTimeUp={() => finishExamMutation.mutate()} 
         />
 
@@ -1308,6 +1341,39 @@ export function ExamContainer({ examId }: Props) {
           </Box>
         </Flex>
       )}
+
+      <Dialog.Root open={showTimeAddedDialog} onOpenChange={(details: any) => setShowTimeAddedDialog(details.open)} size="md">
+        <Portal>
+          <Dialog.Backdrop />
+          <Dialog.Positioner>
+            <Dialog.Content borderRadius="2xl" overflow="hidden">
+              <Dialog.Header bg="green.50" py={4} borderBottom="1px solid" borderColor="green.100">
+                <Dialog.Title fontSize="md" fontWeight="bold" color="green.700" display="flex" alignItems="center" gap={2}>
+                  <CheckCircle2 size={18} />
+                  Waktu Ujian Diperpanjang
+                </Dialog.Title>
+              </Dialog.Header>
+              <Dialog.Body p={6}>
+                <Stack gap={3}>
+                  <Text fontSize="sm" color="gray.700" lineHeight="relaxed">
+                    Pengawas telah menambahkan <strong>{timeAddedMinutes} menit</strong> ke waktu ujian Anda.
+                  </Text>
+                  <Text fontSize="sm" color="gray.500">
+                    Waktu ujian Anda sudah diperbarui dari server dan timer akan mengikuti durasi terbaru.
+                  </Text>
+                </Stack>
+              </Dialog.Body>
+              <Dialog.Footer p={6} borderTop="1px solid" borderColor="gray.100">
+                <Dialog.ActionTrigger asChild>
+                  <Button colorPalette="green" borderRadius="lg" w="full">
+                    Mengerti
+                  </Button>
+                </Dialog.ActionTrigger>
+              </Dialog.Footer>
+            </Dialog.Content>
+          </Dialog.Positioner>
+        </Portal>
+      </Dialog.Root>
     </Box>
   );
 }

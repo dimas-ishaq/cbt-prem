@@ -294,6 +294,7 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
 
     const currentEndTime = session.endTime ? new Date(session.endTime) : new Date();
     const newEndTime = new Date(currentEndTime.getTime() + data.minutes * 60 * 1000);
+    const newEndTimeIso = newEndTime.toISOString();
 
     await this.prisma.examSession.update({
       where: { id: session.id },
@@ -301,12 +302,13 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     });
 
     // Notify the student
-    this.sendToUser(data.studentId, 'time_added', { examId: data.examId, newEndTime });
+    this.sendToUser(data.studentId, 'time_added', { examId: data.examId, newEndTime: newEndTimeIso, addedMinutes: data.minutes });
 
     // Notify the proctor room
     this.server.to(`proctor_${data.examId}`).emit('student_time_added', {
       studentId: data.studentId,
-      newEndTime,
+      newEndTime: newEndTimeIso,
+      addedMinutes: data.minutes,
     });
   }
 }
