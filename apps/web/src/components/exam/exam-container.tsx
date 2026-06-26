@@ -108,6 +108,7 @@ export function ExamContainer({ examId }: Props) {
   const [tokenError, setTokenError] = useState('');
   const [showTimeAddedDialog, setShowTimeAddedDialog] = useState(false);
   const [timeAddedMinutes, setTimeAddedMinutes] = useState(5);
+  const [isRestoringSession, setIsRestoringSession] = useState(true);
   const [checkedTerms, setCheckedTerms] = useState<Record<number, boolean>>({
     0: false,
     1: false,
@@ -200,6 +201,48 @@ export function ExamContainer({ examId }: Props) {
     }
   });
 
+  useEffect(() => {
+    if (!exam || !token || user?.role !== 'SISWA') return;
+    if (sessionId) {
+      setIsRestoringSession(false);
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await api.get(`/exam-sessions/${examId}`);
+        if (cancelled) return;
+
+        const data = response.data;
+        if (data?.id && data?.status !== 'FINISHED') {
+          setSessionId(data.id);
+          setSessionEndTime(data.endTime);
+          if (data.status === 'LOCKED') setIsLocked(true);
+          if (data.answers) {
+            const existingAnswers: Record<string, string> = {};
+            data.answers.forEach((ans: any) => {
+              if (ans.essayAnswer) existingAnswers[ans.questionId] = ans.essayAnswer;
+              else if (ans.selectedOptionId) existingAnswers[ans.questionId] = ans.selectedOptionId;
+              else if (ans.selectedOption) existingAnswers[ans.questionId] = ans.selectedOption;
+            });
+            setAnswers(existingAnswers);
+          }
+        }
+      } catch {
+        // no active session; stay on rules gate
+      } finally {
+        if (!cancelled) setIsRestoringSession(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [exam, token, user?.role, examId, sessionId]);
+
+
+
   const submitAnswerMutation = useMutation({
     mutationFn: async ({ questionId, answer, type }: { questionId: string, answer: string, type: string }) => {
       const payload: any = { questionId };
@@ -236,6 +279,48 @@ export function ExamContainer({ examId }: Props) {
   // Keep a stable ref so socket listeners don't need finishExamMutation in their dep array
   const finishExamMutationRef = useRef(finishExamMutation);
   useEffect(() => { finishExamMutationRef.current = finishExamMutation; });
+
+  // Hydrate the current session so reconnects/refreshed pages recover the authoritative end time.
+  const { data: hydratedSession } = useQuery({
+    queryKey: ['exam-session-hydration', sessionId],
+    queryFn: async () => {
+      const response = await api.get(`/exam-sessions/${sessionId}`);
+      return response.data;
+    },
+    enabled: !!sessionId,
+    refetchOnWindowFocus: true,
+    retry: false,
+  });
+  const lastAnnouncedExtendedEndTimeRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!hydratedSession?.endTime || !hydratedSession?.startTime || !hydratedSession?.exam?.duration) return;
+
+    const hydratedEndMs = new Date(hydratedSession.endTime).getTime();
+    const startMs = new Date(hydratedSession.startTime).getTime();
+    const baseEndMs = startMs + hydratedSession.exam.duration * 60 * 1000;
+
+    if (Number.isNaN(hydratedEndMs) || Number.isNaN(startMs)) return;
+
+    const hydratedEndTime = new Date(hydratedEndMs).toISOString();
+    if (hydratedEndTime !== sessionEndTime) {
+      setSessionEndTime(hydratedEndTime);
+    }
+
+    const extendedMinutes = Math.floor((hydratedEndMs - baseEndMs) / 60000);
+    const wasExtended = extendedMinutes > 0;
+    if (wasExtended && lastAnnouncedExtendedEndTimeRef.current !== hydratedEndMs) {
+      lastAnnouncedExtendedEndTimeRef.current = hydratedEndMs;
+      setTimeAddedMinutes(Math.max(1, extendedMinutes));
+      setShowTimeAddedDialog(true);
+    }
+  }, [hydratedSession, sessionEndTime]);
+
+  useEffect(() => {
+    if (sessionEndTime && !showTimeAddedDialog) {
+      lastAnnouncedExtendedEndTimeRef.current = new Date(sessionEndTime).getTime();
+    }
+  }, [sessionEndTime, showTimeAddedDialog]);
 
   useEffect(() => {
     if (!sessionId) return;
@@ -368,9 +453,9 @@ export function ExamContainer({ examId }: Props) {
   }, [examId, socket, playViolation, sessionId, exam]);
 
   // Dedicated stable useEffect for proctor-driven socket events.
-  // Only depends on [socket, examId] so it never re-registers mid-exam.
+  // Re-registers when sessionId becomes available so time_added can refetch the correct session.
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || !sessionId) return;
 
     const onSessionLocked = (data: any) => {
       if (data.examId === examId) {
@@ -388,43 +473,76 @@ export function ExamContainer({ examId }: Props) {
       }
     };
     const onTimeAdded = async (data: any) => {
-      if (data.examId === examId) {
-        try {
-          const response = await api.get(`/exam-sessions/${sessionId}`);
-          const refreshedEndTime = response.data?.endTime;
-          if (refreshedEndTime) {
-            setSessionEndTime(refreshedEndTime);
-            setTimeAddedMinutes(data.addedMinutes || 5);
-            setShowTimeAddedDialog(true);
-          } else if (data.newEndTime) {
-            const normalizedEndTime = typeof data.newEndTime === 'string'
-              ? data.newEndTime
-              : new Date(data.newEndTime).toISOString();
-            setSessionEndTime(normalizedEndTime);
-            setTimeAddedMinutes(data.addedMinutes || 5);
-            setShowTimeAddedDialog(true);
-          }
-        } catch {
-          const normalizedEndTime = typeof data.newEndTime === 'string'
+      if (data.examId !== examId) return;
+
+      console.info('[exam:time_added] received', {
+        examId: data.examId,
+        sessionId,
+        studentId: data.studentId,
+        addedMinutes: data.addedMinutes,
+        source: data.newEndTime ? 'socket_payload' : 'refetch',
+      });
+
+      let confirmedEndTime: string | null = null;
+      try {
+        const response = await api.get(`/exam-sessions/${sessionId}`);
+        const refreshedEndTime = response.data?.endTime;
+        console.info('[exam:time_added] refetch result', {
+          examId,
+          sessionId,
+          hasEndTime: Boolean(refreshedEndTime),
+          endTime: refreshedEndTime,
+        });
+        if (refreshedEndTime) {
+          confirmedEndTime = new Date(refreshedEndTime).toISOString();
+          setSessionEndTime(confirmedEndTime);
+        } else if (data.newEndTime) {
+          confirmedEndTime = typeof data.newEndTime === 'string'
             ? data.newEndTime
             : new Date(data.newEndTime).toISOString();
-          setSessionEndTime(normalizedEndTime);
-          setTimeAddedMinutes(data.addedMinutes || 5);
-          setShowTimeAddedDialog(true);
+          setSessionEndTime(confirmedEndTime);
         }
-
-        toast.success({
-          title: 'Waktu Ditambahkan',
-          description: `Pengawas telah menambahkan ${data.addedMinutes || 5} menit ke waktu ujian Anda.`,
+      } catch (error) {
+        console.error('[exam:time_added] refetch failed', {
+          examId,
+          sessionId,
+          error,
+          hasFallback: Boolean(data.newEndTime),
         });
-        playSuccess();
+        if (data.newEndTime) {
+          confirmedEndTime = typeof data.newEndTime === 'string'
+            ? data.newEndTime
+            : new Date(data.newEndTime).toISOString();
+          setSessionEndTime(confirmedEndTime);
+        }
       }
+
+      if (confirmedEndTime) {
+        lastAnnouncedExtendedEndTimeRef.current = new Date(confirmedEndTime).getTime();
+      }
+
+      console.info('[exam:time_added] applied', {
+        examId,
+        sessionId,
+        confirmedEndTime,
+        addedMinutes: data.addedMinutes || 5,
+      });
+
+      setTimeAddedMinutes(data.addedMinutes || 5);
+      setShowTimeAddedDialog(true);
+
+      toast.success({
+        title: 'Waktu Ditambahkan',
+        description: `Pengawas telah menambahkan ${data.addedMinutes || 5} menit ke waktu ujian Anda.`,
+      });
+      playSuccess();
     };
 
     socket.on('session_locked', onSessionLocked);
     socket.on('session_unlocked', onSessionUnlocked);
     socket.on('session_submitted', onSessionSubmitted);
     socket.on('time_added', onTimeAdded);
+    socket.on('student_time_added', onTimeAdded);
 
     return () => {
       socket.off('session_locked', onSessionLocked);

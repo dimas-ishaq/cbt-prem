@@ -12,6 +12,8 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { Logger, Inject, forwardRef, OnModuleInit as NestOnModuleInit } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
+import { appendFileSync, mkdirSync } from 'fs';
+import path from 'path';
 
 import { SessionStatus } from '@prisma/client';
 import { ExamSessionsService } from '../exam-sessions/exam-sessions.service';
@@ -28,6 +30,20 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
   server: Server;
 
   private readonly logger = new Logger('RealtimeGateway');
+  private readonly auditLogPath = path.join(process.cwd(), 'apps', 'api', 'logs', 'log.txt');
+
+  private writeAuditLog(message: string, meta: Record<string, any> = {}) {
+    try {
+      mkdirSync(path.dirname(this.auditLogPath), { recursive: true });
+      appendFileSync(
+        this.auditLogPath,
+        `${new Date().toISOString()} ${message} ${JSON.stringify(meta)}\n`,
+        'utf8',
+      );
+    } catch (error) {
+      this.logger.error(`Failed to write audit log: ${message}`, error as any);
+    }
+  }
 
   private examSessionsService: ExamSessionsService;
 
@@ -66,7 +82,7 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
       // Find which exams they were in and notify proctors
       // This is a bit simplified, in a large app you'd track active sessions
       this.server.emit('student_offline', {
-        userId: client.data.user.sub,
+        userId: client.data.user.userId,
         username: client.data.user.username,
         timestamp: new Date(),
       });
@@ -273,14 +289,32 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { examId: string, studentId: string, minutes: number },
   ) {
+    console.info('[realtime:add_student_time] received', {
+      examId: data.examId,
+      studentId: data.studentId,
+      minutes: data.minutes,
+      role: client.data.user.role,
+    });
+
     if (client.data.user.role !== 'GURU' && client.data.user.role !== 'SUPER_ADMIN') {
+      console.warn('[realtime:add_student_time] rejected: unauthorized role', {
+        role: client.data.user.role,
+        examId: data.examId,
+        studentId: data.studentId,
+      });
       return;
     }
 
     const student = await this.prisma.student.findUnique({
       where: { userId: data.studentId },
     });
-    if (!student) return;
+    if (!student) {
+      console.warn('[realtime:add_student_time] student not found', {
+        examId: data.examId,
+        studentId: data.studentId,
+      });
+      return;
+    }
 
     const session = await this.prisma.examSession.findUnique({
       where: {
@@ -290,7 +324,14 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
         },
       },
     });
-    if (!session) return;
+    if (!session) {
+      this.writeAuditLog('[realtime:add_student_time] session not found', {
+        examId: data.examId,
+        studentId: data.studentId,
+        internalStudentId: student.id,
+      });
+      return;
+    }
 
     const currentEndTime = session.endTime ? new Date(session.endTime) : new Date();
     const newEndTime = new Date(currentEndTime.getTime() + data.minutes * 60 * 1000);
@@ -301,14 +342,58 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
       data: { endTime: newEndTime },
     });
 
+    const updatedSession = await this.prisma.examSession.findUnique({
+      where: {
+        id: session.id,
+      },
+      include: {
+        student: {
+          include: {
+            user: true,
+          },
+        },
+      },
+    });
+
+    const payload = {
+      examId: data.examId,
+      studentId: data.studentId,
+      addedMinutes: data.minutes,
+      newEndTime: newEndTimeIso,
+      sessionId: updatedSession?.id || session.id,
+      status: updatedSession?.status || session.status,
+      endTime: updatedSession?.endTime ? new Date(updatedSession.endTime).toISOString() : newEndTimeIso,
+      lastActiveAt: updatedSession?.lastActiveAt ? new Date(updatedSession.lastActiveAt).toISOString() : undefined,
+    };
+
+    this.writeAuditLog('[realtime:add_student_time] updated', {
+      examId: data.examId,
+      studentId: data.studentId,
+      sessionId: payload.sessionId,
+      newEndTime: payload.newEndTime,
+      storedEndTime: payload.endTime,
+      addedMinutes: payload.addedMinutes,
+    });
+
     // Notify the student
-    this.sendToUser(data.studentId, 'time_added', { examId: data.examId, newEndTime: newEndTimeIso, addedMinutes: data.minutes });
+    this.sendToUser(data.studentId, 'time_added', payload);
+    console.info('[realtime:add_student_time] emitted time_added to student', {
+      examId: data.examId,
+      studentId: data.studentId,
+    });
+
+    // Notify the exam room so the active student client can also consume the event
+    this.server.to(`exam_${data.examId}`).emit('student_time_added', payload);
+    console.info('[realtime:add_student_time] emitted student_time_added to exam room', {
+      examId: data.examId,
+      studentId: data.studentId,
+    });
 
     // Notify the proctor room
-    this.server.to(`proctor_${data.examId}`).emit('student_time_added', {
+    this.server.to(`proctor_${data.examId}`).emit('student_time_added', payload);
+    console.info('[realtime:add_student_time] emitted student_time_added to proctor room', {
+      examId: data.examId,
       studentId: data.studentId,
-      newEndTime: newEndTimeIso,
-      addedMinutes: data.minutes,
     });
   }
 }

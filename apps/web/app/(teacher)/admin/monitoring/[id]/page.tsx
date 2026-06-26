@@ -130,6 +130,20 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
     return () => clearInterval(timer);
   }, []);
 
+  const normalizeTime = (value?: string | Date | null) => {
+    if (!value) return null;
+    const time = new Date(value).getTime();
+    return Number.isNaN(time) ? null : new Date(time).toISOString();
+  };
+
+  const pickLatestTime = (a?: string | Date | null, b?: string | Date | null) => {
+    const ta = a ? new Date(a).getTime() : NaN;
+    const tb = b ? new Date(b).getTime() : NaN;
+    if (Number.isNaN(ta)) return normalizeTime(b);
+    if (Number.isNaN(tb)) return normalizeTime(a);
+    return new Date(Math.max(ta, tb)).toISOString();
+  };
+
   const formatRemainingTime = (endTime?: string) => {
     if (!endTime) return '--:--:--';
     const remaining = Math.max(0, Math.floor((new Date(endTime).getTime() - nowTick) / 1000));
@@ -182,6 +196,8 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
         ? Math.min(100, (session.answers.length / totalQuestions) * 100)
         : 0;
 
+      const currentEndTime = normalizeTime(session.endTime);
+
       syncedStudents[uid] = {
         userId: uid,
         username: studentUser.username,
@@ -191,7 +207,7 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
         lastActive: session.lastActiveAt || session.startTime || new Date().toISOString(),
         violationCount: session.violations?.length || 0,
         currentQuestionIndex: undefined,
-        endTime: session.endTime,
+        endTime: currentEndTime || undefined,
       };
 
       if (Array.isArray(session.violations)) {
@@ -340,11 +356,19 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
         });
       },
       student_time_added: (d) => {
+        console.info('[monitoring:student_time_added] received', {
+          examId: id,
+          studentId: d.studentId,
+          addedMinutes: d.addedMinutes,
+          newEndTime: d.newEndTime,
+          endTime: d.endTime,
+        });
         toast.success({
           title: 'Waktu Ditambahkan',
-          description: `Waktu ujian siswa berhasil ditambah 5 menit.`,
+          description: `Waktu ujian siswa berhasil ditambah ${d.addedMinutes || 5} menit.`,
         });
         playSuccess();
+
         setStudents((prev) => {
           const s = prev[d.studentId];
           if (!s) return prev;
@@ -360,7 +384,7 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
       socket.off('disconnect', onDisconnect);
       Object.keys(handlers).forEach((ev) => socket.off(ev));
     };
-  }, [socket, id, totalQ, playSuccess]);
+  }, [socket, id, totalQ, playSuccess, syncSessions]);
 
   // Synchronize student data and violations from the initial HTTP API load
   useEffect(() => {
@@ -415,8 +439,8 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
               status: prevStudent.status === 'Offline' && merged[key].status === 'Online' ? 'Offline' : prevStudent.status,
               progress: Math.max(merged[key].progress, prevStudent.progress),
               violationCount: Math.max(merged[key].violationCount || 0, prevStudent.violationCount || 0),
-              currentQuestionIndex: prevStudent.currentQuestionIndex || merged[key].currentQuestionIndex,
-              endTime: prevStudent.endTime || merged[key].endTime,
+              currentQuestionIndex: prevStudent.currentQuestionIndex ?? merged[key].currentQuestionIndex,
+              endTime: pickLatestTime(prevStudent.endTime, merged[key].endTime) || prevStudent.endTime || merged[key].endTime,
             };
           } else {
             merged[key] = prevStudent;
