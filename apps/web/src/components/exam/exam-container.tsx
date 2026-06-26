@@ -388,6 +388,7 @@ export function ExamContainer({ examId }: Props) {
         socket.off('session_locked');
         socket.off('session_unlocked');
         socket.off('session_submitted');
+        socket.off('time_added');
       }
     };
   }, [examId, socket, playViolation, playSuccess, sessionId, exam, finishExamMutation]);

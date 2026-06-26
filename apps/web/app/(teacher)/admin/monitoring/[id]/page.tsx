@@ -232,14 +232,14 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
         });
       },
       student_time_added: (d) => {
+        toast.success({
+          title: 'Waktu Ditambahkan',
+          description: `Waktu ujian siswa berhasil ditambah 5 menit.`,
+        });
+        playSuccess();
         setStudents((prev) => {
           const s = prev[d.studentId];
           if (!s) return prev;
-          toast.success({
-            title: 'Waktu Ditambahkan',
-            description: `Waktu ujian ${s.fullName || s.username} berhasil ditambah 5 menit.`
-          });
-          playSuccess();
           return { ...prev, [d.studentId]: { ...s, endTime: d.newEndTime } };
         });
       },

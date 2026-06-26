@@ -39,7 +39,11 @@ export class ExamGroupsService {
         exams: {
           include: {
             subject: true,
+            _count: {
+              select: { examSessions: true },
+            },
           },
+          orderBy: { startTime: 'asc' },
         },
       },
     });
