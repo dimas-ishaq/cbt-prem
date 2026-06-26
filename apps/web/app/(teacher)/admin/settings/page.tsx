@@ -21,7 +21,7 @@ import {
   createListCollection,
 } from '@chakra-ui/react';
 import { toast } from '@/lib/toaster';
-import { Settings, Save, ShieldAlert, Upload, Trash2, Globe, BookOpen, Languages, Bookmark } from 'lucide-react';
+import { Settings, Save, ShieldAlert, Upload, Trash2, Globe, BookOpen, Languages, Bookmark, Bell } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 const timezones = [
@@ -584,6 +584,51 @@ export default function SettingsPage() {
                 </Select.Positioner>
               </Select.Root>
             </Stack>
+          </Stack>
+        </Box>
+
+        {/* Notification Settings Entry Card */}
+        <Box
+          bg="bg.surface"
+          borderRadius="2xl"
+          border="1px solid"
+          borderColor="border.default"
+          boxShadow="0 10px 30px -10px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.01)"
+          p={8}
+          transition="all 0.25s"
+          _hover={{ borderColor: 'indigo.200', boxShadow: '0 12px 36px -8px rgba(99,102,241,0.06)' }}
+        >
+          <Stack gap={6}>
+            <Box pb={4} borderBottom="1px solid" borderColor="border.default">
+              <Heading size="md" fontWeight="bold" color="text.primary">
+                Kebijakan Notifikasi
+              </Heading>
+              <Text fontSize="xs" color="text.secondary" mt={0.5}>
+                Atur secara mutlak jenis notifikasi apa saja yang berhak diterima oleh masing-masing Role (kustom & system).
+              </Text>
+            </Box>
+
+            <Flex align="center" justify="space-between" wrap="wrap" gap={4}>
+              <Box>
+                <Text fontWeight="semibold" color="text.primary" fontSize="sm">Konfigurasi Matriks Penerimaan</Text>
+                <Text fontSize="xs" color="text.secondary" mt={0.5}>Atur hak akses notifikasi agar tidak spaming dan relevan.</Text>
+              </Box>
+              <Button
+                bg="indigo.50"
+                color="indigo.600"
+                _hover={{ bg: 'indigo.100' }}
+                borderRadius="xl"
+                fontWeight="bold"
+                onClick={() => router.push('/admin/settings/notifications')}
+                display="flex"
+                alignItems="center"
+                gap={2}
+                cursor="pointer"
+              >
+                <Bell size={16} />
+                Atur Kebijakan Notifikasi
+              </Button>
+            </Flex>
           </Stack>
         </Box>
 

@@ -287,7 +287,10 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
         ],
       }, session.student.userId);
 
-      return updatedSession;
+      return {
+        ...updatedSession,
+        score: session.exam.showScore ? updatedSession.score : null,
+      };
     });
   }
 
@@ -436,7 +439,7 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
       throw new NotFoundException('Student not found');
     }
 
-    return this.prisma.examSession.findMany({
+    const history = await this.prisma.examSession.findMany({
       where: {
         studentId: student.id,
         status: {
@@ -459,6 +462,11 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
         endTime: 'desc',
       },
     });
+
+    return history.map(session => ({
+      ...session,
+      score: session.exam.showScore ? session.score : null,
+    }));
   }
 
   async exportToExcel(examId: string) {

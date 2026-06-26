@@ -89,4 +89,8 @@ export class CreateExamDto {
   @IsEnum(ExamStatus)
   @IsOptional()
   status?: ExamStatus;
+
+  @IsBoolean()
+  @IsOptional()
+  showScore?: boolean;
 }

@@ -230,6 +230,7 @@ export class ExamsService {
       ...(typeof data.forceFullscreen === 'boolean' && { forceFullscreen: data.forceFullscreen }),
       ...(typeof data.randomizeSoal === 'boolean' && { randomizeSoal: data.randomizeSoal }),
       ...(typeof data.randomizeOpsi === 'boolean' && { randomizeOpsi: data.randomizeOpsi }),
+      ...(typeof data.showScore === 'boolean' && { showScore: data.showScore }),
     };
 
     // Konversi empty string ke null untuk relasi opsional

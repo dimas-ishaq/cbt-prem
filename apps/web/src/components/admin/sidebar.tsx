@@ -249,103 +249,74 @@ export function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onMobile
             </Stack>
           ))}
 
-          {!collapsed && (() => {
-            const isNotificationsActive = pathname.startsWith('/admin/notifications');
-            return (
-              <Box px={3} pt={4} borderTop="1px solid" borderColor="rgba(255,255,255,0.1)">
-                <Link href="/admin/notifications" passHref style={{ width: '100%', textDecoration: 'none' }}>
-                  <Flex
-                    align="center"
-                    justify="space-between"
-                    py={2.5}
-                    px={3}
-                    borderRadius="xl"
-                    cursor="pointer"
-                    transition="all 0.15s"
-                    style={isNotificationsActive ? { background: 'rgba(99,102,241,0.18)', border: '1px solid rgba(99,102,241,0.25)' } : { background: 'transparent', border: '1px solid transparent' }}
-                    _hover={!isNotificationsActive ? { bg: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.05)' } : {}}
-                    onClick={!isDesktop ? onMobileClose : undefined}
-                  >
-                    <HStack gap={3} color={isNotificationsActive ? '#818cf8' : '#7a8fab'}>
-                      <Bell size={17} />
-                      <Text fontSize="xs" fontWeight={isNotificationsActive ? 'bold' : 'medium'} color={isNotificationsActive ? '#c7d2fe' : '#7a8fab'}>
-                        {t('notifications')}
-                      </Text>
-                    </HStack>
-                  </Flex>
-                </Link>
-              </Box>
-            );
-          })()}
-        </Stack>
-
-        <Box px={collapsed ? 2 : 3} py={4} borderTop="1px solid" style={{ borderColor: 'rgba(28,45,74,0.6)' }}>
-          <Link href="/admin/profile" passHref style={{ width: '100%', textDecoration: 'none' }}>
-            <Flex
-              direction={collapsed ? 'column' : 'row'}
-              align="center"
-              gap={3}
-              px={collapsed ? 0 : 3}
-              py={2.5}
-              borderRadius="xl"
-              mb={1}
-              cursor="pointer"
-              _hover={{ bg: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.1)' }}
-              transition="all 0.15s"
-              style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}
-            >
+          <Box px={collapsed ? 2 : 3} py={4} borderTop="1px solid" style={{ borderColor: 'rgba(28,45,74,0.6)' }}>
+            <Link href="/admin/profile" passHref style={{ width: '100%', textDecoration: 'none' }}>
               <Flex
-                w={8}
-                h={8}
-                borderRadius="full"
+                direction={collapsed ? 'column' : 'row'}
                 align="center"
-                justify="center"
-                color="white"
-                fontWeight="black"
-                fontSize="sm"
-                flexShrink={0}
-                overflow="hidden"
-                style={user?.photo ? {} : { background: 'linear-gradient(135deg, #4f46e5, #7c3aed)', boxShadow: '0 2px 8px rgba(79,70,229,0.4)' }}
+                gap={3}
+                px={collapsed ? 0 : 3}
+                py={2.5}
+                borderRadius="xl"
+                mb={1}
+                cursor="pointer"
+                _hover={{ bg: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.1)' }}
+                transition="all 0.15s"
+                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}
               >
-                {user?.photo ? (
-                  <Image
-                    src={user.photo.startsWith('http') ? user.photo : `${(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api').replace(/\/api$/, '')}${user.photo}`}
-                    alt="Avatar"
-                    objectFit="cover"
-                    w="full"
-                    h="full"
-                  />
-                ) : (
-                  user?.fullName?.charAt(0)?.toUpperCase() || 'A'
+                <Flex
+                  w={8}
+                  h={8}
+                  borderRadius="full"
+                  align="center"
+                  justify="center"
+                  color="white"
+                  fontWeight="black"
+                  fontSize="sm"
+                  flexShrink={0}
+                  overflow="hidden"
+                  style={user?.photo ? {} : { background: 'linear-gradient(135deg, #4f46e5, #7c3aed)', boxShadow: '0 2px 8px rgba(79,70,229,0.4)' }}
+                >
+                  {user?.photo ? (
+                    <Image
+                      src={user.photo.startsWith('http') ? user.photo : `${(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api').replace(/\/api$/, '')}${user.photo}`}
+                      alt="Avatar"
+                      objectFit="cover"
+                      w="full"
+                      h="full"
+                    />
+                  ) : (
+                    user?.fullName?.charAt(0)?.toUpperCase() || 'A'
+                  )}
+                </Flex>
+                {!collapsed && (
+                  <Box overflow="hidden" flex={1} minW={0}>
+                    <Text fontSize="sm" fontWeight="bold" color="white" lineClamp={1} lineHeight="1.2">{user?.fullName}</Text>
+                    <Text fontSize="2xs" color="blue.500" fontWeight="bold" textTransform="uppercase" letterSpacing="widest" lineClamp={1} mt={0.5}>{user?.role}</Text>
+                  </Box>
                 )}
               </Flex>
-              {!collapsed && (
-                <Box overflow="hidden" flex={1} minW={0}>
-                  <Text fontSize="sm" fontWeight="bold" color="white" lineClamp={1} lineHeight="1.2">{user?.fullName}</Text>
-                  <Text fontSize="2xs" color="blue.500" fontWeight="bold" textTransform="uppercase" letterSpacing="widest" lineClamp={1} mt={0.5}>{user?.role}</Text>
-                </Box>
-              )}
-            </Flex>
-          </Link>
-          <Button
-            onClick={handleLogout}
-            variant="ghost"
-            w="full"
-            justifyContent={collapsed ? 'center' : 'start'}
-            px={3}
-            py={2}
-            borderRadius="xl"
-            cursor="pointer"
-            color="#6b7fa0"
-            _hover={{ bg: 'rgba(244,63,94,0.08)', color: '#fb7185', borderColor: 'rgba(244,63,94,0.15)' }}
-            border="1px solid transparent"
-            transition="all 0.15s"
-            size="sm"
-          >
-            <LogOut size={16} />
-            {!collapsed && <Text fontWeight="semibold" ml={2.5} fontSize="sm">{t('logout')}</Text>}
-          </Button>
-        </Box>
+            </Link>
+            <Button
+              onClick={handleLogout}
+              variant="ghost"
+              w="full"
+              justifyContent={collapsed ? 'center' : 'start'}
+              px={3}
+              py={2}
+              borderRadius="xl"
+              cursor="pointer"
+              color="#6b7fa0"
+              _hover={{ bg: 'rgba(244,63,94,0.08)', color: '#fb7185', borderColor: 'rgba(244,63,94,0.15)' }}
+              border="1px solid transparent"
+              transition="all 0.15s"
+              size="sm"
+            >
+              <LogOut size={16} />
+              {!collapsed && <Text fontWeight="semibold" ml={2.5} fontSize="sm">{t('logout')}</Text>}
+            </Button>
+          </Box>
+        </Stack>
       </Box>
     </>
   );

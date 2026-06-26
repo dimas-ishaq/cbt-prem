@@ -84,6 +84,7 @@ export default function EditExamPage({ params }: EditExamPageProps) {
     maxAttempts: 1,
     randomizeSoal: true,
     randomizeOpsi: true,
+    showScore: true,
     passingGrade: 0,
     status: 'DRAFT',
     examGroupId: '',
@@ -220,6 +221,7 @@ export default function EditExamPage({ params }: EditExamPageProps) {
         maxAttempts: exam.maxAttempts ?? 1,
         randomizeSoal: exam.randomizeSoal ?? true,
         randomizeOpsi: exam.randomizeOpsi ?? true,
+        showScore: exam.showScore ?? true,
         passingGrade: exam.passingGrade ?? 0,
         status: exam.status || 'DRAFT',
         examGroupId: exam.examGroupId || '',
@@ -321,6 +323,7 @@ export default function EditExamPage({ params }: EditExamPageProps) {
       // ⬇ boolean eksplisit — ini kunci utama agar nilai selalu tersimpan benar
       randomizeSoal: Boolean(formData.randomizeSoal),
       randomizeOpsi: Boolean(formData.randomizeOpsi),
+      showScore: Boolean(formData.showScore),
       requireSeb: Boolean(formData.requireSeb),
       blockKeyCopyPaste: Boolean(formData.blockKeyCopyPaste),
       forceFullscreen: Boolean(formData.forceFullscreen),
@@ -870,6 +873,15 @@ export default function EditExamPage({ params }: EditExamPageProps) {
                       <Checkbox.HiddenInput />
                       <Checkbox.Control />
                       <Checkbox.Label fontSize="sm" color="gray.700">Acak Urutan Opsi</Checkbox.Label>
+                    </Checkbox.Root>
+
+                    <Checkbox.Root
+                      checked={formData.showScore}
+                      onCheckedChange={(details) => setFormData({ ...formData, showScore: !!details.checked })}
+                    >
+                      <Checkbox.HiddenInput />
+                      <Checkbox.Control />
+                      <Checkbox.Label fontSize="sm" color="gray.700">Tampilkan Nilai ke Siswa</Checkbox.Label>
                     </Checkbox.Root>
 
                     <Checkbox.Root

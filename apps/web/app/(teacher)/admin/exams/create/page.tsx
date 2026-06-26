@@ -76,6 +76,7 @@ export default function CreateExamPage() {
     maxAttempts: 1,
     randomizeSoal: true,
     randomizeOpsi: true,
+    showScore: true,
     passingGrade: 0,
     status: 'DRAFT',
     examGroupId: '',
@@ -229,6 +230,7 @@ export default function CreateExamPage() {
       questionIds: selectedQuestionIds,
       rombelIds: selectedRombelIds,
       majorIds: computedMajorIds,
+      showScore: Boolean(formData.showScore),
       startTime: `${formData.startDate}T${formData.startTimeField}:00`,
       endTime: `${formData.endDate}T${formData.endTimeField}:00`,
       sebConfigKey: formData.requireSeb ? (formData.sebConfigKey?.trim() || undefined) : undefined,
@@ -764,6 +766,15 @@ export default function CreateExamPage() {
                       <Checkbox.HiddenInput />
                       <Checkbox.Control />
                       <Checkbox.Label fontSize="sm" color="gray.700">Acak Urutan Opsi</Checkbox.Label>
+                    </Checkbox.Root>
+
+                    <Checkbox.Root
+                      checked={formData.showScore}
+                      onCheckedChange={(details) => setFormData({ ...formData, showScore: !!details.checked })}
+                    >
+                      <Checkbox.HiddenInput />
+                      <Checkbox.Control />
+                      <Checkbox.Label fontSize="sm" color="gray.700">Tampilkan Nilai ke Siswa</Checkbox.Label>
                     </Checkbox.Root>
 
                     <Checkbox.Root

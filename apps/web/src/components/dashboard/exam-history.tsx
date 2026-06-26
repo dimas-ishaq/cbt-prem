@@ -124,7 +124,9 @@ export function ExamHistory() {
                         <Text fontSize="2xs" color="text.muted" fontWeight="medium">{t('points')}</Text>
                       </>
                     ) : (
-                      <Text fontSize="xs" color="gray.400" fontStyle="italic">{t('notGraded')}</Text>
+                      <Text fontSize="xs" color="gray.450" fontStyle="italic" fontWeight="medium">
+                        {session.exam && (session.exam as any).showScore === false ? 'Dirahasiakan' : t('notGraded')}
+                      </Text>
                     )}
                     <Link href={`/exams/${(session.exam as any).id}`} style={{ width: '100%' }}>
                       <Button size="xs" variant="outline" w="full" mt={1} borderRadius="lg" fontSize="2xs" fontWeight="semibold" color="text.secondary" borderColor="border.default" _hover={{ bg: 'gray.50', borderColor: 'gray.300' }}>
