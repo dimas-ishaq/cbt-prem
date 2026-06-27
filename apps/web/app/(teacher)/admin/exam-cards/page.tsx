@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { toast } from '@/lib/toaster';
@@ -55,6 +55,7 @@ export default function ExamCardsPage() {
 
   // States
   const [selectedExamGroupId, setSelectedExamGroupId] = useState<string>('');
+  const [selectedGrade, setSelectedGrade] = useState<string>('X');
   const [selectedRombelId, setSelectedRombelId] = useState<string>('');
   const [cardLayout, setCardLayout] = useState<ExamCardLayout>('grid-6');
   const [headmasterName, setHeadmasterName] = useState<string>('Drs. H. Ahmad Fauzi, M.Pd.');
@@ -93,12 +94,27 @@ export default function ExamCardsPage() {
   const examGroupList = Array.isArray(examGroups) ? examGroups : [];
   const rombelList = Array.isArray(rombels) ? rombels : [];
 
+  // Filter rombels by selected grade (X, XI, XII)
+  const filteredRombels = useMemo(() => {
+    if (!selectedGrade) return rombelList;
+    return rombelList.filter(r => r.name.toLowerCase().startsWith(`${selectedGrade.toLowerCase()} `));
+  }, [rombelList, selectedGrade]);
+
   const examGroupCollection = createListCollection({
     items: examGroupList.map((eg) => ({ label: eg.name, value: eg.id })),
   });
 
+  const gradeCollection = createListCollection({
+    items: [
+      { label: 'Semua Tingkatan', value: '' },
+      { label: 'Kelas 10 (X)', value: 'X' },
+      { label: 'Kelas 11 (XI)', value: 'XI' },
+      { label: 'Kelas 12 (XII)', value: 'XII' },
+    ],
+  });
+
   const rombelCollection = createListCollection({
-    items: rombelList.map((r) => ({ label: r.name, value: r.id })),
+    items: filteredRombels.map((r) => ({ label: r.name, value: r.id })),
   });
 
   const layoutCollection = createListCollection({
@@ -151,11 +167,11 @@ export default function ExamCardsPage() {
     <Stack gap={6} h="100%">
       {/* Page Title */}
       <Box>
-        <Heading size="xl" fontWeight="extrabold" color="gray.950" letterSpacing="tight">
+        <Heading size="xl" fontWeight="extrabold" color="text.primary" letterSpacing="tight">
           Cetak Kartu Peserta Ujian
         </Heading>
-        <Text color="gray.500" mt={1} fontSize="sm">
-          Cetak kartu ujian satu rombel sekaligus dengan layout presisi, tanda tangan kepala sekolah, dan barcode/QR Code.
+        <Text color="text.secondary" mt={1} fontSize="sm">
+          Cetak kartu ujian satu rombel sekaligus dengan layout prersisi, tanda tangan kepala sekolah, dan barcode/QR Code.
         </Text>
       </Box>
 
@@ -165,16 +181,16 @@ export default function ExamCardsPage() {
         {/* Left Side: Control Panel */}
         <Stack gap={5}>
           {/* Card Filter */}
-          <Box bg="white" p={5} borderRadius="2xl" shadow="sm" border="1px solid" borderColor="gray.100">
-            <Heading size="md" fontWeight="bold" mb={4} color="gray.900" display="flex" alignItems="center" gap={2}>
-              <Settings size={18} className="text-indigo-600" />
+          <Box bg="bg.surface" p={5} borderRadius="2xl" shadow="sm" border="1px solid" borderColor="border.default">
+            <Heading size="md" fontWeight="bold" mb={4} color="text.primary" display="flex" alignItems="center" gap={2}>
+              <Settings size={18} color="var(--chakra-colors-brand-text)" />
               Filter & Pengaturan
             </Heading>
             
             <Stack gap={4}>
               {/* Select Kegiatan Ujian */}
               <Stack gap={1.5}>
-                <Text fontSize="xs" fontWeight="bold" color="gray.600">Kegiatan Ujian (Exam Group)</Text>
+                <Text fontSize="xs" fontWeight="bold" color="text.secondary">Kegiatan Ujian (Exam Group)</Text>
                 {isLoadingExamGroups ? <Spinner size="xs" /> : (
                   <Select.Root
                     collection={examGroupCollection}
@@ -204,9 +220,42 @@ export default function ExamCardsPage() {
                 )}
               </Stack>
 
+              {/* Select Tingkatan Kelas */}
+              <Stack gap={1.5}>
+                <Text fontSize="xs" fontWeight="bold" color="text.secondary">Tingkatan Kelas</Text>
+                <Select.Root
+                  collection={gradeCollection}
+                  value={selectedGrade ? [selectedGrade] : []}
+                  onValueChange={(details) => {
+                    setSelectedGrade(details.value[0] ?? '');
+                    setSelectedRombelId(''); // Reset rombel saat tingkat kelas berubah
+                  }}
+                  size="sm"
+                >
+                  <Select.HiddenSelect />
+                  <Select.Control>
+                    <Select.Trigger>
+                      <Select.ValueText placeholder="Semua Tingkatan" />
+                    </Select.Trigger>
+                    <Select.IndicatorGroup>
+                      <Select.Indicator />
+                    </Select.IndicatorGroup>
+                  </Select.Control>
+                  <Select.Positioner>
+                    <Select.Content>
+                      {gradeCollection.items.map((item) => (
+                        <Select.Item key={item.value} item={item}>
+                          {item.label}
+                        </Select.Item>
+                      ))}
+                    </Select.Content>
+                  </Select.Positioner>
+                </Select.Root>
+              </Stack>
+
               {/* Select Rombongan Belajar */}
               <Stack gap={1.5}>
-                <Text fontSize="xs" fontWeight="bold" color="gray.600">Rombongan Belajar (Kelas)</Text>
+                <Text fontSize="xs" fontWeight="bold" color="text.secondary">Rombongan Belajar (Kelas)</Text>
                 {isLoadingRombels ? <Spinner size="xs" /> : (
                   <Select.Root
                     collection={rombelCollection}
@@ -217,7 +266,7 @@ export default function ExamCardsPage() {
                     <Select.HiddenSelect />
                     <Select.Control>
                       <Select.Trigger>
-                        <Select.ValueText placeholder="-- Pilih Rombel --" />
+                        <Select.ValueText placeholder={selectedGrade ? "-- Pilih Rombel --" : "-- Pilih Rombel (Filter Tingkatan Dulu) --"} />
                       </Select.Trigger>
                       <Select.IndicatorGroup>
                         <Select.Indicator />
@@ -238,7 +287,7 @@ export default function ExamCardsPage() {
 
               {/* Layout Cards */}
               <Stack gap={1.5}>
-                <Text fontSize="xs" fontWeight="bold" color="gray.600">Tata Letak (Layout)</Text>
+                <Text fontSize="xs" fontWeight="bold" color="text.secondary">Tata Letak (Layout)</Text>
                 <Select.Root
                   collection={layoutCollection}
                   value={[cardLayout]}
@@ -269,15 +318,15 @@ export default function ExamCardsPage() {
           </Box>
 
           {/* Card Customization Info (Kepala Sekolah) */}
-          <Box bg="white" p={5} borderRadius="2xl" shadow="sm" border="1px solid" borderColor="gray.100">
-            <Heading size="md" fontWeight="bold" mb={4} color="gray.900" display="flex" alignItems="center" gap={2}>
-              <UserCheck size={18} className="text-indigo-600" />
+          <Box bg="bg.surface" p={5} borderRadius="2xl" shadow="sm" border="1px solid" borderColor="border.default">
+            <Heading size="md" fontWeight="bold" mb={4} color="text.primary" display="flex" alignItems="center" gap={2}>
+              <UserCheck size={18} color="var(--chakra-colors-brand-text)" />
               Tanda Tangan & Detail
             </Heading>
 
             <Stack gap={4}>
               <Stack gap={1}>
-                <Text fontSize="xs" fontWeight="bold" color="gray.600">Nama Kepala Sekolah</Text>
+                <Text fontSize="xs" fontWeight="bold" color="text.secondary">Nama Kepala Sekolah</Text>
                 <Input
                   size="sm"
                   value={headmasterName}
@@ -288,7 +337,7 @@ export default function ExamCardsPage() {
               </Stack>
 
               <Stack gap={1}>
-                <Text fontSize="xs" fontWeight="bold" color="gray.600">NIP Kepala Sekolah</Text>
+                <Text fontSize="xs" fontWeight="bold" color="text.secondary">NIP Kepala Sekolah</Text>
                 <Input
                   size="sm"
                   value={headmasterNip}
@@ -299,7 +348,7 @@ export default function ExamCardsPage() {
               </Stack>
 
               <Stack gap={1}>
-                <Text fontSize="xs" fontWeight="bold" color="gray.600">Kota & Tanggal Kartu</Text>
+                <Text fontSize="xs" fontWeight="bold" color="text.secondary">Kota & Tanggal Kartu</Text>
                 <Input
                   size="sm"
                   value={cardDate}
@@ -313,9 +362,9 @@ export default function ExamCardsPage() {
 
           {/* Download Trigger */}
           <Button
-            bg="indigo.650"
-            color="white"
-            _hover={{ bg: 'indigo.700' }}
+            bg="brand.solid"
+            color="text.inverted"
+            _hover={{ bg: 'brand.text' }}
             h={12}
             borderRadius="xl"
             fontWeight="bold"
@@ -333,21 +382,21 @@ export default function ExamCardsPage() {
 
         {/* Right Side: Virtual Sheet WYSIWYG Preview */}
         <Box
-          bg="gray.50"
+          bg="bg.subtle"
           borderRadius="2xl"
           p={6}
           border="1px solid"
-          borderColor="gray.100"
+          borderColor="border.default"
           minH="500px"
           position="relative"
         >
           <Flex justify="space-between" align="center" mb={4}>
-            <Heading size="md" fontWeight="bold" color="gray.850" display="flex" alignItems="center" gap={2}>
-              <LayoutGrid size={18} className="text-indigo-600" />
+            <Heading size="md" fontWeight="bold" color="text.primary" display="flex" alignItems="center" gap={2}>
+              <LayoutGrid size={18} color="var(--chakra-colors-brand-text)" />
               Pratinjau Halaman Cetak
             </Heading>
             {students.length > 0 && (
-              <Text fontSize="xs" color="gray.500" fontWeight="semibold">
+              <Text fontSize="xs" color="text.secondary" fontWeight="semibold">
                 Total: {students.length} Siswa ({studentPages.length} Halaman PDF)
               </Text>
             )}
@@ -356,20 +405,20 @@ export default function ExamCardsPage() {
           {/* Loader or Empty State */}
           {isLoadingStudents ? (
             <Flex justify="center" align="center" h="400px" direction="column" gap={3}>
-              <Spinner size="xl" color="indigo.600" />
-              <Text fontSize="sm" color="gray.500">Memuat data siswa...</Text>
+              <Spinner size="xl" color="brand.solid" />
+              <Text fontSize="sm" color="text.secondary">Memuat data siswa...</Text>
             </Flex>
           ) : !selectedRombelId ? (
-            <Flex justify="center" align="center" h="400px" direction="column" gap={3} border="2px dashed" borderColor="gray.200" borderRadius="2xl" p={8}>
-              <Users size={48} className="text-gray-300" />
-              <Text fontSize="sm" color="gray.500" textAlign="center" maxW="300px">
+            <Flex justify="center" align="center" h="400px" direction="column" gap={3} border="2px dashed" borderColor="border.default" borderRadius="2xl" p={8}>
+              <Users size={48} color="var(--chakra-colors-text-muted)" />
+              <Text fontSize="sm" color="text.secondary" textAlign="center" maxW="300px">
                 Silakan pilih Rombongan Belajar di panel kiri untuk memuat pratinjau kartu ujian.
               </Text>
             </Flex>
           ) : students.length === 0 ? (
-            <Flex justify="center" align="center" h="400px" direction="column" gap={3} border="2px dashed" borderColor="gray.200" borderRadius="2xl" p={8}>
-              <Users size={48} className="text-gray-300" />
-              <Text fontSize="sm" color="gray.500">
+            <Flex justify="center" align="center" h="400px" direction="column" gap={3} border="2px dashed" borderColor="border.default" borderRadius="2xl" p={8}>
+              <Users size={48} color="var(--chakra-colors-text-muted)" />
+              <Text fontSize="sm" color="text.secondary">
                 Tidak ada data siswa ditemukan di rombel ini.
               </Text>
             </Flex>
@@ -379,10 +428,10 @@ export default function ExamCardsPage() {
               {studentPages.map((pageChunk, pageIndex) => (
                 <Box
                   key={pageIndex}
-                  bg="white"
+                  bg="bg.surface"
                   boxShadow="md"
                   border="1px solid"
-                  borderColor="gray.200"
+                  borderColor="border.default"
                   p={6}
                   borderRadius="lg"
                   position="relative"
@@ -394,7 +443,7 @@ export default function ExamCardsPage() {
                     right={4}
                     fontSize="10px"
                     fontWeight="bold"
-                    color="gray.400"
+                    color="text.muted"
                   >
                     Halaman {pageIndex + 1} dari {studentPages.length}
                   </Box>

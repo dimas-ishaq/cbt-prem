@@ -1,22 +1,22 @@
-﻿import type { UserData } from '../user-types';
+import { Badge } from '@chakra-ui/react';
+import type { UserData } from '../user-types';
 import { ROLE_BADGE } from '../user-utils';
 
 export function UserRoleBadge({ role }: { role: UserData['role'] }) {
-  const cfg = ROLE_BADGE[role] ?? { label: role, color: 'text-gray-700', bg: 'bg-gray-100' };
+  const cfg = ROLE_BADGE[role] ?? { label: role, color: 'text.primary', bg: 'bg.subtle' };
   return (
-    <span
-      style={{
-        padding: '2px 10px',
-        borderRadius: '999px',
-        fontSize: '0.72rem',
-        fontWeight: 600,
-        letterSpacing: '0.02em',
-        background: cfg.bg.replace('bg-', '#').replace('-100', ''),
-        color: cfg.color.replace('text-', '#').replace('-700', ''),
-      }}
-      className={`${cfg.bg} ${cfg.color}`}
+    <Badge
+      px={2.5}
+      py={1}
+      borderRadius="badge"
+      fontSize="xs"
+      fontWeight="semibold"
+      bg={cfg.bg}
+      color={cfg.color}
+      borderWidth="1px"
+      borderColor="border.default"
     >
       {cfg.label}
-    </span>
+    </Badge>
   );
 }

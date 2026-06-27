@@ -44,13 +44,13 @@ export const ExamCardTemplate: React.FC<ExamCardTemplateProps> = ({
     <Box
       w="100%"
       border="1.5px dashed"
-      borderColor="gray.500"
+      borderColor="border.strong"
       borderRadius="md"
       pt={4}
       px={4}
       pb={5}
-      bg="white"
-      color="black"
+      bg="bg.surface"
+      color="text.primary"
       fontSize="xs"
       position="relative"
       boxSizing="border-box"
@@ -63,27 +63,27 @@ export const ExamCardTemplate: React.FC<ExamCardTemplateProps> = ({
         <Flex
           w={10}
           h={10}
-          bg="indigo.50"
+          bg="brand.subtle"
           border="1px solid"
-          borderColor="indigo.200"
+          borderColor="border.brand"
           align="center"
           justify="center"
           borderRadius="md"
-          color="indigo.600"
+          color="brand.text"
         >
           <GraduationCap size={20} />
         </Flex>
         <Box flex={1} textAlign="center" justifyContent="center">
-          <Text fontWeight="extrabold" fontSize="18px" textTransform="uppercase" letterSpacing="wide" color="gray.850">
+          <Text fontWeight="extrabold" fontSize="18px" textTransform="uppercase" letterSpacing="wide" color="text.primary">
             KARTU PESERTA UJIAN
           </Text>
-          <Text fontWeight="bold" fontSize="14px" color="indigo.700" lineHeight="1.25" pb="8px">
+          <Text fontWeight="bold" fontSize="14px" color="brand.text" lineHeight="1.25" pb="8px">
             {examGroupName || 'UJIAN BERBASIS KOMPUTER'}
           </Text>
         </Box>
       </Flex>
 
-      <Separator borderColor="gray.800" mb={3} />
+      <Separator borderColor="border.strong" mb={3} />
 
       {/* Main Content Info */}
       <Flex gap={2} mb={3}>
@@ -91,29 +91,29 @@ export const ExamCardTemplate: React.FC<ExamCardTemplateProps> = ({
         <Box flex={1}>
           <Flex direction="column" gap={1.5}>
             <Flex>
-              <Text w="75px" fontWeight="bold" color="gray.600" fontSize="9px">NAMA</Text>
-              <Text w="8px" color="gray.500">:</Text>
+              <Text w="75px" fontWeight="bold" color="text.secondary" fontSize="9px">NAMA</Text>
+              <Text w="8px" color="text.muted">:</Text>
               <Text flex={1} fontWeight="bold" fontSize="10px" textTransform="uppercase" lineClamp={1}>
                 {student.user.fullName}
               </Text>
             </Flex>
             <Flex>
-              <Text w="75px" fontWeight="bold" color="gray.600" fontSize="9px">NIS/NISN</Text>
-              <Text w="8px" color="gray.500">:</Text>
+              <Text w="75px" fontWeight="bold" color="text.secondary" fontSize="9px">NIS/NISN</Text>
+              <Text w="8px" color="text.muted">:</Text>
               <Text flex={1} fontFamily="mono" fontSize="9.5px">
                 {student.nis || '-'}
               </Text>
             </Flex>
             <Flex>
-              <Text w="75px" fontWeight="bold" color="gray.600" fontSize="9px">ROMBEL</Text>
-              <Text w="8px" color="gray.500">:</Text>
+              <Text w="75px" fontWeight="bold" color="text.secondary" fontSize="9px">ROMBEL</Text>
+              <Text w="8px" color="text.muted">:</Text>
               <Text flex={1} fontSize="9.5px">
                 {student.rombel?.name || '-'}
               </Text>
             </Flex>
             <Flex>
-              <Text w="75px" fontWeight="bold" color="gray.600" fontSize="9px">JURUSAN</Text>
-              <Text w="8px" color="gray.500">:</Text>
+              <Text w="75px" fontWeight="bold" color="text.secondary" fontSize="9px">JURUSAN</Text>
+              <Text w="8px" color="text.muted">:</Text>
               <Text flex={1} fontSize="9.5px" lineClamp={1}>
                 {student.major?.name || '-'}
               </Text>
@@ -124,17 +124,17 @@ export const ExamCardTemplate: React.FC<ExamCardTemplateProps> = ({
           <Box
             mt={3}
             p={2}
-            bg="gray.50"
+            bg="bg.subtle"
             border="1px dashed"
-            borderColor="gray.800"
+            borderColor="border.strong"
             borderRadius="md"
           >
             <Flex justify="space-between" mb={1}>
-              <Text fontSize="9px" fontWeight="bold" color="gray.650">USERNAME:</Text>
+              <Text fontSize="9px" fontWeight="bold" color="text.secondary">USERNAME:</Text>
               <Text fontSize="9.5px" fontWeight="bold" fontFamily="mono">{student.user.username}</Text>
             </Flex>
             <Flex justify="space-between">
-              <Text fontSize="9px" fontWeight="bold" color="gray.650">PASSWORD:</Text>
+              <Text fontSize="9px" fontWeight="bold" color="text.secondary">PASSWORD:</Text>
               <Text fontSize="9.5px" fontWeight="bold" fontFamily="mono">{student.user.plainPassword || '******'}</Text>
             </Flex>
           </Box>
@@ -147,9 +147,9 @@ export const ExamCardTemplate: React.FC<ExamCardTemplateProps> = ({
           justify="center"
           p={1.5}
           border="1px solid"
-          borderColor="gray.850"
+          borderColor="border.strong"
           borderRadius="md"
-          bg="white"
+          bg="bg.surface"
           w="75px"
           h="75px"
           flexShrink={0}
@@ -160,7 +160,7 @@ export const ExamCardTemplate: React.FC<ExamCardTemplateProps> = ({
 
       {/* Signature Section */}
       <Flex justify="space-between" align="flex-end" mt={2} pt={1}>
-        <Box fontSize="7.5px" color="gray.500">
+        <Box fontSize="7.5px" color="text.muted">
           * Simpan kartu ini untuk login ujian.
         </Box>
         <Box textAlign="center" w="110px" minH="50px">
@@ -171,7 +171,7 @@ export const ExamCardTemplate: React.FC<ExamCardTemplateProps> = ({
             {headmasterName || '--------------------'}
           </Text>
           {headmasterNip && (
-            <Text fontSize="7px" color="gray.600">
+            <Text fontSize="7px" color="text.secondary">
               NIP. {headmasterNip}
             </Text>
           )}

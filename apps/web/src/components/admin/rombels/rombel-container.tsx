@@ -24,7 +24,7 @@ import {
 } from '@chakra-ui/react';
 import { toast } from '@/lib/toaster';
 import { useConfirm } from '@/components/ui/confirmation-dialog';
-import { Plus, Pencil, Trash2, Search, Users, GraduationCap, Mail, ArrowLeft, X, Download, Upload } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Users, GraduationCap, Mail, ArrowLeft, X, Download, Upload, Sparkles } from 'lucide-react';
 import { useRombelQueries } from './hooks/useRombels';
 import { filterRombels, filterRombelStudents } from './rombel-utils';
 import type { Rombel, RombelFormData } from './rombel-types';
@@ -233,9 +233,9 @@ export function RombelContainer() {
 
   if (isLoading) {
     return (
-      <Flex justify="center" align="center" py={16}>
-        <Spinner size="lg" color="indigo.600" />
-        <Text ml={3} color="gray.500">Memuat data rombel...</Text>
+      <Flex minH="100vh" justify="center" align="center" bg="bg.canvas" color='text.primary'>
+        <Spinner size="lg" color='brand.text' />
+        <Text ml={3} color='text.secondary'>Memuat data rombel...</Text>
       </Flex>
     );
   }
@@ -260,14 +260,14 @@ export function RombelContainer() {
             <Heading size="xl" fontWeight="bold" color="indigo.700">
               Anggota Kelas: {rombelDetail?.name || 'Memuat...'}
             </Heading>
-            <Text color="gray.500" mt={1}>
+            <Text color='text.secondary' mt={1}>
               Jurusan: {rombelDetail?.major?.name || '-'}
             </Text>
           </Box>
           {!isLoadingDetail && (
             <Button
               bg="indigo.600"
-              color="white"
+              color="text.inverted"
               _hover={{ bg: 'indigo.700' }}
               borderRadius="lg"
               size="sm"
@@ -288,14 +288,14 @@ export function RombelContainer() {
         {isLoadingDetail ? (
           <Flex justify="center" align="center" py={16}>
             <Spinner size="lg" color="indigo.600" />
-            <Text ml={3} color="gray.500">Memuat daftar siswa...</Text>
+            <Text ml={3} color='text.secondary'>Memuat daftar siswa...</Text>
           </Flex>
         ) : (
           <Stack gap={6}>
             {/* Search box inside page */}
             <Box bg="white" borderRadius="xl" shadow="sm" borderWidth="1px" borderColor="gray.100" p={4}>
               <Box position="relative" flex={1} maxW="md">
-                <Box position="absolute" left={3} top="50%" transform="translateY(-50%)" color="gray.400">
+                <Box position="absolute" left={3} top="50%" transform="translateY(-50%)" color='text.secondary'>
                   <Search size={18} />
                 </Box>
                 <Input
@@ -321,13 +321,13 @@ export function RombelContainer() {
                 p={12}
                 textAlign="center"
               >
-                <Flex display="inline-flex" p={4} bg="gray.100" borderRadius="full" color="gray.400" mb={4}>
+                <Flex display="inline-flex" p={4} bg="gray.100" borderRadius="full" color='text.secondary' mb={4}>
                   <GraduationCap size={32} />
                 </Flex>
                 <Heading size="md" fontWeight="medium" color="gray.900">
                   Tidak Ada Anggota Kelas
                 </Heading>
-                <Text color="gray.500" mt={2}>
+                <Text color='text.secondary' mt={2}>
                   Tidak ada siswa terdaftar dalam rombel ini. Klik tombol "+ Kelola Anggota Kelas" untuk menambahkan siswa.
                 </Text>
               </Box>
@@ -368,9 +368,9 @@ export function RombelContainer() {
                       <Badge colorPalette="gray" variant="subtle" fontSize="xs" borderRadius="md" px={2} mt={1}>
                         NIS: {student.nis}
                       </Badge>
-                      <Flex align="center" gap={1} mt={1.5} color="gray.400" fontSize="xs">
+                      <Flex align="center" gap={1} mt={1.5} color='text.secondary' fontSize="xs">
                         <Mail size={12} />
-                        <Text className="truncate" color="gray.500">{student.user.email}</Text>
+                        <Text className="truncate" color='text.secondary'>{student.user.email}</Text>
                       </Flex>
                     </Box>
                   </Flex>
@@ -407,7 +407,7 @@ export function RombelContainer() {
                   <Heading size="md" color="indigo.700">
                     Kelola Anggota Kelas: {rombelDetail?.name}
                   </Heading>
-                  <Text fontSize="sm" color="gray.500" mt={0.5}>
+                  <Text fontSize="sm" color='text.secondary' mt={0.5}>
                     Filter siswa berdasarkan Jurusan / Kelas, lalu centang untuk memasukkan ke rombel ini.
                   </Text>
                 </Box>
@@ -425,7 +425,7 @@ export function RombelContainer() {
               {isLoadingAllStudents ? (
                 <Flex justify="center" align="center" flex={1} py={12}>
                   <Spinner size="lg" color="indigo.600" />
-                  <Text ml={3} color="gray.500">Memuat semua data siswa...</Text>
+                  <Text ml={3} color='text.secondary'>Memuat semua data siswa...</Text>
                 </Flex>
               ) : (
                 <>
@@ -433,7 +433,7 @@ export function RombelContainer() {
                     <SimpleGrid columns={{ base: 1, md: 3 }} gap={3}>
                       {/* Filter by Major */}
                       <Box>
-                        <Text fontSize="xs" fontWeight="bold" color="gray.500" mb={1}>Filter Jurusan</Text>
+                        <Text fontSize="xs" fontWeight="bold" color='text.secondary' mb={1}>Filter Jurusan</Text>
                         <select
                           value={modalFilterMajorId}
                           onChange={(e) => setModalFilterMajorId(e.target.value)}
@@ -455,7 +455,7 @@ export function RombelContainer() {
                       </Box>
                       {/* Filter by Grade */}
                       <Box>
-                        <Text fontSize="xs" fontWeight="bold" color="gray.500" mb={1}>Tingkat Kelas</Text>
+                        <Text fontSize="xs" fontWeight="bold" color='text.secondary' mb={1}>Tingkat Kelas</Text>
                         <select
                           value={modalFilterGrade}
                           onChange={(e) => {
@@ -480,7 +480,7 @@ export function RombelContainer() {
                       </Box>
                       {/* Filter by Rombel */}
                       <Box>
-                        <Text fontSize="xs" fontWeight="bold" color="gray.500" mb={1}>Filter Rombel (Kelas)</Text>
+                        <Text fontSize="xs" fontWeight="bold" color='text.secondary' mb={1}>Filter Rombel (Kelas)</Text>
                         <select
                           value={filterRombelId}
                           onChange={(e) => setFilterRombelId(e.target.value)}
@@ -506,7 +506,7 @@ export function RombelContainer() {
                     </SimpleGrid>
 
                     <Box position="relative" w="full">
-                      <Box position="absolute" left={3} top="50%" transform="translateY(-50%)" color="gray.400" pointerEvents="none">
+                      <Box position="absolute" left={3} top="50%" transform="translateY(-50%)" color='text.secondary' pointerEvents="none">
                         <Search size={15} />
                       </Box>
                       <Input
@@ -547,7 +547,7 @@ export function RombelContainer() {
                         return (
                           <Flex direction="column" align="center" justify="center" py={12} bg="gray.50" borderRadius="xl">
                             <GraduationCap size={40} className="text-gray-300 mb-2" />
-                            <Text color="gray.500" fontSize="sm" fontWeight="medium">
+                            <Text color='text.secondary' fontSize="sm" fontWeight="medium">
                               Tidak ada siswa yang cocok dengan kriteria filter.
                             </Text>
                           </Flex>
@@ -619,7 +619,7 @@ export function RombelContainer() {
                     </Button>
                     <Button
                       bg="indigo.600"
-                      color="white"
+                      color="text.inverted"
                       _hover={{ bg: 'indigo.700' }}
                       borderRadius="lg"
                       onClick={() => updateRombelStudentsMutation.mutate(selectedStudentIds)}
@@ -641,296 +641,58 @@ export function RombelContainer() {
 
   // DEFAULT GRID VIEW OF ROMBELS
   return (
-    <Stack gap={6}>
-      <Flex justify="space-between" align="center">
-        <Box>
-          <Heading size="xl" fontWeight="bold" color="gray.900">
-            Rombongan Belajar (Rombel)
-          </Heading>
-          <Text color="gray.500" mt={1}>
-            Kelola daftar kelas dan kelompok belajar yang terintegrasi dengan jurusan.
-          </Text>
-        </Box>
-        <HStack gap={3}>
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileChange}
-            accept=".csv"
-            style={{ display: 'none' }}
-          />
-          <Button
-            variant="outline"
-            borderColor="blue.300"
-            color="blue.600"
-            _hover={{ bg: 'blue.50' }}
-            borderRadius="lg"
-            onClick={handleDownloadTemplate}
-            cursor="pointer"
-          >
-            <Download size={18} />
-            Unduh Template
-          </Button>
-          <Button
-            variant="outline"
-            borderColor="gray.300"
-            color="gray.700"
-            _hover={{ bg: 'gray.50' }}
-            borderRadius="lg"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={importMutation.isPending}
-            cursor="pointer"
-          >
-            <Upload size={18} />
-            {importMutation.isPending ? 'Mengimpor...' : 'Impor CSV'}
-          </Button>
-          <Button
-            bg="indigo.600"
-            color="white"
-            _hover={{ bg: 'indigo.700' }}
-            borderRadius="lg"
-            onClick={() => {
-              resetForm();
-              setIsModalOpen(true);
-            }}
-            cursor="pointer"
-          >
-            <Plus size={20} />
-            Tambah Rombel
-          </Button>
-        </HStack>
-      </Flex>
+    <Stack gap={6} bg="bg.canvas" color='text.primary' p={{ base: 4, md: 6 }} minH="100vh">
+      <Box bg="bg.surface" borderRadius="2xl" borderWidth="1px" borderColor="border.default" p={{ base: 5, md: 6 }} shadow="0 4px 16px rgba(0,0,0,0.5)">
+        <Flex justify="space-between" align="flex-start" gap={4} wrap="wrap">
+          <Box maxW="2xl">
+            <HStack gap={2} mb={2} color='brand.text' fontSize="xs" fontWeight="semibold" textTransform="uppercase" letterSpacing="0.12em">
+              <Sparkles size={14} />
+              <Text>Rombel dashboard</Text>
+            </HStack>
+            <Heading size="xl" fontWeight="bold" color='text.primary'>Rombongan Belajar</Heading>
+            <Text color='text.secondary' mt={2}>Kelola kelas, jurusan, dan anggota siswa dalam tampilan dashboard yang padat dan cepat dipindai.</Text>
+          </Box>
+          <HStack gap={3} flexWrap="wrap" justify="flex-end">
+            <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".csv" style={{ display: 'none' }} />
+            <Button variant="outline" borderColor="border.default" color='text.primary' bg="transparent" _hover={{ bg: 'bg.elevated', borderColor: 'brand.text', color: 'text.primary' }} borderRadius="lg" onClick={handleDownloadTemplate} cursor="pointer"><Download size={18} />Unduh Template</Button>
+            <Button variant="outline" borderColor="border.default" color='text.primary' bg="transparent" _hover={{ bg: 'bg.elevated', borderColor: 'brand.text', color: 'text.primary' }} borderRadius="lg" onClick={() => fileInputRef.current?.click()} disabled={importMutation.isPending} cursor="pointer"><Upload size={18} />{importMutation.isPending ? 'Mengimpor...' : 'Impor CSV'}</Button>
+            <Button bg="brand.solid" color="text.inverted" _hover={{ bg: 'brand.solid' }} borderRadius="lg" onClick={() => { resetForm(); setIsModalOpen(true); }} cursor="pointer"><Plus size={20} />Tambah Rombel</Button>
+          </HStack>
+        </Flex>
+      </Box>
 
-        <Box bg="white" borderRadius="xl" shadow="sm" borderWidth="1px" borderColor="gray.100" p={5}>
-          <Flex gap={4} wrap="wrap" align="flex-end">
-            <Box flex="1" minW={{ base: 'full', md: '18rem' }}>
-              <Text fontSize="xs" fontWeight="bold" color="gray.500" mb={2}>
-                Pencarian
-              </Text>
-              <Box position="relative" w="full">
-                <Box position="absolute" left={3} top="50%" transform="translateY(-50%)" color="gray.400" pointerEvents="none">
-                  <Search size={16} />
-                </Box>
-                <Input
-                  pl={10}
-                  size="sm"
-                  placeholder="Cari kelas (contoh: RPL, X, dsb)..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  borderRadius="lg"
-                  borderColor="gray.200"
-                  _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
-                />
-              </Box>
-            </Box>
+      <Box bg="bg.surface" borderRadius="2xl" borderWidth="1px" borderColor="border.default" p={5}>
+        <Flex gap={4} wrap="wrap" align="flex-end">
+          <Box flex="1" minW={{ base: 'full', md: '18rem' }}>
+            <Text fontSize="xs" fontWeight="bold" color='text.secondary' mb={2}>Pencarian</Text>
+            <Box position="relative" w="full"><Box position="absolute" left={3} top="50%" transform="translateY(-50%)" color='text.secondary' pointerEvents="none"><Search size={16} /></Box><Input pl={10} size="sm" placeholder="Cari kelas..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} borderRadius="lg" borderColor="border.default" bg="bg.elevated" color='text.primary' _placeholder={{ color: 'text.secondary' }} _focus={{ borderColor: 'brand.text', boxShadow: '0 0 0 1px var(--chakra-colors-brand-solid)' }} /></Box>
+          </Box>
+          <Box minW={{ base: 'full', sm: '180px' }} flex={{ base: '1', sm: 'none' }}><Text fontSize="xs" fontWeight="bold" color='text.secondary' mb={2}>Filter Tingkatan</Text>{(() => { const gradeItems = [{ label: 'Semua Tingkatan', value: '' }, { label: 'Kelas X', value: 'X' }, { label: 'Kelas XI', value: 'XI' }, { label: 'Kelas XII', value: 'XII' }]; const gradeCollection = createListCollection({ items: gradeItems }); const currentItem = gradeItems.find(item => item.value === filterGrade); return <Select.Root collection={gradeCollection} value={[filterGrade]} onValueChange={(details) => setFilterGrade(details.value[0] || '')} size="sm"><Select.HiddenSelect /><Select.Control><Select.Trigger><Select.ValueText placeholder="Semua Tingkatan">{currentItem?.label}</Select.ValueText></Select.Trigger><Select.IndicatorGroup><Select.Indicator /></Select.IndicatorGroup></Select.Control><Select.Positioner><Select.Content zIndex={100}>{gradeCollection.items.map((item) => <Select.Item key={item.value} item={item}>{item.label}</Select.Item>)}</Select.Content></Select.Positioner></Select.Root>; })()}</Box>
+          <Box minW={{ base: 'full', sm: '220px' }} flex={{ base: '1', sm: 'none' }}><Text fontSize="xs" fontWeight="bold" color='text.secondary' mb={2}>Filter Jurusan</Text>{(() => { const items = [{ label: 'Semua Jurusan', value: '' }, ...(majors || []).map((m) => ({ label: m.name, value: m.id }))]; const majorCollection = createListCollection({ items }); const currentItem = items.find(item => item.value === filterMajorId); return <Select.Root collection={majorCollection} value={[filterMajorId]} onValueChange={(details) => setFilterMajorId(details.value[0] || '')} size="sm"><Select.HiddenSelect /><Select.Control><Select.Trigger><Select.ValueText placeholder="Semua Jurusan">{currentItem?.label}</Select.ValueText></Select.Trigger><Select.IndicatorGroup><Select.Indicator /></Select.IndicatorGroup></Select.Control><Select.Positioner><Select.Content zIndex={100}>{majorCollection.items.map((item) => <Select.Item key={item.value} item={item}>{item.label}</Select.Item>)}</Select.Content></Select.Positioner></Select.Root>; })()}</Box>
+        </Flex>
+      </Box>
 
-            <Box minW={{ base: 'full', sm: '180px' }} flex={{ base: '1', sm: 'none' }}>
-              <Text fontSize="xs" fontWeight="bold" color="gray.500" mb={2}>
-                Filter Tingkatan
-              </Text>
-              {(() => {
-                const gradeItems = [
-                  { label: 'Semua Tingkatan', value: '' },
-                  { label: 'Kelas X', value: 'X' },
-                  { label: 'Kelas XI', value: 'XI' },
-                  { label: 'Kelas XII', value: 'XII' },
-                ];
-                const gradeCollection = createListCollection({ items: gradeItems });
-                const currentItem = gradeItems.find(item => item.value === filterGrade);
-                return (
-                  <Select.Root
-                    collection={gradeCollection}
-                    value={[filterGrade]}
-                    onValueChange={(details) => setFilterGrade(details.value[0] || '')}
-                    size="sm"
-                  >
-                    <Select.HiddenSelect />
-                    <Select.Control>
-                      <Select.Trigger>
-                        <Select.ValueText placeholder="Semua Tingkatan">
-                          {currentItem?.label}
-                        </Select.ValueText>
-                      </Select.Trigger>
-                      <Select.IndicatorGroup>
-                        <Select.Indicator />
-                      </Select.IndicatorGroup>
-                    </Select.Control>
-                    <Select.Positioner>
-                      <Select.Content zIndex={100}>
-                        {gradeCollection.items.map((item) => (
-                          <Select.Item key={item.value} item={item}>
-                            {item.label}
-                          </Select.Item>
-                        ))}
-                      </Select.Content>
-                    </Select.Positioner>
-                  </Select.Root>
-                );
-              })()}
-            </Box>
-
-            <Box minW={{ base: 'full', sm: '220px' }} flex={{ base: '1', sm: 'none' }}>
-              <Text fontSize="xs" fontWeight="bold" color="gray.500" mb={2}>
-                Filter Jurusan
-              </Text>
-              {(() => {
-                const items = [
-                  { label: 'Semua Jurusan', value: '' },
-                  ...(majors || []).map((m) => ({ label: m.name, value: m.id })),
-                ];
-                const majorCollection = createListCollection({ items });
-                const currentItem = items.find(item => item.value === filterMajorId);
-                return (
-                  <Select.Root
-                    collection={majorCollection}
-                    value={[filterMajorId]}
-                    onValueChange={(details) => setFilterMajorId(details.value[0] || '')}
-                    size="sm"
-                  >
-                    <Select.HiddenSelect />
-                    <Select.Control>
-                      <Select.Trigger>
-                        <Select.ValueText placeholder="Semua Jurusan">
-                          {currentItem?.label}
-                        </Select.ValueText>
-                      </Select.Trigger>
-                      <Select.IndicatorGroup>
-                        <Select.Indicator />
-                      </Select.IndicatorGroup>
-                    </Select.Control>
-                    <Select.Positioner>
-                      <Select.Content zIndex={100}>
-                        {majorCollection.items.map((item) => (
-                          <Select.Item key={item.value} item={item}>
-                            {item.label}
-                          </Select.Item>
-                        ))}
-                      </Select.Content>
-                    </Select.Positioner>
-                  </Select.Root>
-                );
-              })()}
-            </Box>
-          </Flex>
-        </Box>
-
-      {/* Grid of Rombels */}
       {filteredRombels?.length === 0 ? (
-        <Box
-          bg="gray.50"
-          borderWidth="2px"
-          borderStyle="dashed"
-          borderColor="gray.200"
-          borderRadius="xl"
-          p={12}
-          textAlign="center"
-        >
-          <Flex display="inline-flex" p={4} bg="gray.100" borderRadius="full" color="gray.400" mb={4}>
-            <Users size={32} />
-          </Flex>
-          <Heading size="md" fontWeight="medium" color="gray.900">
-            Tidak Ada Rombel
-          </Heading>
-          <Text color="gray.500" mt={2}>
-            Belum ada kelas rombongan belajar yang terdaftar.
-          </Text>
+        <Box bg="bg.surface" borderWidth="1px" borderStyle="dashed" borderColor="border.default" borderRadius="2xl" p={12} textAlign="center">
+          <Flex display="inline-flex" p={4} bg="bg.elevated" borderRadius="full" color='brand.text' mb={4}><Users size={32} /></Flex>
+          <Heading size="md" fontWeight="medium" color='text.primary'>Tidak Ada Rombel</Heading>
+          <Text color='text.secondary' mt={2}>Belum ada kelas rombongan belajar yang terdaftar.</Text>
         </Box>
       ) : (
-        <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} gap={6}>
+        <SimpleGrid columns={{ base: 1, md: 2, lg: 2 }} gap={6}>
           {filteredRombels?.map((rombel) => (
-            <Box
-              key={rombel.id}
-              bg="white"
-              borderRadius="xl"
-              borderWidth="1px"
-              borderColor="gray.100"
-              shadow="sm"
-              p={5}
-              transition="all 0.2s"
-              _hover={{ shadow: 'md', borderColor: 'indigo.200', transform: 'translateY(-1px)' }}
-              display="flex"
-              flexDirection="column"
-              justifyContent="space-between"
-              minHeight="170px"
-              cursor="pointer"
-              onClick={() => {
-                setSelectedRombelId(rombel.id);
-                setStudentSearchTerm('');
-              }}
-            >
+            <Box key={rombel.id} bg="bg.surface" borderRadius="2xl" borderWidth="1px" borderColor="border.default" shadow="0 1px 4px rgba(0,0,0,0.4)" p={5} transition="all 0.2s" _hover={{ shadow: '0 4px 16px rgba(0,0,0,0.5)', borderColor: 'brand.text', transform: 'translateY(-1px)' }} display="flex" flexDirection="column" justifyContent="space-between" minHeight="180px" cursor="pointer" onClick={() => { setSelectedRombelId(rombel.id); setStudentSearchTerm(''); }}>
               <Box>
-                <Flex justify="space-between" align="flex-start" gap={2} mb={2}>
-                  <Heading size="md" fontWeight="bold" color="indigo.700">
-                    {rombel.name}
-                  </Heading>
-                  <HStack gap={1} onClick={(e) => e.stopPropagation()}>
-                    <IconButton
-                      aria-label="Edit Rombel"
-                      size="xs"
-                      variant="ghost"
-                      color="gray.500"
-                      _hover={{ bg: 'gray.100', color: 'indigo.600' }}
-                      borderRadius="md"
-                      onClick={() => handleEdit(rombel)}
-                      cursor="pointer"
-                    >
-                      <Pencil size={15} />
-                    </IconButton>
-                    <IconButton
-                      aria-label="Hapus Rombel"
-                      size="xs"
-                      variant="ghost"
-                      color="red.500"
-                      _hover={{ bg: 'red.50' }}
-                      borderRadius="md"
-                      onClick={async () => {
-                        const confirmed = await confirmDialog({
-                          title: 'Hapus Rombel',
-                          description: `Apakah Anda yakin ingin menghapus rombel "${rombel.name}"? Siswa di dalamnya akan kehilangan rombel terkait.`,
-                          confirmText: 'Hapus',
-                        });
-                        if (confirmed) {
-                          deleteMutation.mutate(rombel.id);
-                        }
-                      }}
-                      cursor="pointer"
-                    >
-                      <Trash2 size={15} />
-                    </IconButton>
-                  </HStack>
-                </Flex>
-                <Text fontSize="sm" fontWeight="medium" color="gray.600">
-                  {rombel.major?.name || 'Belum ada jurusan'}
-                </Text>
+                <Flex justify="space-between" align="flex-start" gap={2} mb={2}><Heading size="md" fontWeight="bold" color='text.primary'>{rombel.name}</Heading><HStack gap={1} onClick={(e) => e.stopPropagation()}><IconButton aria-label="Edit Rombel" size="xs" variant="ghost" color='text.secondary' _hover={{ bg: 'bg.elevated', color: 'text.primary' }} borderRadius="md" onClick={() => handleEdit(rombel)} cursor="pointer"><Pencil size={15} /></IconButton><IconButton aria-label="Hapus Rombel" size="xs" variant="ghost" color="status.danger.text" _hover={{ bg: 'status.danger.bg' }} borderRadius="md" onClick={async () => { const confirmed = await confirmDialog({ title: 'Hapus Rombel', description: `Apakah Anda yakin ingin menghapus rombel "${rombel.name}"? Siswa di dalamnya akan kehilangan rombel terkait.`, confirmText: 'Hapus' }); if (confirmed) deleteMutation.mutate(rombel.id); }} cursor="pointer"><Trash2 size={15} /></IconButton></HStack></Flex>
+                <Text fontSize="sm" fontWeight="medium" color='text.secondary'>{rombel.major?.name || 'Belum ada jurusan'}</Text>
               </Box>
-
-              <Flex justify="space-between" align="center" mt={4} pt={3} borderTopWidth="1px" borderColor="gray.50">
-                <Badge colorPalette="indigo" variant="subtle" borderRadius="md" px={2.5} py={0.5}>
-                  {rombel._count?.students || 0} Siswa
-                </Badge>
-                <Text fontSize="xs" fontWeight="semibold" color="indigo.600" _hover={{ color: 'indigo.800' }}>
-                  Lihat Anggota Kelas &rarr;
-                </Text>
-              </Flex>
+              <Flex justify="space-between" align="center" mt={4} pt={3} borderTopWidth="1px" borderColor="border.default"><Badge colorPalette="purple" variant="subtle" borderRadius="md" px={2.5} py={0.5}>{rombel._count?.students || 0} Siswa</Badge><Text fontSize="xs" fontWeight="semibold" color='brand.text'>Lihat Anggota Kelas →</Text></Flex>
             </Box>
           ))}
         </SimpleGrid>
       )}
 
-      <RombelFormModal
-        isOpen={isModalOpen}
-        editingName={editingRombel?.name}
-        formData={formData}
-        majorOptions={majorOptions}
-        isSubmitting={createMutation.isPending || updateMutation.isPending}
-        onClose={() => {
-          setIsModalOpen(false);
-          resetForm();
-        }}
-        onSubmit={handleSubmit}
-        onFormChange={setFormData}
-      />
+      <RombelFormModal isOpen={isModalOpen} editingName={editingRombel?.name} formData={formData} majorOptions={majorOptions} isSubmitting={createMutation.isPending || updateMutation.isPending} onClose={() => { setIsModalOpen(false); resetForm(); }} onSubmit={handleSubmit} onFormChange={setFormData} />
     </Stack>
   );
 }
-

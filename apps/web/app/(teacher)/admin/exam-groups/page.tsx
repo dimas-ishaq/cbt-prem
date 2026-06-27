@@ -2,8 +2,11 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { Plus, Trash2, Pencil, Calendar, Bookmark, Clock, Search, Filter } from 'lucide-react';
-import { useState, useRef, useEffect, useMemo } from 'react';
+import {
+  Plus, Trash2, Pencil, Calendar, Bookmark, Clock, Search, Filter,
+  FolderKanban, BookOpen, CheckCircle2, AlertCircle,
+} from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
 import { ChakraDatePicker } from '@/components/ui/chakra-date-picker';
 import { TablePagination } from '@/components/ui/pagination';
 
@@ -23,6 +26,7 @@ import {
   SimpleGrid,
   Select,
   createListCollection,
+  Grid,
 } from '@chakra-ui/react';
 import { toast } from '@/lib/toaster';
 
@@ -42,13 +46,56 @@ interface ExamGroup {
   };
 }
 
+function StatCard({ icon: Icon, label, value, accent }: { icon: any; label: string; value: string | number; accent: string }) {
+  return (
+    <Box
+      bg="bg.surface"
+      p={4}
+      borderRadius="card"
+      border="1px solid"
+      borderColor="border.default"
+      shadow="sm"
+      flex={1}
+      minW="140px"
+    >
+      <Flex align="center" gap={3}>
+        <Flex
+          w={10} h={10}
+          borderRadius="lg"
+          bg={accent}
+          align="center"
+          justify="center"
+          color="text.inverted"
+          shadow="sm"
+        >
+          <Icon size={20} strokeWidth={2.5} color="currentColor" />
+        </Flex>
+        <Box>
+          <Text fontSize="2xl" fontWeight="bold" color="text.primary" lineHeight="1.2">
+            {value}
+          </Text>
+          <Text fontSize="xs" color="text.secondary" fontWeight="medium">
+            {label}
+          </Text>
+        </Box>
+      </Flex>
+    </Box>
+  );
+}
+
+const accentMap = {
+  brand: 'brand.solid',
+  green: 'status.success.text',
+  amber: 'status.warning.text',
+  blue: 'info.500',
+};
+
 export default function ExamGroupsPage() {
   const queryClient = useQueryClient();
   const [searchText, setSearchText] = useState('');
   const [selectedYear, setSelectedYear] = useState('');
   const [selectedSemester, setSelectedSemester] = useState('');
 
-  // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -88,6 +135,15 @@ export default function ExamGroupsPage() {
     const start = (currentPage - 1) * pageSize;
     return filteredGroups.slice(start, start + pageSize);
   }, [filteredGroups, currentPage, pageSize]);
+
+  // ── Stats ──
+  const totalGroups = groups?.length ?? 0;
+  const totalExams = groups?.reduce((s, g) => s + (g._count?.exams ?? 0), 0) ?? 0;
+  const activeGroups = groups?.filter((g) => g.isActive).length ?? 0;
+  const now = new Date();
+  const upcomingGroups = groups?.filter((g) => g.startDate && new Date(g.startDate) > now).length ?? 0;
+
+  // ── Collections ──
   const yearOptions = createListCollection({
     items: [
       { label: 'Semua Tahun', value: '' },
@@ -106,6 +162,7 @@ export default function ExamGroupsPage() {
     ],
   });
 
+  // ── Mutations ──
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => api.post('/exam-groups', data),
     onSuccess: () => {
@@ -144,6 +201,7 @@ export default function ExamGroupsPage() {
     },
   });
 
+  // ── Handlers ──
   const handleDelete = (id: string) => {
     if (confirm('Apakah Anda yakin ingin menghapus kelompok ujian ini?')) {
       deleteMutation.mutate(id);
@@ -198,35 +256,55 @@ export default function ExamGroupsPage() {
 
   return (
     <Stack gap={6} p={6}>
-      <Flex align="center" justify="space-between">
+      {/* ── Header ── */}
+      <Flex align="center" justify="space-between" wrap="wrap" gap={4}>
         <Box>
-          <Heading size="xl" fontWeight="bold" color="gray.900">
+          <Heading size="xl" fontWeight="extrabold" color="text.primary" letterSpacing="tight">
             Kelompok Ujian / Event
           </Heading>
-          <Text color="gray.500" mt={1}>
+          <Text color="text.secondary" mt={1} fontSize="sm">
             Kelola kelompok ujian akademik (UTS, UAS, dll) beserta tahun ajaran.
           </Text>
         </Box>
         <Button
-          bg="indigo.600"
-          color="white"
-          _hover={{ bg: 'indigo.700' }}
-          borderRadius="lg"
-          px={4}
-          py={2}
-          fontWeight="medium"
+          bg="brand.solid"
+          color="text.inverted"
+          _hover={{ bg: 'brand.text' }}
+          borderRadius="xl"
+          px={5}
+          h={11}
+          fontWeight="semibold"
+          shadow="md"
           onClick={openCreateModal}
           cursor="pointer"
         >
-          <Plus size={20} style={{ marginRight: '6px' }} />
-          Tambah Kelompok
+          <Plus size={20} />
+          <Box as="span" ml={2}>Tambah Kelompok</Box>
         </Button>
       </Flex>
 
+      {/* ── Stat Cards ── */}
+      <Flex gap={4} wrap="wrap">
+        <StatCard icon={FolderKanban} label="Total Event" value={totalGroups} accent={accentMap.brand} />
+        <StatCard icon={CheckCircle2} label="Aktif" value={activeGroups} accent={accentMap.green} />
+        <StatCard icon={BookOpen} label="Total Ujian" value={totalExams} accent={accentMap.amber} />
+        <StatCard icon={Calendar} label="Akan Datang" value={upcomingGroups} accent={accentMap.blue} />
+      </Flex>
+
+      {/* ── Filters ── */}
       <Flex direction={{ base: 'column', md: 'row' }} gap={4} justify="space-between" align={{ md: 'center' }}>
         <HStack gap={3} flexWrap="wrap">
-          <Flex align="center" gap={2} bg="gray.50" px={3} py={2} borderRadius="lg" borderWidth="1px" borderColor="gray.200">
-            <Search size={16} className="text-gray-500" />
+          <Flex
+            align="center"
+            gap={2}
+            bg="bg.subtle"
+            px={3}
+            py={2}
+            borderRadius="lg"
+            borderWidth="1px"
+            borderColor="border.default"
+          >
+            <Search size={16} color="var(--chakra-colors-text-muted)" />
             <Input
               placeholder="Cari event..."
               value={searchText}
@@ -237,11 +315,21 @@ export default function ExamGroupsPage() {
               _focus={{ boxShadow: 'none' }}
               flex={1}
               minW="180px"
-              _placeholder={{ color: 'gray.400' }}
+              _placeholder={{ color: 'text.muted' }}
+              bg="transparent"
             />
           </Flex>
-          <Flex align="center" gap={2} bg="gray.50" px={3} py={2} borderRadius="lg" borderWidth="1px" borderColor="gray.200">
-            <Filter size={16} className="text-gray-500" />
+          <Flex
+            align="center"
+            gap={2}
+            bg="bg.subtle"
+            px={3}
+            py={2}
+            borderRadius="lg"
+            borderWidth="1px"
+            borderColor="border.default"
+          >
+            <Filter size={16} color="var(--chakra-colors-text-muted)" />
             <Select.Root
               collection={yearOptions}
               value={selectedYear ? [selectedYear] : []}
@@ -269,7 +357,16 @@ export default function ExamGroupsPage() {
               </Select.Positioner>
             </Select.Root>
           </Flex>
-          <Flex align="center" gap={2} bg="gray.50" px={3} py={2} borderRadius="lg" borderWidth="1px" borderColor="gray.200">
+          <Flex
+            align="center"
+            gap={2}
+            bg="bg.subtle"
+            px={3}
+            py={2}
+            borderRadius="lg"
+            borderWidth="1px"
+            borderColor="border.default"
+          >
             <Select.Root
               collection={semesterOptions}
               value={selectedSemester ? [selectedSemester] : []}
@@ -300,115 +397,222 @@ export default function ExamGroupsPage() {
         </HStack>
       </Flex>
 
-      <Box bg="white" borderRadius="xl" shadow="sm" borderWidth="1px" borderColor="gray.100" overflow="hidden">
+      {/* ── Table ── */}
+      <Box
+        bg="bg.surface"
+        borderRadius="card"
+        shadow="sm"
+        borderWidth="1px"
+        borderColor="border.default"
+        overflow="hidden"
+      >
         {isLoading ? (
-          <Flex justify="center" align="center" py={16}>
-            <Spinner size="lg" color="indigo.600" />
-            <Text ml={3} color="gray.500">Loading...</Text>
+          <Flex justify="center" align="center" py={20} direction="column" gap={3}>
+            <Spinner size="lg" color="brand.solid" />
+            <Text color="text.secondary" fontSize="sm">Memuat data...</Text>
           </Flex>
         ) : (
           <>
             <Table.Root size="md">
-            <Table.Header>
-              <Table.Row bg="gray.50">
-                <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600" fontSize="xs" textTransform="uppercase">
-                  Nama Event
-                </Table.ColumnHeader>
-                <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600" fontSize="xs" textTransform="uppercase">
-                  Tahun Ajaran / Semester
-                </Table.ColumnHeader>
-                <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600" fontSize="xs" textTransform="uppercase">
-                  Total Ujian
-                </Table.ColumnHeader>
-                <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600" fontSize="xs" textTransform="uppercase" textAlign="end">
-                  Aksi
-                </Table.ColumnHeader>
-              </Table.Row>
-            </Table.Header>
-            <Table.Body>
-              {paginatedGroups?.map((group) => (
-                <Table.Row key={group.id} _hover={{ bg: 'gray.50' }} transition="background 0.15s">
-                  <Table.Cell px={6} py={4}>
-                    <Text fontWeight="medium" color="gray.900">{group.name}</Text>
-                    {group.description && (
-                      <Text color="gray.500" fontSize="xs" mt={0.5}>{group.description}</Text>
-                    )}
-                  </Table.Cell>
-                  <Table.Cell px={6} py={4} fontSize="sm">
-                    <HStack gap={2}>
-                      <Badge bg="blue.50" color="blue.700" px={2} py={1} borderRadius="md" fontWeight="medium">
-                        {group.academicYear || '-'}
-                      </Badge>
-                      <Badge bg="teal.50" color="teal.700" px={2} py={1} borderRadius="md" fontWeight="medium">
-                        {group.semester || '-'}
-                      </Badge>
-                    </HStack>
-                    {(group.startDate || group.endDate) && (
-                      <Text color="gray.500" fontSize="xs" mt={1.5}>
-                        {group.startDate ? new Date(group.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) : '...'} - {group.endDate ? new Date(group.endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) : '...'}
-                      </Text>
-                    )}
-                  </Table.Cell>
-                  <Table.Cell px={6} py={4}>
-                    <Badge bg="indigo.50" color="indigo.700" borderRadius="full" px={3} py={1}>
-                      {group._count.exams} Mapel
-                    </Badge>
-                  </Table.Cell>
-                  <Table.Cell px={6} py={4} textAlign="end">
-                    <HStack gap={2} justify="flex-end">
-                      <IconButton
-                        variant="ghost"
-                        color="indigo.600"
-                        _hover={{ bg: 'indigo.50' }}
-                        size="sm"
-                        borderRadius="lg"
-                        aria-label="Edit"
-                        onClick={() => openEditModal(group)}
-                        cursor="pointer"
-                      >
-                        <Pencil size={18} />
-                      </IconButton>
-                      <IconButton
-                        variant="ghost"
-                        color="red.600"
-                        _hover={{ bg: 'red.50' }}
-                        size="sm"
-                        borderRadius="lg"
-                        aria-label="Delete"
-                        onClick={() => {
-                          if (confirm('Yakin ingin menghapus kelompok ujian ini? Ujian yang ada di dalamnya tidak akan terhapus, hanya labelnya yang hilang.')) {
-                            deleteMutation.mutate(group.id);
-                          }
-                        }}
-                        cursor="pointer"
-                      >
-                        <Trash2 size={18} />
-                      </IconButton>
-                    </HStack>
-                  </Table.Cell>
+              <Table.Header>
+                <Table.Row bg="bg.subtle">
+                  <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="text.secondary" fontSize="xs" textTransform="uppercase">
+                    Nama Event
+                  </Table.ColumnHeader>
+                  <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="text.secondary" fontSize="xs" textTransform="uppercase">
+                    Tahun Ajaran / Semester
+                  </Table.ColumnHeader>
+                  <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="text.secondary" fontSize="xs" textTransform="uppercase">
+                    Total Ujian
+                  </Table.ColumnHeader>
+                  <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="text.secondary" fontSize="xs" textTransform="uppercase" textAlign="end">
+                    Aksi
+                  </Table.ColumnHeader>
                 </Table.Row>
-              ))}
-              {filteredGroups?.length === 0 && (
-                <Table.Row>
-                  <Table.Cell colSpan={4} px={6} py={12} textAlign="center" color="gray.500" fontStyle="italic">
-                    Belum ada kelompok ujian.
-                  </Table.Cell>
-                </Table.Row>
-              )}
-            </Table.Body>
-          </Table.Root>
-          <TablePagination
-            currentPage={currentPage}
-            totalCount={filteredGroups.length}
-            pageSize={pageSize}
-            onPageChange={setCurrentPage}
-            onPageSizeChange={setPageSize}
-          />
+              </Table.Header>
+              <Table.Body>
+                {paginatedGroups?.map((group) => {
+                  const isNowActive = group.isActive && (!group.endDate || new Date(group.endDate) >= now) && (!group.startDate || new Date(group.startDate) <= now);
+                  return (
+                    <Table.Row
+                      key={group.id}
+                      _hover={{ bg: 'bg.subtle' }}
+                      transition="background 0.15s"
+                    >
+                      <Table.Cell px={6} py={4}>
+                        <Flex align="center" gap={2.5}>
+                          <Flex
+                            w={9} h={9}
+                            borderRadius="lg"
+                            bg={isNowActive ? 'status.success.bg' : 'brand.subtle'}
+                            align="center"
+                            justify="center"
+                            color={isNowActive ? 'status.success.text' : 'brand.text'}
+                            flexShrink={0}
+                          >
+                            {isNowActive ? <CheckCircle2 size={18} /> : <Calendar size={18} />}
+                          </Flex>
+                          <Box>
+                            <Flex align="center" gap={2}>
+                              <Text fontWeight="semibold" color="text.primary" fontSize="sm">
+                                {group.name}
+                              </Text>
+                              {group.isActive && (
+                                <Badge
+                                  bg={isNowActive ? 'status.success.bg' : 'status.warning.bg'}
+                                  color={isNowActive ? 'status.success.text' : 'status.warning.text'}
+                                  borderRadius="full"
+                                  px={2}
+                                  fontSize="10px"
+                                >
+                                  {isNowActive ? 'Berlangsung' : 'Aktif'}
+                                </Badge>
+                              )}
+                            </Flex>
+                            {group.description && (
+                              <Text color="text.muted" fontSize="xs" mt={0.5} lineClamp={1}>
+                                {group.description}
+                              </Text>
+                            )}
+                          </Box>
+                        </Flex>
+                      </Table.Cell>
+                      <Table.Cell px={6} py={4}>
+                        <Stack gap={1.5}>
+                          <HStack gap={1.5}>
+                            <Badge
+                              bg="brand.subtle"
+                              color="brand.text"
+                              px={2.5}
+                              py={0.5}
+                              borderRadius="md"
+                              fontWeight="medium"
+                              fontSize="11px"
+                            >
+                              {group.academicYear || '-'}
+                            </Badge>
+                            <Badge
+                              bg="bg.subtle"
+                              color="text.secondary"
+                              px={2.5}
+                              py={0.5}
+                              borderRadius="md"
+                              fontWeight="medium"
+                              fontSize="11px"
+                            >
+                              {group.semester || '-'}
+                            </Badge>
+                          </HStack>
+                          {(group.startDate || group.endDate) && (
+                            <Text color="text.muted" fontSize="10px" display="flex" alignItems="center" gap={1}>
+                              <Clock size={11} />
+                              {group.startDate
+                                ? new Date(group.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
+                                : '...'}
+                              {' — '}
+                              {group.endDate
+                                ? new Date(group.endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+                                : '...'}
+                            </Text>
+                          )}
+                        </Stack>
+                      </Table.Cell>
+                      <Table.Cell px={6} py={4}>
+                        <Badge
+                          bg="brand.subtle"
+                          color="brand.text"
+                          borderRadius="full"
+                          px={3}
+                          py={1}
+                          fontWeight="semibold"
+                        >
+                          {group._count.exams} Mapel
+                        </Badge>
+                      </Table.Cell>
+                      <Table.Cell px={6} py={4} textAlign="end">
+                        <HStack gap={1.5} justify="flex-end">
+                          <IconButton
+                            variant="ghost"
+                            color="brand.text"
+                            _hover={{ bg: 'brand.subtle' }}
+                            size="sm"
+                            borderRadius="lg"
+                            aria-label={`Edit ${group.name}`}
+                            onClick={() => openEditModal(group)}
+                            cursor="pointer"
+                          >
+                            <Pencil size={17} />
+                          </IconButton>
+                          <IconButton
+                            variant="ghost"
+                            color="status.danger.text"
+                            _hover={{ bg: 'status.danger.bg' }}
+                            size="sm"
+                            borderRadius="lg"
+                            aria-label={`Hapus ${group.name}`}
+                            onClick={() => {
+                              if (confirm('Yakin ingin menghapus kelompok ujian ini? Ujian yang ada di dalamnya tidak akan terhapus, hanya labelnya yang hilang.')) {
+                                deleteMutation.mutate(group.id);
+                              }
+                            }}
+                            cursor="pointer"
+                          >
+                            <Trash2 size={17} />
+                          </IconButton>
+                        </HStack>
+                      </Table.Cell>
+                    </Table.Row>
+                  );
+                })}
+                {filteredGroups?.length === 0 && !isLoading && (
+                  <Table.Row>
+                    <Table.Cell colSpan={4} px={6} py={16}>
+                      <Flex direction="column" align="center" gap={3}>
+                        <Box
+                          p={4}
+                          borderRadius="full"
+                          bg="bg.subtle"
+                          color="text.muted"
+                        >
+                          <FolderKanban size={32} />
+                        </Box>
+                        <Text color="text.muted" fontWeight="medium" fontSize="sm">
+                          {searchText || selectedYear || selectedSemester
+                            ? 'Tidak ada event yang cocok dengan filter.'
+                            : 'Belum ada kelompok ujian.'}
+                        </Text>
+                        {!searchText && !selectedYear && !selectedSemester && (
+                          <Button
+                            size="sm"
+                            bg="brand.solid"
+                            color="text.inverted"
+                            _hover={{ bg: 'brand.text' }}
+                            borderRadius="lg"
+                            onClick={openCreateModal}
+                            cursor="pointer"
+                          >
+                            <Plus size={16} />
+                            <Box as="span" ml={1.5}>Buat Event Baru</Box>
+                          </Button>
+                        )}
+                      </Flex>
+                    </Table.Cell>
+                  </Table.Row>
+                )}
+              </Table.Body>
+            </Table.Root>
+            <TablePagination
+              currentPage={currentPage}
+              totalCount={filteredGroups.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+            />
           </>
         )}
       </Box>
 
-      {/* Modal Form */}
+      {/* ── Modal ── */}
       {isModalOpen && (
         <Box
           position="fixed"
@@ -421,26 +625,63 @@ export default function ExamGroupsPage() {
           zIndex={50}
           p={4}
         >
-          <Box bg="white" borderRadius="2xl" shadow="xl" w="full" maxW="md" overflow="hidden">
-            <Flex px={6} py={4} borderBottom="1px solid" borderColor="gray.100" justify="space-between" align="center" bg="gray.50">
-              <Heading size="md" fontWeight="bold" color="gray.900">
+          <Box
+            bg="bg.surface"
+            borderRadius="card"
+            shadow="xl"
+            w="full"
+            maxW="md"
+            overflow="hidden"
+            border="1px solid"
+            borderColor="border.default"
+          >
+            <Flex
+              px={6}
+              py={4}
+              borderBottom="1px solid"
+              borderColor="border.default"
+              justify="space-between"
+              align="center"
+              bg="bg.subtle"
+            >
+              <Heading size="md" fontWeight="bold" color="text.primary">
                 {editingGroup ? 'Edit Event Ujian' : 'Tambah Event Ujian'}
               </Heading>
-              <Button variant="ghost" color="gray.400" onClick={closeModal} fontSize="xl" p={0} minW={0} cursor="pointer">×</Button>
+              <Button variant="ghost" color="text.muted" onClick={closeModal} fontSize="xl" p={0} minW={0} cursor="pointer" _hover={{ bg: 'bg.muted' }}>
+                ✕
+              </Button>
             </Flex>
             <form onSubmit={handleSubmit}>
               <Stack gap={4} p={6}>
                 <Box>
-                  <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Nama Event <span style={{ color: 'red' }}>*</span></Text>
-                  <Input required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} placeholder="Cth. ASAT Genap 2024" borderRadius="lg" />
+                  <Text fontSize="sm" fontWeight="medium" color="text.primary" mb={1.5}>
+                    Nama Event <Box as="span" color="status.danger.text">*</Box>
+                  </Text>
+                  <Input
+                    required
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="Cth. ASAT Genap 2024"
+                    borderRadius="lg"
+                    bg="input.bg"
+                    borderColor="input.border"
+                    _focus={{ borderColor: 'input.focus.border' }}
+                  />
                 </Box>
                 <Box>
-                  <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Deskripsi</Text>
-                  <Input value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Opsional" borderRadius="lg" />
+                  <Text fontSize="sm" fontWeight="medium" color="text.primary" mb={1.5}>Deskripsi</Text>
+                  <Input
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Opsional"
+                    borderRadius="lg"
+                    bg="input.bg"
+                    borderColor="input.border"
+                  />
                 </Box>
-                <Flex gap={3}>
-                  <Box flex={1}>
-                    <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Tahun Ajaran</Text>
+                <Grid gap={3} templateColumns="1fr 1fr">
+                  <Box>
+                    <Text fontSize="sm" fontWeight="medium" color="text.primary" mb={1.5}>Tahun Ajaran</Text>
                     <Select.Root
                       collection={yearOptions}
                       value={formData.academicYear ? [formData.academicYear] : []}
@@ -468,8 +709,8 @@ export default function ExamGroupsPage() {
                       </Select.Positioner>
                     </Select.Root>
                   </Box>
-                  <Box flex={1}>
-                    <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Semester</Text>
+                  <Box>
+                    <Text fontSize="sm" fontWeight="medium" color="text.primary" mb={1.5}>Semester</Text>
                     <Select.Root
                       collection={semesterOptions}
                       value={formData.semester && formData.semester !== 'Ganjil' ? [formData.semester] : formData.semester === 'Ganjil' ? ['Ganjil'] : []}
@@ -497,28 +738,39 @@ export default function ExamGroupsPage() {
                       </Select.Positioner>
                     </Select.Root>
                   </Box>
-                </Flex>
+                </Grid>
                 <SimpleGrid columns={2} gap={4}>
                   <Box>
-                    <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Mulai</Text>
-                    <ChakraDatePicker 
-                      value={formData.startDate} 
-                      onChange={(date) => setFormData({ ...formData, startDate: date })} 
-                      placeholder="Pilih waktu"
+                    <Text fontSize="sm" fontWeight="medium" color="text.primary" mb={1.5}>Mulai</Text>
+                    <ChakraDatePicker
+                      value={formData.startDate}
+                      onChange={(date) => setFormData({ ...formData, startDate: date })}
+                      placeholder="Pilih tanggal"
                     />
                   </Box>
                   <Box>
-                    <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Berakhir</Text>
-                    <ChakraDatePicker 
-                      value={formData.endDate} 
-                      onChange={(date) => setFormData({ ...formData, endDate: date })} 
-                      placeholder="Pilih waktu"
+                    <Text fontSize="sm" fontWeight="medium" color="text.primary" mb={1.5}>Berakhir</Text>
+                    <ChakraDatePicker
+                      value={formData.endDate}
+                      onChange={(date) => setFormData({ ...formData, endDate: date })}
+                      placeholder="Pilih tanggal"
                     />
                   </Box>
                 </SimpleGrid>
                 <Flex gap={3} pt={4}>
-                  <Button type="button" onClick={closeModal} flex={1} variant="outline" borderRadius="lg" cursor="pointer">Batal</Button>
-                  <Button type="submit" flex={1} bg="indigo.600" color="white" _hover={{ bg: 'indigo.700' }} borderRadius="lg" cursor="pointer" loading={createMutation.isPending || updateMutation.isPending}>
+                  <Button type="button" onClick={closeModal} flex={1} variant="outline" borderRadius="lg" cursor="pointer" borderColor="border.default">
+                    Batal
+                  </Button>
+                  <Button
+                    type="submit"
+                    flex={1}
+                    bg="brand.solid"
+                    color="text.inverted"
+                    _hover={{ bg: 'brand.text' }}
+                    borderRadius="lg"
+                    cursor="pointer"
+                    loading={createMutation.isPending || updateMutation.isPending}
+                  >
                     Simpan
                   </Button>
                 </Flex>

@@ -226,23 +226,26 @@ export function UserContainer() {
 
   // Render
   return (
-    <Stack gap={6}>
+    <Stack gap={6} bg="bg.canvas" color="text.primary" minH="100vh">
       {/* Header */}
       <Flex justify="space-between" align="center" wrap="wrap" gap={4}>
         <Box>
-          <Heading size="xl" fontWeight="bold" color="gray.900">
+          <Text color="brand.text" fontSize="xs" fontWeight="semibold" textTransform="uppercase" letterSpacing="0.12em" mb={2}>
+            User dashboard
+          </Text>
+          <Heading size="xl" fontWeight="bold" color="text.primary">
             Manajemen Akun Pengguna
           </Heading>
-          <Text color="gray.500" mt={1} fontSize="sm">
+          <Text color="text.secondary" mt={1} fontSize="sm">
             Kelola semua akun pengguna sistem — Super Admin, Guru, dan Siswa
           </Text>
         </Box>
         <HStack gap={3} flexWrap="wrap">
           <Button
             variant="outline"
-            borderColor="gray.200"
-            color="gray.600"
-            _hover={{ bg: 'gray.50' }}
+            borderColor="border.default"
+            color="text.secondary"
+            _hover={{ bg: 'bg.elevated', borderColor: 'brand.text', color: 'text.primary' }}
             borderRadius="lg"
             size="sm"
             onClick={downloadTemplate}
@@ -253,9 +256,9 @@ export function UserContainer() {
           </Button>
           <Button
             variant="outline"
-            borderColor="gray.200"
-            color="gray.600"
-            _hover={{ bg: 'gray.50' }}
+            borderColor="border.default"
+            color="text.secondary"
+            _hover={{ bg: 'bg.elevated', borderColor: 'brand.text', color: 'text.primary' }}
             borderRadius="lg"
             size="sm"
             onClick={() => document.getElementById('import-users-input')?.click()}
@@ -267,9 +270,9 @@ export function UserContainer() {
           </Button>
           <Button
             variant="outline"
-            borderColor="gray.200"
-            color="gray.600"
-            _hover={{ bg: 'gray.50' }}
+            borderColor="border.default"
+            color="text.secondary"
+            _hover={{ bg: 'bg.elevated', borderColor: 'brand.text', color: 'text.primary' }}
             borderRadius="lg"
             size="sm"
             onClick={handleExport}
@@ -279,9 +282,9 @@ export function UserContainer() {
             Export CSV
           </Button>
           <Button
-            bg="indigo.600"
-            color="white"
-            _hover={{ bg: 'indigo.700' }}
+            bg="brand.solid"
+            color="text.inverted"
+            _hover={{ bg: 'brand.text' }}
             borderRadius="lg"
             size="sm"
             onClick={openCreateModal}
@@ -311,33 +314,33 @@ export function UserContainer() {
             key={key}
             flex="1"
             minW="140px"
-            bg="white"
-            borderRadius="xl"
+            bg="bg.surface"
+            borderRadius="2xl"
             borderWidth="1px"
-            borderColor="gray.100"
+            borderColor="border.default"
             p={4}
-            shadow="sm"
+            shadow="card-dark"
             cursor="pointer"
             onClick={() => setActiveTab(key)}
             transition="all 0.2s"
-            _hover={{ shadow: 'md', borderColor: 'indigo.200' }}
+            _hover={{ shadow: '0 4px 16px rgba(0,0,0,0.5)', borderColor: 'brand.text' }}
             borderBottomWidth={activeTab === key ? '3px' : '1px'}
-            borderBottomColor={activeTab === key ? 'indigo.500' : 'gray.100'}
+            borderBottomColor={activeTab === key ? 'brand.text' : 'border.default'}
           >
             <Flex align="center" gap={3}>
               <Box
                 p={2}
                 borderRadius="lg"
-                bg={key === 'SUPER_ADMIN' ? 'violet.50' : key === 'GURU' ? 'blue.50' : 'green.50'}
-                color={key === 'SUPER_ADMIN' ? 'violet.600' : key === 'GURU' ? 'blue.600' : 'green.600'}
+                bg={key === 'SUPER_ADMIN' ? 'brand.subtle' : key === 'GURU' ? 'info.50' : 'status.success.bg'}
+                color={key === 'SUPER_ADMIN' ? 'brand.text' : key === 'GURU' ? 'info.600' : 'status.success.text'}
               >
                 <Icon size={18} />
               </Box>
               <Box>
-                <Text fontSize="2xl" fontWeight="bold" color="gray.900" lineHeight="1">
+                <Text fontSize="2xl" fontWeight="bold" color="text.primary" lineHeight="1">
                   {counts[key]}
                 </Text>
-                <Text fontSize="xs" color="gray.500" mt={0.5}>
+                <Text fontSize="xs" color="text.secondary" mt={0.5}>
                   {label}
                 </Text>
               </Box>

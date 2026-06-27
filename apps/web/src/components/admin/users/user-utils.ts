@@ -9,19 +9,19 @@ export const ROLE_OPTIONS: { label: string; value: UserRole }[] = [
 ];
 
 export const ROLE_BADGE: Record<UserRole, { label: string; color: string; bg: string }> = {
-  SUPER_ADMIN: { label: 'Super Admin', color: 'text-violet-700', bg: 'bg-violet-100' },
-  GURU: { label: 'Guru', color: 'text-blue-700', bg: 'bg-blue-100' },
-  SISWA: { label: 'Siswa', color: 'text-green-700', bg: 'bg-green-100' },
-  ADMIN_SEKOLAH: { label: 'Admin Sekolah', color: 'text-orange-700', bg: 'bg-orange-100' },
-  PENGAWAS: { label: 'Pengawas', color: 'text-teal-700', bg: 'bg-teal-100' },
+  SUPER_ADMIN: { label: 'Super Admin', color: 'brand.text', bg: 'brand.subtle' },
+  GURU: { label: 'Guru', color: 'info.600', bg: 'info.50' },
+  SISWA: { label: 'Siswa', color: 'status.success.text', bg: 'status.success.bg' },
+  ADMIN_SEKOLAH: { label: 'Admin Sekolah', color: 'status.warning.text', bg: 'status.warning.bg' },
+  PENGAWAS: { label: 'Pengawas', color: 'accent.gold', bg: 'accent.gold.bg' },
 };
 
 export const AVATAR_COLORS: Record<UserRole, string> = {
-  SUPER_ADMIN: '#7c3aed',
-  GURU: '#2563eb',
-  SISWA: '#059669',
-  ADMIN_SEKOLAH: '#d97706',
-  PENGAWAS: '#0d9488',
+  SUPER_ADMIN: '#774AA4',
+  GURU: '#2D9BF0',
+  SISWA: '#1ABE71',
+  ADMIN_SEKOLAH: '#F5A623',
+  PENGAWAS: '#9C55E8',
 };
 
 export const TABS: { key: ActiveTab; label: string; icon: LucideIcon }[] = [
