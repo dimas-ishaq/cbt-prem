@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Param, Get, UseGuards, Request, Patch, Res, Delete, Headers } from '@nestjs/common';
+import { Controller, Post, Body, Param, Get, UseGuards, Request, Patch, Res, Delete, Headers, Query } from '@nestjs/common';
 import * as express from 'express';
 import { ExamSessionsService } from './exam-sessions.service';
 import { StartSessionDto } from './dto/start-session.dto';
@@ -106,9 +106,15 @@ export class ExamSessionsController {
     return this.examSessionsService.resetSession(id);
   }
 
-  @Post('bulk-reset')
+  @Get('monitoring/history')
   @Roles(Role.GURU, Role.SUPER_ADMIN)
-  async bulkResetSessions(@Body('ids') ids: string[]) {
-    return this.examSessionsService.bulkResetSessions(ids);
+  async getMonitoringHistory(@Query('startDate') startDate?: string, @Query('endDate') endDate?: string) {
+    return this.examSessionsService.getMonitoringHistory(startDate, endDate);
+  }
+
+  @Get('monitoring/upcoming')
+  @Roles(Role.GURU, Role.SUPER_ADMIN)
+  async getUpcomingMonitoring(@Query('startDate') startDate?: string, @Query('endDate') endDate?: string) {
+    return this.examSessionsService.getUpcomingMonitoring(startDate, endDate);
   }
 }

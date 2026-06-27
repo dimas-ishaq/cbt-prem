@@ -471,6 +471,53 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
     }));
   }
 
+  async getMonitoringHistory(startDate?: string, endDate?: string) {
+    const from = startDate ? new Date(startDate) : undefined;
+    const to = endDate ? new Date(endDate) : undefined;
+
+    return this.prisma.examSession.findMany({
+      where: {
+        status: { in: [SessionStatus.SUBMITTED, SessionStatus.FINISHED, SessionStatus.LOCKED] },
+        exam: {
+          startTime: {
+            ...(from ? { gte: from } : {}),
+            ...(to ? { lte: to } : {}),
+          },
+        },
+      },
+      include: {
+        exam: { include: { subject: true } },
+        student: { include: { user: true, rombel: true } },
+        answers: { select: { id: true } },
+        violations: { select: { id: true, type: true, description: true, timestamp: true }, orderBy: { timestamp: 'desc' } },
+      },
+      orderBy: { endTime: 'desc' },
+    });
+  }
+
+  async getUpcomingMonitoring(startDate?: string, endDate?: string) {
+    const from = startDate ? new Date(startDate) : undefined;
+    const to = endDate ? new Date(endDate) : undefined;
+
+    return this.prisma.exam.findMany({
+      where: {
+        startTime: {
+          ...(from ? { gte: from } : {}),
+          ...(to ? { lte: to } : {}),
+        },
+        OR: [
+          { status: ExamStatus.PUBLISHED },
+          { status: ExamStatus.ONGOING },
+        ],
+      },
+      include: {
+        subject: true,
+        _count: { select: { examSessions: true } },
+      },
+      orderBy: { startTime: 'asc' },
+    });
+  }
+
   async exportToExcel(examId: string) {
     const exam = await this.prisma.exam.findUnique({
       where: { id: examId },
