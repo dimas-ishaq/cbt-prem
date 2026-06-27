@@ -36,7 +36,7 @@ describe('RealtimeGateway', () => {
   });
 
   it('accepts valid token and joins user room', async () => {
-    (jwtService.verify as jest.Mock).mockReturnValue({ userId: 'u1', username: 'Budi', role: 'SISWA' });
+    (jwtService.verify as jest.Mock).mockReturnValue({ sub: 'u1', username: 'Budi', role: 'SISWA' });
 
     await gateway.handleConnection(client);
 

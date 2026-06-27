@@ -68,7 +68,7 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
       client.data.user = payload;
       
       // Join a room based on their role/ID for targeted notifications
-      client.join(`user_${payload.userId}`);
+      client.join(`user_${payload.sub}`);
       this.logger.log(`Client connected: ${client.id}, User: ${payload.username} (${payload.role})`);
     } catch (e) {
       this.logger.warn(`Connection handshake rejected for client ${client.id}`);
@@ -82,7 +82,7 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
       // Find which exams they were in and notify proctors
       // This is a bit simplified, in a large app you'd track active sessions
       this.server.emit('student_offline', {
-        userId: client.data.user.userId,
+        userId: client.data.user.sub,
         username: client.data.user.username,
         timestamp: new Date(),
       });

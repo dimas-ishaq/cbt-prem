@@ -52,6 +52,7 @@ interface Student {
   violationCount?: number;
   currentQuestionIndex?: number;
   endTime?: string;
+  answeredQuestionIds?: string[];
 }
 
 interface Violation {
@@ -62,14 +63,11 @@ interface Violation {
   timestamp: string;
 }
 
-type SortKey = 'name' | 'progress' | 'violations' | 'status';
-
-const sortOptions = createListCollection({
+const progressFilterOptions = createListCollection({
   items: [
-    { label: 'Progres', value: 'progress' },
-    { label: 'Nama', value: 'name' },
-    { label: 'Pelanggaran', value: 'violations' },
-    { label: 'Status', value: 'status' },
+    { label: 'Semua Progres', value: 'ALL' },
+    { label: 'Sedang Dikerjakan', value: 'IN_PROGRESS' },
+    { label: 'Selesai Dikerjakan', value: 'FINISHED' },
   ],
 });
 
@@ -116,10 +114,9 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
   const [connection, setConnection] = useState<'connected' | 'connecting' | 'disconnected'>('connecting');
   const [fullscreen, setFullscreen] = useState(false);
   const [query, setQuery] = useState('');
-  const [sortKey, setSortKey] = useState<SortKey>('progress');
-  const [sortAsc, setSortAsc] = useState(false);
-  const [prevCount, setPrevCount] = useState(0);
   const [violationFilter, setViolationFilter] = useState<string>('ALL');
+  const [progressFilter, setProgressFilter] = useState<string>('ALL');
+  const [prevCount, setPrevCount] = useState(0);
 
   const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
   const [nowTick, setNowTick] = useState(Date.now());
@@ -208,6 +205,7 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
         violationCount: session.violations?.length || 0,
         currentQuestionIndex: undefined,
         endTime: currentEndTime || undefined,
+        answeredQuestionIds: session.answers?.map((ans: any) => ans.questionId).filter(Boolean) || [],
       };
 
       if (Array.isArray(session.violations)) {
@@ -239,6 +237,7 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
           status: current.status === 'Online' && prevStudent.status === 'Offline' ? 'Offline' : current.status,
           currentQuestionIndex: prevStudent.currentQuestionIndex ?? current.currentQuestionIndex,
           endTime: current.endTime || prevStudent.endTime,
+          answeredQuestionIds: current.answeredQuestionIds || prevStudent.answeredQuestionIds,
         };
       });
       return merged;
@@ -308,7 +307,20 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
         setStudents((prev) => {
           const s = prev[d.studentId];
           if (!s) return prev;
-          return { ...prev, [d.studentId]: { ...s, progress: Math.min(100, s.progress + 100 / totalQ), lastActive: new Date().toISOString() } };
+          const currentAnswered = s.answeredQuestionIds || [];
+          const nextAnswered = currentAnswered.includes(d.questionId)
+            ? currentAnswered
+            : [...currentAnswered, d.questionId];
+          const newProgress = totalQ > 0 ? (nextAnswered.length / totalQ) * 100 : 0;
+          return {
+            ...prev,
+            [d.studentId]: {
+              ...s,
+              answeredQuestionIds: nextAnswered,
+              progress: Math.min(100, newProgress),
+              lastActive: new Date().toISOString()
+            }
+          };
         }),
       student_question_update: (d) =>
         setStudents((prev) => {
@@ -406,6 +418,7 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
             lastActive: session.lastActiveAt || session.startTime || new Date().toISOString(),
             violationCount: session.violations?.length || 0,
             endTime: session.endTime,
+            answeredQuestionIds: session.answers?.map((ans: any) => ans.questionId).filter(Boolean) || [],
           };
 
           // Collect historical violations
@@ -434,6 +447,10 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
           if (!prevStudent) return;
 
           if (merged[key]) {
+            const mergedAnswered = Array.from(new Set([
+              ...(merged[key].answeredQuestionIds || []),
+              ...(prevStudent.answeredQuestionIds || []),
+            ]));
             merged[key] = {
               ...merged[key],
               status: prevStudent.status === 'Offline' && merged[key].status === 'Online' ? 'Offline' : prevStudent.status,
@@ -441,6 +458,7 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
               violationCount: Math.max(merged[key].violationCount || 0, prevStudent.violationCount || 0),
               currentQuestionIndex: prevStudent.currentQuestionIndex ?? merged[key].currentQuestionIndex,
               endTime: pickLatestTime(prevStudent.endTime, merged[key].endTime) || prevStudent.endTime || merged[key].endTime,
+              answeredQuestionIds: mergedAnswered,
             };
           } else {
             merged[key] = prevStudent;
@@ -500,114 +518,129 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
   /* ─── Sort / filter ─── */
   const displayed = Object.values(students)
     .filter((s) => !query || (s.fullName || s.username).toLowerCase().includes(query.toLowerCase()))
-    .sort((a, b) => {
-      let cmp = 0;
-      switch (sortKey) {
-        case 'name': cmp = (a.fullName || a.username).localeCompare(b.fullName || b.username); break;
-        case 'progress': cmp = (b.progress || 0) - (a.progress || 0); break;
-        case 'violations': cmp = (b.violationCount || 0) - (a.violationCount || 0); break;
-        case 'status': cmp = a.status.localeCompare(b.status); break;
-      }
-      return sortAsc ? -cmp : cmp;
-    });
+    .filter((s) => {
+      const isFinished = s.status === 'Selesai' || s.progress >= 100;
+      if (progressFilter === 'ALL') return true;
+      if (progressFilter === 'IN_PROGRESS') return !isFinished;
+      if (progressFilter === 'FINISHED') return isFinished;
+      return true;
+    })
+    .sort((a, b) => (a.fullName || a.username).localeCompare(b.fullName || b.username));
 
   if (isLoading) {
     return (
-      <Flex align="center" justify="center" minH="60vh">
-        <HStack gap={3} color="gray.500">
+      <Flex align="center" justify="center" minH="60vh" direction="column" gap={4}>
+        <Flex
+          w={14}
+          h={14}
+          borderRadius="2xl"
+          bg="indigo.50"
+          border="1px solid"
+          borderColor="indigo.100"
+          align="center"
+          justify="center"
+        >
           <Spinner size="md" color="indigo.500" />
-          <Text fontSize="lg" fontWeight="semibold">Memuat…</Text>
-        </HStack>
+        </Flex>
+        <Text fontSize="sm" color="gray.400" fontWeight="medium">Memuat data ujian…</Text>
       </Flex>
     );
   }
 
   const total = Object.keys(students).length;
   const online = Object.values(students).filter((s) => s.status !== 'Offline').length;
+  const finishedCount = Object.values(students).filter((s) => s.status === 'Selesai' || s.progress >= 100).length;
+  const offlineCount = Object.values(students).filter((s) => s.status === 'Offline').length;
+
+  const getViolationMeta = (type: string): { palette: string; label: string } => {
+    const t = type.toLowerCase();
+    if (t.includes('tab') || t.includes('blur')) return { palette: 'amber', label: 'Tab / Blur' };
+    if (t.includes('fullscreen') || t.includes('screen')) return { palette: 'orange', label: 'Fullscreen Exit' };
+    if (t.includes('devtools') || t.includes('inspect')) return { palette: 'red', label: 'DevTools' };
+    return { palette: 'red', label: type };
+  };
 
   return (
-    <Stack gap={6}>
-      <Flex direction="column" gap={4}>
-        <Flex direction="column" gap={1.5}>
-          <Flex align="left" gap={0}>
+    <Stack gap={5}>
+      {/* ─── Command Bar Header ─── */}
+      <Box
+        bg="white"
+        borderRadius="2xl"
+        border="1px solid"
+        borderColor="gray.200"
+        px={5}
+        py={4}
+        boxShadow="0 2px 16px rgba(15,23,42,0.05)"
+      >
+        <Flex align="center" gap={4} wrap="wrap">
+          {/* Back + Title */}
+          <Flex align="center" gap={2} flex="1" minW={0}>
             <Link href="/admin/monitoring">
-              <IconButton variant="ghost" aria-label="Back" borderRadius="xl" border={1} flexShrink={0}>
-                <ChevronLeft size={22} />
+              <IconButton variant="ghost" aria-label="Back" borderRadius="xl" size="sm" cursor="pointer" flexShrink={0}>
+                <ChevronLeft size={20} />
               </IconButton>
             </Link>
             <Box minW={0} flex="1">
-              <Heading size="lg" fontWeight="bold" letterSpacing="tight" color="gray.800" display="flex" gap={3} lineClamp={1} mt={1}>
-                <Box as="span" flexShrink={0} display="inline-flex">
-                  <Monitor size={24} color="var(--chakra-colors-indigo-500)" />
-                </Box>
-                <Box as="span" className="truncate">{exam?.title}</Box>
-              </Heading>
+              <Flex align="center" gap={2}>
+                <Monitor size={16} color="var(--chakra-colors-indigo-500)" style={{ flexShrink: 0 }} />
+                <Heading size="md" fontWeight="bold" color="gray.900" lineClamp={1}>
+                  {exam?.title}
+                </Heading>
+              </Flex>
+              <Text fontSize="xs" color="gray.400" mt={0.5}>
+                {exam?.subject?.name} · {exam?.examQuestions?.length} Soal · ID: #{id.slice(0, 8)}
+              </Text>
             </Box>
           </Flex>
-          <Text fontSize="sm" color="gray.500" lineClamp={1}>
-            {exam?.subject?.name} &middot; {exam?.examQuestions?.length} Soal &middot; ID: {id.slice(0, 8)}…
-          </Text>
-        </Flex>
 
-        <Flex direction="column" gap={3}>
-          <Flex align="center" justify="space-between" wrap="wrap" gap={3}>
-            <Flex align="center" gap={1.5} px={3} py={1.5} borderRadius="xl" bg="gray.50" border="1px solid" borderColor="gray.200" fontSize="sm" fontWeight="medium">
-              <Timer size={15} color="var(--chakra-colors-gray-400)" />
-              <Text color={timer.urgent ? 'red.600' : 'gray.800'}>{timer.text}</Text>
+          {/* Right: Timer + Connection + Actions */}
+          <HStack gap={2} flexShrink={0} flexWrap="wrap">
+            {/* Timer pill */}
+            <Flex
+              align="center"
+              gap={1.5}
+              px={3}
+              py={1.5}
+              borderRadius="xl"
+              bg={timer.urgent ? 'red.50' : 'gray.50'}
+              border="1px solid"
+              borderColor={timer.urgent ? 'red.200' : 'gray.200'}
+            >
+              <Timer size={13} color={timer.urgent ? '#dc2626' : '#9ca3af'} />
+              <Text fontSize="sm" fontWeight="bold" fontFamily="mono" color={timer.urgent ? 'red.600' : 'gray.800'}>
+                {timer.text}
+              </Text>
             </Flex>
 
+            {/* Connection badge */}
             <Badge
               colorPalette={connection === 'connected' ? 'green' : connection === 'connecting' ? 'amber' : 'red'}
-              px={3}
+              px={2.5}
               py={1.5}
               borderRadius="xl"
               fontSize="xs"
               fontWeight="semibold"
+              textTransform="none"
               display="flex"
               alignItems="center"
               gap={1.5}
-              textTransform="none"
             >
               {connection === 'connected' ? (
-                <Wifi size={15} />
+                <Wifi size={13} />
               ) : connection === 'connecting' ? (
-                <RefreshCw size={15} className="animate-spin" />
+                <RefreshCw size={13} className="animate-spin" />
               ) : (
-                <WifiOff size={15} />
+                <WifiOff size={13} />
               )}
-              {connection === 'connected' ? 'Online' : connection === 'connecting' ? 'Menghubungkan…' : 'Offline'}
-            </Badge>
-          </Flex>
-
-          <Flex wrap="wrap" gap={3} align="center">
-            <Flex align="center" gap={1.5} px={3} py={1.5} borderRadius="xl" bg="gray.50" border="1px solid" borderColor="gray.200" fontSize="sm">
-              <Users size={15} color="var(--chakra-colors-gray-400)" />
-              <Text fontWeight="bold" color="gray.800">{online}</Text>
-              <Text color="gray.500">/ {total} siswa</Text>
-            </Flex>
-
-            <Badge
-              colorPalette="red"
-              px={3}
-              py={1.5}
-              borderRadius="xl"
-              fontSize="sm"
-              fontWeight="semibold"
-              display="flex"
-              alignItems="center"
-              gap={1.5}
-              textTransform="none"
-            >
-              <AlertTriangle size={15} />
-              <Text>{violations.length}</Text>
-              <Text fontSize="xs" fontWeight="normal">pelanggaran</Text>
+              {connection === 'connected' ? 'Terhubung' : connection === 'connecting' ? 'Menghubungkan…' : 'Terputus'}
             </Badge>
 
-            <Flex align="center" gap={1.5} ml="auto">
+            {/* Sync info + button */}
+            <Flex align="center" gap={1.5}>
               {lastSyncedAt && (
                 <Text fontSize="11px" color="gray.400" whiteSpace="nowrap">
                   Sinkron:{' '}
-                  {lastSyncedAt.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                  {lastSyncedAt.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
                 </Text>
               )}
               <IconButton
@@ -619,44 +652,135 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
                 aria-label="Sinkronisasi Data"
                 cursor="pointer"
               >
-                <RefreshCw size={16} className={isSyncing ? 'animate-spin' : ''} />
+                <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />
               </IconButton>
             </Flex>
 
+            {/* Results link */}
             <Link href={`/admin/results/${id}`}>
               <Button size="sm" borderRadius="xl" colorPalette="indigo" variant="subtle" fontWeight="semibold">
-                <Award size={16} /> Hasil
+                <Award size={14} /> Hasil
               </Button>
             </Link>
-            <IconButton onClick={toggleFS} variant="outline" size="sm" borderRadius="xl" aria-label="Fullscreen">
-              {fullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
+
+            {/* Fullscreen toggle */}
+            <IconButton
+              onClick={toggleFS}
+              variant="outline"
+              size="sm"
+              borderRadius="xl"
+              aria-label="Fullscreen"
+              cursor="pointer"
+            >
+              {fullscreen ? <Minimize size={15} /> : <Maximize size={15} />}
             </IconButton>
-          </Flex>
+          </HStack>
         </Flex>
-      </Flex>
+      </Box>
+
+      {/* ─── 4 Metric Summary Cards ─── */}
+      <SimpleGrid columns={{ base: 2, sm: 4 }} gap={4}>
+        {/* Online */}
+        <Box
+          bg="white"
+          borderRadius="xl"
+          border="1px solid"
+          borderColor="green.200"
+          borderTopWidth="3px"
+          borderTopColor="green.500"
+          p={4}
+          boxShadow="0 2px 10px rgba(16,185,129,0.07)"
+        >
+          <Text fontSize="11px" fontWeight="semibold" color="gray.500" textTransform="uppercase" letterSpacing="0.08em" mb={2}>
+            Aktif Online
+          </Text>
+          <Text fontSize="2xl" fontWeight="bold" color="gray.900" lineHeight="1">{online}</Text>
+          <Text fontSize="xs" color="green.600" mt={1.5} fontWeight="medium">dari {total} peserta</Text>
+        </Box>
+
+        {/* Selesai */}
+        <Box
+          bg="white"
+          borderRadius="xl"
+          border="1px solid"
+          borderColor="indigo.200"
+          borderTopWidth="3px"
+          borderTopColor="indigo.500"
+          p={4}
+          boxShadow="0 2px 10px rgba(99,102,241,0.07)"
+        >
+          <Text fontSize="11px" fontWeight="semibold" color="gray.500" textTransform="uppercase" letterSpacing="0.08em" mb={2}>
+            Selesai
+          </Text>
+          <Text fontSize="2xl" fontWeight="bold" color="gray.900" lineHeight="1">{finishedCount}</Text>
+          <Text fontSize="xs" color="indigo.600" mt={1.5} fontWeight="medium">mengumpulkan jawaban</Text>
+        </Box>
+
+        {/* Offline */}
+        <Box
+          bg="white"
+          borderRadius="xl"
+          border="1px solid"
+          borderColor="gray.200"
+          borderTopWidth="3px"
+          borderTopColor="gray.400"
+          p={4}
+          boxShadow="0 2px 10px rgba(15,23,42,0.04)"
+        >
+          <Text fontSize="11px" fontWeight="semibold" color="gray.500" textTransform="uppercase" letterSpacing="0.08em" mb={2}>
+            Offline
+          </Text>
+          <Text fontSize="2xl" fontWeight="bold" color="gray.900" lineHeight="1">{offlineCount}</Text>
+          <Text fontSize="xs" color="gray.400" mt={1.5} fontWeight="medium">terputus sementara</Text>
+        </Box>
+
+        {/* Violations */}
+        <Box
+          bg={violations.length > 0 ? 'red.50' : 'white'}
+          borderRadius="xl"
+          border="1px solid"
+          borderColor={violations.length > 0 ? 'red.200' : 'gray.200'}
+          borderTopWidth="3px"
+          borderTopColor={violations.length > 0 ? 'red.500' : 'gray.300'}
+          p={4}
+          boxShadow={violations.length > 0 ? '0 2px 10px rgba(239,68,68,0.1)' : '0 2px 10px rgba(15,23,42,0.04)'}
+          transition="all 0.3s"
+        >
+          <Text fontSize="11px" fontWeight="semibold" color="gray.500" textTransform="uppercase" letterSpacing="0.08em" mb={2}>
+            Pelanggaran
+          </Text>
+          <Text fontSize="2xl" fontWeight="bold" color={violations.length > 0 ? 'red.600' : 'gray.900'} lineHeight="1">
+            {violations.length}
+          </Text>
+          <Text fontSize="xs" color={violations.length > 0 ? 'red.500' : 'gray.400'} mt={1.5} fontWeight="medium">
+            total terdeteksi
+          </Text>
+        </Box>
+      </SimpleGrid>
 
       {/* ─── BODY ─── */}
       <SimpleGrid columns={{ base: 1, lg: 3 }} gap={6}>
-        {/* ─── Student Grid Panel (Card) ─── */}
+        {/* ─── Student Grid Panel ─── */}
         <Box
           gridColumn={{ lg: 'span 2' }}
           bg="white"
           borderRadius="2xl"
-          borderWidth="1px"
+          border="1px solid"
           borderColor="gray.200"
-          shadow="sm"
+          boxShadow="0 2px 12px rgba(15,23,42,0.04)"
           p={6}
           display="flex"
           flexDirection="column"
           gap={5}
         >
-          <Flex flexWrap="wrap" align="center" justify="space-between" gap={3} pb={2} borderBottom="1px solid" borderColor="gray.150">
-            <Heading size="md" fontWeight="bold" color="gray.850">Progres Siswa</Heading>
-            <Flex align="center" gap={2}>
+          {/* Panel header */}
+          <Flex flexWrap="wrap" align="center" justify="space-between" gap={3} pb={4} borderBottom="1px solid" borderColor="gray.100">
+            <Heading size="md" fontWeight="bold" color="gray.800">Progres Siswa</Heading>
+            <Flex align="center" gap={2} wrap="wrap">
               {/* Search */}
               <Box position="relative">
-                <Box position="absolute" left="10px" top="50%" transform="translateY(-50%)" zIndex={2} color="gray.400">
-                  <Search size={15} />
+                <Box position="absolute" left="10px" top="50%" transform="translateY(-50%)" zIndex={2} color="gray.400" pointerEvents="none">
+                  <Search size={14} />
                 </Box>
                 <Input
                   placeholder="Cari…"
@@ -666,30 +790,39 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
                   pl="30px"
                   size="sm"
                   borderRadius="lg"
-                  bg="white"
+                  bg="gray.50"
+                  borderColor="gray.200"
+                  _focus={{ borderColor: 'indigo.400', bg: 'white' }}
                 />
               </Box>
-              {/* Sort */}
-              <Box minW="130px">
+
+              {/* Progress Filter */}
+              <Box minW="150px">
                 <Select.Root
-                  collection={sortOptions}
-                  value={[sortKey]}
-                  onValueChange={(details) => setSortKey((details.value[0] || 'progress') as SortKey)}
+                  collection={progressFilterOptions}
+                  value={[progressFilter]}
+                  onValueChange={(details) => {
+                    if (details.value[0]) {
+                      setProgressFilter(details.value[0]);
+                    }
+                  }}
                   positioning={{ sameWidth: true }}
+                  size="sm"
                 >
                   <Select.HiddenSelect />
                   <Select.Control>
-                    <Select.Trigger borderRadius="lg" fontSize="sm" height="36px">
-                      <Select.ValueText placeholder="Progres" />
+                    <Select.Trigger borderRadius="lg" fontSize="sm" height="36px" bg="gray.50">
+                      <Select.ValueText>
+                        {progressFilterOptions.items.find(item => item.value === progressFilter)?.label || 'Semua Progres'}
+                      </Select.ValueText>
                     </Select.Trigger>
                     <Select.IndicatorGroup>
                       <Select.Indicator />
-                      <Select.ClearTrigger />
                     </Select.IndicatorGroup>
                   </Select.Control>
                   <Select.Positioner>
-                    <Select.Content>
-                      {sortOptions.items.map((item) => (
+                    <Select.Content zIndex={110}>
+                      {progressFilterOptions.items.map((item) => (
                         <Select.Item key={item.value} item={item}>
                           {item.label}
                         </Select.Item>
@@ -698,21 +831,21 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
                   </Select.Positioner>
                 </Select.Root>
               </Box>
-
-              <IconButton
-                onClick={() => setSortAsc((v) => !v)}
-                size="sm"
-                variant="outline"
-                borderRadius="lg"
-                aria-label="Sort direction"
-              >
-                <ArrowUpDown size={16} style={{ transform: sortAsc ? 'rotate(180deg)' : 'none' }} />
-              </IconButton>
             </Flex>
           </Flex>
 
-          {/* Cards */}
-          <SimpleGrid columns={{ base: 1, sm: 2, '2xl': 3 }} gap={4} maxH="65vh" overflowY="auto" pr={2} css={{ '&::-webkit-scrollbar': { width: '6px' }, '&::-webkit-scrollbar-thumb': { background: 'var(--chakra-colors-gray-300)', borderRadius: '10px' } }}>
+          {/* Student Cards */}
+          <SimpleGrid
+            columns={{ base: 1, sm: 2, '2xl': 3 }}
+            gap={3}
+            maxH="65vh"
+            overflowY="auto"
+            pr={2}
+            css={{
+              '&::-webkit-scrollbar': { width: '5px' },
+              '&::-webkit-scrollbar-thumb': { background: 'var(--chakra-colors-gray-200)', borderRadius: '10px' },
+            }}
+          >
             {displayed.map((s) => {
               const offline = s.status === 'Offline';
               const locked = s.status === 'Locked';
@@ -727,52 +860,77 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
                   p={4}
                   borderRadius="xl"
                   borderWidth="1px"
+                  borderLeftWidth="3.5px"
                   transition="all 0.2s"
-                  bg={finished ? 'green.50/50' : locked ? 'red.50/30' : offline ? 'gray.50' : alerted ? 'red.50' : 'white'}
-                  borderColor={finished ? 'green.200' : locked ? 'red.200' : offline ? 'gray.200' : alerted ? 'red.200' : 'gray.200'}
-                  opacity={offline ? 0.7 : 1}
-                  _hover={!offline && !alerted && !locked && !finished ? { shadow: 'md', borderColor: 'indigo.500' } : undefined}
+                  bg={finished ? 'green.50/40' : locked ? 'red.50/30' : offline ? 'gray.50' : 'white'}
+                  borderColor={
+                    finished ? 'green.200' :
+                    locked ? 'red.200' :
+                    offline ? 'gray.200' :
+                    alerted ? 'amber.200' : 'gray.200'
+                  }
+                  borderLeftColor={
+                    finished ? '#10b981' :
+                    locked ? '#ef4444' :
+                    offline ? '#9ca3af' :
+                    alerted ? '#f59e0b' : '#6366f1'
+                  }
+                  opacity={offline ? 0.72 : 1}
+                  boxShadow="0 1px 4px rgba(15,23,42,0.05)"
+                  _hover={
+                    !offline
+                      ? {
+                          shadow: 'md',
+                          transform: 'translateY(-1px)',
+                          borderColor: finished
+                            ? 'green.300'
+                            : locked
+                            ? 'red.300'
+                            : alerted
+                            ? 'amber.300'
+                            : 'indigo.300',
+                        }
+                      : undefined
+                  }
                 >
                   {/* Top row */}
                   <Flex align="start" justify="space-between" mb={3}>
-                    <Flex align="center" gap={2.5} minW={0} flex="1">
+                    <Flex align="center" gap={2} minW={0} flex="1">
                       <Box
-                        w="10px"
-                        h="10px"
+                        w="8px"
+                        h="8px"
                         borderRadius="full"
-                        mt={1}
+                        mt={0.5}
                         flexShrink={0}
                         bg={
                           finished ? 'green.500' :
-                            locked ? 'red.500' :
-                              offline ? 'gray.400' : 'green.500'
+                          locked ? 'red.500' :
+                          offline ? 'gray.400' :
+                          alerted ? 'amber.500' : 'green.500'
                         }
+                        className={!offline && !finished && !locked ? 'animate-pulse' : ''}
                       />
                       <Box minW={0} flex="1">
                         <Text fontWeight="semibold" fontSize="sm" color="gray.800" lineClamp={1}>
                           {s.fullName || s.username}
                         </Text>
-                        <Text fontSize="xs" color="gray.500">
+                        <Text fontSize="11px" color="gray.400">
                           {new Date(s.lastActive).toLocaleTimeString('id-ID', { timeZone: settings?.timezone || 'Asia/Jakarta' })}
                         </Text>
                       </Box>
                     </Flex>
-                    <Flex align="center" gap={1.5} flexShrink={0}>
+                    <Flex align="center" gap={1} flexShrink={0}>
                       {alerted && (
-                        <Badge colorPalette="red" borderRadius="full" px={2} py={0.5} fontSize="11px">
-                          {s.violationCount}
+                        <Badge colorPalette="orange" borderRadius="full" px={1.5} py={0.5} fontSize="10px">
+                          {s.violationCount}⚠
                         </Badge>
                       )}
                       <Badge
-                        colorPalette={
-                          finished ? 'green' :
-                            locked ? 'red' :
-                              offline ? 'gray' : 'green'
-                        }
+                        colorPalette={finished ? 'green' : locked ? 'red' : offline ? 'gray' : 'green'}
                         borderRadius="full"
-                        px={2}
+                        px={1.5}
                         py={0.5}
-                        fontSize="11px"
+                        fontSize="10px"
                         textTransform="uppercase"
                       >
                         {finished ? 'SELESAI' : locked ? 'TERKUNCI' : offline ? 'OFFLINE' : 'LIVE'}
@@ -780,46 +938,49 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
                     </Flex>
                   </Flex>
 
-                  {/* Progress */}
-                  <Box>
-                    <Flex justify="space-between" fontSize="xs" fontWeight="semibold" mb={1}>
-                      <Text color="gray.500">Progres</Text>
-                      <Text color={done ? 'green.600' : 'gray.800'}>{Math.round(s.progress)}%</Text>
+                  {/* Progress bar */}
+                  <Box mb={3}>
+                    <Flex justify="space-between" fontSize="xs" mb={1.5}>
+                      <Text color="gray.400" fontWeight="medium">Progres</Text>
+                      <Text fontWeight="bold" color={done ? 'green.600' : 'gray.800'}>{Math.round(s.progress)}%</Text>
                     </Flex>
-                    <Box h="8px" borderRadius="full" bg="gray.200" overflow="hidden" mb={2}>
+                    <Box h="6px" borderRadius="full" bg="gray.100" overflow="hidden">
                       <Box
                         h="full"
                         borderRadius="full"
-                        bg={done ? 'green.500' : s.progress >= 50 ? 'amber.500' : 'indigo.500'}
+                        bg={
+                          done
+                            ? 'linear-gradient(90deg, #10b981, #059669)'
+                            : s.progress >= 50
+                            ? 'linear-gradient(90deg, #f59e0b, #d97706)'
+                            : 'linear-gradient(90deg, #6366f1, #4f46e5)'
+                        }
                         transition="width 0.5s ease"
                         style={{ width: `${s.progress}%` }}
                       />
                     </Box>
-                    <Text fontSize="11px" fontWeight="semibold" color="indigo.650">
-                      {finished ? 'Ujian telah dikumpulkan' : `Sedang Mengerjakan: Soal #${s.currentQuestionIndex || 1}`}
-                    </Text>
-                    <Flex align="center" justify="space-between" mt={1}>
-                      <Text fontSize="11px" color="gray.500">
-                        Sisa waktu
-                      </Text>
-                      <Text
-                        fontSize="11px"
-                        fontWeight="bold"
-                        color={finished ? 'green.600' : isEndingSoon(s.endTime) ? 'red.600' : 'gray.800'}
-                        fontFamily="mono"
-                      >
-                        {finished ? '00:00:00' : formatRemainingTime(s.endTime)}
-                      </Text>
-                    </Flex>
                   </Box>
+
+                  {/* Meta info row */}
+                  <Flex justify="space-between" align="center" fontSize="11px" mb={finished ? 0 : 3}>
+                    <Text color="gray.500">
+                      {finished ? 'Ujian dikumpulkan' : `Soal #${s.currentQuestionIndex || 1}`}
+                    </Text>
+                    <Text
+                      fontFamily="mono"
+                      fontWeight="bold"
+                      color={finished ? 'green.600' : isEndingSoon(s.endTime) ? 'red.600' : 'gray.600'}
+                    >
+                      {finished ? '✓' : formatRemainingTime(s.endTime)}
+                    </Text>
+                  </Flex>
 
                   {/* Action Control Panel */}
                   {!finished && (
-                    <Flex gap={2} mt={4} borderTop="1px solid" borderColor="gray.100" pt={3}>
+                    <Flex gap={1.5} pt={3} borderTop="1px solid" borderColor="gray.100">
                       {locked ? (
                         <Button
                           size="xs"
-                          variant="solid"
                           colorPalette="green"
                           borderRadius="lg"
                           flex={1}
@@ -827,7 +988,7 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
                           fontWeight="bold"
                           cursor="pointer"
                         >
-                          Buka Kunci
+                          Buka
                         </Button>
                       ) : (
                         <Button
@@ -840,7 +1001,7 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
                           fontWeight="bold"
                           cursor="pointer"
                         >
-                          Kunci Sesi
+                          Kunci
                         </Button>
                       )}
                       <Button
@@ -857,16 +1018,15 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
                       </Button>
                       <Button
                         size="xs"
-                        variant="solid"
                         colorPalette="amber"
                         borderRadius="lg"
+                        fontWeight="bold"
+                        cursor="pointer"
                         onClick={() => {
                           if (socket) {
                             socket.emit('add_student_time', { examId: id, studentId: s.userId, minutes: 5 });
                           }
                         }}
-                        fontWeight="bold"
-                        cursor="pointer"
                       >
                         +5m
                       </Button>
@@ -878,8 +1038,10 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
 
             {displayed.length === 0 && (
               <Flex gridColumn="1 / -1" direction="column" align="center" justify="center" py={16} textAlign="center">
-                <Monitor size={48} color="var(--chakra-colors-gray-400)" style={{ marginBottom: '16px' }} />
-                <Text color="gray.500" fontWeight="medium">
+                <Box mb={4} color="gray.300">
+                  <Monitor size={42} />
+                </Box>
+                <Text color="gray.500" fontWeight="medium" fontSize="sm">
                   {query ? 'Siswa tidak ditemukan' : 'Menunggu siswa masuk…'}
                 </Text>
               </Flex>
@@ -887,22 +1049,23 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
           </SimpleGrid>
         </Box>
 
-        {/* ─── Violation Logs Panel (Card) ─── */}
+        {/* ─── Violation Logs Panel ─── */}
         <Box
           bg="white"
           borderRadius="2xl"
-          borderWidth="1px"
+          border="1px solid"
           borderColor="gray.200"
-          shadow="sm"
+          boxShadow="0 2px 12px rgba(15,23,42,0.04)"
           p={6}
           display="flex"
           flexDirection="column"
           gap={5}
         >
-          <Flex direction="column" gap={3} pb={3} borderBottom="1px solid" borderColor="gray.150">
+          {/* Panel header */}
+          <Flex direction="column" gap={3} pb={3} borderBottom="1px solid" borderColor="gray.100">
             <Flex align="center" justify="space-between">
-              <Heading size="md" fontWeight="bold" color="gray.855" display="flex" alignItems="center" gap={2}>
-                <AlertTriangle size={20} color="var(--chakra-colors-red-600)" />
+              <Heading size="md" fontWeight="bold" color="gray.800" display="flex" alignItems="center" gap={2}>
+                <AlertTriangle size={18} color="#dc2626" />
                 Pelanggaran
               </Heading>
               {violations.length > 0 && (
@@ -912,13 +1075,11 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
                   color="red.500"
                   _hover={{ bg: 'red.50', color: 'red.700' }}
                   onClick={() => setViolations([])}
-                  borderRadius="md"
-                  px={2}
-                  py={1}
-                  fontWeight="bold"
+                  borderRadius="lg"
+                  fontWeight="semibold"
                   cursor="pointer"
                 >
-                  Bersihkan Log
+                  Bersihkan
                 </Button>
               )}
             </Flex>
@@ -933,7 +1094,7 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
               >
                 <Select.HiddenSelect />
                 <Select.Control>
-                  <Select.Trigger borderRadius="lg">
+                  <Select.Trigger borderRadius="lg" bg="gray.50">
                     <Select.ValueText placeholder="Semua Pelanggaran" />
                   </Select.Trigger>
                   <Select.IndicatorGroup>
@@ -953,7 +1114,18 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
             </Box>
           </Flex>
 
-          <Stack id="violation-logs" gap={2} h="65vh" overflowY="auto" pr={1} css={{ '&::-webkit-scrollbar': { width: '6px' }, '&::-webkit-scrollbar-thumb': { background: 'var(--chakra-colors-red-200)', borderRadius: '10px' } }}>
+          {/* Violation entries */}
+          <Stack
+            id="violation-logs"
+            gap={2}
+            h="65vh"
+            overflowY="auto"
+            pr={1}
+            css={{
+              '&::-webkit-scrollbar': { width: '5px' },
+              '&::-webkit-scrollbar-thumb': { background: 'var(--chakra-colors-red-200)', borderRadius: '10px' },
+            }}
+          >
             {violations
               .filter((v) => {
                 if (violationFilter === 'ALL') return true;
@@ -962,35 +1134,72 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
                 if (violationFilter === 'DEVTOOLS') return v.type.toLowerCase().includes('devtools') || v.type.toLowerCase().includes('inspect');
                 return true;
               })
-              .map((v) => (
-                <Box key={v.id} p={3} bg="red.50" border="1px solid" borderColor="red.100" borderRadius="xl" className="animate-fade-up">
-                  <Flex justify="space-between" align="start" mb={1}>
-                    <Text fontWeight="semibold" fontSize="sm" color="red.900">{v.username}</Text>
-                    <Text fontSize="xs" color="red.500" whiteSpace="nowrap" ml={2}>
-                      {new Date(v.timestamp).toLocaleTimeString('id-ID', { timeZone: settings?.timezone || 'Asia/Jakarta' })}
-                    </Text>
-                  </Flex>
-                  <Text fontSize="11px" fontWeight="bold" color="red.700" textTransform="uppercase" letterSpacing="wider" mb={1}>
-                    {v.type}
-                  </Text>
-                  <Text fontSize="xs" color="red.600">{v.description}</Text>
-                </Box>
-              ))}
+              .map((v) => {
+                const meta = getViolationMeta(v.type);
+                return (
+                  <Box
+                    key={v.id}
+                    p={3}
+                    borderRadius="xl"
+                    border="1px solid"
+                    borderLeftWidth="3px"
+                    borderColor={`${meta.palette}.100`}
+                    borderLeftColor={`${meta.palette}.400`}
+                    bg={`${meta.palette}.50`}
+                    className="animate-fade-up"
+                  >
+                    <Flex justify="space-between" align="start" mb={1.5}>
+                      <Text fontWeight="semibold" fontSize="sm" color="gray.900">{v.username}</Text>
+                      <Text fontSize="10px" color="gray.400" whiteSpace="nowrap" ml={2}>
+                        {new Date(v.timestamp).toLocaleTimeString('id-ID', {
+                          timeZone: settings?.timezone || 'Asia/Jakarta',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          second: '2-digit',
+                        })}
+                      </Text>
+                    </Flex>
+                    <Badge
+                      colorPalette={meta.palette}
+                      size="sm"
+                      borderRadius="md"
+                      mb={v.description ? 1.5 : 0}
+                      textTransform="uppercase"
+                      fontSize="10px"
+                      letterSpacing="0.06em"
+                    >
+                      {meta.label}
+                    </Badge>
+                    {v.description && (
+                      <Text fontSize="xs" color="gray.600">{v.description}</Text>
+                    )}
+                  </Box>
+                );
+              })}
 
             {violations.length === 0 && (
               <Flex h="full" direction="column" align="center" justify="center" textAlign="center" py={12} px={4}>
-                <Flex w="16" h="16" bg="green.50" borderRadius="full" align="center" justify="center" mb={4}>
-                  <CheckCircle2 size={32} color="var(--chakra-colors-green-500)" />
+                <Flex
+                  w={14}
+                  h={14}
+                  bg="green.50"
+                  border="1px solid"
+                  borderColor="green.100"
+                  borderRadius="2xl"
+                  align="center"
+                  justify="center"
+                  mb={4}
+                >
+                  <CheckCircle2 size={28} color="#16a34a" />
                 </Flex>
-                <Text fontWeight="medium" color="gray.800">Semua bersih</Text>
-                <Text fontSize="sm" color="gray.500" mt={1} maxW="180px">
+                <Text fontWeight="semibold" color="gray.700" mb={1}>Semua bersih</Text>
+                <Text fontSize="xs" color="gray.400" maxW="160px">
                   Belum ada pelanggaran yang terdeteksi.
                 </Text>
               </Flex>
             )}
           </Stack>
         </Box>
-
       </SimpleGrid>
     </Stack>
   );

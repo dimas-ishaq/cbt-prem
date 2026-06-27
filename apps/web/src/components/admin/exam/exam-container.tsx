@@ -1,15 +1,18 @@
 'use client';
 
-import { Box, Flex, Spinner, Text } from '@chakra-ui/react';
+import { Box, Flex, Spinner, Text, Heading, Button } from '@chakra-ui/react';
 import { useQuery } from '@tanstack/react-query';
 import { AxiosError } from 'axios';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { Maximize } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import api from '@/lib/api';
 import { useSocket } from '@/hooks/useSocket';
 import { useSound } from '@/hooks/useSound';
 import { useAuthStore } from '@/store/auth.store';
+import { ExamCompletion } from './_components/exam-completion';
+import { ExamConfirmDialog } from './_components/exam-confirm-dialog';
 import { ExamLockedOverlay } from './_components/exam-locked-overlay';
 import { ExamRulesGate } from './_components/exam-rules-gate';
 import { ExamHeader } from './_components/exam-header';
@@ -32,7 +35,25 @@ export function ExamContainer({ examId }: Props) {
   const user = useAuthStore((s) => s.user);
   const token = useAuthStore((s) => s.access_token);
 
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [isFinishing, setIsFinishing] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  // Guard to prevent finishExam from running concurrently (e.g. violation auto-submit + timer)
+  const isFinishingRef = useRef(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    setIsFullscreen(!!document.fullscreenElement);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
   const [flaggedQuestions, setFlaggedQuestions] = useState<string[]>([]);
   const [showViolationModal, setShowViolationModal] = useState(false);
   const [violationMessage, setViolationMessage] = useState('');
@@ -52,6 +73,7 @@ export function ExamContainer({ examId }: Props) {
 
   const {
     sessionId,
+    sessionStartTime,
     sessionEndTime,
     isLocked,
     answers,
@@ -63,11 +85,176 @@ export function ExamContainer({ examId }: Props) {
     setSessionEndTime,
   } = useExamSession(examId, token, user?.role);
 
+  // Sync function to upload pending answers
+  // NOTE: defined before finishExam so finishExam can call it
+  const syncPendingAnswers = async () => {
+    if (!sessionId || !exam) return;
+    const pendingStr = localStorage.getItem(`exam_pending_sync_${examId}_${sessionId}`);
+    if (!pendingStr) return;
+
+    try {
+      const pending = JSON.parse(pendingStr);
+      const keys = Object.keys(pending);
+      if (keys.length === 0) return;
+
+      for (const qId of keys) {
+        const item = pending[qId];
+        const payload: any = { questionId: item.questionObjId };
+        if (item.type === 'ESSAY') {
+          payload.essayAnswer = item.answer;
+        } else {
+          payload.selectedOptionId = item.answer;
+        }
+
+        try {
+          await api.post(`/exam-sessions/${sessionId}/submit-answer`, payload);
+          // Remove from pending on success
+          const currentPending = JSON.parse(localStorage.getItem(`exam_pending_sync_${examId}_${sessionId}`) || '{}');
+          delete currentPending[qId];
+          localStorage.setItem(`exam_pending_sync_${examId}_${sessionId}`, JSON.stringify(currentPending));
+        } catch (err) {
+          const status = (err as AxiosError)?.response?.status;
+          // 400 means session is no longer active (locked/submitted) — skip remaining answers
+          if (status === 400) {
+            console.warn(`Skipping answer sync for question ${qId}: session no longer active (400).`);
+            break;
+          }
+          console.error(`Failed to sync answer for question ${qId}:`, err);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to parse pending sync answers:', e);
+    }
+  };
+
   const finishExam = async () => {
     if (!sessionId) return;
-    await api.post(`/exam-sessions/${sessionId}/finish`);
-    router.push('/dashboard');
+    // Prevent concurrent calls (e.g. violation auto-submit races with timer expiry or manual submit)
+    if (isFinishingRef.current) return;
+    isFinishingRef.current = true;
+
+    try {
+      // Sync all pending (locally stored) answers to the server first,
+      // so that when auto-finish is triggered (e.g. by violation limit),
+      // all answers already answered by the student are collected.
+      try {
+        await syncPendingAnswers();
+      } catch (e) {
+        console.error('Failed to sync pending answers before finishing:', e);
+      }
+
+      try {
+        await api.post(`/exam-sessions/${sessionId}/finish`);
+      } catch (err) {
+        const status = (err as AxiosError)?.response?.status;
+        // 400 means the session was already submitted/finished from another source
+        // (e.g. backend auto-submit, proctor, or duplicate call) — treat as success
+        if (status === 400) {
+          console.warn('Session already submitted or not in progress (400) — treating as finished.');
+        } else {
+          throw err;
+        }
+      }
+
+      try {
+        localStorage.removeItem(`exam_backup_${examId}_${sessionId}`);
+        localStorage.removeItem(`exam_pending_sync_${examId}_${sessionId}`);
+      } catch (e) {
+        console.error('Failed to clear local storage on finish:', e);
+      }
+      setIsCompleted(true);
+    } finally {
+      isFinishingRef.current = false;
+    }
   };
+
+  const totalQuestions = exam?.examQuestions?.length || 0;
+  const answeredCount = Object.keys(answers).filter((k) => answers[k]?.trim()).length;
+  const flaggedCount = flaggedQuestions.length;
+  const unansweredCount = Math.max(totalQuestions - answeredCount, 0);
+
+  const handleManualFinishTrigger = () => {
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirmFinish = async () => {
+    setShowConfirmDialog(false);
+    setIsFinishing(true);
+    try {
+      await finishExam();
+    } finally {
+      setIsFinishing(false);
+    }
+  };
+
+  // Load local backup and merge with server answers when sessionId/exam changes
+  useEffect(() => {
+    if (!sessionId || !exam) return;
+    try {
+      const backupStr = localStorage.getItem(`exam_backup_${examId}_${sessionId}`);
+      if (backupStr) {
+        const backup = JSON.parse(backupStr);
+        const validQuestionIds = new Set(exam.examQuestions.map((q: any) => q.question.id));
+
+        // Filter out legacy relation IDs
+        const filteredBackup: Record<string, string> = {};
+        Object.keys(backup).forEach((key) => {
+          if (validQuestionIds.has(key)) {
+            filteredBackup[key] = backup[key];
+          }
+        });
+
+        // Save sanitized backup back to localStorage
+        localStorage.setItem(`exam_backup_${examId}_${sessionId}`, JSON.stringify(filteredBackup));
+
+        setAnswers((prev) => {
+          const merged = { ...prev, ...filteredBackup };
+          const pendingStr = localStorage.getItem(`exam_pending_sync_${examId}_${sessionId}`);
+          if (pendingStr) {
+            const pending = JSON.parse(pendingStr);
+            const filteredPending: Record<string, any> = {};
+            
+            Object.keys(pending).forEach((qId) => {
+              if (validQuestionIds.has(qId)) {
+                filteredPending[qId] = pending[qId];
+                merged[qId] = pending[qId].answer;
+              }
+            });
+            localStorage.setItem(`exam_pending_sync_${examId}_${sessionId}`, JSON.stringify(filteredPending));
+          }
+          return merged;
+        });
+      }
+    } catch (e) {
+      console.error('Failed to restore local exam backup:', e);
+    }
+  }, [sessionId, exam, examId, setAnswers]);
+
+  // Sync on online status restoration
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleOnline = () => {
+      syncPendingAnswers();
+    };
+    window.addEventListener('online', handleOnline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+    };
+  }, [sessionId, exam]);
+
+  // Also sync pending answers periodically or on load
+  useEffect(() => {
+    if (sessionId && exam) {
+      syncPendingAnswers();
+    }
+  }, [sessionId, exam]);
+
+  // Emit current question index when navigating questions
+  useEffect(() => {
+    if (socket && sessionId && exam) {
+      socket.emit('question_changed', { examId, questionIndex: currentQuestionIndex });
+    }
+  }, [currentQuestionIndex, socket, sessionId, examId, exam]);
 
   useExamRealtime({ socket, examId, sessionId, playSuccess, setIsLocked, finishExam, setSessionEndTime, setTimeAddedMinutes, setShowTimeAddedDialog });
   useExamViolation({ enabled: true, exam, examId, socket, sessionId, playViolation, finishExam, setViolationCount, setViolationMessage, setShowViolationModal });
@@ -76,8 +263,16 @@ export function ExamContainer({ examId }: Props) {
   const allTermsChecked = REQUIRED_TERM_IDS.every((id) => checkedTerms[id]);
   const disableStart = isStartingSession || !allTermsChecked || (isTokenRequired && !tokenInput.trim());
   const currentQuestion = exam?.examQuestions?.[currentQuestionIndex] ?? null;
-  const timerEndTime = sessionEndTime || exam?.endTime;
-  const timerStartTime = exam?.startTime || timerEndTime || new Date().toISOString();
+  // timerEndTime: gunakan sessionEndTime (override dari proktor/tambah waktu) jika ada,
+  // jika tidak, hitung dari waktu siswa mulai sesi + durasi ujian.
+  // JANGAN gunakan exam.endTime karena itu adalah batas waktu ujian dibuka, bukan durasi per siswa.
+  const sessionDurationEndTime = sessionStartTime
+    ? new Date(new Date(sessionStartTime).getTime() + (exam?.duration ?? 0) * 60 * 1000).toISOString()
+    : undefined;
+  const timerEndTime = sessionEndTime || sessionDurationEndTime;
+  // timerStartTime: gunakan waktu siswa mulai sesi (bukan waktu ujian dibuka).
+  // Fallback ke exam.startTime hanya jika belum ada sesi (misal: sebelum mulai).
+  const timerStartTime = sessionStartTime || exam?.startTime || new Date().toISOString();
 
   const handleTokenChange = (value: string) => {
     setTokenInput(value);
@@ -103,6 +298,11 @@ export function ExamContainer({ examId }: Props) {
 
     try {
       await startSession(isTokenRequired ? tokenInput.trim() : undefined);
+      if (exam?.forceFullscreen) {
+        document.documentElement.requestFullscreen().catch((err) => {
+          console.error('Failed to enter fullscreen:', err);
+        });
+      }
     } catch (error) {
       const message = error instanceof AxiosError
         ? error.response?.data?.message || error.response?.data?.error || error.message
@@ -113,7 +313,39 @@ export function ExamContainer({ examId }: Props) {
 
   if (!exam && isLoadingExam) return <Flex align="center" justify="center" minH="screen"><Spinner size="xl" /></Flex>;
   if (!exam) return <Flex align="center" justify="center" minH="screen"><Text>Ujian tidak ditemukan.</Text></Flex>;
+  if (isCompleted) return <ExamCompletion subjectName={exam?.subject?.name} examTitle={exam?.title} />;
   if (isLocked) return <ExamLockedOverlay />;
+
+  // Enforce fullscreen if active session and forceFullscreen is enabled
+  if (sessionId && exam?.forceFullscreen && !isFullscreen) {
+    return (
+      <Flex position="fixed" inset={0} zIndex={99999} bg="gray.950" align="center" justify="center" p={6} textAlign="center">
+        <Box maxW="md" bg="gray.900" borderRadius="3xl" p={8} border="1px solid" borderColor="indigo.500/20" boxShadow="2xl">
+          <Flex w={16} h={16} bg="indigo.500/10" borderRadius="full" align="center" justify="center" mx="auto" mb={6} border="2px solid" borderColor="indigo.500/30">
+            <Maximize className="text-indigo-400 animate-pulse" size={32} />
+          </Flex>
+          <Heading size="lg" fontWeight="black" color="white" mb={3}>Wajib Mode Layar Penuh</Heading>
+          <Text color="gray.300" fontSize="sm" lineHeight="relaxed" mb={8}>
+            Untuk menjaga integritas dan keamanan ujian, Anda wajib menggunakan mode layar penuh. Pengerjaan ujian akan ditangguhkan sampai Anda masuk ke mode ini.
+          </Text>
+          <Button
+            colorPalette="indigo"
+            size="lg"
+            borderRadius="2xl"
+            w="full"
+            onClick={() => {
+              document.documentElement.requestFullscreen().catch((err) => {
+                console.error('Failed to enter fullscreen:', err);
+              });
+            }}
+          >
+            Aktifkan Layar Penuh
+          </Button>
+        </Box>
+      </Flex>
+    );
+  }
+
   if (isRestoringSession) return <Flex align="center" justify="center" minH="screen"><Spinner size="xl" /></Flex>;
   if (!sessionId) {
     return (
@@ -133,24 +365,68 @@ export function ExamContainer({ examId }: Props) {
 
   return (
     <Box minH="screen" bg="gray.50">
-      <ExamHeader title={exam.title} subjectName={exam.subject?.name} startTime={timerStartTime} duration={exam.duration} overrideEndTime={timerEndTime} onTimeUp={finishExam} onFinish={finishExam} />
+      <ExamHeader title={exam.title} subjectName={exam.subject?.name} startTime={timerStartTime} duration={exam.duration} overrideEndTime={timerEndTime} onTimeUp={finishExam} onFinish={handleManualFinishTrigger} disableFinish={unansweredCount > 0} />
       <Box flex={1} p={8}>
         <ExamWorkspace
           currentQuestion={currentQuestion}
           currentQuestionIndex={currentQuestionIndex}
           answers={answers}
           flaggedQuestions={flaggedQuestions}
-          onAnswer={(questionId, answer) => setAnswers((prev) => ({ ...prev, [questionId]: answer }))}
+          onAnswer={async (questionId, answer) => {
+            // 1. Update React state immediately & save local backup
+            setAnswers((prev) => {
+              const nextAnswers = { ...prev, [questionId]: answer };
+              if (sessionId) {
+                localStorage.setItem(`exam_backup_${examId}_${sessionId}`, JSON.stringify(nextAnswers));
+              }
+              return nextAnswers;
+            });
+
+            if (!sessionId) return;
+            const currentQuestionObj = exam.examQuestions.find((q: any) => q.question.id === questionId)?.question;
+
+            // 2. Queue into pending sync in localStorage
+            try {
+              const pending = JSON.parse(localStorage.getItem(`exam_pending_sync_${examId}_${sessionId}`) || '{}');
+              pending[questionId] = {
+                answer,
+                type: currentQuestionObj?.type,
+                questionObjId: currentQuestionObj?.id
+              };
+              localStorage.setItem(`exam_pending_sync_${examId}_${sessionId}`, JSON.stringify(pending));
+            } catch (e) {
+              console.error('Failed to queue pending answer:', e);
+            }
+
+            // 3. Try syncing immediately
+            await syncPendingAnswers();
+
+            // 4. Emit socket event
+            if (socket && sessionId) {
+              socket.emit('answer_changed', { examId, questionId, answer });
+            }
+          }}
           onToggleFlag={(questionId) => setFlaggedQuestions((prev) => prev.includes(questionId) ? prev.filter((id) => id !== questionId) : [...prev, questionId])}
           questions={exam.examQuestions}
           onSelectQuestion={setCurrentQuestionIndex}
           onPrevious={() => setCurrentQuestionIndex((prev) => Math.max(prev - 1, 0))}
           onNext={() => setCurrentQuestionIndex((prev) => Math.min(prev + 1, exam.examQuestions.length - 1))}
-          onFinish={finishExam}
+          onFinish={handleManualFinishTrigger}
+          disableFinish={unansweredCount > 0}
         />
       </Box>
       <ViolationWarningModal open={showViolationModal} message={violationMessage} onAcknowledge={() => setShowViolationModal(false)} />
       <TimeAddedDialog open={showTimeAddedDialog} minutes={timeAddedMinutes} onOpenChange={setShowTimeAddedDialog} />
+      <ExamConfirmDialog
+        open={showConfirmDialog}
+        onClose={() => setShowConfirmDialog(false)}
+        onConfirm={handleConfirmFinish}
+        totalQuestions={totalQuestions}
+        answeredCount={answeredCount}
+        unansweredCount={unansweredCount}
+        flaggedCount={flaggedCount}
+        isSubmitting={isFinishing}
+      />
     </Box>
   );
 }

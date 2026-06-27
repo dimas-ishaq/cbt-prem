@@ -40,7 +40,10 @@ export function Breadcrumb() {
   const items = segments
     .filter((segment) => segment !== '(teacher)' && segment !== '(student)' && segment !== '(auth)')
     .map((segment, index, arr) => {
-      const href = "/" + arr.slice(0, index + 1).join("/");
+      const baseHref = "/" + arr.slice(0, index + 1).join("/");
+      const href = arr[index - 1] === 'reports' && segment === 'exam-groups'
+        ? '/admin/reports'
+        : baseHref;
       const isLast = index === arr.length - 1;
       let label = segmentLabels[segment] ? t(segmentLabels[segment]) : decodeURIComponent(segment);
       if (isDynamicSegment(segment)) label = t('detail');

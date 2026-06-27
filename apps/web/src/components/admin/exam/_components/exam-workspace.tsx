@@ -31,9 +31,10 @@ interface ExamWorkspaceProps {
   onPrevious: () => void;
   onNext: () => void;
   onFinish: () => void;
+  disableFinish?: boolean;
 }
 
-export function ExamWorkspace({ currentQuestion, currentQuestionIndex, answers, flaggedQuestions, onAnswer, onToggleFlag, questions, onSelectQuestion, onPrevious, onNext, onFinish }: ExamWorkspaceProps) {
+export function ExamWorkspace({ currentQuestion, currentQuestionIndex, answers, flaggedQuestions, onAnswer, onToggleFlag, questions, onSelectQuestion, onPrevious, onNext, onFinish, disableFinish }: ExamWorkspaceProps) {
   const isFirstQuestion = currentQuestionIndex === 0;
   const isLastQuestion = currentQuestionIndex === questions.length - 1;
 
@@ -45,10 +46,10 @@ export function ExamWorkspace({ currentQuestion, currentQuestionIndex, answers, 
             <QuestionCard
               question={currentQuestion.question}
               index={currentQuestionIndex}
-              selectedAnswer={answers[currentQuestion.id]}
-              onAnswer={(answer) => onAnswer(currentQuestion.id, answer)}
-              isFlagged={flaggedQuestions.includes(currentQuestion.id)}
-              onToggleFlag={() => onToggleFlag(currentQuestion.id)}
+              selectedAnswer={answers[currentQuestion.question.id]}
+              onAnswer={(answer) => onAnswer(currentQuestion.question.id, answer)}
+              isFlagged={flaggedQuestions.includes(currentQuestion.question.id)}
+              onToggleFlag={() => onToggleFlag(currentQuestion.question.id)}
             />
             <Flex mt={6} gap={3} justify="space-between" flexWrap="wrap">
               <Button onClick={onPrevious} disabled={isFirstQuestion} variant="outline" borderRadius="xl" px={6}>
@@ -59,7 +60,7 @@ export function ExamWorkspace({ currentQuestion, currentQuestionIndex, answers, 
                   Selanjutnya
                 </Button>
               ) : (
-                <Button onClick={onFinish} colorPalette="red" borderRadius="xl" px={6}>
+                <Button onClick={onFinish} colorPalette={disableFinish ? 'gray' : 'red'} borderRadius="xl" px={6} disabled={disableFinish}>
                   Selesaikan Ujian
                 </Button>
               )}

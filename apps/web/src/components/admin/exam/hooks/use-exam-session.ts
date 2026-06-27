@@ -7,6 +7,7 @@ import { parseSessionAnswers } from '../exam-utils';
 
 type StartSessionResponse = {
   id: string;
+  startTime?: string;
   endTime?: string;
   status?: string;
   answers?: Array<{
@@ -19,6 +20,7 @@ type StartSessionResponse = {
 
 export function useExamSession(examId: string, token: string | null, userRole?: string) {
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionStartTime, setSessionStartTime] = useState<string | undefined>(undefined);
   const [sessionEndTime, setSessionEndTime] = useState<string | undefined>(undefined);
   const [isLocked, setIsLocked] = useState(false);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -28,6 +30,7 @@ export function useExamSession(examId: string, token: string | null, userRole?: 
     mutationFn: async (examToken?: string) => (await api.post('/exam-sessions/start', { examId, token: examToken })).data,
     onSuccess: (data) => {
       setSessionId(data.id);
+      setSessionStartTime(data.startTime);
       setSessionEndTime(data.endTime);
       setIsLocked(data.status === 'LOCKED');
       setAnswers(parseSessionAnswers(data));
@@ -55,6 +58,7 @@ export function useExamSession(examId: string, token: string | null, userRole?: 
         const data = response.data;
         if (data?.id && data?.status !== 'FINISHED' && data?.status !== 'SUBMITTED') {
           setSessionId(data.id);
+          setSessionStartTime(data.startTime);
           setSessionEndTime(data.endTime);
           setIsLocked(data.status === 'LOCKED');
           setAnswers(parseSessionAnswers(data));
@@ -90,13 +94,18 @@ export function useExamSession(examId: string, token: string | null, userRole?: 
 
     if (Number.isNaN(hydratedEndMs) || Number.isNaN(startMs)) return;
 
+    // Sync sessionStartTime from server (important for restored sessions)
+    const hydratedStartTime = new Date(startMs).toISOString();
+    if (hydratedStartTime !== sessionStartTime) setSessionStartTime(hydratedStartTime);
+
     const hydratedEndTime = new Date(hydratedEndMs).toISOString();
     if (hydratedEndTime !== sessionEndTime) setSessionEndTime(hydratedEndTime);
     if (hydratedEndMs > baseEndMs) lastAnnouncedExtendedEndTimeRef.current = hydratedEndMs;
-  }, [hydratedSession, sessionEndTime]);
+  }, [hydratedSession, sessionEndTime, sessionStartTime]);
 
   return {
     sessionId,
+    sessionStartTime,
     sessionEndTime,
     isLocked,
     answers,

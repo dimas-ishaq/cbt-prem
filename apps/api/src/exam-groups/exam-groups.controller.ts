@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query, Res } from '@nestjs/common';
+import { Response } from 'express';
 import { ExamGroupsService } from './exam-groups.service';
 import { CreateExamGroupDto } from './dto/create-exam-group.dto';
 import { UpdateExamGroupDto } from './dto/update-exam-group.dto';
@@ -22,6 +23,18 @@ export class ExamGroupsController {
   @Get()
   findAll(@Query() pagination: PaginationDto) {
     return this.examGroupsService.findAll(pagination.skip, pagination.take);
+  }
+
+  @Get(':id/report-ledger')
+  @Roles(Role.GURU, Role.SUPER_ADMIN)
+  getReportLedger(@Param('id') id: string) {
+    return this.examGroupsService.getReportLedger(id);
+  }
+
+  @Get(':id/export-ledger')
+  @Roles(Role.GURU, Role.SUPER_ADMIN)
+  async exportLedger(@Param('id') id: string, @Res() res: Response) {
+    return this.examGroupsService.exportLedgerToExcel(id, res);
   }
 
   @Get(':id')

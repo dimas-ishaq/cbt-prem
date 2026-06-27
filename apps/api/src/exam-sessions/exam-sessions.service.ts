@@ -47,14 +47,16 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async autoSubmitExpiredSessions() {
+    const now = new Date();
     const expiredSessions = await this.prisma.examSession.findMany({
       where: {
         status: SessionStatus.IN_PROGRESS,
-        exam: {
-          endTime: {
-            lte: new Date(),
-          },
-        },
+        OR: [
+          // Exam window has closed
+          { exam: { endTime: { lte: now } } },
+          // Student's individual session duration has expired
+          { endTime: { lte: now, not: null } },
+        ],
       },
       select: { id: true },
     });
@@ -126,18 +128,28 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
       if (existingSession.status === SessionStatus.SUBMITTED || existingSession.status === SessionStatus.FINISHED) {
         throw new BadRequestException('You have already submitted this exam');
       }
-      return existingSession;
+      // Re-fetch with exam included so frontend can read duration
+      return this.prisma.examSession.findUnique({
+        where: { id: existingSession.id },
+        include: { answers: true, exam: true },
+      });
     }
 
     // Create new session
+    // endTime for the session = start time + exam duration (minutes)
+    // This ensures each student gets the full duration from when THEY started,
+    // not from when the exam window opened.
+    const sessionEndTime = new Date(now.getTime() + exam.duration * 60 * 1000);
+
     return this.prisma.examSession.create({
       data: {
         examId: dto.examId,
         studentId: student.id,
         startTime: now,
+        endTime: sessionEndTime,
         status: SessionStatus.IN_PROGRESS,
       },
-      include: { answers: true },
+      include: { answers: true, exam: true },
     });
   }
 
@@ -431,7 +443,7 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
           },
         },
         answers: {
-          select: { id: true }, // lightweight — just need count
+          select: { questionId: true }, // lightweight — need questionId to track uniqueness
         },
         violations: {
           select: { id: true, type: true, description: true, timestamp: true },

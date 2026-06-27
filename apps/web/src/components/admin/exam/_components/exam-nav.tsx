@@ -14,10 +14,10 @@ export function ExamNav({ questions, currentIndex, onSelect, answeredQuestions, 
   return (
     <SimpleGrid columns={5} gap={2.5}>
       {questions.map((eq, idx) => {
-        const examQuestionId = eq.id;
-        const isAnswered = answeredQuestions.includes(examQuestionId);
+        const questionId = eq.question.id;
+        const isAnswered = answeredQuestions.includes(questionId);
         const isCurrent = currentIndex === idx;
-        const isFlagged = flaggedQuestions.includes(examQuestionId);
+        const isFlagged = flaggedQuestions.includes(questionId);
 
         let colorPalette = 'gray';
         let variant: 'solid' | 'outline' | 'subtle' = 'outline';
