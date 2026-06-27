@@ -1,7 +1,20 @@
-﻿import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { toast } from '@/lib/toaster';
 import type { UserData, UserFormData } from '../user-types';
+
+type Rombel = {
+  id: string;
+  name: string;
+};
+
+type ApiError = {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+};
 
 export function useUsers(onSaved: () => void) {
   const queryClient = useQueryClient();
@@ -14,7 +27,7 @@ export function useUsers(onSaved: () => void) {
     },
   });
 
-  const rombelsQuery = useQuery<any[]>({
+  const rombelsQuery = useQuery<Rombel[]>({
     queryKey: ['rombels-list'],
     queryFn: async () => {
       const res = await api.get('/rombels');
@@ -29,7 +42,7 @@ export function useUsers(onSaved: () => void) {
       onSaved();
       toast.success('Pengguna berhasil dibuat!');
     },
-    onError: (err: any) => toast.error(err.response?.data?.message || 'Gagal membuat pengguna'),
+    onError: (err: ApiError) => toast.error(err.response?.data?.message || 'Gagal membuat pengguna'),
   });
 
   const updateMutation = useMutation({
@@ -39,7 +52,7 @@ export function useUsers(onSaved: () => void) {
       onSaved();
       toast.success('Data pengguna berhasil diperbarui!');
     },
-    onError: (err: any) => toast.error(err.response?.data?.message || 'Gagal memperbarui pengguna'),
+    onError: (err: ApiError) => toast.error(err.response?.data?.message || 'Gagal memperbarui pengguna'),
   });
 
   const deleteMutation = useMutation({
@@ -48,7 +61,7 @@ export function useUsers(onSaved: () => void) {
       queryClient.invalidateQueries({ queryKey: ['users-all'] });
       toast.success('Pengguna berhasil dihapus');
     },
-    onError: (err: any) => toast.error(err.response?.data?.message || 'Gagal menghapus pengguna'),
+    onError: (err: ApiError) => toast.error(err.response?.data?.message || 'Gagal menghapus pengguna'),
   });
 
   const toggleActiveMutation = useMutation({
@@ -57,7 +70,7 @@ export function useUsers(onSaved: () => void) {
       queryClient.invalidateQueries({ queryKey: ['users-all'] });
       toast.success('Status pengguna berhasil diubah');
     },
-    onError: (err: any) => toast.error(err.response?.data?.message || 'Gagal mengubah status'),
+    onError: (err: ApiError) => toast.error(err.response?.data?.message || 'Gagal mengubah status'),
   });
 
   const resetPasswordMutation = useMutation({
@@ -66,7 +79,7 @@ export function useUsers(onSaved: () => void) {
       onSaved();
       toast.success('Password berhasil direset!');
     },
-    onError: (err: any) => toast.error(err.response?.data?.message || 'Gagal mereset password'),
+    onError: (err: ApiError) => toast.error(err.response?.data?.message || 'Gagal mereset password'),
   });
 
   return {
@@ -81,3 +94,4 @@ export function useUsers(onSaved: () => void) {
     queryClient,
   };
 }
+

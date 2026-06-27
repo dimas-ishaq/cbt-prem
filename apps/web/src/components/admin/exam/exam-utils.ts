@@ -1,7 +1,24 @@
-﻿export function parseSessionAnswers(data: any): Record<string, string> {
+type SessionAnswer = {
+  questionId: string;
+  essayAnswer?: string | null;
+  selectedOptionId?: string | null;
+  selectedOption?: string | null;
+};
+
+type SessionData = {
+  answers?: SessionAnswer[];
+};
+
+type ExamConfigSource = {
+  id: string;
+  sebBrowserKey?: string | null;
+  sebConfigKey?: string | null;
+};
+
+export function parseSessionAnswers(data: SessionData | null | undefined): Record<string, string> {
   const existingAnswers: Record<string, string> = {};
 
-  data?.answers?.forEach((ans: any) => {
+  data?.answers?.forEach((ans) => {
     if (ans.essayAnswer) {
       existingAnswers[ans.questionId] = ans.essayAnswer;
     } else if (ans.selectedOptionId) {
@@ -14,7 +31,7 @@
   return existingAnswers;
 }
 
-export function generateSEBConfig(exam: any): string {
+export function generateSEBConfig(exam: ExamConfigSource): string {
   const config = {
     general: {
       startURL: typeof window !== 'undefined' ? `${window.location.origin}/exams/${exam.id}` : '',
@@ -72,3 +89,4 @@ export function generateSEBConfig(exam: any): string {
 
   return JSON.stringify(config, null, 2);
 }
+

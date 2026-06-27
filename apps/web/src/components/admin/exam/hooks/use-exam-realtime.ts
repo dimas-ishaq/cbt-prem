@@ -1,10 +1,19 @@
-﻿import { useEffect } from 'react';
+import { useEffect } from 'react';
 import api from '@/lib/api';
 
 type SocketLike = {
-  on: (event: string, handler: (...args: any[]) => void) => void;
-  off: (event: string, handler: (...args: any[]) => void) => void;
-  emit: (event: string, payload?: any) => void;
+  on: (event: string, handler: (data: unknown) => void) => void;
+  off: (event: string, handler: (data: unknown) => void) => void;
+  emit: (event: string, payload?: unknown) => void;
+};
+
+type SessionEvent = {
+  examId: string;
+};
+
+type TimeAddedEvent = SessionEvent & {
+  newEndTime?: string | Date | null;
+  addedMinutes?: number;
 };
 
 export function useExamRealtime({ socket, examId, sessionId, playSuccess, setIsLocked, finishExam, setSessionEndTime, setTimeAddedMinutes, setShowTimeAddedDialog }: {
@@ -20,10 +29,10 @@ export function useExamRealtime({ socket, examId, sessionId, playSuccess, setIsL
 }) {
   useEffect(() => {
     if (!socket || !sessionId) return;
-    const onSessionLocked = (data: any) => { if (data.examId === examId) setIsLocked(true); };
-    const onSessionUnlocked = (data: any) => { if (data.examId === examId) setIsLocked(false); };
-    const onSessionSubmitted = (data: any) => { if (data.examId === examId) finishExam(); };
-    const onTimeAdded = async (data: any) => {
+    const onSessionLocked = (data: SessionEvent) => { if (data.examId === examId) setIsLocked(true); };
+    const onSessionUnlocked = (data: SessionEvent) => { if (data.examId === examId) setIsLocked(false); };
+    const onSessionSubmitted = (data: SessionEvent) => { if (data.examId === examId) finishExam(); };
+    const onTimeAdded = async (data: TimeAddedEvent) => {
       if (data.examId !== examId) return;
       try {
         const response = await api.get(`/exam-sessions/${sessionId}`);
@@ -60,3 +69,4 @@ export function useExamRealtime({ socket, examId, sessionId, playSuccess, setIsL
     };
   }, [socket, sessionId, examId, finishExam, playSuccess, setIsLocked, setSessionEndTime, setShowTimeAddedDialog, setTimeAddedMinutes]);
 }
+

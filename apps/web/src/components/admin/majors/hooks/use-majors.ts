@@ -1,7 +1,15 @@
-﻿import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { toast } from '@/lib/toaster';
 import type { Major, MajorFormData } from '../major-types';
+
+type ApiError = {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+};
 
 export function useMajors(onSaved: () => void) {
   const queryClient = useQueryClient();
@@ -21,7 +29,7 @@ export function useMajors(onSaved: () => void) {
       onSaved();
       toast.success('Jurusan berhasil ditambahkan!');
     },
-    onError: (err: any) => toast.error(err.response?.data?.message || 'Gagal menambahkan jurusan'),
+    onError: (err: ApiError) => toast.error(err.response?.data?.message || 'Gagal menambahkan jurusan'),
   });
 
   const updateMutation = useMutation({
@@ -31,7 +39,7 @@ export function useMajors(onSaved: () => void) {
       onSaved();
       toast.success('Jurusan berhasil diperbarui!');
     },
-    onError: (err: any) => toast.error(err.response?.data?.message || 'Gagal memperbarui jurusan'),
+    onError: (err: ApiError) => toast.error(err.response?.data?.message || 'Gagal memperbarui jurusan'),
   });
 
   const deleteMutation = useMutation({
@@ -40,8 +48,9 @@ export function useMajors(onSaved: () => void) {
       queryClient.invalidateQueries({ queryKey: ['majors'] });
       toast.success('Jurusan berhasil dihapus!');
     },
-    onError: (err: any) => toast.error(err.response?.data?.message || 'Gagal menghapus jurusan'),
+    onError: (err: ApiError) => toast.error(err.response?.data?.message || 'Gagal menghapus jurusan'),
   });
 
   return { majors, isLoading, createMutation, updateMutation, deleteMutation };
 }
+

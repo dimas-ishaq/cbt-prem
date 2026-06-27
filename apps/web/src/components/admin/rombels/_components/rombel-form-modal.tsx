@@ -1,9 +1,13 @@
-﻿import { Box, Button, Flex, Heading, Input, Select, Stack, Text } from '@chakra-ui/react';
+import { Box, Button, Flex, Heading, Input, Select, Stack, Text } from '@chakra-ui/react';
 
-interface MajorOption {
+type MajorOption = {
   label: string;
   value: string;
-}
+};
+
+type MajorOptionsCollection = {
+  items: MajorOption[];
+};
 
 interface RombelFormModalProps {
   isOpen: boolean;
@@ -12,7 +16,7 @@ interface RombelFormModalProps {
     name: string;
     majorId: string;
   };
-  majorOptions: any;
+  majorOptions: MajorOptionsCollection;
   isSubmitting: boolean;
   onClose: () => void;
   onSubmit: (event: React.FormEvent) => void;

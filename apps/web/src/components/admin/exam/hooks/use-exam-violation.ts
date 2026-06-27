@@ -1,10 +1,22 @@
-﻿import { useEffect } from 'react';
+import { useEffect } from 'react';
+
+type ExamFlags = {
+  forceFullscreen?: boolean;
+  blockKeyCopyPaste?: boolean;
+  sebConfigKey?: string | null;
+  sebBrowserKey?: string | null;
+  maxViolations?: number;
+};
+
+type SocketLike = {
+  emit: (event: string, payload?: unknown) => void;
+};
 
 export function useExamViolation({ enabled, exam, examId, socket, sessionId, playViolation, finishExam, setViolationCount, setViolationMessage, setShowViolationModal }: {
   enabled: boolean;
-  exam: any;
+  exam: ExamFlags;
   examId: string;
-  socket: any;
+  socket: SocketLike | null;
   sessionId: string | null;
   playViolation: () => void;
   finishExam: () => void;
@@ -65,3 +77,4 @@ export function useExamViolation({ enabled, exam, examId, socket, sessionId, pla
     };
   }, [enabled, exam, examId, finishExam, playViolation, sessionId, setShowViolationModal, setViolationCount, setViolationMessage, socket]);
 }
+

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -16,6 +16,15 @@ import { SubjectFormModal } from './_components/subject-form-modal';
 import { useSubjects } from './hooks/use-subjects';
 import type { Subject, TeacherSummary } from './subject-types';
 import { emptySubjectForm } from './subject-types';
+
+type TeacherApiItem = {
+  id: string;
+  nip: string | null;
+  user?: {
+    fullName?: string;
+    username?: string;
+  } | null;
+};
 
 export function SubjectContainer() {
   const { user } = useAuthStore();
@@ -56,7 +65,8 @@ export function SubjectContainer() {
     queryKey: ['teachers', 'search', teacherSearch],
     queryFn: async () => {
       const response = await api.get('/teachers', { params: { search: teacherSearch.trim() } });
-      return response.data.map((teacher: any) => ({ id: teacher.id, nip: teacher.nip, user: teacher.user }));
+      const items = Array.isArray(response.data) ? response.data : response.data?.data ?? [];
+      return (items as TeacherApiItem[]).map((teacher) => ({ id: teacher.id, nip: teacher.nip, user: teacher.user ?? null }));
     },
     enabled: teacherSearchEnabled,
   });
@@ -164,3 +174,4 @@ export function SubjectContainer() {
     </Stack>
   );
 }
+

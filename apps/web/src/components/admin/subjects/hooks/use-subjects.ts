@@ -1,8 +1,17 @@
-﻿import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { toast } from '@/lib/toaster';
 import { useTranslation } from 'react-i18next';
 import type { Subject, SubjectFormData, TeacherSummary } from '../subject-types';
+
+type ApiError = {
+  response?: {
+    data?: {
+      message?: string;
+      errors?: string[];
+    };
+  };
+};
 
 export function useSubjects(onSaved?: () => void) {
   const queryClient = useQueryClient();
@@ -23,7 +32,7 @@ export function useSubjects(onSaved?: () => void) {
       onSaved?.();
       toast.success(t('subjectCreateSuccess'));
     },
-    onError: (err: any) => toast.error(err.response?.data?.message ?? t('subjectCreateError')),
+    onError: (err: ApiError) => toast.error(err.response?.data?.message ?? t('subjectCreateError')),
   });
 
   const updateMutation = useMutation({
@@ -33,7 +42,7 @@ export function useSubjects(onSaved?: () => void) {
       onSaved?.();
       toast.success(t('subjectUpdateSuccess'));
     },
-    onError: (err: any) => toast.error(err.response?.data?.message ?? t('subjectUpdateError')),
+    onError: (err: ApiError) => toast.error(err.response?.data?.message ?? t('subjectUpdateError')),
   });
 
   const deleteMutation = useMutation({
@@ -42,7 +51,7 @@ export function useSubjects(onSaved?: () => void) {
       queryClient.invalidateQueries({ queryKey: ['subjects'] });
       toast.success(t('subjectDeleteSuccess'));
     },
-    onError: (err: any) => toast.error(err.response?.data?.message ?? t('subjectDeleteError')),
+    onError: (err: ApiError) => toast.error(err.response?.data?.message ?? t('subjectDeleteError')),
   });
 
   const importMutation = useMutation({
@@ -55,7 +64,7 @@ export function useSubjects(onSaved?: () => void) {
       queryClient.invalidateQueries({ queryKey: ['subjects'] });
       toast.success(t('subjectImportSuccess', { count: res.data.importedCount }));
     },
-    onError: (err: any) => {
+    onError: (err: ApiError) => {
       const payload = err.response?.data;
       toast.error(payload?.errors?.[0] ?? payload?.message ?? t('subjectImportError'));
     },
@@ -77,3 +86,4 @@ export function useSubjects(onSaved?: () => void) {
     searchTeachers,
   };
 }
+

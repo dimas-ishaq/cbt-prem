@@ -30,6 +30,13 @@ import { filterRombels, filterRombelStudents } from './rombel-utils';
 import type { Rombel, RombelFormData } from './rombel-types';
 import { RombelFormModal } from './_components/rombel-form-modal';
 
+type ApiError = {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+};
 
 export function RombelContainer() {
   const { user } = useAuthStore();
@@ -68,7 +75,7 @@ export function RombelContainer() {
       const warningNote = data.warnings?.length > 0 ? ` dengan ${data.warnings.length} peringatan` : '';
       toast.success(`Berhasil mengimpor ${data.imported} rombel${warningNote}!`);
     },
-    onError: (error: any) => {
+    onError: (error: ApiError) => {
       toast.error(error.response?.data?.message || 'Gagal mengimpor rombel');
     },
   });
@@ -146,7 +153,7 @@ export function RombelContainer() {
       resetForm();
       toast.success('Rombel berhasil ditambahkan!');
     },
-    onError: (err: any) => {
+    onError: (err: ApiError) => {
       toast.error(err.response?.data?.message || 'Gagal menambahkan rombel');
     },
   });
@@ -161,7 +168,7 @@ export function RombelContainer() {
       resetForm();
       toast.success('Rombel berhasil diperbarui!');
     },
-    onError: (err: any) => {
+    onError: (err: ApiError) => {
       toast.error(err.response?.data?.message || 'Gagal memperbarui rombel');
     },
   });
@@ -173,7 +180,7 @@ export function RombelContainer() {
       queryClient.invalidateQueries({ queryKey: ['rombels'] });
       toast.success('Rombel berhasil dihapus!');
     },
-    onError: (err: any) => {
+    onError: (err: ApiError) => {
       toast.error(err.response?.data?.message || 'Gagal menghapus rombel');
     },
   });
@@ -188,7 +195,7 @@ export function RombelContainer() {
       setIsManageOpen(false);
       toast.success('Anggota rombel berhasil diperbarui!');
     },
-    onError: (err: any) => {
+    onError: (err: ApiError) => {
       toast.error(err.response?.data?.message || 'Gagal memperbarui anggota rombel');
     },
   });
