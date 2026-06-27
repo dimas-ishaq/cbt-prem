@@ -106,6 +106,15 @@ describe('ExamSessionsService', () => {
       await expect(service.startSession({ examId: 'e1' }, 'u1')).rejects.toThrow(BadRequestException);
     });
 
+    it('should throw BadRequestException if exam token is invalid', async () => {
+      mockPrisma.student.findUnique.mockResolvedValue({ id: 's1', rombelId: 'r1', majorId: 'm1' });
+      mockPrisma.exam.findUnique.mockResolvedValue({
+        id: 'e1', status: ExamStatus.PUBLISHED, requireSeb: false, token: 'SECRET',
+        startTime: new Date(Date.now() - 10000), endTime: new Date(Date.now() + 100000),
+      });
+      await expect(service.startSession({ examId: 'e1', token: 'WRONG' }, 'u1')).rejects.toThrow(BadRequestException);
+    });
+
     it('should return existing in-progress session', async () => {
       mockPrisma.student.findUnique.mockResolvedValue({ id: 's1', rombelId: 'r1', majorId: 'm1' });
       const existing = { id: 'sess1', status: SessionStatus.IN_PROGRESS, answers: [] };
@@ -138,6 +147,20 @@ describe('ExamSessionsService', () => {
       mockPrisma.examSession.create.mockResolvedValue({ id: 'new-sess' });
       const result = await service.startSession({ examId: 'e1' }, 'u1');
       expect(result).toEqual({ id: 'new-sess' });
+    });
+  });
+
+  describe('getActiveSessionByExam', () => {
+    it('should throw ForbiddenException if user is not a student', async () => {
+      mockPrisma.student.findUnique.mockResolvedValue(null);
+      await expect(service.getActiveSessionByExam('e1', 'u1')).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should return the active session for the student and exam', async () => {
+      mockPrisma.student.findUnique.mockResolvedValue({ id: 's1' });
+      mockPrisma.examSession.findUnique.mockResolvedValue({ id: 'sess1', examId: 'e1', studentId: 's1' });
+      const result = await service.getActiveSessionByExam('e1', 'u1');
+      expect(result).toEqual({ id: 'sess1', examId: 'e1', studentId: 's1' });
     });
   });
 
@@ -270,9 +293,9 @@ describe('ExamSessionsService', () => {
 
     it('should return history for student', async () => {
       mockPrisma.student.findUnique.mockResolvedValue({ id: 's1' });
-      mockPrisma.examSession.findMany.mockResolvedValue([{ id: 'sess1' }]);
+      mockPrisma.examSession.findMany.mockResolvedValue([{ id: 'sess1', score: 80, exam: { showScore: true } }]);
       const result = await service.getMyHistory('u1');
-      expect(result).toEqual([{ id: 'sess1' }]);
+      expect(result).toEqual([{ id: 'sess1', score: 80, exam: { showScore: true } }]);
     });
   });
 });

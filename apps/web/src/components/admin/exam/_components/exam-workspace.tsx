@@ -1,10 +1,22 @@
-import { Box } from '@chakra-ui/react';
+import { Box, Button, Flex } from '@chakra-ui/react';
+import { ExamSidebar } from './exam-sidebar';
 import { QuestionCard } from './question-card';
-import { ExamNav } from './exam-nav';
+
+type ExamOption = {
+  id: string;
+  content: string;
+};
 
 type ExamQuestion = {
   id: string;
-  question: unknown;
+  question: {
+    id: string;
+    content: string;
+    type: string;
+    options: ExamOption[];
+    mediaUrl?: string;
+    mediaType?: string;
+  };
 };
 
 interface ExamWorkspaceProps {
@@ -16,21 +28,43 @@ interface ExamWorkspaceProps {
   onToggleFlag: (questionId: string) => void;
   questions: ExamQuestion[];
   onSelectQuestion: (index: number) => void;
+  onPrevious: () => void;
+  onNext: () => void;
+  onFinish: () => void;
 }
 
-export function ExamWorkspace({ currentQuestion, currentQuestionIndex, answers, flaggedQuestions, onAnswer, onToggleFlag, questions, onSelectQuestion }: ExamWorkspaceProps) {
+export function ExamWorkspace({ currentQuestion, currentQuestionIndex, answers, flaggedQuestions, onAnswer, onToggleFlag, questions, onSelectQuestion, onPrevious, onNext, onFinish }: ExamWorkspaceProps) {
+  const isFirstQuestion = currentQuestionIndex === 0;
+  const isLastQuestion = currentQuestionIndex === questions.length - 1;
+
   return (
-    <Box display="grid" gridTemplateColumns={{ base: '1fr', lg: '1fr 360px' }} gap={6} p={8}>
+    <Box display="grid" gridTemplateColumns={{ base: '1fr', lg: 'minmax(0, 1fr) 360px' }} gap={6}>
       <Box>
         {currentQuestion && (
-          <QuestionCard
-            question={currentQuestion.question}
-            index={currentQuestionIndex}
-            selectedAnswer={answers[currentQuestion.id]}
-            onAnswer={(answer) => onAnswer(currentQuestion.id, answer)}
-            isFlagged={flaggedQuestions.includes(currentQuestion.id)}
-            onToggleFlag={() => onToggleFlag(currentQuestion.id)}
-          />
+          <>
+            <QuestionCard
+              question={currentQuestion.question}
+              index={currentQuestionIndex}
+              selectedAnswer={answers[currentQuestion.id]}
+              onAnswer={(answer) => onAnswer(currentQuestion.id, answer)}
+              isFlagged={flaggedQuestions.includes(currentQuestion.id)}
+              onToggleFlag={() => onToggleFlag(currentQuestion.id)}
+            />
+            <Flex mt={6} gap={3} justify="space-between" flexWrap="wrap">
+              <Button onClick={onPrevious} disabled={isFirstQuestion} variant="outline" borderRadius="xl" px={6}>
+                Sebelumnya
+              </Button>
+              {!isLastQuestion ? (
+                <Button onClick={onNext} colorPalette="indigo" borderRadius="xl" px={6}>
+                  Selanjutnya
+                </Button>
+              ) : (
+                <Button onClick={onFinish} colorPalette="red" borderRadius="xl" px={6}>
+                  Selesaikan Ujian
+                </Button>
+              )}
+            </Flex>
+          </>
         )}
       </Box>
       <ExamSidebar

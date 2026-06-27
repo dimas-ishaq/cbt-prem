@@ -6,28 +6,34 @@ interface Props {
   questions: any[];
   currentIndex: number;
   onSelect: (index: number) => void;
-  answeredQuestions: string[]; // questionIds
-  flaggedQuestions: string[]; // questionIds
+  answeredQuestions: string[]; // examQuestionIds
+  flaggedQuestions: string[]; // examQuestionIds
 }
 
 export function ExamNav({ questions, currentIndex, onSelect, answeredQuestions, flaggedQuestions }: Props) {
   return (
     <SimpleGrid columns={5} gap={2.5}>
       {questions.map((eq, idx) => {
-        const questionId = eq.question.id;
-        const isAnswered = answeredQuestions.includes(questionId);
+        const examQuestionId = eq.id;
+        const isAnswered = answeredQuestions.includes(examQuestionId);
         const isCurrent = currentIndex === idx;
-        const isFlagged = flaggedQuestions.includes(questionId);
+        const isFlagged = flaggedQuestions.includes(examQuestionId);
 
         let colorPalette = 'gray';
         let variant: 'solid' | 'outline' | 'subtle' = 'outline';
+        let customStyles = {};
 
         if (isCurrent) {
           colorPalette = 'indigo';
           variant = 'solid';
         } else if (isFlagged) {
-          colorPalette = 'amber';
           variant = 'solid';
+          customStyles = {
+            bg: 'orange.400',
+            color: 'white',
+            borderColor: 'orange.500',
+            _hover: { bg: 'orange.500', transform: 'translateY(-2px)', shadow: 'md' },
+          };
         } else if (isAnswered) {
           colorPalette = 'emerald';
           variant = 'solid';
@@ -48,8 +54,9 @@ export function ExamNav({ questions, currentIndex, onSelect, answeredQuestions, 
             boxShadow={isCurrent ? 'lg' : 'none'}
             transform={isCurrent ? 'scale(1.05)' : 'none'}
             zIndex={isCurrent ? 10 : 1}
-            _hover={{ transform: isCurrent ? 'scale(1.05) translateY(-2px)' : 'translateY(-2px)', shadow: isCurrent ? 'xl' : 'md' }}
+            _hover={isCurrent ? { transform: 'scale(1.05) translateY(-2px)', shadow: 'xl' } : undefined}
             transition="all 0.2s"
+            {...customStyles}
           >
             {idx + 1}
           </Button>

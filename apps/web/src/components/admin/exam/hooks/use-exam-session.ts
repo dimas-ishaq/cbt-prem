@@ -5,6 +5,18 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { parseSessionAnswers } from '../exam-utils';
 
+type StartSessionResponse = {
+  id: string;
+  endTime?: string;
+  status?: string;
+  answers?: Array<{
+    questionId: string;
+    essayAnswer?: string | null;
+    selectedOptionId?: string | null;
+    selectedOption?: string | null;
+  }>;
+};
+
 export function useExamSession(examId: string, token: string | null, userRole?: string) {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessionEndTime, setSessionEndTime] = useState<string | undefined>(undefined);
@@ -12,7 +24,7 @@ export function useExamSession(examId: string, token: string | null, userRole?: 
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [isRestoringSession, setIsRestoringSession] = useState(true);
 
-  const startSessionMutation = useMutation({
+  const startSessionMutation = useMutation<StartSessionResponse, unknown, string | undefined>({
     mutationFn: async (examToken?: string) => (await api.post('/exam-sessions/start', { examId, token: examToken })).data,
     onSuccess: (data) => {
       setSessionId(data.id);
@@ -23,19 +35,25 @@ export function useExamSession(examId: string, token: string | null, userRole?: 
   });
 
   useEffect(() => {
-    if (!token || userRole !== 'SISWA') return;
+    if (!token || userRole !== 'SISWA') {
+      setIsRestoringSession(false);
+      return;
+    }
+
     if (sessionId) {
       setIsRestoringSession(false);
       return;
     }
 
     let cancelled = false;
+    setIsRestoringSession(true);
+
     (async () => {
       try {
-        const response = await api.get(`/exam-sessions/${examId}`);
+        const response = await api.get(`/exam-sessions/active/${examId}`);
         if (cancelled) return;
         const data = response.data;
-        if (data?.id && data?.status !== 'FINISHED') {
+        if (data?.id && data?.status !== 'FINISHED' && data?.status !== 'SUBMITTED') {
           setSessionId(data.id);
           setSessionEndTime(data.endTime);
           setIsLocked(data.status === 'LOCKED');
@@ -83,7 +101,9 @@ export function useExamSession(examId: string, token: string | null, userRole?: 
     isLocked,
     answers,
     isRestoringSession,
-    startSession: startSessionMutation.mutate,
+    isStartingSession: startSessionMutation.isPending,
+    startSessionError: startSessionMutation.error,
+    startSession: startSessionMutation.mutateAsync,
     setSessionId,
     setSessionEndTime,
     setIsLocked,
@@ -93,3 +113,4 @@ export function useExamSession(examId: string, token: string | null, userRole?: 
     lastAnnouncedExtendedEndTimeRef,
   };
 }
+

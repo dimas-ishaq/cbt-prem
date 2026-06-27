@@ -26,6 +26,12 @@ export class ExamSessionsController {
     return this.examSessionsService.startSession(dto, req.user.userId, userAgent, sebConfigKey, sebBrowserKey);
   }
 
+  @Get('active/:examId')
+  @Roles(Role.SISWA)
+  async getActiveSession(@Param('examId') examId: string, @Request() req) {
+    return this.examSessionsService.getActiveSessionByExam(examId, req.user.userId);
+  }
+
   @Post(':id/submit-answer')
   @Roles(Role.SISWA)
   async submitAnswer(

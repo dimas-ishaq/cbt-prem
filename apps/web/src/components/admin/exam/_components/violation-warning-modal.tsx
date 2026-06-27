@@ -1,12 +1,15 @@
-﻿import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { Box, Button, Flex, Heading, Text } from '@chakra-ui/react';
 
 interface ViolationWarningModalProps {
+  open: boolean;
   message: string;
   onAcknowledge: () => void;
 }
 
-export function ViolationWarningModal({ message, onAcknowledge }: ViolationWarningModalProps) {
+export function ViolationWarningModal({ open, message, onAcknowledge }: ViolationWarningModalProps) {
+  if (!open) return null;
+
   return (
     <Flex position="fixed" inset={0} zIndex={50} bg="black/60" backdropFilter="blur(4px)" align="center" justify="center" p={4}>
       <Box bg="white" w="full" maxW="md" borderRadius="2xl" p={6} boxShadow="2xl" border="1px solid" borderColor="red.50" textAlign="center" className="animate-bounce-short">

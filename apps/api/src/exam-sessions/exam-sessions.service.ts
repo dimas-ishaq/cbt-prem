@@ -108,6 +108,9 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
       throw new BadRequestException('Exam is outside of scheduled time');
     }
 
+    if (exam.token && dto.token?.trim() !== exam.token.trim()) {
+      throw new BadRequestException('Token ujian tidak valid');
+    }
 
     const existingSession = await this.prisma.examSession.findUnique({
       where: {
@@ -135,6 +138,42 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
         status: SessionStatus.IN_PROGRESS,
       },
       include: { answers: true },
+    });
+  }
+
+  async getActiveSessionByExam(examId: string, userId: string) {
+    const student = await this.prisma.student.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
+
+    if (!student) {
+      throw new ForbiddenException('User is not a student');
+    }
+
+    return this.prisma.examSession.findUnique({
+      where: {
+        examId_studentId: {
+          examId,
+          studentId: student.id,
+        },
+      },
+      include: {
+        exam: {
+          include: {
+            subject: true,
+          },
+        },
+        answers: {
+          include: {
+            question: {
+              include: {
+                options: true,
+              },
+            },
+          },
+        },
+      },
     });
   }
 
