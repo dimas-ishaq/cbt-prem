@@ -1,441 +1,160 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect, useMemo } from "react";
-import api from "@/lib/api";
-import { TablePagination } from "@/components/ui/pagination";
-import {
-  Plus,
-  FileText,
-  Trash2,
-  Calendar,
-  Clock,
-  Lock,
-  Pencil,
-  Search,
-  Filter,
-} from "lucide-react";
-import Link from "next/link";
-import {
-  Box,
-  Flex,
-  Heading,
-  Text,
-  Button,
-  Table,
-  Badge,
-  HStack,
-  Stack,
-  Spinner,
-  IconButton,
-  Input,
-  Select,
-  createListCollection,
-} from "@chakra-ui/react";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect, useMemo } from 'react';
+import api from '@/lib/api';
+import { TablePagination } from '@/components/ui/pagination';
+import { Plus, FileText, Trash2, Calendar, Clock, Lock, Pencil, Search, Filter } from 'lucide-react';
+import Link from 'next/link';
+import { Badge, Box, Flex, Heading, Text, Button, Table, HStack, Stack, Spinner, IconButton, Input, Select, createListCollection } from '@chakra-ui/react';
 import { toast } from '@/lib/toaster';
-import { useConfirm } from "@/components/ui/confirmation-dialog";
+import { useConfirm } from '@/components/ui/confirmation-dialog';
 
-interface Exam {
-  id: string;
-  title: string;
-  subject: {
-    name: string;
-  };
-  examGroup?: {
-    name: string;
-  };
-  startTime: string;
-  endTime: string;
-  duration: number;
-  status: string;
-  token?: string;
-}
+interface Exam { id: string; title: string; subject: { name: string }; examGroup?: { name: string }; startTime: string; endTime: string; duration: number; status: string; token?: string; }
 
-const statusColorMap: Record<string, { bg: string; color: string }> = {
-  PUBLISHED: { bg: "green.100", color: "green.700" },
-  ONGOING: { bg: "blue.100", color: "blue.700" },
-  COMPLETED: { bg: "gray.100", color: "gray.700" },
-  DRAFT: { bg: "yellow.100", color: "yellow.700" },
+const statusOptions = createListCollection({ items: [{ label: 'Semua Status', value: '' }, { label: 'Draft', value: 'DRAFT' }, { label: 'Terpublikasi', value: 'PUBLISHED' }, { label: 'Sedang Berjalan', value: 'ONGOING' }, { label: 'Selesai', value: 'COMPLETED' }] });
+
+const statusMeta: Record<string, { bg: string; color: string }> = {
+  PUBLISHED: { bg: 'status.success.bg', color: 'status.success.text' },
+  ONGOING: { bg: 'info.50', color: 'info.600' },
+  COMPLETED: { bg: 'bg.subtle', color: 'text.secondary' },
+  DRAFT: { bg: 'status.warning.bg', color: 'status.warning.text' },
 };
 
-const statusOptions = createListCollection({
-  items: [
-    { label: 'Semua Status', value: '' },
-    { label: 'Draft', value: 'DRAFT' },
-    { label: 'Terpublikasi', value: 'PUBLISHED' },
-    { label: 'Sedang Berjalan', value: 'ONGOING' },
-    { label: 'Selesai', value: 'COMPLETED' },
-  ],
-});
-
 export default function ExamsPage() {
-  const queryClient = useQueryClient();
+  const qc = useQueryClient();
   const confirmDialog = useConfirm();
-
-  const [searchText, setSearchText] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState("");
-
-  // Pagination states
+  const [searchText, setSearchText] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchText, selectedStatus]);
+  useEffect(() => setCurrentPage(1), [searchText, selectedStatus]);
 
   const { data: exams, isLoading } = useQuery<Exam[]>({
-    queryKey: ["exams"],
+    queryKey: ['exams'],
     queryFn: async () => {
-      const response = await api.get("/exams");
+      const response = await api.get('/exams');
       return Array.isArray(response.data) ? response.data : response.data?.data || [];
     },
   });
 
-  const filteredExams = useMemo(() => {
-    return (exams || []).filter((exam) => {
-      const matchesSearch = searchText
-        ? `${exam.title} ${exam.subject.name} ${exam.examGroup?.name ?? ""}`
-            .toLowerCase()
-            .includes(searchText.toLowerCase())
-        : true;
-      const matchesStatus = selectedStatus
-        ? exam.status === selectedStatus
-        : true;
-      return matchesSearch && matchesStatus;
-    });
-  }, [exams, searchText, selectedStatus]);
-
-  const paginatedExams = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return filteredExams.slice(start, start + pageSize);
-  }, [filteredExams, currentPage, pageSize]);
-
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/exams/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["exams"] });
-      toast.success("Ujian berhasil dihapus!");
-    },
-    onError: (err: any) => {
-      toast.error(err.response?.data?.message || "Gagal menghapus ujian");
-    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['exams'] }); toast.success('Ujian berhasil dihapus!'); },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Gagal menghapus ujian'),
   });
 
+  const filteredExams = useMemo(() => (exams || []).filter((exam) => {
+    const q = searchText.trim().toLowerCase();
+    const matchesSearch = !q || `${exam.title} ${exam.subject.name} ${exam.examGroup?.name ?? ''}`.toLowerCase().includes(q);
+    const matchesStatus = !selectedStatus || exam.status === selectedStatus;
+    return matchesSearch && matchesStatus;
+  }), [exams, searchText, selectedStatus]);
+
+  const paginatedExams = useMemo(() => filteredExams.slice((currentPage - 1) * pageSize, (currentPage - 1) * pageSize + pageSize), [filteredExams, currentPage, pageSize]);
+
   if (isLoading) {
-    return (
-      <Flex justify="center" align="center" py={16}>
-        <Spinner size="lg" color="indigo.600" />
-        <Text ml={3} color="gray.500">
-          Memuat data ujian...
-        </Text>
-      </Flex>
-    );
+    return <Flex justify="center" align="center" py={16}><Spinner size="lg" color="brand.solid" /><Text ml={3} color="text.secondary">Memuat data ujian...</Text></Flex>;
   }
+
+  const counts = {
+    total: (exams || []).length,
+    draft: (exams || []).filter((e) => e.status === 'DRAFT').length,
+    published: (exams || []).filter((e) => e.status === 'PUBLISHED').length,
+    ongoing: (exams || []).filter((e) => e.status === 'ONGOING').length,
+  };
 
   return (
     <Stack gap={6}>
-      <Flex justify="space-between" align="center">
-        <Box>
-          <Heading size="xl" fontWeight="bold" color="gray.900">
-            Ujian
-          </Heading>
-          <Text color="gray.500" mt={1}>
-            Jadwalkan dan kelola ujian mata pelajaran.
-          </Text>
-        </Box>
+      <Box bg="bg.surface" borderWidth="1px" borderColor="border.default" borderRadius="card" shadow="card-dark" p={{ base: 5, md: 6 }}>
+        <Flex justify="space-between" align="center" gap={4} wrap="wrap">
+          <Box>
+            <Heading size="xl" fontWeight="bold" color="text.primary">Ujian</Heading>
+            <Text color="text.secondary" mt={1}>Jadwalkan, publish, dan kelola ujian mata pelajaran.</Text>
+          </Box>
+          <Link href="/admin/exams/create">
+            <Button bg="brand.solid" color="text.inverted" _hover={{ bg: 'brand.text' }} borderRadius="lg" px={4} py={2} fontWeight="medium" cursor="pointer">
+              <Plus size={20} /> Jadwalkan Ujian
+            </Button>
+          </Link>
+        </Flex>
 
-        {/* Search & Filter Controls */}
+        <Flex gap={3} wrap="wrap" mt={5}>
+          {[
+            { label: 'Total', value: counts.total },
+            { label: 'Draft', value: counts.draft },
+            { label: 'Published', value: counts.published },
+            { label: 'Ongoing', value: counts.ongoing },
+          ].map((item) => (
+            <Box key={item.label} minW="140px" flex="1" bg="bg.subtle" borderWidth="1px" borderColor="border.default" borderRadius="lg" p={4}>
+              <Text fontSize="xs" color="text.secondary" textTransform="uppercase" letterSpacing="0.08em">{item.label}</Text>
+              <Text fontSize="2xl" fontWeight="bold" color="text.primary" mt={1}>{item.value}</Text>
+            </Box>
+          ))}
+        </Flex>
+      </Box>
+
+      <Box bg="bg.surface" borderRadius="card" borderWidth="1px" borderColor="border.default" shadow="card-dark" p={4}>
         <Flex gap={3} align="center" flexWrap="wrap">
-          <Flex
-            align="center"
-            gap={2}
-            bg="gray.50"
-            px={3}
-            py={2}
-            borderRadius="lg"
-            borderWidth="1px"
-            borderColor="gray.200"
-          >
-            <Search size={16} className="text-gray-500" />
-            <Input
-              placeholder="Cari ujian..."
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              size="sm"
-              variant={"unstyled" as any}
-              flex={1}
-              minW="200px"
-              _placeholder={{ color: "gray.400" }}
-            />
+          <Flex align="center" gap={2} bg="input.bg" px={3} py={2} borderRadius="lg" borderWidth="1px" borderColor="input.border" flex={1} minW="260px">
+            <Search size={16} color="var(--chakra-colors-text-muted)" />
+            <Input placeholder="Cari ujian..." value={searchText} onChange={(e) => setSearchText(e.target.value)} size="sm" variant="unstyled" flex={1} _placeholder={{ color: 'text.muted' }} />
           </Flex>
-
-          <Flex
-            align="center"
-            gap={2}
-            bg="gray.50"
-            px={3}
-            py={2}
-            borderRadius="lg"
-            borderWidth="1px"
-            borderColor="gray.200"
-          >
-            <Filter size={16} className="text-gray-500" />
-            <Select.Root
-              collection={statusOptions}
-              value={selectedStatus ? [selectedStatus] : []}
-              onValueChange={(details) => setSelectedStatus(details.value[0] || '')}
-              positioning={{ sameWidth: true }}
-            >
+          <Flex align="center" gap={2} bg="input.bg" px={3} py={2} borderRadius="lg" borderWidth="1px" borderColor="input.border">
+            <Filter size={16} color="var(--chakra-colors-text-muted)" />
+            <Select.Root collection={statusOptions} value={selectedStatus ? [selectedStatus] : []} onValueChange={(d) => setSelectedStatus(d.value[0] || '')} positioning={{ sameWidth: true }}>
               <Select.HiddenSelect />
-              <Select.Control>
-                <Select.Trigger>
-                  <Select.ValueText placeholder="Semua Status" />
-                </Select.Trigger>
-                <Select.IndicatorGroup>
-                  <Select.Indicator />
-                  <Select.ClearTrigger />
-                </Select.IndicatorGroup>
-              </Select.Control>
-              <Select.Positioner>
-                <Select.Content>
-                  {statusOptions.items.map((item) => (
-                    <Select.Item key={item.value} item={item}>
-                      {item.label}
-                    </Select.Item>
-                  ))}
-                </Select.Content>
-              </Select.Positioner>
+              <Select.Control><Select.Trigger><Select.ValueText placeholder="Semua Status" /></Select.Trigger><Select.IndicatorGroup><Select.Indicator /><Select.ClearTrigger /></Select.IndicatorGroup></Select.Control>
+              <Select.Positioner><Select.Content>{statusOptions.items.map((item) => <Select.Item key={item.value} item={item}>{item.label}</Select.Item>)}</Select.Content></Select.Positioner>
             </Select.Root>
           </Flex>
         </Flex>
+      </Box>
 
-        <Button
-          asChild
-          bg="indigo.600"
-          color="white"
-          _hover={{ bg: "indigo.700" }}
-          borderRadius="lg"
-          px={4}
-          py={2}
-          fontWeight="medium"
-          cursor="pointer"
-        >
-          <Link href="/admin/exams/create">
-            <Plus size={20} />
-            Jadwalkan Ujian
-          </Link>
-        </Button>
-      </Flex>
-
-      <Box
-        bg="white"
-        borderRadius="xl"
-        shadow="sm"
-        borderWidth="1px"
-        borderColor="gray.100"
-        overflow="hidden"
-      >
+      <Box bg="bg.surface" borderRadius="card" shadow="card-dark" borderWidth="1px" borderColor="border.default" overflow="hidden">
         <Table.Root size="md">
-          <Table.Header>
-            <Table.Row bg="gray.50">
-              <Table.ColumnHeader
-                px={6}
-                py={4}
-                fontWeight="semibold"
-                color="gray.600"
-                fontSize="xs"
-                textTransform="uppercase"
-              >
-                Judul Ujian
-              </Table.ColumnHeader>
-              <Table.ColumnHeader
-                px={6}
-                py={4}
-                fontWeight="semibold"
-                color="gray.600"
-                fontSize="xs"
-                textTransform="uppercase"
-              >
-                Mata Pelajaran
-              </Table.ColumnHeader>
-              <Table.ColumnHeader
-                px={6}
-                py={4}
-                fontWeight="semibold"
-                color="gray.600"
-                fontSize="xs"
-                textTransform="uppercase"
-              >
-                Jadwal
-              </Table.ColumnHeader>
-              <Table.ColumnHeader
-                px={6}
-                py={4}
-                fontWeight="semibold"
-                color="gray.600"
-                fontSize="xs"
-                textTransform="uppercase"
-              >
-                Status
-              </Table.ColumnHeader>
-              <Table.ColumnHeader
-                px={6}
-                py={4}
-                fontWeight="semibold"
-                color="gray.600"
-                fontSize="xs"
-                textTransform="uppercase"
-                textAlign="end"
-              >
-                Aksi
-              </Table.ColumnHeader>
+          <Table.Header bg="bg.subtle">
+            <Table.Row>
+              <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="text.secondary" fontSize="xs" textTransform="uppercase">Judul Ujian</Table.ColumnHeader>
+              <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="text.secondary" fontSize="xs" textTransform="uppercase">Mata Pelajaran</Table.ColumnHeader>
+              <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="text.secondary" fontSize="xs" textTransform="uppercase">Jadwal</Table.ColumnHeader>
+              <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="text.secondary" fontSize="xs" textTransform="uppercase">Status</Table.ColumnHeader>
+              <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="text.secondary" fontSize="xs" textTransform="uppercase" textAlign="end">Aksi</Table.ColumnHeader>
             </Table.Row>
           </Table.Header>
           <Table.Body>
-            {paginatedExams?.map((exam) => {
-              const sc = statusColorMap[exam.status] ?? {
-                bg: "yellow.100",
-                color: "yellow.700",
-              };
+            {paginatedExams.map((exam) => {
+              const sc = statusMeta[exam.status] ?? { bg: 'bg.subtle', color: 'text.secondary' };
               return (
-                <Table.Row
-                  key={exam.id}
-                  _hover={{ bg: "gray.50" }}
-                  transition="background 0.15s"
-                >
+                <Table.Row key={exam.id} _hover={{ bg: 'bg.elevated' }} transition="background 0.15s">
                   <Table.Cell px={6} py={4}>
-                    <Text fontWeight="medium" color="gray.900">
-                      {exam.title}
-                    </Text>
-                    {exam.examGroup && (
-                      <Badge
-                        bg="indigo.50"
-                        color="indigo.700"
-                        fontSize="2xs"
-                        mt={1}
-                        mr={2}
-                      >
-                        {exam.examGroup.name}
-                      </Badge>
-                    )}
-                    {exam.token && (
-                      <HStack
-                        gap={1}
-                        mt={1}
-                        color="gray.400"
-                        fontSize="xs"
-                        display="inline-flex"
-                      >
-                        <Lock size={12} />
-                        <Text>Token: {exam.token}</Text>
-                      </HStack>
-                    )}
-                  </Table.Cell>
-                  <Table.Cell px={6} py={4} fontSize="sm">
-                    {exam.subject.name}
-                  </Table.Cell>
-                  <Table.Cell px={6} py={4} fontSize="sm">
-                    <HStack gap={1}>
-                      <Calendar size={14} style={{ color: "#9ca3af" }} />
-                      <Text>
-                        {new Date(exam.startTime).toLocaleDateString()}
-                      </Text>
-                    </HStack>
-                    <HStack gap={1} mt={1} color="gray.500">
-                      <Clock size={14} style={{ color: "#9ca3af" }} />
-                      <Text>{exam.duration} menit</Text>
+                    <Text fontWeight="semibold" color="text.primary">{exam.title}</Text>
+                    <HStack gap={2} mt={1} wrap="wrap">
+                      {exam.examGroup && <Badge bg="brand.subtle" color="brand.text" fontSize="2xs" borderRadius="badge">{exam.examGroup.name}</Badge>}
+                      {exam.token && <HStack gap={1} color="text.muted" fontSize="xs"><Lock size={12} /><Text>Token: {exam.token}</Text></HStack>}
                     </HStack>
                   </Table.Cell>
-                  <Table.Cell px={6} py={4}>
-                    <Badge
-                      px={2}
-                      py={1}
-                      fontSize="xs"
-                      fontWeight="bold"
-                      borderRadius="full"
-                      bg={sc.bg}
-                      color={sc.color}
-                    >
-                      {exam.status}
-                    </Badge>
+                  <Table.Cell px={6} py={4} fontSize="sm" color="text.secondary">{exam.subject.name}</Table.Cell>
+                  <Table.Cell px={6} py={4} fontSize="sm">
+                    <HStack gap={1} color="text.secondary"><Calendar size={14} /><Text>{new Date(exam.startTime).toLocaleDateString('id-ID')}</Text></HStack>
+                    <HStack gap={1} mt={1} color="text.muted"><Clock size={14} /><Text>{exam.duration} menit</Text></HStack>
                   </Table.Cell>
+                  <Table.Cell px={6} py={4}><Badge px={2} py={1} fontSize="xs" fontWeight="bold" borderRadius="badge" bg={sc.bg} color={sc.color}>{exam.status}</Badge></Table.Cell>
                   <Table.Cell px={6} py={4} textAlign="end">
                     <HStack gap={2} justify="flex-end">
-                      <IconButton
-                        asChild
-                        variant="ghost"
-                        color="indigo.600"
-                        _hover={{ bg: "indigo.50" }}
-                        size="sm"
-                        borderRadius="lg"
-                        aria-label="Lihat Hasil"
-                      >
-                        <Link href={`/admin/results/${exam.id}`}>
-                          <FileText size={18} />
-                        </Link>
-                      </IconButton>
-                      <IconButton
-                        asChild
-                        variant="ghost"
-                        color="amber.600"
-                        _hover={{ bg: "amber.50" }}
-                        size="sm"
-                        borderRadius="lg"
-                        aria-label="Edit Ujian"
-                      >
-                        <Link href={`/admin/exams/edit/${exam.id}`}>
-                          <Pencil size={18} />
-                        </Link>
-                      </IconButton>
-                      <IconButton
-                        variant="ghost"
-                        color="red.500"
-                        _hover={{ bg: "red.50" }}
-                        size="sm"
-                        borderRadius="lg"
-                        aria-label="Delete Exam"
-                        onClick={async () => {
-                          const confirmed = await confirmDialog({
-                            title: "Hapus Ujian",
-                            description:
-                              "Apakah Anda yakin ingin menghapus ujian ini?",
-                            confirmText: "Hapus",
-                          });
-                          if (confirmed) {
-                            deleteMutation.mutate(exam.id);
-                          }
-                        }}
-                      >
-                        <Trash2 size={18} />
-                      </IconButton>
+                      <IconButton asChild variant="ghost" color="brand.text" _hover={{ bg: 'brand.subtle' }} size="sm" borderRadius="lg" aria-label="Lihat Hasil"><Link href={`/admin/results/${exam.id}`}><FileText size={18} /></Link></IconButton>
+                      <IconButton asChild variant="ghost" color="status.warning.text" _hover={{ bg: 'status.warning.bg' }} size="sm" borderRadius="lg" aria-label="Edit Ujian"><Link href={`/admin/exams/edit/${exam.id}`}><Pencil size={18} /></Link></IconButton>
+                      <IconButton variant="ghost" color="status.danger.text" _hover={{ bg: 'status.danger.bg' }} size="sm" borderRadius="lg" aria-label="Delete Exam" onClick={async () => { const confirmed = await confirmDialog({ title: 'Hapus Ujian', description: 'Apakah Anda yakin ingin menghapus ujian ini?', confirmText: 'Hapus' }); if (confirmed) deleteMutation.mutate(exam.id); }}><Trash2 size={18} /></IconButton>
                     </HStack>
                   </Table.Cell>
                 </Table.Row>
               );
             })}
-            {filteredExams?.length === 0 && (
-              <Table.Row>
-                <Table.Cell
-                  colSpan={5}
-                  px={6}
-                  py={12}
-                  textAlign="center"
-                  color="gray.500"
-                  fontStyle="italic"
-                >
-                  Belum ada ujian yang dijadwalkan.
-                </Table.Cell>
-              </Table.Row>
-            )}
+            {filteredExams.length === 0 && <Table.Row><Table.Cell colSpan={5} px={6} py={12} textAlign="center" color="text.secondary" fontStyle="italic">Belum ada ujian yang dijadwalkan.</Table.Cell></Table.Row>}
           </Table.Body>
         </Table.Root>
-        <TablePagination
-          currentPage={currentPage}
-          totalCount={filteredExams.length}
-          pageSize={pageSize}
-          onPageChange={setCurrentPage}
-          onPageSizeChange={setPageSize}
-        />
+        <TablePagination currentPage={currentPage} totalCount={filteredExams.length} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
       </Box>
     </Stack>
   );

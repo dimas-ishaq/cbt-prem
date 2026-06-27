@@ -6,866 +6,111 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { ChevronLeft, Save, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
-import {
-  Box,
-  Flex,
-  Heading,
-  Text,
-  Button,
-  Stack,
-  Input,
-  Textarea,
-  SimpleGrid,
-  Checkbox,
-  IconButton,
-  HStack,
-  Badge,
-  Select,
-  createListCollection,
-} from '@chakra-ui/react';
+import { Badge, Box, Flex, Heading, Text, Button, Stack, Input, Textarea, SimpleGrid, Checkbox, IconButton, HStack, Select, createListCollection } from '@chakra-ui/react';
 import { toast } from '@/lib/toaster';
 
-interface Subject {
-  id: string;
-  name: string;
-}
-
-interface QuestionBank {
-  id: string;
-  name: string;
-  subjectId: string;
-}
-
-interface ExamGroup {
-  id: string;
-  name: string;
-}
-
-interface Question {
-  id: string;
-  content: string;
-  type: string;
-  points: number;
-}
-
-interface Rombel {
-  id: string;
-  name: string;
-  majorId: string;
-}
-
-interface Major {
-  id: string;
-  name: string;
-  code: string;
-}
+interface Subject { id: string; name: string }
+interface QuestionBank { id: string; name: string; subjectId: string }
+interface ExamGroup { id: string; name: string }
+interface Question { id: string; content: string; type: string; points: number }
+interface Rombel { id: string; name: string; majorId: string }
+interface Major { id: string; name: string; code: string }
 
 export default function CreateExamPage() {
-  const router = useRouter();
-  const queryClient = useQueryClient();
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    subjectId: '',
-    startDate: '',
-    startTimeField: '00:00',
-    endDate: '',
-    endTimeField: '23:49',
-    duration: 60,
-    token: '',
-    maxAttempts: 1,
-    randomizeSoal: true,
-    randomizeOpsi: true,
-    showScore: true,
-    passingGrade: 0,
-    status: 'DRAFT',
-    examGroupId: '',
-    sebConfigKey: '',
-    sebBrowserKey: '',
-    requireSeb: false,
-    blockKeyCopyPaste: false,
-    forceFullscreen: false,
-    maxViolations: 0,
-  });
-
+  const router = useRouter(); const qc = useQueryClient();
+  const [formData, setFormData] = useState({ title: '', description: '', subjectId: '', startDate: '', startTimeField: '00:00', endDate: '', endTimeField: '23:49', duration: 60, token: '', maxAttempts: 1, randomizeSoal: true, randomizeOpsi: true, showScore: true, passingGrade: 0, status: 'DRAFT', examGroupId: '', sebConfigKey: '', sebBrowserKey: '', requireSeb: false, blockKeyCopyPaste: false, forceFullscreen: false, maxViolations: 0 });
   const [selectedQuestionIds, setSelectedQuestionIds] = useState<string[]>([]);
-  const [selectedBankId, setSelectedBankId] = useState<string>('');
+  const [selectedBankId, setSelectedBankId] = useState('');
   const [selectedRombelIds, setSelectedRombelIds] = useState<string[]>([]);
-  const [filterTingkat, setFilterTingkat] = useState<string>('');
-  const [filterMajorId, setFilterMajorId] = useState<string>('');
+  const [filterTingkat, setFilterTingkat] = useState('');
+  const [filterMajorId, setFilterMajorId] = useState('');
 
-  const { data: subjects } = useQuery<Subject[]>({
-    queryKey: ['subjects'],
-    queryFn: async () => {
-      const response = await api.get('/subjects');
-      return Array.isArray(response.data) ? response.data : response.data?.data || [];
-    },
-  });
+  const { data: subjects } = useQuery<Subject[]>({ queryKey: ['subjects'], queryFn: async () => (await api.get('/subjects')).data?.data || (await api.get('/subjects')).data });
+  const { data: rombels } = useQuery<Rombel[]>({ queryKey: ['rombels'], queryFn: async () => (await api.get('/rombels')).data?.data || (await api.get('/rombels')).data });
+  const { data: majors } = useQuery<Major[]>({ queryKey: ['majors'], queryFn: async () => (await api.get('/majors')).data?.data || (await api.get('/majors')).data });
+  const { data: examGroups } = useQuery<ExamGroup[]>({ queryKey: ['exam-groups'], queryFn: async () => (await api.get('/exam-groups')).data?.data || (await api.get('/exam-groups')).data });
+  const { data: questionBanks } = useQuery<QuestionBank[]>({ queryKey: ['question-banks', formData.subjectId], queryFn: async () => { const r = await api.get('/question-banks'); return ((Array.isArray(r.data) ? r.data : r.data?.data || []) as QuestionBank[]).filter((b) => b.subjectId === formData.subjectId); }, enabled: !!formData.subjectId });
+  const { data: questions } = useQuery<Question[]>({ queryKey: ['questions', selectedBankId], queryFn: async () => (await api.get(`/question-banks/${selectedBankId}`)).data.questions, enabled: !!selectedBankId });
 
-  const { data: rombels } = useQuery<Rombel[]>({
-    queryKey: ['rombels'],
-    queryFn: async () => {
-      const response = await api.get('/rombels');
-      return Array.isArray(response.data) ? response.data : response.data?.data || [];
-    },
-  });
+  const examGroupOptions = createListCollection({ items: examGroups?.map((g) => ({ label: g.name, value: g.id })) || [] });
+  const subjectOptions = createListCollection({ items: subjects?.map((s) => ({ label: s.name, value: s.id })) || [] });
+  const questionBankOptions = createListCollection({ items: questionBanks?.map((b) => ({ label: b.name, value: b.id })) || [] });
+  const statusOptions = createListCollection({ items: [{ label: 'DRAFT', value: 'DRAFT' }, { label: 'PUBLISHED', value: 'PUBLISHED' }, { label: 'ONGOING', value: 'ONGOING' }, { label: 'COMPLETED', value: 'COMPLETED' }] });
 
-  const { data: majors } = useQuery<Major[]>({
-    queryKey: ['majors'],
-    queryFn: async () => {
-      const response = await api.get('/majors');
-      return Array.isArray(response.data) ? response.data : response.data?.data || [];
-    },
-  });
-
-  const { data: examGroups } = useQuery<ExamGroup[]>({
-    queryKey: ['exam-groups'],
-    queryFn: async () => {
-      const response = await api.get('/exam-groups');
-      return Array.isArray(response.data) ? response.data : response.data?.data || [];
-    },
-  });
-
-  const { data: questionBanks } = useQuery<QuestionBank[]>({
-    queryKey: ['question-banks', formData.subjectId],
-    queryFn: async () => {
-      const response = await api.get('/question-banks');
-      const banks = Array.isArray(response.data) ? response.data : response.data?.data || [];
-      return banks.filter((b: any) => b.subjectId === formData.subjectId);
-    },
-    enabled: !!formData.subjectId,
-  });
-
-  const examGroupOptions = createListCollection({
-    items: examGroups?.map((group) => ({ label: group.name, value: group.id })) || [],
-  });
-
-  const subjectOptions = createListCollection({
-    items: subjects?.map((subject) => ({ label: subject.name, value: subject.id })) || [],
-  });
-
-  const questionBankOptions = createListCollection({
-    items: questionBanks?.map((bank) => ({ label: bank.name, value: bank.id })) || [],
-  });
-
-  const statusOptions = createListCollection({
-    items: [
-      { label: 'DRAFT', value: 'DRAFT' },
-      { label: 'PUBLISHED', value: 'PUBLISHED' },
-      { label: 'ONGOING', value: 'ONGOING' },
-      { label: 'COMPLETED', value: 'COMPLETED' },
-    ],
-  });
-
-  const { data: questions } = useQuery<Question[]>({
-    queryKey: ['questions', selectedBankId],
-    queryFn: async () => {
-      const response = await api.get(`/question-banks/${selectedBankId}`);
-      return response.data.questions;
-    },
-    enabled: !!selectedBankId,
-  });
-
-  const createMutation = useMutation({
-    mutationFn: (data: any) => api.post('/exams', data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['exams'] });
-      router.push('/admin/exams');
-    },
-  });
-
-  const toggleQuestion = (id: string) => {
-    setSelectedQuestionIds((prev) =>
-      prev.includes(id) ? prev.filter((qId) => qId !== id) : [...prev, id]
-    );
-  };
-
-  const handleSelectAll = () => {
-    if (!questions) return;
-    const qIds = questions.map((q) => q.id);
-    setSelectedQuestionIds((prev) => Array.from(new Set([...prev, ...qIds])));
-  };
-
-  const handleDeselectAll = () => {
-    if (!questions) return;
-    const qIds = new Set(questions.map((q) => q.id));
-    setSelectedQuestionIds((prev) => prev.filter((id) => !qIds.has(id)));
-  };
-
-  const getFilteredRombels = () => {
-    if (!rombels || !filterTingkat || !filterMajorId) return [];
-    return rombels.filter((r) => r.majorId === filterMajorId && r.name.toLowerCase().startsWith(filterTingkat.toLowerCase() + ' '));
-  };
-
-  const handleSelectAllFilteredRombels = () => {
-    const visible = getFilteredRombels();
-    const visibleIds = visible.map((r) => r.id);
-    setSelectedRombelIds((prev) => Array.from(new Set([...prev, ...visibleIds])));
-  };
-
-  const handleDeselectAllFilteredRombels = () => {
-    const visible = getFilteredRombels();
-    const visibleIds = new Set(visible.map((r) => r.id));
-    setSelectedRombelIds((prev) => prev.filter((id) => !visibleIds.has(id)));
-  };
+  const createMutation = useMutation({ mutationFn: (data: any) => api.post('/exams', data), onSuccess: () => { qc.invalidateQueries({ queryKey: ['exams'] }); router.push('/admin/exams'); } });
+  const toggleQuestion = (id: string) => setSelectedQuestionIds((prev) => prev.includes(id) ? prev.filter((q) => q !== id) : [...prev, id]);
+  const handleSelectAll = () => questions && setSelectedQuestionIds((prev) => Array.from(new Set([...prev, ...questions.map((q) => q.id)])));
+  const handleDeselectAll = () => questions && setSelectedQuestionIds((prev) => prev.filter((id) => !new Set(questions.map((q) => q.id)).has(id)));
+  const getFilteredRombels = () => (!rombels || !filterTingkat || !filterMajorId) ? [] : rombels.filter((r) => r.majorId === filterMajorId && r.name.toLowerCase().startsWith(filterTingkat.toLowerCase() + ' '));
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (selectedQuestionIds.length === 0) {
-      toast.error('Pilih minimal satu soal.');
-      return;
-    }
-
-    if (selectedRombelIds.length === 0) {
-      toast.error('Pilih minimal satu rombel target peserta.');
-      return;
-    }
-
+    if (selectedQuestionIds.length === 0) return toast.error('Pilih minimal satu soal.');
+    if (selectedRombelIds.length === 0) return toast.error('Pilih minimal satu rombel target peserta.');
     const selectedRombels = rombels?.filter((r) => selectedRombelIds.includes(r.id)) || [];
-    const computedMajorIds = Array.from(new Set(selectedRombels.map((r) => r.majorId)));
-
-    // Clean up empty optional fields
-    const payload: any = {
-      ...formData,
-      questionIds: selectedQuestionIds,
-      rombelIds: selectedRombelIds,
-      majorIds: computedMajorIds,
-      showScore: Boolean(formData.showScore),
-      startTime: `${formData.startDate}T${formData.startTimeField}:00`,
-      endTime: `${formData.endDate}T${formData.endTimeField}:00`,
-      sebConfigKey: formData.requireSeb ? (formData.sebConfigKey?.trim() || undefined) : undefined,
-      sebBrowserKey: formData.requireSeb ? (formData.sebBrowserKey?.trim() || undefined) : undefined,
-      maxViolations: parseInt(formData.maxViolations as any) || 0,
-    };
-
-    // Remove UI-only fields
-    delete payload.startDate;
-    delete payload.startTimeField;
-    delete payload.endDate;
-    delete payload.endTimeField;
-
-    if (!payload.requireSeb) {
-      delete payload.sebConfigKey;
-      delete payload.sebBrowserKey;
-    }
-
-    if (!payload.examGroupId) delete payload.examGroupId;
-
+    const payload: any = { ...formData, questionIds: selectedQuestionIds, rombelIds: selectedRombelIds, majorIds: Array.from(new Set(selectedRombels.map((r) => r.majorId))), showScore: Boolean(formData.showScore), startTime: `${formData.startDate}T${formData.startTimeField}:00`, endTime: `${formData.endDate}T${formData.endTimeField}:00`, sebConfigKey: formData.requireSeb ? (formData.sebConfigKey?.trim() || undefined) : undefined, sebBrowserKey: formData.requireSeb ? (formData.sebBrowserKey?.trim() || undefined) : undefined, maxViolations: parseInt(formData.maxViolations as any) || 0 };
+    delete payload.startDate; delete payload.startTimeField; delete payload.endDate; delete payload.endTimeField; if (!payload.requireSeb) { delete payload.sebConfigKey; delete payload.sebBrowserKey; } if (!payload.examGroupId) delete payload.examGroupId;
     createMutation.mutate(payload);
   };
 
   return (
-    <Stack gap={6} maxW="5xl" mx="auto">
-      <Flex align="center" justify="space-between">
-        <HStack gap={4}>
-          <IconButton
-            asChild
-            variant="ghost"
-            _hover={{ bg: 'gray.100' }}
-            borderRadius="full"
-            aria-label="Kembali ke Daftar Ujian"
-            size="sm"
-          >
-            <Link href="/admin/exams">
-              <ChevronLeft size={24} />
-            </Link>
-          </IconButton>
-          <Heading size="xl" fontWeight="bold" color="gray.900">
-            Jadwalkan Ujian Baru
-          </Heading>
-        </HStack>
+    <Stack gap={6} maxW="7xl" mx="auto">
+      <Flex align="center" justify="space-between" bg="bg.surface" borderWidth="1px" borderColor="border.default" borderRadius="card" p={4} shadow="card-dark">
+        <HStack gap={4}><IconButton asChild variant="ghost" _hover={{ bg: 'bg.subtle' }} borderRadius="full" aria-label="Kembali ke Daftar Ujian" size="sm"><Link href="/admin/exams"><ChevronLeft size={24} /></Link></IconButton><Box><Heading size="xl" fontWeight="bold" color="text.primary">Jadwalkan Ujian Baru</Heading><Text color="text.secondary" mt={1}>Rancang ujian, target peserta, dan proteksi proctoring.</Text></Box></HStack>
+        <Badge bg="brand.subtle" color="brand.text" borderRadius="badge" px={3} py={1}>Create</Badge>
       </Flex>
 
       <form onSubmit={handleSubmit}>
-        <SimpleGrid columns={{ base: 1, lg: 3 }} gap={8}>
-          {/* Left Column — Exam Info + Questions */}
+        <SimpleGrid columns={{ base: 1, lg: 3 }} gap={6}>
           <Box gridColumn={{ lg: 'span 2' }}>
             <Stack gap={6}>
-              {/* Exam Information Card */}
-              <Box bg="white" p={6} borderRadius="xl" shadow="sm" borderWidth="1px" borderColor="gray.100">
-                <Heading size="md" fontWeight="bold" color="gray.900" borderBottom="1px solid" borderColor="gray.100" pb={2} mb={4}>
-                  Informasi Ujian
-                </Heading>
+              <Box bg="bg.surface" p={6} borderRadius="card" shadow="card-dark" borderWidth="1px" borderColor="border.default">
+                <Heading size="md" fontWeight="bold" color="text.primary" mb={4}>Informasi Ujian</Heading>
                 <Stack gap={4}>
-                  <Box>
-                    <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Judul Ujian</Text>
-                    <Input
-                      required
-                      value={formData.title}
-                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      placeholder="Cth. Ujian Tengah Semester Matematika"
-                      borderRadius="lg"
-                      borderColor="gray.200"
-                      _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
-                    />
-                  </Box>
-                  <Box>
-                    <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Deskripsi</Text>
-                    <Textarea
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      rows={3}
-                      placeholder="Deskripsi opsional..."
-                      borderRadius="lg"
-                      borderColor="gray.200"
-                      _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
-                    />
-                  </Box>
-                  <Box>
-                    <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Event / Kelompok Ujian <span style={{ color: 'red' }}>*</span></Text>
-                    <Select.Root
-                      collection={examGroupOptions}
-                      value={formData.examGroupId ? [formData.examGroupId] : []}
-                      onValueChange={(details) => setFormData({ ...formData, examGroupId: details.value[0] || '' })}
-                      positioning={{ sameWidth: true }}
-                    >
-                      <Select.HiddenSelect />
-                      <Select.Control>
-                        <Select.Trigger>
-                          <Select.ValueText placeholder="-- Pilih Event Ujian --" />
-                        </Select.Trigger>
-                        <Select.IndicatorGroup>
-                          <Select.Indicator />
-                          <Select.ClearTrigger />
-                        </Select.IndicatorGroup>
-                      </Select.Control>
-                      <Select.Positioner>
-                        <Select.Content>
-                          {examGroupOptions.items.map((item) => (
-                            <Select.Item key={item.value} item={item}>
-                              {item.label}
-                            </Select.Item>
-                          ))}
-                        </Select.Content>
-                      </Select.Positioner>
-                    </Select.Root>
-                    {examGroups?.length === 0 && (
-                      <Text fontSize="xs" color="red.500" mt={1}>
-                        Anda belum memiliki Event Ujian. Silakan buat di menu Event Ujian terlebih dahulu.
-                      </Text>
-                    )}
-                  </Box>
-                  <SimpleGrid columns={2} gap={4}>
-                    <Box>
-                      <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Mata Pelajaran</Text>
-                      <Select.Root
-                        collection={subjectOptions}
-                        value={formData.subjectId ? [formData.subjectId] : []}
-                        onValueChange={(details) => setFormData({ ...formData, subjectId: details.value[0] || '' })}
-                        positioning={{ sameWidth: true }}
-                      >
-                        <Select.HiddenSelect />
-                        <Select.Control>
-                          <Select.Trigger>
-                            <Select.ValueText placeholder="Pilih Mata Pelajaran" />
-                          </Select.Trigger>
-                          <Select.IndicatorGroup>
-                            <Select.Indicator />
-                            <Select.ClearTrigger />
-                          </Select.IndicatorGroup>
-                        </Select.Control>
-                        <Select.Positioner>
-                          <Select.Content>
-                            {subjectOptions.items.map((item) => (
-                              <Select.Item key={item.value} item={item}>
-                                {item.label}
-                              </Select.Item>
-                            ))}
-                          </Select.Content>
-                        </Select.Positioner>
-                      </Select.Root>
-                    </Box>
-                    <Box>
-                      <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Durasi (Menit)</Text>
-                      <Input
-                        type="number"
-                        required
-                        value={isNaN(formData.duration) ? '' : formData.duration}
-                        onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) })}
-                        borderRadius="lg"
-                        borderColor="gray.200"
-                        _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
-                      />
-                    </Box>
-                  </SimpleGrid>
-                  <SimpleGrid columns={2} gap={4}>
-                    <Box>
-                      <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Tanggal Mulai</Text>
-                      <Input
-                        type="date"
-                        required
-                        value={formData.startDate}
-                        onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                        borderRadius="lg"
-                        borderColor="gray.200"
-                        _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
-                      />
-                    </Box>
-                    <Box>
-                      <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Waktu Mulai</Text>
-                      <Input
-                        type="time"
-                        required
-                        value={formData.startTimeField}
-                        onChange={(e) => setFormData({ ...formData, startTimeField: e.target.value })}
-                        borderRadius="lg"
-                        borderColor="gray.200"
-                        _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
-                      />
-                    </Box>
-                  </SimpleGrid>
-                  <SimpleGrid columns={2} gap={4}>
-                    <Box>
-                      <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Tanggal Berakhir</Text>
-                      <Input
-                        type="date"
-                        required
-                        value={formData.endDate}
-                        onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                        borderRadius="lg"
-                        borderColor="gray.200"
-                        _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
-                      />
-                    </Box>
-                    <Box>
-                      <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Waktu Berakhir</Text>
-                      <Input
-                        type="time"
-                        required
-                        value={formData.endTimeField}
-                        onChange={(e) => setFormData({ ...formData, endTimeField: e.target.value })}
-                        borderRadius="lg"
-                        borderColor="gray.200"
-                        _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
-                      />
-                    </Box>
-                  </SimpleGrid>
-                  <Box>
-                    <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Status Ujian</Text>
-                    <Select.Root
-                      collection={statusOptions}
-                      value={[formData.status]}
-                      onValueChange={(details) => setFormData({ ...formData, status: details.value[0] || 'DRAFT' })}
-                      positioning={{ sameWidth: true }}
-                    >
-                      <Select.HiddenSelect />
-                      <Select.Control>
-                        <Select.Trigger>
-                          <Select.ValueText placeholder="Pilih Status" />
-                        </Select.Trigger>
-                        <Select.IndicatorGroup>
-                          <Select.Indicator />
-                          <Select.ClearTrigger />
-                        </Select.IndicatorGroup>
-                      </Select.Control>
-                      <Select.Positioner>
-                        <Select.Content>
-                          {statusOptions.items.map((item) => (
-                            <Select.Item key={item.value} item={item}>
-                              {item.label}
-                            </Select.Item>
-                          ))}
-                        </Select.Content>
-                      </Select.Positioner>
-                    </Select.Root>
-                  </Box>
+                  <Box><Text fontSize="sm" fontWeight="medium" color="text.secondary" mb={1}>Judul Ujian</Text><Input required value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} placeholder="Cth. Ujian Tengah Semester Matematika" borderRadius="lg" borderColor="input.border" bg="input.bg" _focus={{ borderColor: 'input.focus.border' }} /></Box>
+                  <Box><Text fontSize="sm" fontWeight="medium" color="text.secondary" mb={1}>Deskripsi</Text><Textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} rows={3} placeholder="Deskripsi opsional..." borderRadius="lg" borderColor="input.border" bg="input.bg" _focus={{ borderColor: 'input.focus.border' }} /></Box>
+                  <Box><Text fontSize="sm" fontWeight="medium" color="text.secondary" mb={1}>Event / Kelompok Ujian <Box as="span" color="status.danger.text">*</Box></Text><Select.Root collection={examGroupOptions} value={formData.examGroupId ? [formData.examGroupId] : []} onValueChange={(d) => setFormData({ ...formData, examGroupId: d.value[0] || '' })} positioning={{ sameWidth: true }}><Select.HiddenSelect /><Select.Control><Select.Trigger><Select.ValueText placeholder="-- Pilih Event Ujian --" /></Select.Trigger><Select.IndicatorGroup><Select.Indicator /><Select.ClearTrigger /></Select.IndicatorGroup></Select.Control><Select.Positioner><Select.Content>{examGroupOptions.items.map((item) => <Select.Item key={item.value} item={item}>{item.label}</Select.Item>)}</Select.Content></Select.Positioner></Select.Root>{(examGroups?.length || 0) === 0 && <Text fontSize="xs" color="status.warning.text" mt={1}>Buat Event Ujian dulu.</Text>}</Box>
+                  <SimpleGrid columns={2} gap={4}><Box><Text fontSize="sm" fontWeight="medium" color="text.secondary" mb={1}>Mata Pelajaran</Text><Select.Root collection={subjectOptions} value={formData.subjectId ? [formData.subjectId] : []} onValueChange={(d) => setFormData({ ...formData, subjectId: d.value[0] || '' })} positioning={{ sameWidth: true }}><Select.HiddenSelect /><Select.Control><Select.Trigger><Select.ValueText placeholder="Pilih Mata Pelajaran" /></Select.Trigger><Select.IndicatorGroup><Select.Indicator /><Select.ClearTrigger /></Select.IndicatorGroup></Select.Control><Select.Positioner><Select.Content>{subjectOptions.items.map((item) => <Select.Item key={item.value} item={item}>{item.label}</Select.Item>)}</Select.Content></Select.Positioner></Select.Root></Box><Box><Text fontSize="sm" fontWeight="medium" color="text.secondary" mb={1}>Durasi (Menit)</Text><Input type="number" required value={isNaN(formData.duration) ? '' : formData.duration} onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) })} borderRadius="lg" borderColor="input.border" bg="input.bg" _focus={{ borderColor: 'input.focus.border' }} /></Box></SimpleGrid>
+                  <SimpleGrid columns={2} gap={4}><Box><Text fontSize="sm" fontWeight="medium" color="text.secondary" mb={1}>Tanggal Mulai</Text><Input type="date" required value={formData.startDate} onChange={(e) => setFormData({ ...formData, startDate: e.target.value })} borderRadius="lg" borderColor="input.border" bg="input.bg" _focus={{ borderColor: 'input.focus.border' }} /></Box><Box><Text fontSize="sm" fontWeight="medium" color="text.secondary" mb={1}>Waktu Mulai</Text><Input type="time" required value={formData.startTimeField} onChange={(e) => setFormData({ ...formData, startTimeField: e.target.value })} borderRadius="lg" borderColor="input.border" bg="input.bg" _focus={{ borderColor: 'input.focus.border' }} /></Box></SimpleGrid>
+                  <SimpleGrid columns={2} gap={4}><Box><Text fontSize="sm" fontWeight="medium" color="text.secondary" mb={1}>Tanggal Berakhir</Text><Input type="date" required value={formData.endDate} onChange={(e) => setFormData({ ...formData, endDate: e.target.value })} borderRadius="lg" borderColor="input.border" bg="input.bg" _focus={{ borderColor: 'input.focus.border' }} /></Box><Box><Text fontSize="sm" fontWeight="medium" color="text.secondary" mb={1}>Waktu Berakhir</Text><Input type="time" required value={formData.endTimeField} onChange={(e) => setFormData({ ...formData, endTimeField: e.target.value })} borderRadius="lg" borderColor="input.border" bg="input.bg" _focus={{ borderColor: 'input.focus.border' }} /></Box></SimpleGrid>
+                  <Box><Text fontSize="sm" fontWeight="medium" color="text.secondary" mb={1}>Status Ujian</Text><Select.Root collection={statusOptions} value={[formData.status]} onValueChange={(d) => setFormData({ ...formData, status: d.value[0] || 'DRAFT' })} positioning={{ sameWidth: true }}><Select.HiddenSelect /><Select.Control><Select.Trigger><Select.ValueText placeholder="Pilih Status" /></Select.Trigger><Select.IndicatorGroup><Select.Indicator /><Select.ClearTrigger /></Select.IndicatorGroup></Select.Control><Select.Positioner><Select.Content>{statusOptions.items.map((item) => <Select.Item key={item.value} item={item}>{item.label}</Select.Item>)}</Select.Content></Select.Positioner></Select.Root></Box>
                 </Stack>
               </Box>
 
-              {/* Target Peserta Card */}
-              <Box bg="white" p={6} borderRadius="xl" shadow="sm" borderWidth="1px" borderColor="gray.100">
-                <Heading size="md" fontWeight="bold" color="gray.900" borderBottom="1px solid" borderColor="gray.100" pb={2} mb={4}>
-                  Target Peserta Ujian <span style={{ color: 'red' }}>*</span>
-                </Heading>
-                <Text fontSize="xs" color="gray.500" mb={4}>
-                  Pilih tingkat kelas dan jurusan terlebih dahulu untuk menampilkan daftar rombel kelas.
-                </Text>
+              <Box bg="bg.surface" p={6} borderRadius="card" shadow="card-dark" borderWidth="1px" borderColor="border.default">
+                <Heading size="md" fontWeight="bold" color="text.primary" mb={4}>Target Peserta Ujian <Box as="span" color="status.danger.text">*</Box></Heading>
+                <Text fontSize="xs" color="text.secondary" mb={4}>Pilih tingkat kelas dan jurusan dulu.</Text>
                 <Stack gap={5}>
-                  <SimpleGrid columns={2} gap={4}>
-                    <Box>
-                      <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Tingkat Kelas</Text>
-                      <select
-                        value={filterTingkat}
-                        onChange={(e) => setFilterTingkat(e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '8px 12px',
-                          border: '1px solid #e2e8f0',
-                          borderRadius: '8px',
-                          backgroundColor: 'white',
-                          outline: 'none',
-                          fontSize: '14px',
-                        }}
-                      >
-                        <option value="">-- Pilih Tingkat --</option>
-                        <option value="X">Kelas X</option>
-                        <option value="XI">Kelas XI</option>
-                        <option value="XII">Kelas XII</option>
-                      </select>
-                    </Box>
-                    <Box>
-                      <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Jurusan</Text>
-                      <select
-                        value={filterMajorId}
-                        onChange={(e) => setFilterMajorId(e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '8px 12px',
-                          border: '1px solid #e2e8f0',
-                          borderRadius: '8px',
-                          backgroundColor: 'white',
-                          outline: 'none',
-                          fontSize: '14px',
-                        }}
-                      >
-                        <option value="">-- Pilih Jurusan --</option>
-                        {majors?.map((m) => (
-                          <option key={m.id} value={m.id}>
-                            {m.name} ({m.code})
-                          </option>
-                        ))}
-                      </select>
-                    </Box>
-                  </SimpleGrid>
-
-                  {filterTingkat && filterMajorId ? (
-                    <Box border="1px solid" borderColor="gray.200" borderRadius="lg" p={4} bg="gray.50/30">
-                      <Flex justify="space-between" align="center" mb={3}>
-                        <Text fontSize="xs" fontWeight="bold" color="gray.600">
-                          Daftar Rombel Terfilter (Total terpilih: {selectedRombelIds.length})
-                        </Text>
-                        {getFilteredRombels().length > 0 && (
-                          <HStack gap={2}>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="2xs"
-                              color="indigo.600"
-                              _hover={{ bg: 'indigo.50' }}
-                              onClick={handleSelectAllFilteredRombels}
-                            >
-                              Pilih Semua
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="2xs"
-                              color="red.600"
-                              _hover={{ bg: 'red.50' }}
-                              onClick={handleDeselectAllFilteredRombels}
-                            >
-                              Hapus Semua
-                            </Button>
-                          </HStack>
-                        )}
-                      </Flex>
-                      {getFilteredRombels().length > 0 ? (
-                        <SimpleGrid columns={{ base: 2, md: 3 }} gap={3}>
-                          {getFilteredRombels().map((r) => {
-                            const isChecked = selectedRombelIds.includes(r.id);
-                            return (
-                              <Checkbox.Root
-                                key={r.id}
-                                checked={isChecked}
-                                onCheckedChange={() => {
-                                  setSelectedRombelIds((prev) =>
-                                    prev.includes(r.id) ? prev.filter((id) => id !== r.id) : [...prev, r.id]
-                                  );
-                                }}
-                              >
-                                <Checkbox.HiddenInput />
-                                <Checkbox.Control cursor="pointer" />
-                                <Checkbox.Label fontSize="xs" fontWeight="medium" color="gray.700">
-                                  {r.name}
-                                </Checkbox.Label>
-                              </Checkbox.Root>
-                            );
-                          })}
-                        </SimpleGrid>
-                      ) : (
-                        <Text fontSize="xs" color="gray.500" py={2}>
-                          Tidak ada rombel yang sesuai dengan filter tingkat {filterTingkat} dan jurusan terpilih.
-                        </Text>
-                      )}
-                    </Box>
-                  ) : (
-                    <Flex
-                      direction="column"
-                      align="center"
-                      justify="center"
-                      py={8}
-                      borderWidth="2px"
-                      borderStyle="dashed"
-                      borderColor="gray.200"
-                      borderRadius="lg"
-                      bg="gray.50/20"
-                    >
-                      <Text fontSize="xs" color="gray.500" textAlign="center">
-                        Silakan pilih Tingkat Kelas dan Jurusan terlebih dahulu untuk menampilkan daftar rombel.
-                      </Text>
-                    </Flex>
-                  )}
+                  <SimpleGrid columns={2} gap={4}><Box><Text fontSize="sm" fontWeight="medium" color="text.secondary" mb={1}>Tingkat Kelas</Text><select value={filterTingkat} onChange={(e) => setFilterTingkat(e.target.value)} style={{ width: '100%', padding: '8px 12px', border: '1px solid var(--chakra-colors-input-border)', borderRadius: '8px', backgroundColor: 'var(--chakra-colors-input-bg)', outline: 'none', fontSize: '14px', color: 'var(--chakra-colors-text-primary)' }}><option value="">-- Pilih Tingkat --</option><option value="X">Kelas X</option><option value="XI">Kelas XI</option><option value="XII">Kelas XII</option></select></Box><Box><Text fontSize="sm" fontWeight="medium" color="text.secondary" mb={1}>Jurusan</Text><select value={filterMajorId} onChange={(e) => setFilterMajorId(e.target.value)} style={{ width: '100%', padding: '8px 12px', border: '1px solid var(--chakra-colors-input-border)', borderRadius: '8px', backgroundColor: 'var(--chakra-colors-input-bg)', outline: 'none', fontSize: '14px', color: 'var(--chakra-colors-text-primary)' }}><option value="">-- Pilih Jurusan --</option>{majors?.map((m) => <option key={m.id} value={m.id}>{m.name} ({m.code})</option>)}</select></Box></SimpleGrid>
+                  {filterTingkat && filterMajorId ? <Box borderWidth="1px" borderColor="border.default" borderRadius="lg" p={4} bg="bg.subtle"><Flex justify="space-between" align="center" mb={3}><Text fontSize="xs" fontWeight="bold" color="text.secondary">Rombel terfilter ({selectedRombelIds.length} dipilih)</Text>{getFilteredRombels().length > 0 && <HStack gap={2}><Button type="button" variant="ghost" size="2xs" color="brand.text" _hover={{ bg: 'brand.subtle' }} onClick={() => setSelectedRombelIds((prev) => Array.from(new Set([...prev, ...getFilteredRombels().map((r) => r.id)])))}>Pilih Semua</Button><Button type="button" variant="ghost" size="2xs" color="status.danger.text" _hover={{ bg: 'status.danger.bg' }} onClick={() => { const visible = new Set(getFilteredRombels().map((r) => r.id)); setSelectedRombelIds((prev) => prev.filter((id) => !visible.has(id))); }}>Hapus Semua</Button></HStack>}</Flex>{getFilteredRombels().length > 0 ? <SimpleGrid columns={{ base: 2, md: 3 }} gap={3}>{getFilteredRombels().map((r) => <Checkbox.Root key={r.id} checked={selectedRombelIds.includes(r.id)} onCheckedChange={() => setSelectedRombelIds((prev) => prev.includes(r.id) ? prev.filter((id) => id !== r.id) : [...prev, r.id])}><Checkbox.HiddenInput /><Checkbox.Control cursor="pointer" /><Checkbox.Label fontSize="xs" fontWeight="medium" color="text.primary">{r.name}</Checkbox.Label></Checkbox.Root>)}</SimpleGrid> : <Text fontSize="xs" color="text.secondary" py={2}>Tidak ada rombel cocok.</Text>}</Box> : <Flex direction="column" align="center" justify="center" py={8} borderWidth="2px" borderStyle="dashed" borderColor="border.default" borderRadius="lg" bg="bg.subtle"><Text fontSize="xs" color="text.secondary" textAlign="center">Pilih Tingkat Kelas dan Jurusan dulu.</Text></Flex>}
                 </Stack>
               </Box>
 
-              {/* Select Questions Card */}
-              <Box bg="white" p={6} borderRadius="xl" shadow="sm" borderWidth="1px" borderColor="gray.100">
-                <Heading size="md" fontWeight="bold" color="gray.900" borderBottom="1px solid" borderColor="gray.100" pb={2} mb={4}>
-                  Pilih Soal
-                </Heading>
-
-                {!formData.subjectId ? (
-                  <Flex justify="center" py={8}>
-                    <Text color="gray.500">Pilih mata pelajaran terlebih dahulu untuk melihat soal.</Text>
-                  </Flex>
-                ) : (
-                  <Stack gap={4}>
-                    <Box>
-                      <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Bank Soal</Text>
-                      <select
-                        value={selectedBankId}
-                        onChange={(e) => setSelectedBankId(e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '8px 12px',
-                          border: '1px solid #e2e8f0',
-                          borderRadius: '8px',
-                          backgroundColor: 'white',
-                          outline: 'none',
-                          fontSize: '14px',
-                        }}
-                      >
-                        <option value="">Pilih Bank Soal</option>
-                        {questionBanks?.map((b) => (
-                          <option key={b.id} value={b.id}>{b.name}</option>
-                        ))}
-                      </select>
-                    </Box>
-
-                    {selectedBankId && questions && questions.length > 0 && (
-                      <Flex justify="space-between" align="center" px={1} py={1}>
-                        <Text fontSize="xs" color="gray.500" fontWeight="medium">
-                          {questions.filter((q) => selectedQuestionIds.includes(q.id)).length} dari {questions.length} soal terpilih
-                        </Text>
-                        <HStack gap={2}>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="xs"
-                            onClick={handleSelectAll}
-                            color="indigo.600"
-                            _hover={{ bg: 'indigo.50' }}
-                          >
-                            Pilih Semua
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="xs"
-                            onClick={handleDeselectAll}
-                            color="red.600"
-                            _hover={{ bg: 'red.50' }}
-                          >
-                            Hapus Semua
-                          </Button>
-                        </HStack>
-                      </Flex>
-                    )}
-
-                    {selectedBankId && (
-                      <Box maxH="96" overflowY="auto" borderWidth="1px" borderRadius="lg" borderColor="gray.200">
-
-                        {questions?.map((q) => (
-                          <Flex
-                            key={q.id}
-                            p={4}
-                            align="flex-start"
-                            gap={3}
-                            cursor="pointer"
-                            _hover={{ bg: 'gray.50' }}
-                            bg={selectedQuestionIds.includes(q.id) ? 'indigo.50' : 'transparent'}
-                            borderBottom="1px solid"
-                            borderColor="gray.100"
-                            transition="background 0.1s"
-                            onClick={() => toggleQuestion(q.id)}
-                          >
-                            <Checkbox.Root
-                              checked={selectedQuestionIds.includes(q.id)}
-                              onCheckedChange={() => toggleQuestion(q.id)}
-                            >
-                              <Checkbox.HiddenInput />
-                              <Checkbox.Control cursor="pointer" />
-                            </Checkbox.Root>
-                            <Box flex={1}>
-                              <Box
-                                fontSize="sm"
-                                fontWeight="medium"
-                                color="gray.900"
-                                lineClamp={2}
-                                dangerouslySetInnerHTML={{ __html: q.content }}
-                              />
-                              <HStack gap={2} mt={1}>
-                                <Text fontSize="xs" color="gray.500">{q.type}</Text>
-                                <Text fontSize="xs" color="gray.500">{q.points} pts</Text>
-                              </HStack>
-                            </Box>
-                          </Flex>
-                        ))}
-                        {questions?.length === 0 && (
-                          <Flex justify="center" p={8}>
-                            <Text color="gray.500">Tidak ada soal di bank ini.</Text>
-                          </Flex>
-                        )}
-                      </Box>
-                    )}
-                  </Stack>
-                )}
-              </Box>
-            </Stack>
+              <Box bg="bg.surface" p={6} borderRadius="card" shadow="card-dark" borderWidth="1px" borderColor="border.default">
+                <Heading size="md" fontWeight="bold" color="text.primary" mb={4}>Pilih Soal</Heading>
+                {!formData.subjectId ? <Flex justify="center" py={8}><Text color="text.secondary">Pilih mata pelajaran dulu.</Text></Flex> : <Stack gap={4}><Box><Text fontSize="sm" fontWeight="medium" color="text.secondary" mb={1}>Bank Soal</Text><Select.Root collection={questionBankOptions} value={selectedBankId ? [selectedBankId] : []} onValueChange={(d) => setSelectedBankId(d.value[0] || '')} positioning={{ sameWidth: true }}><Select.HiddenSelect /><Select.Control><Select.Trigger><Select.ValueText placeholder="Pilih Bank Soal" /></Select.Trigger><Select.IndicatorGroup><Select.Indicator /><Select.ClearTrigger /></Select.IndicatorGroup></Select.Control><Select.Positioner><Select.Content>{questionBankOptions.items.map((item) => <Select.Item key={item.value} item={item}>{item.label}</Select.Item>)}</Select.Content></Select.Positioner></Select.Root></Box>{selectedBankId && questions?.length ? <Flex justify="space-between" align="center" px={1}><Text fontSize="xs" color="text.secondary" fontWeight="medium">{questions.filter((q) => selectedQuestionIds.includes(q.id)).length} dari {questions.length} soal terpilih</Text><HStack gap={2}><Button type="button" variant="ghost" size="xs" onClick={handleSelectAll} color="brand.text">Pilih Semua</Button><Button type="button" variant="ghost" size="xs" onClick={handleDeselectAll} color="status.danger.text">Hapus Semua</Button></HStack></Flex> : null}{selectedBankId && <Box maxH="96" overflowY="auto" borderWidth="1px" borderRadius="lg" borderColor="border.default">{questions?.map((q) => <Flex key={q.id} p={4} align="flex-start" gap={3} cursor="pointer" _hover={{ bg: 'bg.elevated' }} bg={selectedQuestionIds.includes(q.id) ? 'brand.subtle' : 'transparent'} borderBottom="1px solid" borderColor="border.default" onClick={() => toggleQuestion(q.id)}><Checkbox.Root checked={selectedQuestionIds.includes(q.id)} onCheckedChange={() => toggleQuestion(q.id)}><Checkbox.HiddenInput /><Checkbox.Control cursor="pointer" /></Checkbox.Root><Box flex={1}><Box fontSize="sm" fontWeight="medium" color="text.primary" lineClamp={2} dangerouslySetInnerHTML={{ __html: q.content }} /><HStack gap={2} mt={1}><Text fontSize="xs" color="text.secondary">{q.type}</Text><Text fontSize="xs" color="text.secondary">{q.points} pts</Text></HStack></Box></Flex>)}{questions?.length === 0 && <Flex justify="center" p={8}><Text color="text.secondary">Tidak ada soal di bank ini.</Text></Flex>}</Box>}</Stack>}</Box>
+              </Stack>
           </Box>
 
-          {/* Right Column — Settings & Submit */}
           <Box>
-            <Box
-              bg="white"
-              p={6}
-              borderRadius="xl"
-              shadow="sm"
-              borderWidth="1px"
-              borderColor="gray.100"
-              position="sticky"
-              top="6rem"
-            >
-              <Heading size="md" fontWeight="bold" color="gray.900" borderBottom="1px solid" borderColor="gray.100" pb={2} mb={4}>
-                Pengaturan Ujian
-              </Heading>
-
+            <Box bg="bg.surface" p={6} borderRadius="card" shadow="card-dark" borderWidth="1px" borderColor="border.default" position="sticky" top="6rem">
+              <Heading size="md" fontWeight="bold" color="text.primary" mb={4}>Pengaturan Ujian</Heading>
               <Stack gap={4}>
-                <Box>
-                  <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Token Ujian (Opsional)</Text>
-                  <Input
-                    value={formData.token}
-                    onChange={(e) => setFormData({ ...formData, token: e.target.value })}
-                  />
-                </Box>
-
+                <Box><Text fontSize="sm" fontWeight="medium" color="text.secondary" mb={1}>Token Ujian (Opsional)</Text><Input value={formData.token} onChange={(e) => setFormData({ ...formData, token: e.target.value })} borderRadius="lg" borderColor="input.border" bg="input.bg" _focus={{ borderColor: 'input.focus.border' }} /></Box>
                 <Stack gap={3}>
-                    <Checkbox.Root
-                      checked={formData.randomizeSoal}
-                      onCheckedChange={(details) => setFormData({ ...formData, randomizeSoal: !!details.checked })}
-                    >
-                      <Checkbox.HiddenInput />
-                      <Checkbox.Control />
-                      <Checkbox.Label fontSize="sm" color="gray.700">Acak Urutan Soal</Checkbox.Label>
-                    </Checkbox.Root>
-
-                    <Checkbox.Root
-                      checked={formData.randomizeOpsi}
-                      onCheckedChange={(details) => setFormData({ ...formData, randomizeOpsi: !!details.checked })}
-                    >
-                      <Checkbox.HiddenInput />
-                      <Checkbox.Control />
-                      <Checkbox.Label fontSize="sm" color="gray.700">Acak Urutan Opsi</Checkbox.Label>
-                    </Checkbox.Root>
-
-                    <Checkbox.Root
-                      checked={formData.showScore}
-                      onCheckedChange={(details) => setFormData({ ...formData, showScore: !!details.checked })}
-                    >
-                      <Checkbox.HiddenInput />
-                      <Checkbox.Control />
-                      <Checkbox.Label fontSize="sm" color="gray.700">Tampilkan Nilai ke Siswa</Checkbox.Label>
-                    </Checkbox.Root>
-
-                    <Checkbox.Root
-                      checked={formData.requireSeb}
-                      onCheckedChange={(details) => setFormData({ ...formData, requireSeb: !!details.checked })}
-                    >
-                      <Checkbox.HiddenInput />
-                      <Checkbox.Control />
-                      <Checkbox.Label fontSize="sm" fontWeight="bold" color="gray.700">Wajibkan Safe Exam Browser</Checkbox.Label>
-                    </Checkbox.Root>
-
-                    {formData.requireSeb && (
-                      <Stack gap={2.5} pl={7} className="animate-fade-in">
-                        <Box>
-                          <Text fontSize="2xs" fontWeight="semibold" color="gray.500" mb={1}>Kunci Konfigurasi SEB (Opsional)</Text>
-                          <Input
-                            size="xs"
-                            value={formData.sebConfigKey}
-                            onChange={(e) => setFormData({ ...formData, sebConfigKey: e.target.value })}
-                            placeholder="Config Key"
-                            borderRadius="md"
-                          />
-                        </Box>
-                        <Box>
-                          <Text fontSize="2xs" fontWeight="semibold" color="gray.500" mb={1}>Kunci Browser SEB (Opsional)</Text>
-                          <Input
-                            size="xs"
-                            value={formData.sebBrowserKey}
-                            onChange={(e) => setFormData({ ...formData, sebBrowserKey: e.target.value })}
-                            placeholder="Browser Key"
-                            borderRadius="md"
-                          />
-                        </Box>
-                      </Stack>
-                    )}
-
-                    <Checkbox.Root
-                      checked={formData.blockKeyCopyPaste}
-                      onCheckedChange={(details) => setFormData({ ...formData, blockKeyCopyPaste: !!details.checked })}
-                    >
-                      <Checkbox.HiddenInput />
-                      <Checkbox.Control />
-                      <Checkbox.Label fontSize="sm" color="gray.700">Proteksi Keyboard & Mouse (Blokir Klik Kanan, Salin-Tempel, DevTools)</Checkbox.Label>
-                    </Checkbox.Root>
-
-                    <Checkbox.Root
-                      checked={formData.forceFullscreen}
-                      onCheckedChange={(details) => setFormData({ ...formData, forceFullscreen: !!details.checked })}
-                    >
-                      <Checkbox.HiddenInput />
-                      <Checkbox.Control />
-                      <Checkbox.Label fontSize="sm" color="gray.700">Wajibkan Layar Penuh (Forced Fullscreen)</Checkbox.Label>
-                    </Checkbox.Root>
-                    <Box>
-                      <Text fontSize="xs" fontWeight="semibold" color="gray.700" mb={1}>Batas Maksimum Pelanggaran (0 untuk Tidak Terbatas)</Text>
-                      <Input
-                        type="number"
-                        size="sm"
-                        w="20"
-                        value={formData.maxViolations}
-                        onChange={(e) => setFormData({ ...formData, maxViolations: parseInt(e.target.value) || 0 })}
-                        borderRadius="md"
-                      />
-                    </Box>
-                  </Stack>
-
-                  <Box pt={4} borderTop="1px solid" borderColor="gray.100">
-                    <Flex justify="space-between" fontSize="sm" mb={4}>
-                      <Text color="gray.500">Soal Terpilih:</Text>
-                      <Text fontWeight="bold" color="gray.900">{selectedQuestionIds.length}</Text>
-                    </Flex>
-                    <Button
-                      type="submit"
-                      w="full"
-                      bg="indigo.600"
-                      color="white"
-                      _hover={{ bg: 'indigo.700' }}
-                      borderRadius="lg"
-                      fontWeight="bold"
-                      py={3}
-                      disabled={createMutation.isPending}
-                      cursor="pointer"
-                    >
-                      <Save size={20} />
-                      {createMutation.isPending ? 'Menyimpan...' : 'Jadwalkan Ujian'}
-                    </Button>
-                  </Box>
+                  <Checkbox.Root checked={formData.randomizeSoal} onCheckedChange={(d) => setFormData({ ...formData, randomizeSoal: !!d.checked })}><Checkbox.HiddenInput /><Checkbox.Control /><Checkbox.Label fontSize="sm" color="text.secondary">Acak Urutan Soal</Checkbox.Label></Checkbox.Root>
+                  <Checkbox.Root checked={formData.randomizeOpsi} onCheckedChange={(d) => setFormData({ ...formData, randomizeOpsi: !!d.checked })}><Checkbox.HiddenInput /><Checkbox.Control /><Checkbox.Label fontSize="sm" color="text.secondary">Acak Urutan Opsi</Checkbox.Label></Checkbox.Root>
+                  <Checkbox.Root checked={formData.showScore} onCheckedChange={(d) => setFormData({ ...formData, showScore: !!d.checked })}><Checkbox.HiddenInput /><Checkbox.Control /><Checkbox.Label fontSize="sm" color="text.secondary">Tampilkan Nilai ke Siswa</Checkbox.Label></Checkbox.Root>
+                  <Checkbox.Root checked={formData.requireSeb} onCheckedChange={(d) => setFormData({ ...formData, requireSeb: !!d.checked })}><Checkbox.HiddenInput /><Checkbox.Control /><Checkbox.Label fontSize="sm" fontWeight="bold" color="text.secondary">Wajibkan Safe Exam Browser</Checkbox.Label></Checkbox.Root>
+                  {formData.requireSeb && <Stack gap={2.5} pl={7}><Box><Text fontSize="2xs" fontWeight="semibold" color="text.secondary" mb={1}>Kunci Konfigurasi SEB (Opsional)</Text><Input size="xs" value={formData.sebConfigKey} onChange={(e) => setFormData({ ...formData, sebConfigKey: e.target.value })} placeholder="Config Key" borderRadius="md" borderColor="input.border" bg="input.bg" /></Box><Box><Text fontSize="2xs" fontWeight="semibold" color="text.secondary" mb={1}>Kunci Browser SEB (Opsional)</Text><Input size="xs" value={formData.sebBrowserKey} onChange={(e) => setFormData({ ...formData, sebBrowserKey: e.target.value })} placeholder="Browser Key" borderRadius="md" borderColor="input.border" bg="input.bg" /></Box></Stack>}
+                  <Checkbox.Root checked={formData.blockKeyCopyPaste} onCheckedChange={(d) => setFormData({ ...formData, blockKeyCopyPaste: !!d.checked })}><Checkbox.HiddenInput /><Checkbox.Control /><Checkbox.Label fontSize="sm" color="text.secondary">Proteksi Keyboard & Mouse</Checkbox.Label></Checkbox.Root>
+                  <Checkbox.Root checked={formData.forceFullscreen} onCheckedChange={(d) => setFormData({ ...formData, forceFullscreen: !!d.checked })}><Checkbox.HiddenInput /><Checkbox.Control /><Checkbox.Label fontSize="sm" color="text.secondary">Wajibkan Layar Penuh</Checkbox.Label></Checkbox.Root>
+                  <Box><Text fontSize="xs" fontWeight="semibold" color="text.secondary" mb={1}>Batas Maksimum Pelanggaran (0 tak terbatas)</Text><Input type="number" size="sm" w="20" value={formData.maxViolations} onChange={(e) => setFormData({ ...formData, maxViolations: parseInt(e.target.value) || 0 })} borderRadius="md" borderColor="input.border" bg="input.bg" /></Box>
                 </Stack>
-              </Box>
+                <Box pt={4} borderTop="1px solid" borderColor="border.default"><Flex justify="space-between" fontSize="sm" mb={4}><Text color="text.secondary">Soal Terpilih:</Text><Text fontWeight="bold" color="text.primary">{selectedQuestionIds.length}</Text></Flex><Button type="submit" w="full" bg="brand.solid" color="text.inverted" _hover={{ bg: 'brand.text' }} borderRadius="lg" fontWeight="bold" py={3} disabled={createMutation.isPending} cursor="pointer" gap={2}><Save size={18} /> Simpan & Buat Ujian</Button><Text fontSize="xs" color="text.muted" mt={3}>Review pilihan sebelum simpan. Info sensitif tetap kosong bila tak perlu.</Text></Box>
+              </Stack>
             </Box>
-          
+          </Box>
         </SimpleGrid>
       </form>
     </Stack>
