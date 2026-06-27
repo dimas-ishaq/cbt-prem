@@ -151,8 +151,8 @@ export function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onMobile
         transition="left 0.25s ease, width 0.25s ease"
         overflow="hidden"
         style={{
-          background: 'linear-gradient(180deg, #0a0f1e 0%, #0d1526 100%)',
-          borderRight: '1px solid rgba(28,45,74,0.8)',
+          background: 'linear-gradient(180deg, var(--chakra-colors-sidebar-bg) 0%, color-mix(in srgb, var(--chakra-colors-sidebar-bg) 92%, black) 100%)',
+          borderRight: '1px solid var(--chakra-colors-sidebar-border)',
         }}
       >
         <Box px={collapsed ? 3 : 5} py={5} borderBottom="1px solid" borderColor="sidebar.border">
@@ -180,15 +180,15 @@ export function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onMobile
               </Flex>
               {!collapsed && (
                 <Box minW={0}>
-                  <Text fontSize="sm" fontWeight="extrabold" color="white" letterSpacing="wide" textTransform="uppercase" lineHeight="1" lineClamp={1}>
+                  <Text fontSize="sm" fontWeight="extrabold" color="text.primary" letterSpacing="wide" textTransform="uppercase" lineHeight="1" lineClamp={1}>
                     {settings?.appName || 'Novatech CBT'}
                   </Text>
                   <Flex align="center" gap={1.5} mt={0.5} wrap="wrap">
-                    <Text fontSize="2xs" color="blue.500" fontWeight="bold" letterSpacing="widest" textTransform="uppercase">
+                    <Text fontSize="2xs" color="brand.text" fontWeight="bold" letterSpacing="widest" textTransform="uppercase">
                       Admin Panel
                     </Text>
                     {settings?.academicYear && (
-                      <Box fontSize="9px" bg="indigo.600" color="indigo.100" fontWeight="black" px={1.5} py={0.2} borderRadius="md">
+                      <Box fontSize="9px" bg="brand.subtle" color="brand.text" fontWeight="black" px={1.5} py={0.2} borderRadius="md" border="1px solid" borderColor="border.brand">
                         {settings.academicYear}
                       </Box>
                     )}
@@ -203,7 +203,7 @@ export function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onMobile
           {visibleMenuGroups.map((group) => (
             <Stack key={group.titleKey} gap={1} flexShrink={0}>
               {!collapsed && (
-                <Text fontSize="2xs" fontWeight="semibold" color="#526484" letterSpacing="wider" textTransform="uppercase" px={3} mb={1}>
+                <Text fontSize="2xs" fontWeight="semibold" color="sidebar.text" letterSpacing="wider" textTransform="uppercase" px={3} mb={1}>
                   {t(group.titleKey)}
                 </Text>
               )}
@@ -229,17 +229,16 @@ export function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onMobile
                     position="relative"
                     w="full"
                     title={collapsed ? t(item.key) : undefined}
-                    style={isActive ? { background: 'rgba(99,102,241,0.18)', border: '1px solid rgba(99,102,241,0.25)' } : { background: 'transparent', border: '1px solid transparent' }}
-                    _hover={!isActive ? { bg: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.05)' } : {}}
+                    bg={isActive ? 'sidebar.item.active.bg' : 'transparent'}
+                    _hover={{ bg: !isActive ? 'sidebar.item.hover.bg' : 'sidebar.item.active.bg' }}
+                    color={isActive ? 'sidebar.text.active' : 'sidebar.text'}
                   >
                     {isActive && (
-                      <Box position="absolute" left={0} top="20%" bottom="20%" w={0.5} borderRadius="full" style={{ background: 'linear-gradient(to bottom, #6366f1, #818cf8)' }} />
+                      <Box position="absolute" left={0} top="20%" bottom="20%" w={0.5} borderRadius="full" bg="sidebar.text.active" />
                     )}
-                    <Box color={isActive ? '#818cf8' : '#6b7fa0'} transition="color 0.15s">
-                      <item.icon size={17} />
-                    </Box>
+                    <item.icon size={17} />
                     {!collapsed && (
-                      <Text fontSize="xs" fontWeight={isActive ? 'bold' : 'medium'} color={isActive ? '#c7d2fe' : '#7a8fab'} transition="color 0.15s">
+                      <Text fontSize="xs" fontWeight={isActive ? 'bold' : 'medium'}>
                         {t(item.key)}
                       </Text>
                     )}
@@ -249,7 +248,7 @@ export function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onMobile
             </Stack>
           ))}
 
-          <Box px={collapsed ? 2 : 3} py={4} borderTop="1px solid" style={{ borderColor: 'rgba(28,45,74,0.6)' }}>
+          <Box px={collapsed ? 2 : 3} py={4} borderTop="1px solid" borderColor="border.default">
             <Link href="/admin/profile" passHref style={{ width: '100%', textDecoration: 'none' }}>
               <Flex
                 direction={collapsed ? 'column' : 'row'}
@@ -258,11 +257,11 @@ export function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onMobile
                 px={collapsed ? 0 : 3}
                 py={2.5}
                 borderRadius="xl"
-                mb={1}
-                cursor="pointer"
-                _hover={{ bg: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.1)' }}
+                bg="bg.elevated"
+                borderWidth="1px"
+                borderColor="border.default"
+                _hover={{ borderColor: 'border.active' }}
                 transition="all 0.15s"
-                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}
               >
                 <Flex
                   w={8}
@@ -291,8 +290,8 @@ export function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onMobile
                 </Flex>
                 {!collapsed && (
                   <Box overflow="hidden" flex={1} minW={0}>
-                    <Text fontSize="sm" fontWeight="bold" color="white" lineClamp={1} lineHeight="1.2">{user?.fullName}</Text>
-                    <Text fontSize="2xs" color="blue.500" fontWeight="bold" textTransform="uppercase" letterSpacing="widest" lineClamp={1} mt={0.5}>{user?.role}</Text>
+                    <Text fontSize="sm" fontWeight="bold" color="text.primary" lineClamp={1} lineHeight="1.2">{user?.fullName}</Text>
+                    <Text fontSize="2xs" color="sidebar.text.active" fontWeight="bold" textTransform="uppercase" letterSpacing="widest" lineClamp={1} mt={0.5}>{user?.role}</Text>
                   </Box>
                 )}
               </Flex>
@@ -306,8 +305,7 @@ export function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onMobile
               py={2}
               borderRadius="xl"
               cursor="pointer"
-              color="#6b7fa0"
-              _hover={{ bg: 'rgba(244,63,94,0.08)', color: '#fb7185', borderColor: 'rgba(244,63,94,0.15)' }}
+              _hover={{ bg: 'status.danger.bg', color: 'status.danger.text', borderColor: 'danger.200' }}
               border="1px solid transparent"
               transition="all 0.15s"
               size="sm"

@@ -3,27 +3,80 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import {
-  Users,
-  FileText,
-  BookOpen,
   Activity,
-  ArrowUpRight,
-  ArrowDownRight,
+  BookOpen,
+  FileText,
+  Users,
 } from 'lucide-react';
 import {
+  Badge,
   Box,
   Flex,
   Heading,
-  Text,
   SimpleGrid,
-  Stack,
-  Icon,
-  Badge,
-  HStack,
   Spinner,
+  Stack,
+  Text,
 } from '@chakra-ui/react';
 
 import { useTranslation } from 'react-i18next';
+
+function StatCard({ name, value, icon: Icon, trend }: { name: string; value: string | number; icon: any; trend?: 'up' | 'down' }) {
+  return (
+    <Box
+      position="relative"
+      overflow="hidden"
+      bg="bg.surface"
+      borderWidth="1px"
+      borderColor="border.default"
+      borderRadius="card"
+      p={6}
+      shadow="card-light"
+      transition="all 0.2s ease"
+      _hover={{
+        transform: 'translateY(-2px)',
+        shadow: 'glow-brand',
+        borderColor: 'border.brand',
+      }}
+    >
+      <Box position="absolute" inset="auto -24px -24px auto" boxSize="84px" borderRadius="full" bg="brand.subtle" />
+      <Flex justify="space-between" align="flex-start" gap={4} position="relative">
+        <Box>
+          <Text fontSize="xs" fontWeight="bold" letterSpacing="0.14em" textTransform="uppercase" color="text.muted">
+            {name}
+          </Text>
+          <Text mt={3} fontSize="3xl" fontWeight="black" color="text.primary" lineHeight="1">
+            {value}
+          </Text>
+        </Box>
+        <Flex
+          boxSize={11}
+          align="center"
+          justify="center"
+          borderRadius="xl"
+          bg="bg.elevated"
+          borderWidth="1px"
+          borderColor="border.default"
+          color="brand.solid"
+        >
+          <Icon size={18} />
+        </Flex>
+      </Flex>
+      {trend && (
+        <Badge
+          mt={5}
+          colorPalette={trend === 'up' ? 'green' : 'red'}
+          variant="subtle"
+          borderRadius="full"
+          px={3}
+          py={1}
+        >
+          {trend === 'up' ? 'Naik' : 'Turun'}
+        </Badge>
+      )}
+    </Box>
+  );
+}
 
 export default function AdminDashboard() {
   const { t } = useTranslation();
@@ -43,66 +96,52 @@ export default function AdminDashboard() {
 
   if (isLoading) {
     return (
-      <Flex justify="center" align="center" py={16}>
-        <Spinner size="lg" color="indigo.600" />
+      <Flex minH="60vh" justify="center" align="center" bg="bg.canvas">
+        <Stack align="center" gap={4}>
+          <Spinner size="lg" color="brand.solid" />
+          <Text color="text.secondary">Memuat dashboard…</Text>
+        </Stack>
       </Flex>
     );
   }
 
   const stats = [
-    { name: t('totalStudents'), value: dashboardData?.totalStudents ?? 0, icon: Users },
-    { name: t('activeExams'), value: dashboardData?.activeExams ?? 0, icon: FileText },
+    { name: t('totalStudents'), value: dashboardData?.totalStudents ?? 0, icon: Users, trend: 'up' as const },
+    { name: t('activeExams'), value: dashboardData?.activeExams ?? 0, icon: FileText, trend: 'up' as const },
     { name: t('subjectsLabel'), value: dashboardData?.totalSubjects ?? 0, icon: BookOpen },
     { name: t('avgScore'), value: `${dashboardData?.avgScore ?? 0}/100`, icon: Activity },
   ];
 
   return (
-    <Stack gap={8}>
+    <Stack gap={8} bg="bg.canvas" color="text.primary" minH="100%" px={{ base: 4, md: 6, xl: 8 }} py={{ base: 4, md: 6 }}>
       <Box>
-        <Heading size="xl" fontWeight="bold" color="gray.900">
+        <Heading size="xl" fontWeight="black" letterSpacing="tight" color="text.primary">
           {t('dashboardOverview')}
         </Heading>
-        <Text color="gray.500" mt={1}>
+        <Text color="text.secondary" mt={2} maxW="3xl">
           {t('welcomeCbt')}
         </Text>
       </Box>
 
-      <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} gap={6}>
-        {stats.map((stat) => (
-          <Box
-            key={stat.name}
-            bg="white"
-            p={6}
-            borderRadius="xl"
-            shadow="sm"
-            borderWidth="1px"
-            borderColor="gray.100"
-            transition="all 0.2s"
-            _hover={{ shadow: 'md', transform: 'translateY(-2px)' }}
-          >
-            <Flex justify="space-between" align="flex-start">
-              <Box p={2} bg="indigo.50" borderRadius="lg" color="indigo.600">
-                <stat.icon size={24} />
-              </Box>
-            </Flex>
-            <Box mt={4}>
-              <Text color="gray.500" fontSize="sm" fontWeight="medium">
-                {stat.name}
-              </Text>
-              <Text fontSize="3xl" fontWeight="bold" color="gray.900" mt={1}>
-                {stat.value}
-              </Text>
-            </Box>
-          </Box>
+      <SimpleGrid columns={{ base: 1, md: 2, xl: 4 }} gap={4}>
+        {stats.map((stat, index) => (
+          <StatCard key={stat.name} name={stat.name} value={stat.value} icon={stat.icon} trend={index < 2 ? 'up' : undefined} />
         ))}
       </SimpleGrid>
 
-      <SimpleGrid columns={{ base: 1, lg: 2 }} gap={8}>
-        <Box bg="white" p={6} borderRadius="xl" shadow="sm" borderWidth="1px" borderColor="gray.100">
-          <Heading size="md" fontWeight="bold" color="gray.900" mb={4}>
-            {t('recentExams')}
-          </Heading>
-          <Stack gap={4}>
+      <SimpleGrid columns={{ base: 1, xl: 2 }} gap={4}>
+        <Box bg="bg.surface" p={6} borderRadius="card" shadow="card-dark" borderWidth="1px" borderColor="border.default">
+          <Flex align="center" justify="space-between" mb={5}>
+            <Box>
+              <Text fontSize="xs" fontWeight="bold" textTransform="uppercase" letterSpacing="0.14em" color="brand.text">
+                {t('recentExams')}
+              </Text>
+              <Heading size="md" fontWeight="black" color="text.primary" mt={1}>
+                Aktivitas terbaru
+              </Heading>
+            </Box>
+          </Flex>
+          <Stack gap={3}>
             {dashboardData?.recentExams?.map((exam: any) => (
               <Flex
                 key={exam.id}
@@ -110,16 +149,17 @@ export default function AdminDashboard() {
                 justify="space-between"
                 p={4}
                 borderWidth="1px"
-                borderColor="gray.100"
-                borderRadius="lg"
-                _hover={{ bg: 'gray.50' }}
-                transition="background 0.15s"
+                borderColor="border.default"
+                bg="bg.elevated"
+                borderRadius="xl"
+                transition="all 0.15s ease"
+                _hover={{ borderColor: 'border.brand', transform: 'translateY(-1px)' }}
               >
                 <Box>
-                  <Text fontWeight="semibold" color="gray.900">
+                  <Text fontWeight="semibold" color="text.primary">
                     {exam.title}
                   </Text>
-                  <Text fontSize="sm" color="gray.500">
+                  <Text fontSize="sm" color="text.secondary">
                     Mata Pelajaran: {exam.subjectName} • {exam.sessionsCount} Siswa
                   </Text>
                 </Box>
@@ -136,18 +176,25 @@ export default function AdminDashboard() {
               </Flex>
             ))}
             {dashboardData?.recentExams?.length === 0 && (
-              <Text fontStyle="italic" color="gray.500" p={4} textAlign="center">
+              <Text fontStyle="italic" color="text.secondary" p={4} textAlign="center">
                 Belum ada data ujian terbaru.
               </Text>
             )}
           </Stack>
         </Box>
 
-        <Box bg="white" p={6} borderRadius="xl" shadow="sm" borderWidth="1px" borderColor="gray.100">
-          <Heading size="md" fontWeight="bold" color="gray.900" mb={4}>
-            {t('liveAlerts')}
-          </Heading>
-          <Stack gap={4}>
+        <Box bg="bg.surface" p={6} borderRadius="card" shadow="card-dark" borderWidth="1px" borderColor="border.default">
+          <Flex align="center" justify="space-between" mb={5}>
+            <Box>
+              <Text fontSize="xs" fontWeight="bold" textTransform="uppercase" letterSpacing="0.14em" color="accent.gold">
+                {t('liveAlerts')}
+              </Text>
+              <Heading size="md" fontWeight="black" color="text.primary" mt={1}>
+                Peringatan live
+              </Heading>
+            </Box>
+          </Flex>
+          <Stack gap={3}>
             {dashboardData?.liveAlerts?.map((alert: any) => (
               <Flex
                 key={alert.id}
@@ -155,23 +202,23 @@ export default function AdminDashboard() {
                 gap={4}
                 p={4}
                 borderWidth="1px"
-                borderColor="red.100"
-                bg="red.50/30"
-                borderRadius="lg"
+                borderColor={alert.level === 'KRITIS' || alert.level === 'BERAT' ? 'danger.200' : 'warning.100'}
+                bg={alert.level === 'KRITIS' || alert.level === 'BERAT' ? 'status.danger.bg' : 'status.warning.bg'}
+                borderRadius="xl"
               >
-                <Box p={2} bg="red.100" color="red.600" borderRadius="full" flexShrink={0}>
+                <Box p={2} bg={alert.level === 'KRITIS' || alert.level === 'BERAT' ? 'danger.50' : 'warning.50'} color={alert.level === 'KRITIS' || alert.level === 'BERAT' ? 'danger.600' : 'warning.600'} borderRadius="full" flexShrink={0}>
                   <Activity size={16} />
                 </Box>
                 <Box>
-                  <Text fontWeight="semibold" color="red.900">
+                  <Text fontWeight="semibold" color="text.primary">
                     {alert.studentName}
                   </Text>
-                  <Text fontSize="sm" color="red.700">
-                    Tipe: {alert.type} &bull; {new Date(alert.timestamp).toLocaleTimeString('id-ID', { timeZone: settings?.timezone || 'Asia/Jakarta' })}
+                  <Text fontSize="sm" color="text.secondary">
+                    Tipe: {alert.type} • {new Date(alert.timestamp).toLocaleTimeString('id-ID', { timeZone: settings?.timezone || 'Asia/Jakarta' })}
                   </Text>
                 </Box>
                 <Badge
-                  colorPalette={alert.level === 'KRITIS' || alert.level === 'BERAT' ? 'red' : 'yellow'}
+                  colorPalette={alert.level === 'KRITIS' || alert.level === 'BERAT' ? 'red' : 'orange'}
                   variant="subtle"
                   ml="auto"
                 >
@@ -180,7 +227,7 @@ export default function AdminDashboard() {
               </Flex>
             ))}
             {dashboardData?.liveAlerts?.length === 0 && (
-              <Text fontStyle="italic" color="gray.500" p={4} textAlign="center">
+              <Text fontStyle="italic" color="text.secondary" p={4} textAlign="center">
                 Tidak ada peringatan pelanggaran terbaru.
               </Text>
             )}
