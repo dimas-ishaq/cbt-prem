@@ -1,4 +1,6 @@
-﻿import { useEffect, useRef, useState } from 'react';
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { parseSessionAnswers } from '../exam-utils';
