@@ -278,41 +278,40 @@ const config = defineConfig({
           },
         },
 
-        // ── Sidebar (Admin) ───────────────────────────────────
         'sidebar.bg': {
           value: {
-            base: '#0f172a',     // always dark slate (design choice)
+            base: '#f8fafc',
             _dark: '#060c1a',
           },
         },
         'sidebar.border': {
           value: {
-            base: '#1a2540',
+            base: '#d7deea',
             _dark: '#10192e',
           },
         },
         'sidebar.item.active.bg': {
           value: {
-            base: 'rgba(99,102,241,0.2)',
+            base: 'rgba(79,70,229,0.10)',
             _dark: 'rgba(99,102,241,0.25)',
           },
         },
         'sidebar.item.hover.bg': {
           value: {
-            base: 'rgba(255,255,255,0.05)',
+            base: 'rgba(79,70,229,0.06)',
             _dark: 'rgba(255,255,255,0.04)',
           },
         },
         'sidebar.text': {
           value: {
-            base: '#c8d0e0',
+            base: '#334155',
             _dark: '#9aabbf',
           },
         },
         'sidebar.text.active': {
           value: {
-            base: '#a5abfc',
-            _dark: '#818cf8',
+            base: '#1e293b',
+            _dark: '#e0e0e0',
           },
         },
 

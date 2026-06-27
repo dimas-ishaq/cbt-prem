@@ -151,7 +151,7 @@ export function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onMobile
         transition="left 0.25s ease, width 0.25s ease"
         overflow="hidden"
         style={{
-          background: 'linear-gradient(180deg, var(--chakra-colors-sidebar-bg) 0%, color-mix(in srgb, var(--chakra-colors-sidebar-bg) 92%, black) 100%)',
+          background: 'linear-gradient(180deg, var(--chakra-colors-sidebar-bg) 0%, color-mix(in srgb, var(--chakra-colors-sidebar-bg) 94%, black) 100%)',
           borderRight: '1px solid var(--chakra-colors-sidebar-border)',
         }}
       >
@@ -180,7 +180,7 @@ export function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onMobile
               </Flex>
               {!collapsed && (
                 <Box minW={0}>
-                  <Text fontSize="sm" fontWeight="extrabold" color="text.primary" letterSpacing="wide" textTransform="uppercase" lineHeight="1" lineClamp={1}>
+                  <Text fontSize="sm" fontWeight="extrabold" color="sidebar.text.active" letterSpacing="wide" textTransform="uppercase" lineHeight="1" lineClamp={1}>
                     {settings?.appName || 'Novatech CBT'}
                   </Text>
                   <Flex align="center" gap={1.5} mt={0.5} wrap="wrap">
@@ -238,7 +238,7 @@ export function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onMobile
                     )}
                     <item.icon size={17} />
                     {!collapsed && (
-                      <Text fontSize="xs" fontWeight={isActive ? 'bold' : 'medium'}>
+                      <Text fontSize="xs" fontWeight={isActive ? 'bold' : 'medium'} color={isActive ? 'sidebar.text.active' : 'sidebar.text'}>
                         {t(item.key)}
                       </Text>
                     )}
@@ -311,7 +311,7 @@ export function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onMobile
               size="sm"
             >
               <LogOut size={16} />
-              {!collapsed && <Text fontWeight="semibold" ml={2.5} fontSize="sm">{t('logout')}</Text>}
+              {!collapsed && <Text fontWeight="semibold" ml={2.5} fontSize="sm" color="inherit">{t('logout')}</Text>}
             </Button>
           </Box>
         </Stack>

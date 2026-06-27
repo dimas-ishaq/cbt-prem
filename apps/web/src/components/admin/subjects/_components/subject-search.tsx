@@ -8,9 +8,9 @@ interface SubjectSearchProps {
 
 export function SubjectSearch({ value, onChange }: SubjectSearchProps) {
   return (
-    <Box bg="white" p={4} borderRadius="xl" borderWidth="1px" borderColor="gray.100" shadow="sm">
+    <Box bg="bg.surface" p={4} borderRadius="card" borderWidth="1px" borderColor="border.default" shadow="card-light">
       <Box position="relative">
-        <Box position="absolute" left={3} top="50%" transform="translateY(-50%)" color="gray.400" pointerEvents="none">
+        <Box position="absolute" left={3} top="50%" transform="translateY(-50%)" color="text.muted" pointerEvents="none">
           <Search size={18} />
         </Box>
         <Input
@@ -19,8 +19,11 @@ export function SubjectSearch({ value, onChange }: SubjectSearchProps) {
           onChange={(e) => onChange(e.target.value)}
           pl={10}
           borderRadius="lg"
-          borderColor="gray.200"
-          _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
+          borderColor="border.default"
+          bg="bg.elevated"
+          color="text.primary"
+          _placeholder={{ color: 'text.muted' }}
+          _focusVisible={{ borderColor: 'brand.solid', boxShadow: '0 0 0 1px var(--chakra-colors-brand-solid)' }}
         />
       </Box>
     </Box>

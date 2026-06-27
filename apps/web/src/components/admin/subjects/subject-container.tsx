@@ -6,9 +6,9 @@ import { useTranslation } from 'react-i18next';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
 import { useRouter } from 'next/navigation';
-import { Box, Flex, Heading, Text, Button, Stack, Input, Spinner, HStack } from '@chakra-ui/react';
+import { AlertTriangle, Download, Plus, Upload } from 'lucide-react';
+import { Badge, Box, Button, Flex, Heading, HStack, Input, SimpleGrid, Spinner, Stack, Text } from '@chakra-ui/react';
 import { useConfirm } from '@/components/ui/confirmation-dialog';
-import { Plus, Upload, Download } from 'lucide-react';
 import { SubjectCardStats } from './_components/subject-card-stats';
 import { SubjectSearch } from './_components/subject-search';
 import { SubjectTable } from './_components/subject-table';
@@ -20,10 +20,7 @@ import { emptySubjectForm } from './subject-types';
 type TeacherApiItem = {
   id: string;
   nip: string | null;
-  user?: {
-    fullName?: string;
-    username?: string;
-  } | null;
+  user?: { fullName?: string; username?: string } | null;
 };
 
 export function SubjectContainer() {
@@ -41,24 +38,12 @@ export function SubjectContainer() {
   const [formData, setFormData] = useState(emptySubjectForm);
   const [importFile, setImportFile] = useState<File | null>(null);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm]);
+  useEffect(() => { setCurrentPage(1); }, [searchTerm]);
+  useEffect(() => { if (user && user.role !== 'SUPER_ADMIN') router.push('/admin'); }, [user, router]);
 
-  useEffect(() => {
-    if (user && user.role !== 'SUPER_ADMIN') router.push('/admin');
-  }, [user, router]);
+  const resetForm = () => { setFormData(emptySubjectForm); setEditingSubject(null); setTeacherSearch(''); };
 
-  const resetForm = () => {
-    setFormData(emptySubjectForm);
-    setEditingSubject(null);
-    setTeacherSearch('');
-  };
-
-  const { subjects, isLoading, createMutation, updateMutation, deleteMutation, importMutation } = useSubjects(() => {
-    setIsModalOpen(false);
-    resetForm();
-  });
+  const { subjects, isLoading, createMutation, updateMutation, deleteMutation, importMutation } = useSubjects(() => { setIsModalOpen(false); resetForm(); });
 
   const teacherSearchEnabled = teacherSearch.trim().length >= 3;
   const { data: teacherResults = [], isFetching: isSearchingTeachers } = useQuery<TeacherSummary[]>({
@@ -80,97 +65,52 @@ export function SubjectContainer() {
 
   const handleEdit = (subject: Subject) => {
     setEditingSubject(subject);
-    setFormData({
-      name: subject.name,
-      code: subject.code,
-      description: subject.description || '',
-      teacherIds: subject.teachers?.map((teacher) => teacher.id) || [],
-    });
+    setFormData({ name: subject.name, code: subject.code, description: subject.description || '', teacherIds: subject.teachers?.map((teacher) => teacher.id) || [] });
     setTeacherSearch(subject.teachers?.[0]?.user?.fullName || subject.teachers?.[0]?.user?.username || '');
     setIsModalOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (editingSubject) {
-      updateMutation.mutate({ id: editingSubject.id, data: formData });
-      return;
-    }
-    createMutation.mutate(formData);
-  };
+  const handleSubmit = (e: React.FormEvent) => { e.preventDefault(); if (editingSubject) { updateMutation.mutate({ id: editingSubject.id, data: formData }); return; } createMutation.mutate(formData); };
 
   const filteredSubjects = useMemo(() => {
     const query = searchTerm.toLowerCase();
-    return subjects.filter((subject) =>
-      subject.name.toLowerCase().includes(query) ||
-      subject.code.toLowerCase().includes(query) ||
-      (subject.description || '').toLowerCase().includes(query),
-    );
+    return subjects.filter((subject) => subject.name.toLowerCase().includes(query) || subject.code.toLowerCase().includes(query) || (subject.description || '').toLowerCase().includes(query));
   }, [subjects, searchTerm]);
 
-  const paginatedSubjects = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return filteredSubjects.slice(start, start + pageSize);
-  }, [filteredSubjects, currentPage, pageSize]);
-
+  const paginatedSubjects = useMemo(() => filteredSubjects.slice((currentPage - 1) * pageSize, (currentPage - 1) * pageSize + pageSize), [filteredSubjects, currentPage, pageSize]);
   const totalSubjects = subjects.length;
   const totalRelations = subjects.reduce((acc, subject) => acc + (subject._count?.teachers || 0), 0);
   const subjectsWithTeachers = subjects.filter((subject) => (subject._count?.teachers || 0) > 0).length;
 
-  if (isLoading) {
-    return <Flex justify="center" align="center" py={16}><Spinner size="lg" color="indigo.600" /><Text ml={3} color="gray.500">{t('loadingSubjects')}</Text></Flex>;
-  }
+  if (isLoading) return <Flex minH="60vh" justify="center" align="center" bg="bg.canvas"><Spinner size="lg" color="brand.solid" /><Text ml={3} color="text.secondary">{t('loadingSubjects')}</Text></Flex>;
 
   return (
-    <Stack gap={6}>
-      <Flex justify="space-between" align="center" gap={4} wrap="wrap">
-        <Box>
-          <Heading size="xl" fontWeight="bold" color="gray.900">{t('subjectsTitle')}</Heading>
-          <Text color="gray.500" mt={1}>{t('subjectsDesc')}</Text>
-        </Box>
-        <HStack gap={3} wrap="wrap">
-          <Button as="a" {...({ href: '/templates/subjects-template.csv', download: true } as any)} bg="white" borderWidth="1px" borderColor="gray.200" color="gray.700" _hover={{ bg: 'gray.50' }} borderRadius="lg" cursor="pointer"><Download size={18} style={{ marginRight: '6px' }} />{t('downloadTemplate')}</Button>
-          <Button as="label" bg="white" borderWidth="1px" borderColor="gray.200" color="gray.700" _hover={{ bg: 'gray.50' }} borderRadius="lg" cursor="pointer"><Upload size={18} style={{ marginRight: '6px' }} />{t('importCsv')}<Input hidden type="file" accept=".csv,text/csv" onChange={(e) => setImportFile(e.target.files?.[0] || null)} /></Button>
-          <Button disabled={!importFile || importMutation.isPending} onClick={() => importFile && importMutation.mutate(importFile)} bg="indigo.600" color="white" _hover={{ bg: 'indigo.700' }} borderRadius="lg" cursor="pointer">{t('uploadBtn')}</Button>
-          <Button bg="indigo.600" color="white" _hover={{ bg: 'indigo.700' }} borderRadius="lg" onClick={() => { resetForm(); setIsModalOpen(true); }} cursor="pointer"><Plus size={20} style={{ marginRight: '6px' }} />{t('addSubject')}</Button>
-        </HStack>
-      </Flex>
+    <Stack gap={6} bg="bg.canvas" color="text.primary" px={{ base: 4, md: 6, xl: 8 }} py={{ base: 4, md: 6 }}>
+      <Box position="relative" overflow="hidden" bg="bg.surface" borderWidth="1px" borderColor="border.default" borderRadius="card" p={{ base: 5, md: 6 }} shadow="card-dark">
+        <Box position="absolute" inset="auto -40px -40px auto" boxSize="160px" borderRadius="full" bg="brand.subtle" />
+        <Flex position="relative" justify="space-between" align="flex-start" gap={4} wrap="wrap">
+          <Box maxW="3xl">
+            <Badge colorPalette="purple" variant="subtle" borderRadius="full" px={3} py={1}>Master Data</Badge>
+            <Heading size="xl" fontWeight="black" letterSpacing="tight" mt={3}>{t('subjectsTitle')}</Heading>
+            <Text color="text.secondary" mt={2}>{t('subjectsDesc')}</Text>
+          </Box>
+          <HStack gap={3} wrap="wrap">
+            <Button as="a" {...({ href: '/templates/subjects-template.csv', download: true } as any)} variant="outline" borderColor="border.default" color="text.primary" bg="bg.elevated" _hover={{ borderColor: 'border.brand' }} borderRadius="full"><Download size={18} style={{ marginRight: '6px' }} />{t('downloadTemplate')}</Button>
+            <Button as="label" variant="outline" borderColor="border.default" color="text.primary" bg="bg.elevated" _hover={{ borderColor: 'border.brand' }} borderRadius="full" cursor="pointer"><Upload size={18} style={{ marginRight: '6px' }} />{t('importCsv')}<Input hidden type="file" accept=".csv,text/csv" onChange={(e) => setImportFile(e.target.files?.[0] || null)} /></Button>
+            <Button disabled={!importFile || importMutation.isPending} onClick={() => importFile && importMutation.mutate(importFile)} bg="primary" color="on-primary" _hover={{ bg: 'primary-hover' }} borderRadius="full" cursor="pointer">{t('uploadBtn')}</Button>
+            <Button bg="primary" color="on-primary" _hover={{ bg: 'primary-hover' }} borderRadius="full" onClick={() => { resetForm(); setIsModalOpen(true); }} cursor="pointer"><Plus size={20} style={{ marginRight: '6px' }} />{t('addSubject')}</Button>
+          </HStack>
+        </Flex>
+      </Box>
 
       <SubjectCardStats totalSubjects={totalSubjects} totalRelations={totalRelations} subjectsWithTeachers={subjectsWithTeachers} />
       <SubjectSearch value={searchTerm} onChange={setSearchTerm} />
-      <SubjectTable
-        subjects={paginatedSubjects}
-        filteredCount={filteredSubjects.length}
-        currentPage={currentPage}
-        pageSize={pageSize}
-        onPageChange={setCurrentPage}
-        onPageSizeChange={setPageSize}
-        onEdit={handleEdit}
-        onDelete={async (subject) => {
-          const confirmed = await confirmDialog({
-            title: 'Hapus Mata Pelajaran',
-            description: `Apakah Anda yakin ingin menghapus mata pelajaran "${subject.name}"? Relasi guru dan data turunannya akan ikut terpengaruh.`,
-            confirmText: 'Hapus',
-          });
-          if (confirmed) deleteMutation.mutate(subject.id);
-        }}
-      />
-      <SubjectFormModal
-        isOpen={isModalOpen}
-        editingSubject={editingSubject}
-        formData={formData}
-        teacherSearch={teacherSearch}
-        selectedTeachers={selectedTeachers}
-        isSearchingTeachers={isSearchingTeachers}
-        isSubmitting={createMutation.isPending || updateMutation.isPending}
-        onClose={() => {
-          setIsModalOpen(false);
-          resetForm();
-        }}
-        onSubmit={handleSubmit}
-        onFormChange={setFormData}
-        onTeacherSearchChange={setTeacherSearch}
-      />
+      <Box bg="bg.surface" borderRadius="card" borderWidth="1px" borderColor="border.default" shadow="card-dark" p={4}>
+        <Flex align="center" gap={2} mb={4}><AlertTriangle size={16} color="var(--chakra-colors-warning-500)" /><Text fontSize="sm" color="text.secondary">Gunakan pencarian untuk menemukan mapel, kode, atau deskripsi lebih cepat.</Text></Flex>
+        <SubjectTable subjects={paginatedSubjects} filteredCount={filteredSubjects.length} currentPage={currentPage} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} onEdit={handleEdit} onDelete={async (subject) => { const confirmed = await confirmDialog({ title: 'Hapus Mata Pelajaran', description: `Apakah Anda yakin ingin menghapus mata pelajaran "${subject.name}"? Relasi guru dan data turunannya akan ikut terpengaruh.`, confirmText: 'Hapus' }); if (confirmed) deleteMutation.mutate(subject.id); }} />
+      </Box>
+
+      <SubjectFormModal isOpen={isModalOpen} editingSubject={editingSubject} formData={formData} teacherSearch={teacherSearch} selectedTeachers={selectedTeachers} isSearchingTeachers={isSearchingTeachers} isSubmitting={createMutation.isPending || updateMutation.isPending} onClose={() => { setIsModalOpen(false); resetForm(); }} onSubmit={handleSubmit} onFormChange={setFormData} onTeacherSearchChange={setTeacherSearch} />
     </Stack>
   );
 }
