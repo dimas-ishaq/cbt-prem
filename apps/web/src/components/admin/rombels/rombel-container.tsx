@@ -429,8 +429,7 @@ export function RombelContainer() {
                 </Flex>
               ) : (
                 <>
-                  {/* Filters block */}
-                   <Stack gap={3} mb={4}>
+                  <Stack gap={3} mb={4}>
                     <SimpleGrid columns={{ base: 1, md: 3 }} gap={3}>
                       {/* Filter by Major */}
                       <Box>
@@ -506,12 +505,12 @@ export function RombelContainer() {
                       </Box>
                     </SimpleGrid>
 
-                    {/* Text Search */}
                     <Box position="relative" w="full">
-                      <Box position="absolute" left={3} top="50%" transform="translateY(-50%)" color="gray.400">
+                      <Box position="absolute" left={3} top="50%" transform="translateY(-50%)" color="gray.400" pointerEvents="none">
                         <Search size={15} />
                       </Box>
                       <Input
+                        id="rombel-members-search-input"
                         pl={9}
                         size="sm"
                         placeholder="Cari nama atau NIS siswa..."
@@ -519,6 +518,8 @@ export function RombelContainer() {
                         onChange={(e) => setAllStudentsSearchTerm(e.target.value)}
                         borderRadius="md"
                         borderColor="gray.200"
+                        bg="white"
+                        _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px var(--chakra-colors-indigo-500)' }}
                       />
                     </Box>
                   </Stack>
@@ -604,13 +605,15 @@ export function RombelContainer() {
                     })()}
                   </Box>
 
-                  {/* Footer */}
                   <Flex justify="flex-end" gap={3} pt={4} borderTop="1px solid" borderColor="gray.100">
                     <Button
                       variant="outline"
                       onClick={() => setIsManageOpen(false)}
                       borderRadius="lg"
                       cursor="pointer"
+                      borderColor="gray.200"
+                      color="gray.700"
+                      _hover={{ bg: 'gray.50' }}
                     >
                       Batal
                     </Button>
@@ -631,6 +634,7 @@ export function RombelContainer() {
             </Box>
           </Box>
         )}
+
       </Stack>
     );
   }

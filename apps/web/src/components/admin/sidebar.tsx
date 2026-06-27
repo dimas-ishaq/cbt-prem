@@ -133,7 +133,7 @@ export function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onMobile
   return (
     <>
       {!isDesktop && mobileOpen && (
-        <Box position="fixed" inset={0} bg="blackAlpha.600" zIndex={1400} onClick={onMobileClose} />
+        <Box position="fixed" inset={0} bg="blackAlpha.700" backdropFilter="blur(2px)" zIndex={1400} onClick={onMobileClose} />
       )}
 
       <Box
@@ -150,8 +150,13 @@ export function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onMobile
         flexShrink={0}
         transition="left 0.25s ease, width 0.25s ease"
         overflow="hidden"
-        style={{
-          background: 'linear-gradient(180deg, var(--chakra-colors-sidebar-bg) 0%, color-mix(in srgb, var(--chakra-colors-sidebar-bg) 94%, black) 100%)',
+        bg={{ base: 'sidebar.bg', lg: 'sidebar.bg' }}
+        boxShadow={{ base: '2xl', lg: 'none' }}
+        sx={{
+          backgroundImage: {
+            base: 'none',
+            lg: 'linear-gradient(180deg, var(--chakra-colors-sidebar-bg) 0%, color-mix(in srgb, var(--chakra-colors-sidebar-bg) 94%, black) 100%)',
+          },
           borderRight: '1px solid var(--chakra-colors-sidebar-border)',
         }}
       >
