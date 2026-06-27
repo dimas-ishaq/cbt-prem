@@ -1,7 +1,17 @@
-﻿import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { toast } from '@/lib/toaster';
 import type { AuditLog, Menu, RoleDetail } from '../role-types';
+
+type ApiError = {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+};
+
+type RolePayload = Record<string, unknown>;
 
 export function useRoles(auditRoleId: string | null, onSaved: () => void) {
   const queryClient = useQueryClient();
@@ -33,23 +43,23 @@ export function useRoles(auditRoleId: string | null, onSaved: () => void) {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: any) => api.post('/roles', data),
+    mutationFn: (data: RolePayload) => api.post('/roles', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['roles'] });
       onSaved();
       toast.success('Role berhasil dibuat!');
     },
-    onError: (err: any) => toast.error(err.response?.data?.message || 'Gagal membuat role'),
+    onError: (err: ApiError) => toast.error(err.response?.data?.message || 'Gagal membuat role'),
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => api.put(`/roles/${id}`, data),
+    mutationFn: ({ id, data }: { id: string; data: RolePayload }) => api.put(`/roles/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['roles'] });
       onSaved();
       toast.success('Role berhasil diperbarui!');
     },
-    onError: (err: any) => toast.error(err.response?.data?.message || 'Gagal memperbarui role'),
+    onError: (err: ApiError) => toast.error(err.response?.data?.message || 'Gagal memperbarui role'),
   });
 
   const cloneMutation = useMutation({
@@ -59,7 +69,7 @@ export function useRoles(auditRoleId: string | null, onSaved: () => void) {
       onSaved();
       toast.success('Role berhasil diduplikasi!');
     },
-    onError: (err: any) => toast.error(err.response?.data?.message || 'Gagal menduplikasi role'),
+    onError: (err: ApiError) => toast.error(err.response?.data?.message || 'Gagal menduplikasi role'),
   });
 
   const deleteMutation = useMutation({
@@ -68,7 +78,7 @@ export function useRoles(auditRoleId: string | null, onSaved: () => void) {
       queryClient.invalidateQueries({ queryKey: ['roles'] });
       toast.success('Role berhasil dihapus!');
     },
-    onError: (err: any) => toast.error(err.response?.data?.message || 'Gagal menghapus role'),
+    onError: (err: ApiError) => toast.error(err.response?.data?.message || 'Gagal menghapus role'),
   });
 
   return {
@@ -84,3 +94,4 @@ export function useRoles(auditRoleId: string | null, onSaved: () => void) {
     deleteMutation,
   };
 }
+

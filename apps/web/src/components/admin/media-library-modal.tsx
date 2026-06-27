@@ -5,6 +5,8 @@ import { X } from 'lucide-react';
 import api from '@/lib/api';
 import { toast } from '@/lib/toaster';
 
+type ApiError = { response?: { data?: { message?: string } } };
+
 interface MediaLibraryModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -28,7 +30,7 @@ export function MediaLibraryModal({ isOpen, onClose, onImageSelect }: MediaLibra
     try {
       const response = await api.get('/questions/media');
       setMedia(response.data);
-    } catch (err: any) {
+    } catch (err: ApiError) {
       console.error(err);
       setError('Gagal memuat perpustakaan media');
       toast.error('Gagal memuat perpustakaan media');
@@ -67,24 +69,9 @@ export function MediaLibraryModal({ isOpen, onClose, onImageSelect }: MediaLibra
           ) : (
             <SimpleGrid columns={{ base: 3, sm: 4, md: 5 }} gap={3}>
               {media.map((item, index) => (
-                <Box
-                  key={index}
-                  position="relative"
-                  borderWidth="1px"
-                  borderRadius="md"
-                  overflow="hidden"
-                  borderColor="gray.200"
-                  _hover={{ borderColor: 'teal.500', transform: 'scale(1.02)', transition: 'transform 0.2s' }}
-                  cursor="pointer"
-                  onClick={() => {
-                    onImageSelect(item.url);
-                    onClose();
-                  }}
-                >
+                <Box key={index} position="relative" borderWidth="1px" borderRadius="md" overflow="hidden" borderColor="gray.200" _hover={{ borderColor: 'teal.500', transform: 'scale(1.02)', transition: 'transform 0.2s' }} cursor="pointer" onClick={() => { onImageSelect(item.url); onClose(); }}>
                   <Image src={item.url} alt={item.name} objectFit="cover" width="100%" height={100} />
-                  <Box position="absolute" bottom={0} left={0} right={0} p={1} bg="rgba(0,0,0,0.6)" textAlign="center" color="white" fontSize="xs">
-                    {item.name.length > 14 ? item.name.slice(0, 14) + '...' : item.name}
-                  </Box>
+                  <Box position="absolute" bottom={0} left={0} right={0} p={1} bg="rgba(0,0,0,0.6)" textAlign="center" color="white" fontSize="xs">{item.name.length > 14 ? item.name.slice(0, 14) + '...' : item.name}</Box>
                 </Box>
               ))}
             </SimpleGrid>

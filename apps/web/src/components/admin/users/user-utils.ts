@@ -1,4 +1,5 @@
-﻿import { BookOpen, GraduationCap, ShieldCheck, Users } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { BookOpen, GraduationCap, ShieldCheck, Users } from 'lucide-react';
 import type { ActiveTab, UserData, UserRole } from './user-types';
 
 export const ROLE_OPTIONS: { label: string; value: UserRole }[] = [
@@ -23,7 +24,7 @@ export const AVATAR_COLORS: Record<UserRole, string> = {
   PENGAWAS: '#0d9488',
 };
 
-export const TABS: { key: ActiveTab; label: string; icon: any }[] = [
+export const TABS: { key: ActiveTab; label: string; icon: LucideIcon }[] = [
   { key: 'ALL', label: 'Semua Pengguna', icon: Users },
   { key: 'SUPER_ADMIN', label: 'Super Admin', icon: ShieldCheck },
   { key: 'GURU', label: 'Guru', icon: BookOpen },
@@ -52,3 +53,4 @@ export function countUsersByTab(users: UserData[]): Record<ActiveTab, number> {
     SISWA: users.filter((u) => u.role === 'SISWA').length,
   };
 }
+
