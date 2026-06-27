@@ -297,7 +297,7 @@ export function UserContainer() {
             style={{ display: 'none' }}
             onChange={(e) => {
               const file = e.target.files?.[0] || null;
-              setImportFileName(file?.name || '');
+              setImportFile(file);
               void handleImportFile(file);
               e.currentTarget.value = '';
             }}

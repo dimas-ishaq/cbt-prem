@@ -1,7 +1,7 @@
-﻿export interface TeacherSummary {
+export interface TeacherSummary {
   id: string;
   nip?: string | null;
-  user?: { fullName: string; username?: string };
+  user?: { fullName?: string; username?: string } | null;
 }
 
 export interface Subject {
@@ -26,3 +26,4 @@ export const emptySubjectForm: SubjectFormData = {
   description: '',
   teacherIds: [],
 };
+

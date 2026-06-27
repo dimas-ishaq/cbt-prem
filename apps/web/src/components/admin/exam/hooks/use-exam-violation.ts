@@ -36,7 +36,8 @@ export function useExamViolation({ enabled, exam, examId, socket, sessionId, pla
       playViolation();
       setViolationCount(prev => {
         const nextCount = prev + 1;
-        if (exam?.maxViolations > 0 && nextCount >= exam.maxViolations) {
+        const maxViolations = exam?.maxViolations ?? 0;
+        if (maxViolations > 0 && nextCount >= maxViolations) {
           setViolationMessage(description + ' Anda telah melebihi batas maksimum pelanggaran. Ujian Anda dikumpulkan otomatis.');
           setShowViolationModal(true);
           setTimeout(() => finishExam(), 3000);
@@ -77,4 +78,5 @@ export function useExamViolation({ enabled, exam, examId, socket, sessionId, pla
     };
   }, [enabled, exam, examId, finishExam, playViolation, sessionId, setShowViolationModal, setViolationCount, setViolationMessage, socket]);
 }
+
 
