@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { use, useMemo, useState, useEffect } from 'react';
-import { ChevronLeft, User, Award, Clock, FileText, FileDown, BarChart3, RotateCcw, RefreshCw } from 'lucide-react';
+import { ChevronLeft, User, Award, Clock, FileText, FileDown, BarChart3, RotateCcw, RefreshCw, Search, Filter, Users, ShieldAlert, CheckCircle2, Download } from 'lucide-react';
 import Link from 'next/link';
 import { Badge, Box, Flex, Heading, Text, Button, Stack, Table, HStack, Spinner, Checkbox, Dialog, Portal, Input, createListCollection, Select } from '@chakra-ui/react';
 import { toast } from '@/lib/toaster';
@@ -55,35 +55,35 @@ export default function ExamResultsPage({ params }: { params: Promise<{ id: stri
       <Flex justify="space-between" align="center" direction={{ base: 'column', md: 'row' }} gap={4} bg="bg.surface" borderWidth="1px" borderColor="border.default" borderRadius="card" p={4} shadow="card-dark">
         <Flex align="center" gap={4}>
           <Link href="/admin/exams"><Button variant="ghost" p={2} borderRadius="full" cursor="pointer"><ChevronLeft size={24} /></Button></Link>
-          <Box><Heading size="lg" fontWeight="bold" color="text.primary">Hasil Ujian: {exam?.title}</Heading><Text fontSize="sm" color="text.secondary">{exam?.subject?.name} • {filteredSessions.length} Lembar Jawaban</Text></Box>
+          <Box><HStack gap={2} mb={1}><CheckCircle2 size={16} color="var(--chakra-colors-brand-text)" /><Heading size="lg" fontWeight="bold" color="text.primary">Hasil Ujian: {exam?.title}</Heading></HStack><Text fontSize="sm" color="text.secondary">{exam?.subject?.name} • {filteredSessions.length} Lembar Jawaban</Text></Box>
         </Flex>
         <HStack gap={3}>
-          <Link href={`/admin/results/${id}/essay-grading`}><Button variant="outline" borderRadius="xl"><FileText size={20} /><Text>Koreksi Essay</Text></Button></Link>
-          <Link href={`/admin/results/${id}/analytics`}><Button variant="outline" borderRadius="xl"><BarChart3 size={20} /><Text>Analisis Grafik</Text></Button></Link>
-          <Button onClick={() => exportMutation.mutate()} disabled={exportMutation.isPending} bg="brand.solid" color="text.inverted" borderRadius="xl"><FileDown size={20} /><Text>{exportMutation.isPending ? 'Mengekspor...' : 'Ekspor Excel'}</Text></Button>
+          <Link href={`/admin/results/${id}/essay-grading`}><Button variant="outline" borderRadius="xl"><FileText size={18} /><Text>Koreksi Essay</Text></Button></Link>
+          <Link href={`/admin/results/${id}/analytics`}><Button variant="outline" borderRadius="xl"><BarChart3 size={18} /><Text>Analisis Grafik</Text></Button></Link>
+          <Button onClick={() => exportMutation.mutate()} disabled={exportMutation.isPending} bg="brand.solid" color="text.inverted" borderRadius="xl"><Download size={18} /><Text>{exportMutation.isPending ? 'Mengekspor...' : 'Ekspor Excel'}</Text></Button>
         </HStack>
       </Flex>
 
       <Box bg="bg.surface" p={5} borderRadius="card" shadow="card-dark" borderWidth="1px" borderColor="border.default">
         <Flex direction={{ base: 'column', md: 'row' }} gap={4} align={{ base: 'stretch', md: 'end' }}>
           <Stack gap={1.5} flex={2}>
-            <Text fontSize="xs" fontWeight="bold" color="text.secondary">Cari Siswa</Text>
+            <Text fontSize="xs" fontWeight="bold" color="text.secondary"><Search size={12} style={{display:'inline',marginRight:4}} />Cari Siswa</Text>
             <Input placeholder="Cari nama atau username..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} size="sm" borderRadius="lg" bg="input.bg" borderColor="input.border" color="text.primary" _placeholder={{ color: 'text.muted' }} />
             {searchQuery.trim().length > 0 && searchQuery.trim().length < 3 && <Text fontSize="10px" color="status.warning.text" fontWeight="bold">Ketik minimal 3 karakter untuk memfilter</Text>}
           </Stack>
           <Stack gap={1.5} flex={1.5}>
-            <Text fontSize="xs" fontWeight="bold" color="text.secondary">Rombel</Text>
+            <Text fontSize="xs" fontWeight="bold" color="text.secondary"><Users size={12} style={{display:'inline',marginRight:4}} />Rombel</Text>
             <Select.Root collection={rombelCollection} value={filterRombelId ? [filterRombelId] : ['ALL']} onValueChange={(d) => setFilterRombelId((d.value[0] ?? '') === 'ALL' ? '' : (d.value[0] ?? ''))} size="sm"><Select.HiddenSelect /><Select.Control><Select.Trigger><Select.ValueText placeholder="Semua Rombel" /></Select.Trigger><Select.IndicatorGroup><Select.Indicator /></Select.IndicatorGroup></Select.Control><Select.Positioner><Select.Content>{rombelCollection.items.map((item) => <Select.Item key={item.value} item={item}>{item.label}</Select.Item>)}</Select.Content></Select.Positioner></Select.Root>
           </Stack>
           <Stack gap={1.5} flex={1.5}>
-            <Text fontSize="xs" fontWeight="bold" color="text.secondary">Status Pengerjaan</Text>
+            <Text fontSize="xs" fontWeight="bold" color="text.secondary"><Filter size={12} style={{display:'inline',marginRight:4}} />Status Pengerjaan</Text>
             <Select.Root collection={statusCollection} value={[filterStatus]} onValueChange={(d) => setFilterStatus(d.value[0] ?? 'ALL')} size="sm"><Select.HiddenSelect /><Select.Control><Select.Trigger><Select.ValueText placeholder="Semua Status" /></Select.Trigger><Select.IndicatorGroup><Select.Indicator /></Select.IndicatorGroup></Select.Control><Select.Positioner><Select.Content>{statusCollection.items.map((item) => <Select.Item key={item.value} item={item}>{item.label}</Select.Item>)}</Select.Content></Select.Positioner></Select.Root>
           </Stack>
           <Flex gap={2} justify="end" align="center"><Button onClick={() => refetch()} disabled={isRefetching} size="sm" variant="outline" borderRadius="lg" cursor="pointer"><RefreshCw size={14} className={isRefetching ? 'animate-spin' : ''} /> Sinkronkan</Button></Flex>
         </Flex>
       </Box>
 
-      {selectedSessionIds.length > 0 && <Flex bg="status.danger.bg" border="1px solid" borderColor="status.danger.text" p={4} borderRadius="card" align="center" justify="space-between"><Text fontSize="sm" fontWeight="bold" color="status.danger.text">{selectedSessionIds.length} siswa terpilih</Text><Button size="sm" bg="status.danger.text" color="text.inverted" onClick={() => { setResetConfirmationInput(''); setIsBulkResetModalOpen(true); }} borderRadius="xl"><RotateCcw size={16} /> Reset Pengerjaan Ujian</Button></Flex>}
+      {selectedSessionIds.length > 0 && <Flex bg="status.danger.bg" border="1px solid" borderColor="status.danger.text" p={4} borderRadius="card" align="center" justify="space-between"><HStack gap={2}><ShieldAlert size={16} /><Text fontSize="sm" fontWeight="bold" color="status.danger.text">{selectedSessionIds.length} siswa terpilih</Text></HStack><Button size="sm" bg="status.danger.text" color="text.inverted" onClick={() => { setResetConfirmationInput(''); setIsBulkResetModalOpen(true); }} borderRadius="xl"><RotateCcw size={16} /> Reset Pengerjaan Ujian</Button></Flex>}
 
       <Box bg="bg.surface" borderRadius="card" shadow="card-dark" border="1px solid" borderColor="border.default" overflow="hidden">
         <Table.Root interactive>

@@ -29,6 +29,10 @@ import {
   FileText,
   UserCheck,
   LayoutGrid,
+  GraduationCap,
+  BadgeCheck,
+  MapPin,
+  Bookmark,
 } from 'lucide-react';
 import { ExamCardTemplate, StudentCardData } from './exam-card-template';
 import { CARD_LAYOUTS, ExamCardLayout } from './exam-card.constants';
@@ -167,12 +171,8 @@ export default function ExamCardsPage() {
     <Stack gap={6} h="100%">
       {/* Page Title */}
       <Box>
-        <Heading size="xl" fontWeight="extrabold" color="text.primary" letterSpacing="tight">
-          Cetak Kartu Peserta Ujian
-        </Heading>
-        <Text color="text.secondary" mt={1} fontSize="sm">
-          Cetak kartu ujian satu rombel sekaligus dengan layout prersisi, tanda tangan kepala sekolah, dan barcode/QR Code.
-        </Text>
+        <HStack gap={2} mb={1}><FileText size={18} color="var(--chakra-colors-brand-text)" /><Heading size="xl" fontWeight="extrabold" color="text.primary" letterSpacing="tight">Cetak Kartu Peserta Ujian</Heading></HStack>
+        <Text color="text.secondary" mt={1} fontSize="sm">Cetak kartu ujian satu rombel sekaligus dengan layout presisi, tanda tangan kepala sekolah, dan barcode/QR Code.</Text>
       </Box>
 
       {/* Main Content Split Layout */}
@@ -190,7 +190,7 @@ export default function ExamCardsPage() {
             <Stack gap={4}>
               {/* Select Kegiatan Ujian */}
               <Stack gap={1.5}>
-                <Text fontSize="xs" fontWeight="bold" color="text.secondary">Kegiatan Ujian (Exam Group)</Text>
+                <Text fontSize="xs" fontWeight="bold" color="text.secondary"><Calendar size={12} style={{display:'inline',marginRight:4}} />Kegiatan Ujian (Exam Group)</Text>
                 {isLoadingExamGroups ? <Spinner size="xs" /> : (
                   <Select.Root
                     collection={examGroupCollection}
@@ -222,7 +222,7 @@ export default function ExamCardsPage() {
 
               {/* Select Tingkatan Kelas */}
               <Stack gap={1.5}>
-                <Text fontSize="xs" fontWeight="bold" color="text.secondary">Tingkatan Kelas</Text>
+                <Text fontSize="xs" fontWeight="bold" color="text.secondary"><Bookmark size={12} style={{display:'inline',marginRight:4}} />Tingkatan Kelas</Text>
                 <Select.Root
                   collection={gradeCollection}
                   value={selectedGrade ? [selectedGrade] : []}
@@ -255,7 +255,7 @@ export default function ExamCardsPage() {
 
               {/* Select Rombongan Belajar */}
               <Stack gap={1.5}>
-                <Text fontSize="xs" fontWeight="bold" color="text.secondary">Rombongan Belajar (Kelas)</Text>
+                <Text fontSize="xs" fontWeight="bold" color="text.secondary"><Users size={12} style={{display:'inline',marginRight:4}} />Rombongan Belajar (Kelas)</Text>
                 {isLoadingRombels ? <Spinner size="xs" /> : (
                   <Select.Root
                     collection={rombelCollection}
@@ -287,7 +287,7 @@ export default function ExamCardsPage() {
 
               {/* Layout Cards */}
               <Stack gap={1.5}>
-                <Text fontSize="xs" fontWeight="bold" color="text.secondary">Tata Letak (Layout)</Text>
+                <Text fontSize="xs" fontWeight="bold" color="text.secondary"><LayoutGrid size={12} style={{display:'inline',marginRight:4}} />Tata Letak (Layout)</Text>
                 <Select.Root
                   collection={layoutCollection}
                   value={[cardLayout]}
@@ -326,7 +326,7 @@ export default function ExamCardsPage() {
 
             <Stack gap={4}>
               <Stack gap={1}>
-                <Text fontSize="xs" fontWeight="bold" color="text.secondary">Nama Kepala Sekolah</Text>
+                <Text fontSize="xs" fontWeight="bold" color="text.secondary"><UserCheck size={12} style={{display:'inline',marginRight:4}} />Nama Kepala Sekolah</Text>
                 <Input
                   size="sm"
                   value={headmasterName}
@@ -337,7 +337,7 @@ export default function ExamCardsPage() {
               </Stack>
 
               <Stack gap={1}>
-                <Text fontSize="xs" fontWeight="bold" color="text.secondary">NIP Kepala Sekolah</Text>
+                <Text fontSize="xs" fontWeight="bold" color="text.secondary"><BadgeCheck size={12} style={{display:'inline',marginRight:4}} />NIP Kepala Sekolah</Text>
                 <Input
                   size="sm"
                   value={headmasterNip}
@@ -348,7 +348,7 @@ export default function ExamCardsPage() {
               </Stack>
 
               <Stack gap={1}>
-                <Text fontSize="xs" fontWeight="bold" color="text.secondary">Kota & Tanggal Kartu</Text>
+                <Text fontSize="xs" fontWeight="bold" color="text.secondary"><MapPin size={12} style={{display:'inline',marginRight:4}} />Kota & Tanggal Kartu</Text>
                 <Input
                   size="sm"
                   value={cardDate}

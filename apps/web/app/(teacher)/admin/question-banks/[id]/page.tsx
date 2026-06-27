@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { Plus, Trash2, Edit2, ChevronLeft, HelpCircle, FileDown, Download, Eye, AlertTriangle, CheckCircle2, X, FileQuestion, BookOpen } from 'lucide-react';
+import { Plus, Trash2, Edit2, ChevronLeft, HelpCircle, FileDown, Download, Eye, AlertTriangle, CheckCircle2, X, FileQuestion, BookOpen, Image as ImageIcon } from 'lucide-react';
 import { useState, use, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';

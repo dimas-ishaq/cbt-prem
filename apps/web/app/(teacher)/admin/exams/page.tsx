@@ -143,9 +143,9 @@ export default function ExamsPage() {
                   <Table.Cell px={6} py={4}><Badge px={2} py={1} fontSize="xs" fontWeight="bold" borderRadius="badge" bg={sc.bg} color={sc.color}>{exam.status}</Badge></Table.Cell>
                   <Table.Cell px={6} py={4} textAlign="end">
                     <HStack gap={2} justify="flex-end">
-                      <IconButton asChild variant="ghost" color="brand.text" _hover={{ bg: 'brand.subtle' }} size="sm" borderRadius="lg" aria-label="Lihat Hasil"><Link href={`/admin/results/${exam.id}`}><FileText size={18} /></Link></IconButton>
-                      <IconButton asChild variant="ghost" color="status.warning.text" _hover={{ bg: 'status.warning.bg' }} size="sm" borderRadius="lg" aria-label="Edit Ujian"><Link href={`/admin/exams/edit/${exam.id}`}><Pencil size={18} /></Link></IconButton>
-                      <IconButton variant="ghost" color="status.danger.text" _hover={{ bg: 'status.danger.bg' }} size="sm" borderRadius="lg" aria-label="Delete Exam" onClick={async () => { const confirmed = await confirmDialog({ title: 'Hapus Ujian', description: 'Apakah Anda yakin ingin menghapus ujian ini?', confirmText: 'Hapus' }); if (confirmed) deleteMutation.mutate(exam.id); }}><Trash2 size={18} /></IconButton>
+                      <IconButton asChild variant="ghost" color="brand.text" _hover={{ bg: 'brand.subtle' }} size="sm" borderRadius="lg" aria-label="Lihat Hasil"><Link href={`/admin/results/${exam.id}`}><FileText size={16} /></Link></IconButton>
+                      <IconButton asChild variant="ghost" color="status.warning.text" _hover={{ bg: 'status.warning.bg' }} size="sm" borderRadius="lg" aria-label="Edit Ujian"><Link href={`/admin/exams/edit/${exam.id}`}><Pencil size={16} /></Link></IconButton>
+                      <IconButton variant="ghost" color="status.danger.text" _hover={{ bg: 'status.danger.bg' }} size="sm" borderRadius="lg" aria-label="Delete Exam" onClick={async () => { const confirmed = await confirmDialog({ title: 'Hapus Ujian', description: 'Apakah Anda yakin ingin menghapus ujian ini?', confirmText: 'Hapus' }); if (confirmed) deleteMutation.mutate(exam.id); }}><Trash2 size={16} /></IconButton>
                     </HStack>
                   </Table.Cell>
                 </Table.Row>
