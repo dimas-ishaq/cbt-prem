@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect, useMemo } from 'react';
 import api from '@/lib/api';
 import { TablePagination } from '@/components/ui/pagination';
-import { Plus, FileText, Trash2, Calendar, Clock, Lock, Pencil, Search, Filter } from 'lucide-react';
+import { Plus, FileText, Trash2, Calendar, Clock, Lock, Pencil, Search, Filter, ClipboardList, ChartColumn, BadgeCheck, BookOpen } from 'lucide-react';
 import Link from 'next/link';
 import { Badge, Box, Flex, Heading, Text, Button, Table, HStack, Stack, Spinner, IconButton, Input, Select, createListCollection } from '@chakra-ui/react';
 import { toast } from '@/lib/toaster';
@@ -70,7 +70,7 @@ export default function ExamsPage() {
       <Box bg="bg.surface" borderWidth="1px" borderColor="border.default" borderRadius="card" shadow="card-dark" p={{ base: 5, md: 6 }}>
         <Flex justify="space-between" align="center" gap={4} wrap="wrap">
           <Box>
-            <Heading size="xl" fontWeight="bold" color="text.primary">Ujian</Heading>
+            <HStack gap={2} mb={1}><ClipboardList size={18} color="var(--chakra-colors-brand-text)" /><Heading size="xl" fontWeight="bold" color="text.primary">Ujian</Heading></HStack>
             <Text color="text.secondary" mt={1}>Jadwalkan, publish, dan kelola ujian mata pelajaran.</Text>
           </Box>
           <Link href="/admin/exams/create">
@@ -88,7 +88,7 @@ export default function ExamsPage() {
             { label: 'Ongoing', value: counts.ongoing },
           ].map((item) => (
             <Box key={item.label} minW="140px" flex="1" bg="bg.subtle" borderWidth="1px" borderColor="border.default" borderRadius="lg" p={4}>
-              <Text fontSize="xs" color="text.secondary" textTransform="uppercase" letterSpacing="0.08em">{item.label}</Text>
+              <HStack gap={1.5} color="text.secondary" fontSize="xs" textTransform="uppercase" letterSpacing="0.08em"><ChartColumn size={12} /><Text>{item.label}</Text></HStack>
               <Text fontSize="2xl" fontWeight="bold" color="text.primary" mt={1}>{item.value}</Text>
             </Box>
           ))}
@@ -102,7 +102,7 @@ export default function ExamsPage() {
             <Input placeholder="Cari ujian..." value={searchText} onChange={(e) => setSearchText(e.target.value)} size="sm" variant="unstyled" flex={1} _placeholder={{ color: 'text.muted' }} />
           </Flex>
           <Flex align="center" gap={2} bg="input.bg" px={3} py={2} borderRadius="lg" borderWidth="1px" borderColor="input.border">
-            <Filter size={16} color="var(--chakra-colors-text-muted)" />
+            <BadgeCheck size={16} color="var(--chakra-colors-text-muted)" />
             <Select.Root collection={statusOptions} value={selectedStatus ? [selectedStatus] : []} onValueChange={(d) => setSelectedStatus(d.value[0] || '')} positioning={{ sameWidth: true }}>
               <Select.HiddenSelect />
               <Select.Control><Select.Trigger><Select.ValueText placeholder="Semua Status" /></Select.Trigger><Select.IndicatorGroup><Select.Indicator /><Select.ClearTrigger /></Select.IndicatorGroup></Select.Control>
@@ -129,9 +129,9 @@ export default function ExamsPage() {
               return (
                 <Table.Row key={exam.id} _hover={{ bg: 'bg.elevated' }} transition="background 0.15s">
                   <Table.Cell px={6} py={4}>
-                    <Text fontWeight="semibold" color="text.primary">{exam.title}</Text>
+                    <HStack gap={2}><Text fontWeight="semibold" color="text.primary">{exam.title}</Text></HStack>
                     <HStack gap={2} mt={1} wrap="wrap">
-                      {exam.examGroup && <Badge bg="brand.subtle" color="brand.text" fontSize="2xs" borderRadius="badge">{exam.examGroup.name}</Badge>}
+                      {exam.examGroup && <Badge bg="brand.subtle" color="brand.text" fontSize="2xs" borderRadius="badge"><BookOpen size={10} style={{ display: 'inline', marginRight: 4 }} />{exam.examGroup.name}</Badge>}
                       {exam.token && <HStack gap={1} color="text.muted" fontSize="xs"><Lock size={12} /><Text>Token: {exam.token}</Text></HStack>}
                     </HStack>
                   </Table.Cell>

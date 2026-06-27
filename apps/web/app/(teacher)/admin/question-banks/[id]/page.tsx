@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { Plus, Trash2, Edit2, ChevronLeft, HelpCircle, FileDown, Download, Eye, AlertTriangle, CheckCircle2, X } from 'lucide-react';
+import { Plus, Trash2, Edit2, ChevronLeft, HelpCircle, FileDown, Download, Eye, AlertTriangle, CheckCircle2, X, FileQuestion, BookOpen } from 'lucide-react';
 import { useState, use, useRef, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
@@ -288,117 +288,51 @@ export default function QuestionBankDetailPage({ params }: { params: Promise<{ i
     <Box maxW="5xl" mx="auto" py={8} px={6}>
       <Stack gap={6}>
         {/* ─── Header ───────────────────────────────────────────────────── */}
-        <Flex align="flex-start" justify="space-between" gap={4} wrap="wrap">
-          <HStack gap={3} align="center">
-            <IconButton
-              asChild
-              variant="ghost"
-              _hover={{ bg: 'bg.subtle' }}
-              borderRadius="full"
-              aria-label={t('backToQb')}
-              size="sm"
-            >
-              <Link href="/admin/question-banks">
-                <ChevronLeft size={24} />
-              </Link>
-            </IconButton>
-            <Box>
-              <Heading size="xl" fontWeight="bold" color="text.primary">{bank.name}</Heading>
-              <Text color="text.secondary" fontSize="sm" mt={1}>
-                {bank.subject.name} • {bank.category ? bank.category + ' • ' : ''}{t('questionsCountText', { count: bank.questions.length })}
-              </Text>
-            </Box>
-          </HStack>
-          <HStack gap={2}>
-            <IconButton
-              aria-label="Edit bank"
-              size="sm"
-              variant="ghost"
-              color="text.muted"
-              _hover={{ bg: 'bg.subtle' }}
-              onClick={() => {
-                setBankFormData({ name: bank.name, subjectId: bank.subjectId, category: bank.category || '' });
-                setIsEditingBank(true);
-              }}
-              cursor="pointer"
-            >
-              <Edit2 size={16} />
-            </IconButton>
-            <IconButton
-              aria-label="Delete bank"
-              size="sm"
-              variant="ghost"
-              color="status.danger.text"
-              _hover={{ bg: 'status.danger.bg' }}
-              onClick={async () => {
-                const confirmed = await confirmDialog({
-                  title: 'Hapus Bank Soal',
-                  description: t('deleteQbConfirm'),
-                  confirmText: t('deleteBtn'),
-                });
-                if (confirmed) deleteBankMutation.mutate();
-              }}
-              cursor="pointer"
-            >
-              <Trash2 size={16} />
-            </IconButton>
-          </HStack>
-        </Flex>
+        <Box bg="bg.surface" borderWidth="1px" borderColor="border.default" borderRadius="card" p={5} shadow="card-dark">
+          <Flex align="flex-start" justify="space-between" gap={4} wrap="wrap">
+            <HStack gap={3} align="center">
+              <IconButton asChild variant="ghost" _hover={{ bg: 'bg.subtle' }} borderRadius="full" aria-label={t('backToQb')} size="sm"><Link href="/admin/question-banks"><ChevronLeft size={24} /></Link></IconButton>
+              <Box>
+                <HStack gap={2} mb={0.5}><HelpCircle size={12} color="var(--chakra-colors-brand-text)" /><Text fontSize="xs" fontWeight="bold" letterSpacing="wider" textTransform="uppercase" color="brand.text">{t('qbTitle')} Detail</Text></HStack>
+                <Heading size="lg" fontWeight="bold" color="text.primary">{bank.name}</Heading>
+                <Text color="text.secondary" fontSize="sm" mt={1}>{bank.subject.name} • {bank.category ? bank.category + ' • ' : ''}{bank.questions.length} soal</Text>
+              </Box>
+            </HStack>
+            <HStack gap={2}>
+              <IconButton aria-label="Edit bank" size="sm" variant="ghost" color="text.muted" _hover={{ bg: 'bg.subtle' }} onClick={() => { setBankFormData({ name: bank.name, subjectId: bank.subjectId, category: bank.category || '' }); setIsEditingBank(true); }} cursor="pointer"><Edit2 size={16} /></IconButton>
+              <IconButton aria-label="Delete bank" size="sm" variant="ghost" color="status.danger.text" _hover={{ bg: 'status.danger.bg' }} onClick={async () => { const confirmed = await confirmDialog({ title: 'Hapus Bank Soal', description: t('deleteQbConfirm'), confirmText: t('deleteBtn') }); if (confirmed) deleteBankMutation.mutate(); }} cursor="pointer"><Trash2 size={16} /></IconButton>
+            </HStack>
+          </Flex>
+        </Box>
 
         {/* ─── Action Bar ─────────────────────────────────────────────── */}
         {!isAddingQuestion && !importPreview && (
-          <Flex gap={3} wrap="wrap">
+          <Flex gap={3} wrap="wrap" align="center">
             <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".docx" style={{ display: 'none' }} />
-            <Button
-              variant="outline"
-              borderColor="brand.subtle"
-              color="brand.text"
-              _hover={{ bg: 'brand.subtle' }}
-              borderRadius="lg"
-              onClick={handleDownloadTemplate}
-              cursor="pointer"
-            >
-              <Download size={18} />
-              {t('downloadTemplate')}
-            </Button>
-            <Button
-              variant="outline"
-              borderColor="border.default"
-              color="text.secondary"
-              _hover={{ bg: 'bg.subtle' }}
-              borderRadius="lg"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={previewMutation.isPending}
-              cursor="pointer"
-            >
-              <FileDown size={18} />
-              {previewMutation.isPending ? t('previewingBtn') : t('importWordBtn')}
-            </Button>
-            <Button
-              bg="brand.solid"
-              color="text.inverted"
-              _hover={{ bg: 'brand.text' }}
-              borderRadius="lg"
-              onClick={() => setIsAddingQuestion(true)}
-              cursor="pointer"
-            >
-              <Plus size={20} />
-              {t('addQuestionBtn')}
-            </Button>
+            <Button variant="outline" borderColor="brand.subtle" color="brand.text" _hover={{ bg: 'brand.subtle' }} borderRadius="md" size="sm" onClick={handleDownloadTemplate} cursor="pointer" gap={2}><Download size={16} />{t('downloadTemplate')}</Button>
+            <Button variant="outline" borderColor="border.default" color="text.secondary" _hover={{ bg: 'bg.subtle' }} borderRadius="md" size="sm" onClick={() => fileInputRef.current?.click()} disabled={previewMutation.isPending} cursor="pointer" gap={2}><FileDown size={16} />{previewMutation.isPending ? t('previewingBtn') : t('importWordBtn')}</Button>
+            <Button bg="brand.solid" color="text.inverted" _hover={{ bg: 'brand.text' }} borderRadius="md" size="sm" onClick={() => setIsAddingQuestion(true)} cursor="pointer" gap={2} shadow="btn-brand"><Plus size={16} />{t('addQuestionBtn')}</Button>
           </Flex>
         )}
 
         {/* ─── Info Panel ──────────────────────────────────────────────── */}
         {bank.questions.length > 0 && (
-          <Box bg="bg.subtle" border="1px solid" borderColor="border.default" borderRadius="card" p={4}>
-            <Flex align="center" gap={2} color="text.secondary" fontSize="sm">
-              <HelpCircle size={16} />
-              <Text>
-                {bank.questions.length} soal. Urut: sesuka hati — urutan soal diacak otomatis di ujian.
-                Klik nama bank buat edit metadata.
-              </Text>
+          <Flex gap={4} wrap="wrap">
+            <Flex align="center" gap={2.5} bg="bg.surface" borderWidth="1px" borderColor="border.default" borderRadius="md" px={4} py={2.5}>
+              <FileQuestion size={16} color="var(--chakra-colors-brand-text)" />
+              <Text fontSize="sm" fontWeight="medium" color="text.primary">{bank.questions.length} soal</Text>
             </Flex>
-          </Box>
+            <Flex align="center" gap={2.5} bg="bg.surface" borderWidth="1px" borderColor="border.default" borderRadius="md" px={4} py={2.5}>
+              <BookOpen size={16} color="var(--chakra-colors-text-muted)" />
+              <Text fontSize="sm" color="text.secondary">{bank.subject.name}</Text>
+            </Flex>
+            {bank.category && (
+              <Flex align="center" gap={2.5} bg="bg.surface" borderWidth="1px" borderColor="border.default" borderRadius="md" px={4} py={2.5}>
+                <Layers size={16} color="var(--chakra-colors-text-muted)" />
+                <Text fontSize="sm" color="text.secondary">{bank.category}</Text>
+              </Flex>
+            )}
+          </Flex>
         )}
 
         {/* ─── Import Preview ─────────────────────────────────────────── */}
@@ -534,63 +468,45 @@ export default function QuestionBankDetailPage({ params }: { params: Promise<{ i
               const dc = difficultyColor[question.difficulty] ?? { bg: 'status.warning.bg', color: 'status.warning.text' };
               if (editingQuestionId === question.id) {
                 return (
-                  <Box key={question.id} bg="bg.surface" borderRadius="card" shadow="sm" borderWidth="1px" borderColor="border.default" p={8}>
-                    <Heading size="lg" fontWeight="bold" mb={6} color="text.primary">{t('editQuestionTitle')}</Heading>
-                    <QuestionForm
-                      initialData={question}
-                      onSubmit={(data) => editQuestionMutation.mutate({ questionId: question.id, data })}
-                      onCancel={() => setEditingQuestionId(null)}
-                      isSubmitting={editQuestionMutation.isPending}
-                    />
+                  <Box key={question.id} bg="bg.surface" borderRadius="lg" borderWidth="1px" borderColor="border.default" p={6} shadow="card-dark">
+                    <Heading size="md" fontWeight="bold" mb={6} color="text.primary">{t('editQuestionTitle')}</Heading>
+                    <QuestionForm initialData={question} onSubmit={(data) => editQuestionMutation.mutate({ questionId: question.id, data })} onCancel={() => setEditingQuestionId(null)} isSubmitting={editQuestionMutation.isPending} />
                   </Box>
                 );
               }
               return (
-                <Box key={question.id} bg="bg.surface" borderRadius="card" shadow="sm" borderWidth="1px" borderColor="border.default" overflow="hidden">
-                  <Box p={6}>
-                    <Flex justify="space-between" align="flex-start" mb={4}>
-                      <HStack gap={3}>
-                        <Flex w={8} h={8} align="center" justify="center" borderRadius="full" bg="brand.subtle" color="brand.text" fontWeight="bold" fontSize="sm">
-                          {idx + 1}
-                        </Flex>
-                        <Badge fontSize="xs" fontWeight="semibold" px={2} py={1} bg="bg.subtle" color="text.secondary" borderRadius="full">
-                          {typeLabel[question.type] ?? question.type}
-                        </Badge>
-                        <Badge fontSize="xs" fontWeight="semibold" px={2} py={1} bg={dc.bg} color={dc.color} borderRadius="full">
-                          {question.difficulty}
-                        </Badge>
-                        <Badge fontSize="xs" fontWeight="semibold" px={2} py={1} bg="bg.subtle" color="text.secondary" borderRadius="full">
-                          {question.points} poin
-                        </Badge>
+                <Box key={question.id} bg="bg.surface" borderRadius="lg" borderWidth="1px" borderColor="border.default" overflow="hidden" shadow="card-dark" _hover={{ shadow: 'elevated', borderColor: 'brand.muted' }} transition="all 0.15s">
+                  <Box p={4}>
+                    <Flex justify="space-between" align="flex-start" mb={3}>
+                      <HStack gap={2}>
+                        <Flex w={7} h={7} align="center" justify="center" borderRadius="sm" bg="brand.subtle" color="brand.text" fontWeight="bold" fontSize="xs">{idx + 1}</Flex>
+                        <Badge fontSize="11px" fontWeight="semibold" px={2} py={0.5} bg="bg.subtle" color="text.secondary" borderRadius="sm">{typeLabel[question.type] ?? question.type}</Badge>
+                        <Badge fontSize="11px" fontWeight="semibold" px={2} py={0.5} bg={dc.bg} color={dc.color} borderRadius="sm">{question.difficulty}</Badge>
+                        <Badge fontSize="11px" fontWeight="semibold" px={2} py={0.5} bg="bg.subtle" color="text.secondary" borderRadius="sm">{question.points} poin</Badge>
                       </HStack>
                       <HStack gap={1}>
-                        <IconButton variant="ghost" color="text.secondary" _hover={{ bg: 'bg.subtle' }} size="sm" borderRadius="lg" aria-label={t('editQuestionTitle')} onClick={() => setEditingQuestionId(question.id)} cursor="pointer">
-                          <Edit2 size={18} />
-                        </IconButton>
-                        <IconButton variant="ghost" color="status.danger.text" _hover={{ bg: 'status.danger.bg' }} size="sm" borderRadius="lg" aria-label={t('deleteQuestionTitle')} onClick={async () => {
-                          const confirmed = await confirmDialog({ title: t('deleteQuestionTitle'), description: t('deleteQuestionDesc'), confirmText: t('deleteBtn') });
-                          if (confirmed) deleteQuestionMutation.mutate(question.id);
-                        }} cursor="pointer">
-                          <Trash2 size={18} />
-                        </IconButton>
+                        <IconButton variant="ghost" color="text.secondary" _hover={{ bg: 'bg.subtle' }} size="xs" borderRadius="sm" aria-label={t('editQuestionTitle')} onClick={() => setEditingQuestionId(question.id)} cursor="pointer"><Edit2 size={14} /></IconButton>
+                        <IconButton variant="ghost" color="status.danger.text" _hover={{ bg: 'status.danger.bg' }} size="xs" borderRadius="sm" aria-label={t('deleteQuestionTitle')} onClick={async () => { const confirmed = await confirmDialog({ title: t('deleteQuestionTitle'), description: t('deleteQuestionDesc'), confirmText: t('deleteBtn') }); if (confirmed) deleteQuestionMutation.mutate(question.id); }} cursor="pointer"><Trash2 size={14} /></IconButton>
                       </HStack>
                     </Flex>
-
-                    <Box color="text.primary" fontWeight="medium" mb={4} dangerouslySetInnerHTML={{ __html: question.content }} />
-
+                    <Box color="text.primary" fontSize="sm" mb={3} dangerouslySetInnerHTML={{ __html: question.content }} />
                     {question.type !== 'ESSAY' && (
-                      <SimpleGrid columns={{ base: 1, md: 2 }} gap={3}>
+                      <SimpleGrid columns={{ base: 1, md: 2 }} gap={2}>
                         {question.options.map((option, optIdx) => (
-                          <Flex key={option.id} p={3} borderWidth="1px" borderColor={option.isCorrect ? 'status.success.text' : 'border.default'} bg={option.isCorrect ? 'status.success.bg' : 'transparent'} borderRadius="lg" align="center" gap={3}>
-                            <Flex w={6} h={6} align="center" justify="center" borderRadius="full" borderWidth="1px" fontSize="xs" fontWeight="bold" bg={option.isCorrect ? 'status.success.text' : 'bg.subtle'} borderColor={option.isCorrect ? 'status.success.text' : 'border.default'} color={option.isCorrect ? 'text.inverted' : 'text.secondary'}>
-                              {String.fromCharCode(65 + optIdx)}
-                            </Flex>
-                            <Box dangerouslySetInnerHTML={{ __html: option.content }} />
+                          <Flex key={option.id} p={2.5} borderWidth="1px" borderColor={option.isCorrect ? 'status.success.text' : 'border.default'} bg={option.isCorrect ? 'status.success.bg' : 'bg.surface'} borderRadius="md" align="center" gap={2}>
+                            <Flex w={5} h={5} align="center" justify="center" borderRadius="sm" fontSize="10px" fontWeight="bold" bg={option.isCorrect ? 'status.success.text' : 'bg.subtle'} color={option.isCorrect ? 'text.inverted' : 'text.secondary'}>{String.fromCharCode(65 + optIdx)}</Flex>
+                            <Text fontSize="sm" dangerouslySetInnerHTML={{ __html: option.content }} />
                           </Flex>
                         ))}
                       </SimpleGrid>
                     )}
                   </Box>
+                  {question.mediaUrl && (
+                    <Flex px={4} py={2} bg="bg.subtle" borderTopWidth="1px" borderColor="border.default" align="center" gap={2}>
+                      <ImageIcon size={12} color="var(--chakra-colors-text-muted)" />
+                      <Text fontSize="11px" color="text.muted">Ada media</Text>
+                    </Flex>
+                  )}
                 </Box>
               );
             })}
@@ -620,8 +536,8 @@ export default function QuestionBankDetailPage({ params }: { params: Promise<{ i
 
         {/* Edit Question Bank Modal */}
         {isEditingBank && (
-          <Box position="fixed" inset={0} bg="blackAlpha.600" backdropFilter="blur(4px)" display="flex" alignItems="center" justifyContent="center" zIndex={50}>
-            <Box bg="bg.surface" borderRadius="card" p={8} w="full" maxW="md" shadow="2xl" border="1px solid" borderColor="border.default">
+          <Box position="fixed" inset={0} bg="rgba(6,9,15,0.7)" backdropFilter="blur(6px)" display="flex" alignItems="center" justifyContent="center" zIndex={50}>
+            <Box bg="bg.surface" borderRadius="lg" p={6} w="full" maxW="md" shadow="elevated" borderWidth="1px" borderColor="border.default">
               <Heading size="lg" fontWeight="bold" mb={6} color="text.primary">{t('editQbModal')}</Heading>
               <form onSubmit={(e) => { e.preventDefault(); updateBankMutation.mutate(bankFormData); }}>
                 <Stack gap={4}>

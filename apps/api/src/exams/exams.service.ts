@@ -12,24 +12,18 @@ export class ExamsService {
     return this.prisma.exam.create({
       data: {
         ...examData,
+        status: dto.status ?? 'DRAFT',
         teacherId,
         startTime: new Date(dto.startTime),
         endTime: new Date(dto.endTime),
         examQuestions: {
-          create: questionIds?.map((id, index) => ({
-            questionId: id,
-            order: index,
-          })),
+          create: questionIds?.map((id, index) => ({ questionId: id, order: index })),
         },
         targetRombels: {
-          create: rombelIds?.map((rombelId) => ({
-            rombelId,
-          })),
+          create: rombelIds?.map((rombelId) => ({ rombelId })),
         },
         targetMajors: {
-          create: majorIds?.map((majorId) => ({
-            majorId,
-          })),
+          create: majorIds?.map((majorId) => ({ majorId })),
         },
       },
     });
@@ -220,23 +214,10 @@ export class ExamsService {
 
   async update(id: string, data: any) {
     const { questionIds, rombelIds, majorIds, startDate, startTimeField, endDate, endTimeField, ...examData } = data;
-
-    // Eksplisit petakan boolean security flags agar tidak pernah ter-drop
-    const updateData: any = {
-      ...examData,
-      // Pastikan boolean selalu disertakan secara eksplisit
-      ...(typeof data.requireSeb === 'boolean' && { requireSeb: data.requireSeb }),
-      ...(typeof data.blockKeyCopyPaste === 'boolean' && { blockKeyCopyPaste: data.blockKeyCopyPaste }),
-      ...(typeof data.forceFullscreen === 'boolean' && { forceFullscreen: data.forceFullscreen }),
-      ...(typeof data.randomizeSoal === 'boolean' && { randomizeSoal: data.randomizeSoal }),
-      ...(typeof data.randomizeOpsi === 'boolean' && { randomizeOpsi: data.randomizeOpsi }),
-      ...(typeof data.showScore === 'boolean' && { showScore: data.showScore }),
-    };
+    const updateData: any = { ...examData, ...(typeof data.requireSeb === 'boolean' && { requireSeb: data.requireSeb }), ...(typeof data.blockKeyCopyPaste === 'boolean' && { blockKeyCopyPaste: data.blockKeyCopyPaste }), ...(typeof data.forceFullscreen === 'boolean' && { forceFullscreen: data.forceFullscreen }), ...(typeof data.randomizeSoal === 'boolean' && { randomizeSoal: data.randomizeSoal }), ...(typeof data.randomizeOpsi === 'boolean' && { randomizeOpsi: data.randomizeOpsi }), ...(typeof data.showScore === 'boolean' && { showScore: data.showScore }) };
 
     // Konversi empty string ke null untuk relasi opsional
-    if (!updateData.examGroupId) {
-      delete updateData.examGroupId; // jangan update jika kosong
-    }
+    if (!updateData.examGroupId) delete updateData.examGroupId;
 
     // SEB keys: hapus jika requireSeb false
     if (updateData.requireSeb === false) {
@@ -244,12 +225,8 @@ export class ExamsService {
       updateData.sebBrowserKey = null;
     }
 
-    if (data.startTime) {
-      updateData.startTime = new Date(data.startTime);
-    }
-    if (data.endTime) {
-      updateData.endTime = new Date(data.endTime);
-    }
+    if (data.startTime) updateData.startTime = new Date(data.startTime);
+    if (data.endTime) updateData.endTime = new Date(data.endTime);
 
     if (questionIds && questionIds.length > 0) {
       // Hapus soal lama lalu buat ulang
@@ -290,6 +267,7 @@ export class ExamsService {
       }
     }
 
+    updateData.status = updateData.status ?? 'DRAFT';
     return this.prisma.exam.update({
       where: { id },
       data: updateData,

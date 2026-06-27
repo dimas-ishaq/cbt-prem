@@ -3,6 +3,7 @@ import { ExamStatus } from '@prisma/client';
 
 export class CreateExamDto {
   @IsString()
+  @IsNotEmpty()
   title: string;
 
   @IsString()
@@ -10,15 +11,19 @@ export class CreateExamDto {
   description?: string;
 
   @IsUUID()
+  @IsNotEmpty()
   subjectId: string;
 
   @IsDateString()
+  @IsNotEmpty()
   startTime: string;
 
   @IsDateString()
+  @IsNotEmpty()
   endTime: string;
 
   @IsInt()
+  @IsNotEmpty()
   duration: number;
 
   @IsString()
@@ -88,7 +93,7 @@ export class CreateExamDto {
 
   @IsEnum(ExamStatus)
   @IsOptional()
-  status?: ExamStatus;
+  status?: ExamStatus = ExamStatus.DRAFT;
 
   @IsBoolean()
   @IsOptional()

@@ -2,7 +2,21 @@
 
 import { useCallback, useRef, useState } from 'react';
 import { Check, ImageIcon, RotateCcw, Upload, X } from 'lucide-react';
-import { Box, Button, Flex, IconButton, Input, Select, SimpleGrid, Stack, Text, createListCollection } from '@chakra-ui/react';
+import {
+  Box,
+  Button,
+  Flex,
+  IconButton,
+  Input,
+  Select,
+  SimpleGrid,
+  Stack,
+  Text,
+  createListCollection,
+  HStack,
+  Separator,
+  Spinner,
+} from '@chakra-ui/react';
 import { compressImage, createThumbnail, validateImageFile } from '@/utils/imageUtils';
 import { RichTextEditor } from '@/components/admin/rich-text-editor';
 import { useTranslation } from 'react-i18next';
@@ -126,58 +140,69 @@ export function QuestionForm({ onSubmit, onCancel, isSubmitting, initialData }: 
       <Stack gap={6}>
         <Stack gap={4}>
           <Box>
-            <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>{t('questionContentLabel')}</Text>
+            <Text fontSize="sm" fontWeight="medium" color="text.secondary" mb={1}>{t('questionContentLabel')}</Text>
             <RichTextEditor value={content} onChange={setContent} placeholder={t('questionPlaceholder')} />
           </Box>
 
           <Box>
-            <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={2}>{t('questionMediaLabel')}</Text>
-            <div
+            <Text fontSize="sm" fontWeight="medium" color="text.secondary" mb={2}>{t('questionMediaLabel')}</Text>
+            <Box
               onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
               onDragLeave={(e) => { e.preventDefault(); setIsDragOver(false); }}
               onDrop={(e) => { e.preventDefault(); setIsDragOver(false); const file = e.dataTransfer.files?.[0]; if (file) openCropEditor(file); }}
               onClick={() => fileInputRef.current?.click()}
-              className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${isDragOver ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300 bg-gray-50'}`}
+              borderWidth="2px"
+              borderStyle="dashed"
+              borderRadius="lg"
+              p={6}
+              textAlign="center"
+              cursor="pointer"
+              transition="colors 0.15s"
+              borderColor={isDragOver ? 'brand.text' : 'border.default'}
+              bg={isDragOver ? 'brand.subtle' : 'bg.subtle'}
+              _hover={{ borderColor: 'brand.muted', bg: 'bg.surface' }}
             >
               {mediaUrl ? (
                 <Flex direction="column" align="center" gap={3}>
-                  <img src={mediaUrl} alt="Preview" style={{ maxWidth: '100%', maxHeight: '320px', borderRadius: '0.5rem' }} />
-                  <Flex gap={2}>
-                    <Button size="xs" variant="ghost" onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}>{t('changeImageLabel')}</Button>
-                    <Button size="xs" variant="ghost" colorScheme="red" onClick={(e) => { e.stopPropagation(); if (confirm(t('deleteImageConfirmConfirm') || 'Hapus gambar?')) { setMediaUrl(''); setMediaType(''); } }}>{t('deleteImageLabel')}</Button>
-                  </Flex>
-                  <Text fontSize="xs" color="#64748b">{t('dragDropImageLabel')}</Text>
+                  <Box as="img" src={mediaUrl} alt="Preview" maxW="full" maxH="320px" borderRadius="md" />
+                  <HStack gap={2}>
+                    <Button size="xs" variant="ghost" color="brand.text" onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}>{t('changeImageLabel')}</Button>
+                    <Button size="xs" variant="ghost" color="status.danger.text" onClick={(e) => { e.stopPropagation(); if (confirm(t('deleteImageConfirmConfirm') || 'Hapus gambar?')) { setMediaUrl(''); setMediaType(''); } }}>{t('deleteImageLabel')}</Button>
+                  </HStack>
+                  <Text fontSize="xs" color="text.muted">{t('dragDropImageLabel')}</Text>
                 </Flex>
               ) : (
                 <Flex direction="column" align="center" gap={2}>
-                  <div className="p-3 rounded-full bg-gray-100"><ImageIcon size={24} className="text-gray-400" /></div>
+                  <Flex p={3} borderRadius="full" bg="bg.subtle" color="text.muted">
+                    <ImageIcon size={24} />
+                  </Flex>
                   <Text fontWeight="medium" fontSize="sm">{t('dragDropImageLabel')}</Text>
-                  <Text fontSize="xs" color="gray.400">{t('imageUploadDesc')}</Text>
+                  <Text fontSize="xs" color="text.muted">{t('imageUploadDesc')}</Text>
                 </Flex>
               )}
-            </div>
+            </Box>
           </Box>
 
           <SimpleGrid columns={{ base: 1, md: 3 }} gap={4}>
             <Box>
-              <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>{t('typeLabel')}</Text>
+              <Text fontSize="sm" fontWeight="medium" color="text.secondary" mb={1}>{t('typeLabel')}</Text>
               <Select.Root collection={typeOptions} value={[type]} onValueChange={(details) => handleTypeChange(details.value[0] || 'PILIHAN_GANDA')} positioning={{ sameWidth: true }}>
                 <Select.HiddenSelect />
-                <Select.Control><Select.Trigger><Select.ValueText placeholder={t('questionTypePILIHAN_GANDA')} /></Select.Trigger><Select.IndicatorGroup><Select.Indicator /><Select.ClearTrigger /></Select.IndicatorGroup></Select.Control>
+                <Select.Control><Select.Trigger borderRadius="md" borderColor="input.border" bg="input.bg"><Select.ValueText placeholder={t('questionTypePILIHAN_GANDA')} /></Select.Trigger><Select.IndicatorGroup><Select.Indicator /><Select.ClearTrigger /></Select.IndicatorGroup></Select.Control>
                 <Select.Positioner><Select.Content>{typeOptions.items.map((item) => <Select.Item key={item.value} item={item}>{item.label}</Select.Item>)}</Select.Content></Select.Positioner>
               </Select.Root>
             </Box>
             <Box>
-              <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>{t('difficultyLabel')}</Text>
+              <Text fontSize="sm" fontWeight="medium" color="text.secondary" mb={1}>{t('difficultyLabel')}</Text>
               <Select.Root collection={difficultyOptions} value={[difficulty]} onValueChange={(details) => setDifficulty(details.value[0] || 'SEDANG')} positioning={{ sameWidth: true }}>
                 <Select.HiddenSelect />
-                <Select.Control><Select.Trigger><Select.ValueText placeholder={t('difficultyMUDAH')} /></Select.Trigger><Select.IndicatorGroup><Select.Indicator /><Select.ClearTrigger /></Select.IndicatorGroup></Select.Control>
+                <Select.Control><Select.Trigger borderRadius="md" borderColor="input.border" bg="input.bg"><Select.ValueText placeholder={t('difficultyMUDAH')} /></Select.Trigger><Select.IndicatorGroup><Select.Indicator /><Select.ClearTrigger /></Select.IndicatorGroup></Select.Control>
                 <Select.Positioner><Select.Content>{difficultyOptions.items.map((item) => <Select.Item key={item.value} item={item}>{item.label}</Select.Item>)}</Select.Content></Select.Positioner>
               </Select.Root>
             </Box>
             <Box>
-              <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>{t('pointsLabel')}</Text>
-              <Input type="number" value={points} onChange={(e) => setPoints(parseInt(e.target.value) || 0)} min={1} />
+              <Text fontSize="sm" fontWeight="medium" color="text.secondary" mb={1}>{t('pointsLabel')}</Text>
+              <Input type="number" value={points} onChange={(e) => setPoints(parseInt(e.target.value) || 0)} min={1} borderRadius="md" borderColor="input.border" bg="input.bg" _focus={{ borderColor: 'input.focus.border' }} />
             </Box>
           </SimpleGrid>
         </Stack>
@@ -185,37 +210,53 @@ export function QuestionForm({ onSubmit, onCancel, isSubmitting, initialData }: 
         {type !== 'ESSAY' && (
           <Stack gap={4}>
             <Flex justify="space-between" align="center">
-              <Text fontSize="sm" fontWeight="bold" color="gray.900">{t('answerOptionsLabel')}</Text>
-              {type !== 'BENAR_SALAH' && <Button type="button" onClick={addOption} variant="ghost" size="xs" colorScheme="indigo">{t('addOptionBtn')}</Button>}
+              <Text fontSize="sm" fontWeight="bold" color="text.primary">{t('answerOptionsLabel')}</Text>
+              {type !== 'BENAR_SALAH' && <Button type="button" onClick={addOption} variant="ghost" size="xs" colorPalette="brand">{t('addOptionBtn')}</Button>}
             </Flex>
             <Stack gap={3}>
               {options.map((option, idx) => (
                 <Flex key={idx} align="flex-start" gap={3}>
-                  <IconButton type="button" onClick={() => updateOption(idx, 'isCorrect', !option.isCorrect)} size="sm" colorScheme={option.isCorrect ? 'green' : 'gray'} variant={option.isCorrect ? 'solid' : 'outline'} aria-label="Mark correct"><Check size={16} /></IconButton>
+                  <IconButton
+                    type="button"
+                    onClick={() => updateOption(idx, 'isCorrect', !option.isCorrect)}
+                    size="sm"
+                    colorPalette={option.isCorrect ? 'success' : undefined}
+                    variant={option.isCorrect ? 'solid' : 'outline'}
+                    aria-label="Mark correct"
+                    borderColor={option.isCorrect ? undefined : 'border.default'}
+                  >
+                    <Check size={16} />
+                  </IconButton>
                   <Box flex={1}><RichTextEditor value={option.content} onChange={(val) => updateOption(idx, 'content', val)} placeholder={t('optionPlaceholder', { letter: String.fromCharCode(65 + idx) })} compact /></Box>
-                  {options.length > 2 && type !== 'BENAR_SALAH' && <IconButton type="button" onClick={() => removeOption(idx)} colorScheme="red" variant="ghost" size="sm" aria-label="Remove"><X size={16} /></IconButton>}
+                  {options.length > 2 && type !== 'BENAR_SALAH' && <IconButton type="button" onClick={() => removeOption(idx)} colorPalette="red" variant="ghost" size="sm" aria-label="Remove"><X size={16} /></IconButton>}
                 </Flex>
               ))}
             </Stack>
           </Stack>
         )}
 
-        <Flex gap={3} pt={4} borderTop="1px solid" borderColor="gray.100">
-          <Button type="button" onClick={onCancel} flex={1} variant="outline">{t('cancel')}</Button>
-          <Button type="submit" disabled={isSubmitting || uploading} flex={1} colorScheme="indigo">{isSubmitting || uploading ? t('savingQuestion') : t('saveQuestion')}</Button>
+        <Separator borderColor="border.default" />
+        <Flex gap={3}>
+          <Button type="button" onClick={onCancel} flex={1} variant="outline" borderColor="border.default" color="text.secondary" _hover={{ bg: 'bg.subtle' }} borderRadius="md">{t('cancel')}</Button>
+          <Button type="submit" disabled={isSubmitting || uploading} flex={1} colorPalette="brand" borderRadius="md" loading={isSubmitting || uploading} bg="brand.solid" color="text.inverted" _hover={{ bg: 'brand.text' }}>
+            {isSubmitting || uploading ? t('savingQuestion') : t('saveQuestion')}
+          </Button>
         </Flex>
       </Stack>
 
       {editorOpen && (
-        <Box position="fixed" inset={0} bg="blackAlpha.600" zIndex={999} display="flex" alignItems="center" justifyContent="center">
-          <Stack gap={4} bg="white" p={6} borderRadius="lg" maxWidth="90vw" maxHeight="90vh">
-            <Text fontWeight="bold">{t('editImageTitle')}</Text>
-            {srcImage && <Box overflow="auto" maxHeight="60vh" maxWidth="70vw"><img src={srcImage.src} alt="to edit" style={{ maxWidth: '100%', maxHeight: '60vh' }} /></Box>}
-            <Text fontSize="sm" color="gray.500">{t('cropFeatureComingSoon')}</Text>
-            <Flex gap={3}>
-              <Button variant="outline" onClick={closeEditor}><RotateCcw size={16} style={{ marginRight: '8px' }} />{t('cancel')}</Button>
-              <Button colorScheme="indigo" onClick={() => editorFile && processAndUpload(editorFile)} loading={uploading}><Upload size={16} style={{ marginRight: '8px' }} />{t('uploadImageBtn')}</Button>
-            </Flex>
+        <Box position="fixed" inset={0} bg="rgba(6,9,15,0.7)" backdropFilter="blur(6px)" zIndex={999} display="flex" alignItems="center" justifyContent="center">
+          <Stack gap={4} bg="bg.surface" p={6} borderRadius="card" maxW="90vw" maxH="90vh" borderWidth="1px" borderColor="border.default" shadow="elevated">
+            <Text fontWeight="bold" color="text.primary">{t('editImageTitle')}</Text>
+            {srcImage && <Box overflow="auto" maxH="60vh" maxW="70vw"><Box as="img" src={srcImage.src} alt="to edit" style={{ maxWidth: '100%', maxHeight: '60vh' }} /></Box>}
+            <Text fontSize="sm" color="text.muted">{t('cropFeatureComingSoon')}</Text>
+            <HStack gap={3}>
+              <Button variant="outline" borderColor="border.default" color="text.secondary" _hover={{ bg: 'bg.subtle' }} borderRadius="md" onClick={closeEditor} gap={2}><RotateCcw size={16} />{t('cancel')}</Button>
+              <Button colorPalette="brand" borderRadius="md" onClick={() => editorFile && processAndUpload(editorFile)} disabled={uploading} bg="brand.solid" color="text.inverted" _hover={{ bg: 'brand.text' }} gap={2}>
+                {uploading ? <Spinner size="sm" /> : <Upload size={16} />}
+                {t('uploadImageBtn')}
+              </Button>
+            </HStack>
           </Stack>
         </Box>
       )}
