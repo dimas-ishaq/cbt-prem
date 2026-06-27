@@ -30,8 +30,9 @@ export function MediaLibraryModal({ isOpen, onClose, onImageSelect }: MediaLibra
     try {
       const response = await api.get('/questions/media');
       setMedia(response.data);
-    } catch (err: ApiError) {
-      console.error(err);
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      console.error(apiError);
       setError('Gagal memuat perpustakaan media');
       toast.error('Gagal memuat perpustakaan media');
     } finally {

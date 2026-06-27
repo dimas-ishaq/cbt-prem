@@ -1,15 +1,7 @@
 import { Badge, Box, Table, Text, Wrap, WrapItem } from '@chakra-ui/react';
 import { TablePagination } from '@/components/ui/pagination';
 import { SubjectActions } from './subject-actions';
-
-export interface Subject {
-  id: string;
-  name: string;
-  code: string;
-  description: string | null;
-  teachers?: { id: string; user?: { fullName: string; username?: string } }[];
-  _count?: { teachers: number; questionBanks: number; exams: number };
-}
+import type { Subject } from '../subject-types';
 
 interface SubjectTableProps {
   subjects: Subject[];

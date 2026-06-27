@@ -1,16 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { Box, Button, Checkbox, Flex, Heading, Input, SimpleGrid, Stack, Text, Textarea } from '@chakra-ui/react';
 import { Search, Upload, Download } from 'lucide-react';
 import api from '@/lib/api';
 import { toast } from '@/lib/toaster';
 import { useTranslation } from 'react-i18next';
-import type { Subject } from '../subject-types';
+import type { Subject, TeacherSummary } from '../subject-types';
 
 type Teacher = {
   id: string;
-  user?: { fullName: string; username?: string };
-  nip?: string;
+  user?: { fullName?: string; username?: string } | null;
+  nip?: string | null;
 };
 
 type SubjectFormData = {
@@ -65,8 +65,9 @@ export function SubjectModal({ isOpen, onClose, editingSubject }: SubjectModalPr
       }
       onClose();
       resetForm();
-    } catch (err: ApiError) {
-      toast.error(err.response?.data?.message || t('subjectError'));
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      toast.error(apiError.response?.data?.message || t('subjectError'));
     } finally {
       setIsModalSubmitting(false);
     }
@@ -78,7 +79,10 @@ export function SubjectModal({ isOpen, onClose, editingSubject }: SubjectModalPr
       resetForm();
       onClose();
     },
-    onError: (err: ApiError) => toast.error(err.response?.data?.message || t('subjectError')),
+    onError: (err: unknown) => {
+      const apiError = err as ApiError;
+      toast.error(apiError.response?.data?.message || t('subjectError'));
+    },
   });
 
   const updateMutation = useMutation({
@@ -87,7 +91,10 @@ export function SubjectModal({ isOpen, onClose, editingSubject }: SubjectModalPr
       resetForm();
       onClose();
     },
-    onError: (err: ApiError) => toast.error(err.response?.data?.message || t('subjectError')),
+    onError: (err: unknown) => {
+      const apiError = err as ApiError;
+      toast.error(apiError.response?.data?.message || t('subjectError'));
+    },
   });
 
   const handleTeacherSelect = (teacher: Teacher, checked: boolean) => {
@@ -103,9 +110,10 @@ export function SubjectModal({ isOpen, onClose, editingSubject }: SubjectModalPr
       const res = await api.post('/subjects/import', form, { headers: { 'Content-Type': 'multipart/form-data' } });
       toast.success(t('subjectImportSuccess', { count: res.data.importedCount }));
       setImportFile(null);
-    } catch (err: ApiError) {
-      const payload = err.response?.data;
-      if (payload?.errors?.length) toast.error(payload.errors[0]);
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      const payload = apiError.response?.data;
+      if (payload?.errors?.length) toast.error(payload.errors[0] || t('subjectImportError'));
       else toast.error(payload?.message || t('subjectImportError'));
     } finally {
       setIsModalSubmitting(false);
@@ -117,7 +125,7 @@ export function SubjectModal({ isOpen, onClose, editingSubject }: SubjectModalPr
     queryKey: ['teachers', teacherSearch],
     queryFn: async () => {
       const res = await api.get('/teachers', { params: { search: teacherSearch.trim() } });
-      return (Array.isArray(res.data) ? res.data : res.data?.data ?? []).map((t: Teacher) => ({ id: t.id, user: t.user, nip: t.nip }));
+      return (Array.isArray(res.data) ? res.data : res.data?.data ?? []).map((t: TeacherSummary) => ({ id: t.id, user: t.user ?? null, nip: t.nip ?? null }));
     },
     enabled: teacherSearchEnabled,
     staleTime: 5 * 60 * 1000,
@@ -125,12 +133,13 @@ export function SubjectModal({ isOpen, onClose, editingSubject }: SubjectModalPr
 
   const selectedTeachersMemo = useMemo<Teacher[]>(() => {
     const memo = new Map<string, Teacher>();
-    (editingSubject?.teachers ?? []).forEach((t: Teacher) => memo.set(t.id, t));
+    (editingSubject?.teachers ?? []).forEach((t: TeacherSummary) => memo.set(t.id, { id: t.id, user: t.user ?? null, nip: t.nip ?? null }));
     fetchedTeachers.forEach((t) => memo.set(t.id, t));
     return Array.from(memo.values());
   }, [editingSubject?.teachers, fetchedTeachers]);
 
   if (!isOpen) return null;
+
 
   return (
     <Box position="fixed" inset={0} bg="blackAlpha.600" display="flex" alignItems="center" justifyContent="center" zIndex={50}>

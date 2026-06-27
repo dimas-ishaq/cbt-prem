@@ -9,7 +9,7 @@ export type ToasterOptions = {
   action?: { label: string; onClick: () => void };
 };
 
-export const toaster = createToaster({
+export const toaster: ReturnType<typeof createToaster> = createToaster({
   placement: 'top-end',
   overlap: true,
   gap: 16,
@@ -32,4 +32,5 @@ export const toast = {
     toaster.dismiss();
   },
 };
+
 

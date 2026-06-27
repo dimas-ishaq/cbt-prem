@@ -16,6 +16,9 @@ type TimeAddedEvent = SessionEvent & {
   addedMinutes?: number;
 };
 
+const isSessionEvent = (data: unknown): data is SessionEvent => !!data && typeof data === 'object' && 'examId' in data;
+const isTimeAddedEvent = (data: unknown): data is TimeAddedEvent => isSessionEvent(data);
+
 export function useExamRealtime({ socket, examId, sessionId, playSuccess, setIsLocked, finishExam, setSessionEndTime, setTimeAddedMinutes, setShowTimeAddedDialog }: {
   socket: SocketLike | null;
   examId: string;
@@ -29,11 +32,11 @@ export function useExamRealtime({ socket, examId, sessionId, playSuccess, setIsL
 }) {
   useEffect(() => {
     if (!socket || !sessionId) return;
-    const onSessionLocked = (data: SessionEvent) => { if (data.examId === examId) setIsLocked(true); };
-    const onSessionUnlocked = (data: SessionEvent) => { if (data.examId === examId) setIsLocked(false); };
-    const onSessionSubmitted = (data: SessionEvent) => { if (data.examId === examId) finishExam(); };
-    const onTimeAdded = async (data: TimeAddedEvent) => {
-      if (data.examId !== examId) return;
+    const onSessionLocked = (data: unknown) => { if (isSessionEvent(data) && data.examId === examId) setIsLocked(true); };
+    const onSessionUnlocked = (data: unknown) => { if (isSessionEvent(data) && data.examId === examId) setIsLocked(false); };
+    const onSessionSubmitted = (data: unknown) => { if (isSessionEvent(data) && data.examId === examId) finishExam(); };
+    const onTimeAdded = async (data: unknown) => {
+      if (!isTimeAddedEvent(data) || data.examId !== examId) return;
       try {
         const response = await api.get(`/exam-sessions/${sessionId}`);
         const refreshedEndTime = response.data?.endTime;
