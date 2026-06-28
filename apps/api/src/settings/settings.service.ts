@@ -18,6 +18,7 @@ export class SettingsService {
     }
     // Set defaults if not set in db
     if (!result.logoUrl) result.logoUrl = '';
+    if (!result.faviconUrl) result.faviconUrl = '';
     // Redis integration defaults
     if (!result.redisEnabled) result.redisEnabled = 'false';
     if (!result.redisHost) result.redisHost = '127.0.0.1';

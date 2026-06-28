@@ -15,6 +15,7 @@ const geistMono = localFont({
 export const metadata: Metadata = {
   title: "Novatech CBT",
   description: "Novatech Computer Based Test Platform",
+  icons: { icon: '/favicon.ico' },
 };
 
 export default function RootLayout({
