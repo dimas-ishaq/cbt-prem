@@ -27,9 +27,13 @@ fi
 
 bun install --frozen-lockfile
 
-if [ ! -f apps/web/.env.local ] && [ -f apps/web/.env.example ]; then
-  cp apps/web/.env.example apps/web/.env.local
-fi
+# Generate web prod env
+cat > apps/web/.env.local <<EOF
+NEXT_PUBLIC_APP_URL=${FRONTEND_URL:-https://novatech.biz.id}
+NEXT_PUBLIC_API_URL=${PUBLIC_API_URL:-${FRONTEND_URL:-https://novatech.biz.id}/api}
+NEXT_PUBLIC_WS_URL=${PUBLIC_WS_URL:-${FRONTEND_URL:-https://novatech.biz.id}}
+NEXT_PUBLIC_DEBUG=false
+EOF
 
 cd apps/api
 bunx prisma generate
