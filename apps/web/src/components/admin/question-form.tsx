@@ -164,7 +164,7 @@ export function QuestionForm({ onSubmit, onCancel, isSubmitting, initialData }: 
             >
               {mediaUrl ? (
                 <Flex direction="column" align="center" gap={3}>
-                  <Box as="img" src={mediaUrl} alt="Preview" maxW="full" maxH="320px" borderRadius="md" />
+                  <img src={mediaUrl} alt="Preview" style={{ maxWidth: '100%', maxHeight: '320px', borderRadius: '8px' }} />
                   <HStack gap={2}>
                     <Button size="xs" variant="ghost" color="brand.text" onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}>{t('changeImageLabel')}</Button>
                     <Button size="xs" variant="ghost" color="status.danger.text" onClick={(e) => { e.stopPropagation(); if (confirm(t('deleteImageConfirmConfirm') || 'Hapus gambar?')) { setMediaUrl(''); setMediaType(''); } }}>{t('deleteImageLabel')}</Button>
@@ -248,7 +248,7 @@ export function QuestionForm({ onSubmit, onCancel, isSubmitting, initialData }: 
         <Box position="fixed" inset={0} bg="rgba(6,9,15,0.7)" backdropFilter="blur(6px)" zIndex={999} display="flex" alignItems="center" justifyContent="center">
           <Stack gap={4} bg="bg.surface" p={6} borderRadius="card" maxW="90vw" maxH="90vh" borderWidth="1px" borderColor="border.default" shadow="elevated">
             <Text fontWeight="bold" color="text.primary">{t('editImageTitle')}</Text>
-            {srcImage && <Box overflow="auto" maxH="60vh" maxW="70vw"><Box as="img" src={srcImage.src} alt="to edit" style={{ maxWidth: '100%', maxHeight: '60vh' }} /></Box>}
+            {srcImage && <Box overflow="auto" maxH="60vh" maxW="70vw"><img src={srcImage.src} alt="to edit" style={{ maxWidth: '100%', maxHeight: '60vh' }} /></Box>}
             <Text fontSize="sm" color="text.muted">{t('cropFeatureComingSoon')}</Text>
             <HStack gap={3}>
               <Button variant="outline" borderColor="border.default" color="text.secondary" _hover={{ bg: 'bg.subtle' }} borderRadius="md" onClick={closeEditor} gap={2}><RotateCcw size={16} />{t('cancel')}</Button>

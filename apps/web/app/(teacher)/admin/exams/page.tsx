@@ -131,7 +131,7 @@ export default function ExamsPage() {
         <Flex gap={3} align="center" flexWrap="wrap">
           <Flex align="center" gap={2} bg="input.bg" px={3} py={2} borderRadius="lg" borderWidth="1px" borderColor="input.border" flex={1} minW="260px">
             <Search size={16} color="var(--chakra-colors-text-muted)" />
-            <Input placeholder="Cari ujian..." value={searchText} onChange={(e) => setSearchText(e.target.value)} size="sm" variant="unstyled" flex={1} _placeholder={{ color: 'text.muted' }} />
+            <Input placeholder="Cari ujian..." value={searchText} onChange={(e) => setSearchText(e.target.value)} size="sm" border="none" bg="transparent" flex={1} _placeholder={{ color: 'text.muted' }} _focus={{ outline: 'none', boxShadow: 'none' }} />
           </Flex>
           <Flex align="center" gap={2} bg="input.bg" px={3} py={2} borderRadius="lg" borderWidth="1px" borderColor="input.border">
             <BadgeCheck size={16} color="var(--chakra-colors-text-muted)" />

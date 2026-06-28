@@ -12,6 +12,7 @@ describe('CBT flow (e2e smoke)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.setGlobalPrefix('api');
     await app.init();
   });
 

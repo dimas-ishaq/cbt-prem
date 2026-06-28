@@ -24,6 +24,7 @@ import { ReportsModule } from './reports/reports.module';
 import { SubjectsModule } from './subjects/subjects.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { UploadsModule } from './uploads/uploads.module';
 import { ScheduleModule } from '@nestjs/schedule';
 @Module({
   imports: [
@@ -60,6 +61,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     ReportsModule,
     NotificationsModule,
     DashboardModule,
+    UploadsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

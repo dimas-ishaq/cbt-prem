@@ -1,53 +1,69 @@
 import { test, expect, Page } from '@playwright/test';
 
-const API_URL = 'http://localhost:3001'; // Sesuaikan dengan API backend
-
 const loginAsTeacher = async ({ page }: { page: Page }) => {
-  // Login dengan akun guru
   await page.goto('/login');
-
-  await page.fill('input[name="username"]', 'guru@test.com');
-  await page.fill('input[name="password"]', 'password123');
-  await page.click('button[type="submit"]');
-
-  // Tunggu navigasi ke dashboard
-  await page.waitForURL(/admin/, { waitUntil: 'networkidle' });
+  await page.fill('#login-username', 'test-teacher');
+  await page.fill('#login-password', 'teacher123');
+  await page.click('#login-submit');
+  await page.waitForURL(/admin/);
 };
-
-const createExam = async ({ page }: { page: Page }) => {
-  // Klik menu Eksam di dashboard
-  await page.click('a[href="/admin/exams"]');
-
-  // Klik tombol Buat Ujian Baru
-  await page.click('button[type="button"]:has-text("Buat Ujian Baru")');
-
-  // Isi form ujian
-  await page.fill('input[name="exam-title"]', 'Ujian Test E2E');
-  await page.selectOption('select[name="subject"]', 'matematika');  // asumsi ada dropdown subjects
-
-  // Tambahkan soal (misal 2 soal)
-  for (let i = 1; i <= 2; i++) {
-    await page.click('button[type="button"]:has-text("Tambah Soal")');
-    await page.fill(`input[name="question-${i}"]`, `Soal ${i}`);
-    await page.fill(`input[name="options-${i}-1"]`, `A
-B
-C
-D`);
-  }
-
-  // Atur waktu
-  await page.fill('input[name="start-time"]', '09:00');
-  await page.fill('input[name="end-time"]', '11:00');
-
-  // Simpan ujian
-  await page.click('button[type="button"]:has-text("Simpan")');
-
-  // Tunggu konfirmasi
-  await page.waitForSelector('div:has-text("Ujian berhasil dibuat")');
-};
-
 
 test('Guru membuat ujian baru', async ({ page }) => {
   await loginAsTeacher({ page });
-  await createExam({ page });
+
+  // Klik menu Ujian di sidebar
+  await page.locator('button').filter({ hasText: /^Ujian$/ }).click();
+
+  // Klik tombol Jadwalkan Ujian
+  await page.click('a[href="/admin/exams/create"]');
+
+  // Isi form Informasi Ujian
+  await page.fill('input[placeholder="Cth. Ujian Tengah Semester Matematika"]', 'Ujian E2E Playwright');
+  await page.fill('textarea[placeholder="Deskripsi opsional..."]', 'Deskripsi Ujian E2E Playwright');
+
+  // Pilih Event Ujian (custom select)
+  await page.click('button:has-text("-- Pilih Event Ujian --")');
+  await page.click('div[role="option"]:has-text("Test Exam Group")');
+
+  // Pilih Mata Pelajaran (custom select)
+  await page.click('button:has-text("Pilih Mata Pelajaran")');
+  await page.click('div[role="option"]:has-text("Test Subject")');
+
+  // Atur Waktu
+  // Tanggal Mulai (format YYYY-MM-DD)
+  await page.getByRole('textbox', { name: 'mm/dd/yyyy' }).first().fill('2026-06-28');
+  await page.keyboard.press('Escape');
+  
+  // Waktu Mulai
+  await page.locator('input[type="time"]').first().fill('08:00');
+
+  // Tanggal Berakhir
+  await page.getByRole('textbox', { name: 'mm/dd/yyyy' }).last().fill('2026-06-28');
+  await page.keyboard.press('Escape');
+
+  // Waktu Berakhir
+  await page.locator('input[type="time"]').last().fill('17:00');
+
+  // Target Peserta Ujian
+  // Pilih Tingkat Kelas
+  await page.locator('select').first().selectOption('X');
+  // Pilih Jurusan
+  await page.locator('select').last().selectOption({ label: 'Test Major (TEST)' });
+
+  // Klik Rombel Checkbox
+  await page.click('label:has-text("Test Rombel")');
+
+  // Pilih Soal
+  // Pilih Bank Soal (custom select)
+  await page.click('button:has-text("Pilih Bank Soal")');
+  await page.click('div[role="option"]:has-text("Test Question Bank")');
+
+  // Klik Pilih Semua soal
+  await page.click('button:has-text("Pilih Semua")');
+
+  // Simpan Ujian
+  await page.click('button:has-text("Simpan & Buat Ujian")');
+
+  // Cek apakah ujian baru muncul di list
+  await expect(page.locator('text=Ujian E2E Playwright')).toBeVisible();
 });

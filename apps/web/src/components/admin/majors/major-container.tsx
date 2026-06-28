@@ -123,7 +123,7 @@ export function MajorContainer() {
               Total jurusan
             </Text>
             <Text fontSize="2xl" fontWeight="bold" color="text.primary">
-              {majors.length}
+              {majors?.length || 0}
             </Text>
           </Box>
           <Box px={4} py={3} borderRadius="xl" bg="bg.elevated" borderWidth="1px" borderColor="border.default">
@@ -149,9 +149,8 @@ export function MajorContainer() {
               setIsModalOpen(true);
             }}
             cursor="pointer"
-            leftIcon={<Plus size={18} />}
           >
-            Tambah Jurusan
+            <Plus size={18} /> Tambah Jurusan
           </Button>
         </HStack>
       </Flex>

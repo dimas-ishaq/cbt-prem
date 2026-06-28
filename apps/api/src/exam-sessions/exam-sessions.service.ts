@@ -246,69 +246,57 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
   }
 
   async finishSession(sessionId: string) {
-    const session = await this.prisma.examSession.findUnique({
-      where: { id: sessionId },
-      include: { 
-        exam: true,
-        student: { include: { user: true } },
-        answers: {
-          include: {
-            question: {
-              include: { options: true }
-            }
+    return this.prisma.$transaction(async (tx) => {
+      const session = await tx.examSession.findUnique({
+        where: { id: sessionId },
+        include: {
+          exam: true,
+          student: { include: { user: true } },
+          answers: {
+            include: {
+              question: {
+                include: { options: true },
+              },
+            },
+          },
+        },
+      });
+
+      if (!session) {
+        throw new NotFoundException('Session not found');
+      }
+
+      if (session.status !== SessionStatus.IN_PROGRESS && session.status !== SessionStatus.LOCKED) {
+        throw new BadRequestException('Session is not in progress or locked');
+      }
+
+      let totalScore = 0;
+      const gradedAnswers = session.answers.map((answer) => {
+        let isCorrect = false;
+        let score = 0;
+
+        if (answer.question.type === 'PILIHAN_GANDA' || answer.question.type === 'BENAR_SALAH') {
+          const correctOption = answer.question.options.find((opt) => opt.isCorrect);
+          if (correctOption && correctOption.id === answer.selectedOption) {
+            isCorrect = true;
+            score = answer.question.points;
+          }
+        } else if (answer.question.type === 'MULTIPLE_RESPONSE') {
+          const correctOptionIds = answer.question.options
+            .filter((opt) => opt.isCorrect)
+            .map((opt) => opt.id)
+            .sort();
+          const selectedOptionIds = answer.selectedOption ? answer.selectedOption.split(',').sort() : [];
+          if (JSON.stringify(correctOptionIds) === JSON.stringify(selectedOptionIds)) {
+            isCorrect = true;
+            score = answer.question.points;
           }
         }
-      },
-    });
 
-    if (!session) {
-      throw new NotFoundException('Session not found');
-    }
+        totalScore += score;
+        return { id: answer.id, isCorrect, score };
+      });
 
-    if (session.status !== SessionStatus.IN_PROGRESS && session.status !== SessionStatus.LOCKED) {
-      throw new BadRequestException('Session is not in progress or locked');
-    }
-
-    // Calculate score for multiple choice
-    let totalScore = 0;
-    const gradedAnswers = session.answers.map(answer => {
-      let isCorrect = false;
-      let score = 0;
-
-      if (answer.question.type === 'PILIHAN_GANDA' || answer.question.type === 'BENAR_SALAH') {
-        const correctOption = answer.question.options.find(opt => opt.isCorrect);
-        if (correctOption && correctOption.id === answer.selectedOption) {
-          isCorrect = true;
-          score = answer.question.points;
-        }
-      } else if (answer.question.type === 'MULTIPLE_RESPONSE') {
-        const correctOptionIds = answer.question.options
-          .filter(opt => opt.isCorrect)
-          .map(opt => opt.id)
-          .sort();
-        
-        const selectedOptionIds = answer.selectedOption 
-          ? answer.selectedOption.split(',').sort() 
-          : [];
-
-        if (JSON.stringify(correctOptionIds) === JSON.stringify(selectedOptionIds)) {
-          isCorrect = true;
-          score = answer.question.points;
-        }
-      }
-      // Note: ESSAY type remains manual grading (isCorrect = null/false, score = 0)
-      
-      totalScore += score;
-      return {
-        id: answer.id,
-        isCorrect,
-        score,
-      };
-    });
-
-    // Update session status and score
-    return this.prisma.$transaction(async (tx) => {
-      // Update each answer with its correctness (for auto-gradable ones)
       for (const graded of gradedAnswers) {
         await tx.answer.update({
           where: { id: graded.id },

@@ -1,5 +1,11 @@
 import { PrismaClient, Role, QuestionType, Difficulty, ExamStatus } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import pg from 'pg';
 import * as bcrypt from 'bcryptjs';
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 // -------------------------------------------------------------------
 // NOTE: All UUIDs below are deterministic (fixed) so tests can rely on them.
@@ -17,9 +23,30 @@ export const TEST_QUESTION_ID_2      = '77777777-7777-7777-7777-777777777777';
 export const TEST_OPTION_ID_1        = '88888888-8888-8888-8888-888888888888';
 export const TEST_OPTION_ID_2        = '99999999-9999-9999-9999-999999999999';
 
-const prisma = new PrismaClient();
+const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
+  console.log('🌱 Cleaning E2E database...');
+  await prisma.$executeRawUnsafe('DELETE FROM "_SubjectToTeacher"');
+  await prisma.answer.deleteMany({});
+  await prisma.violation.deleteMany({});
+  await prisma.examSession.deleteMany({});
+  await prisma.examQuestion.deleteMany({});
+  await prisma.exam.deleteMany({});
+  await prisma.examGroup.deleteMany({});
+  await prisma.questionOption.deleteMany({});
+  await prisma.question.deleteMany({});
+  await prisma.questionBank.deleteMany({});
+  await prisma.student.deleteMany({});
+  await prisma.teacher.deleteMany({});
+  await prisma.subject.deleteMany({});
+  await prisma.user.deleteMany({});
+  await prisma.rombel.deleteMany({});
+  await prisma.major.deleteMany({});
+  console.log('🧹 E2E Database cleaned.');
+
   // -----------------------------------------------------------------
   // Password hashes (deterministic)
   // -----------------------------------------------------------------
@@ -75,7 +102,7 @@ async function main() {
       email: 'teacher@test.com',
       password: pwdTeacher,
       fullName: 'Test Teacher',
-      role: Role.GURU,
+      role: Role.SUPER_ADMIN,
     },
   });
   await prisma.teacher.create({ data: { id: 'd4444444-4444-4444-4444-444444444444', userId: TEST_TEACHER_USER_ID } });
@@ -141,7 +168,7 @@ async function main() {
       {
         id: TEST_QUESTION_ID_2,
         questionBankId: TEST_QUESTION_BANK_ID,
-        content: 'Explain Newton''s second law.',
+        content: "Explain Newton's second law.",
         type: QuestionType.ESSAY,
         difficulty: Difficulty.SULIT,
         points: 15,

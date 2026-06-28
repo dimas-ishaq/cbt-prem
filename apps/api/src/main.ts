@@ -3,7 +3,6 @@ import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
-import { join } from 'path';
 import { json, urlencoded } from 'express';
 
 import { WinstonLogger } from './common/logger/logger.service';
@@ -24,10 +23,6 @@ async function bootstrap() {
     transform: true,
   }));
   
-  // Serve uploaded media (question images, etc.) as static files
-  app.useStaticAssets(join(process.cwd(), 'uploads'), {
-    prefix: '/uploads/',
-  });
   const corsOrigins = (process.env.CORS_ORIGIN ?? process.env.CORS_ORIGINS ?? '')
     .split(',')
     .map((origin) => origin.trim())

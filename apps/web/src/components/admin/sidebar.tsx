@@ -152,13 +152,11 @@ export function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onMobile
         overflow="hidden"
         bg={{ base: 'sidebar.bg', lg: 'sidebar.bg' }}
         boxShadow={{ base: '2xl', lg: 'none' }}
-        sx={{
-          backgroundImage: {
-            base: 'none',
-            lg: 'linear-gradient(180deg, var(--chakra-colors-sidebar-bg) 0%, color-mix(in srgb, var(--chakra-colors-sidebar-bg) 94%, black) 100%)',
-          },
-          borderRight: '1px solid var(--chakra-colors-sidebar-border)',
+        backgroundImage={{
+          base: 'none',
+          lg: 'linear-gradient(180deg, var(--chakra-colors-sidebar-bg) 0%, color-mix(in srgb, var(--chakra-colors-sidebar-bg) 94%, black) 100%)',
         }}
+        borderRight="1px solid var(--chakra-colors-sidebar-border)"
       >
         <Box px={collapsed ? 3 : 5} py={5} borderBottom="1px solid" borderColor="sidebar.border">
           <Flex align="center" justify="space-between" gap={3}>
