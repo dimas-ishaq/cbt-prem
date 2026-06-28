@@ -11,6 +11,12 @@ need() { command -v "$1" >/dev/null 2>&1 || { echo "missing: $1" >&2; exit 1; };
 need bun
 need psql
 
+if ! command -v pm2 >/dev/null 2>&1; then
+  if command -v npm >/dev/null 2>&1; then
+    npm i -g pm2
+  fi
+fi
+
 [ -f .env ] || [ -f apps/api/.env ] || { echo "missing env file" >&2; exit 1; }
 
 if [ -f .env ]; then
@@ -40,10 +46,5 @@ if command -v pm2 >/dev/null 2>&1; then
   exit 0
 fi
 
-mkdir -p logs
-nohup bun run start:api > logs/api.log 2>&1 &
-printf '%s\n' "$!" > logs/api.pid
-nohup bun run start:web > logs/web.log 2>&1 &
-printf '%s\n' "$!" > logs/web.pid
-
-echo "started"
+echo "pm2 missing and auto-install failed" >&2
+exit 1
