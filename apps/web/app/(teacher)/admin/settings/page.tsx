@@ -59,6 +59,7 @@ export default function SettingsPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const faviconInputRef = useRef<HTMLInputElement>(null);
   const { t } = useTranslation();
 
   const [appName, setAppName] = useState('Novatech CBT');
@@ -197,6 +198,17 @@ export default function SettingsPage() {
 
   const handleRemoveLogo = () => {
     setLogoUrl('');
+  };
+
+  const handleFaviconUpload = async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await api.post('/settings/favicon', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+    setFaviconUrl(res.data.faviconUrl);
+    queryClient.invalidateQueries({ queryKey: ['settings'] });
+    const link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+    if (link) link.href = res.data.faviconUrl;
+    toast.success('Favicon berhasil diupload.');
   };
 
   const handleSyncRedis = async () => {
@@ -397,7 +409,21 @@ export default function SettingsPage() {
             </Box>
             <Stack gap={3}>
               <Text fontWeight="bold" color="text.primary" fontSize="sm">Favicon Site</Text>
-              <Input value={faviconUrl} onChange={(e) => setFaviconUrl(e.target.value)} placeholder="https://.../favicon.ico atau data:image/..." bg="bg.elevated" borderRadius="xl" h={12} px={4} borderColor="border.default" />
+              <Flex gap={3} wrap="wrap">
+                <Input value={faviconUrl} onChange={(e) => setFaviconUrl(e.target.value)} placeholder="https://.../favicon.ico atau data:image/..." bg="bg.elevated" borderRadius="xl" h={12} px={4} borderColor="border.default" />
+                <Button onClick={() => faviconInputRef.current?.click()} variant="outline" borderRadius="xl">Upload</Button>
+                <input
+                  ref={faviconInputRef}
+                  type="file"
+                  accept="image/x-icon,image/png,image/svg+xml,.ico,.png,.svg"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (file) await handleFaviconUpload(file);
+                    e.target.value = '';
+                  }}
+                  style={{ display: 'none' }}
+                />
+              </Flex>
               <Text fontSize="2xs" color="text.secondary">Pakai square 32x32 atau .ico. Kalau kosong, fallback /favicon.ico.</Text>
             </Stack>
           </Stack>
