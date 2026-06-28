@@ -329,7 +329,7 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
         type: NotificationType.EXAM_SUBMITTED,
         priority: NotificationPriority.NORMAL,
         title: 'Ujian selesai',
-        message: `Siswa menyelesaikan ujian ${session.exam.title}`,
+        message: `Siswa ${session.student.user.fullName} menyelesaikan ujian ${session.exam.title}`,
         referenceId: updatedSession.id,
         referenceType: 'exam_session',
         targets: [

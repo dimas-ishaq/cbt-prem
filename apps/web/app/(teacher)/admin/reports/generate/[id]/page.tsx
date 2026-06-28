@@ -3,7 +3,8 @@
 import { use } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { Box, Flex, Heading, Text, Spinner, Button, Stack } from '@chakra-ui/react';
+import { Box, Flex, Heading, Text, Spinner, Button, Stack, HStack } from '@chakra-ui/react';
+import { ArrowLeft, Download, FileText, Filter } from 'lucide-react';
 import Link from 'next/link';
 
 interface ReportItem {
@@ -32,43 +33,24 @@ export default function ReportGeneratePage({ params }: { params: Promise<{ id: s
   });
 
   if (isLoading) {
-    return (
-      <Flex justify="center" align="center" minH="50vh">
-        <Spinner size="lg" color="indigo.600" />
-      </Flex>
-    );
+    return <Flex justify="center" align="center" minH="50vh" bg="bg.surface" border="1px solid" borderColor="border.default" borderRadius="card" shadow="card-dark"><Spinner size="lg" color="brand.solid" /></Flex>;
   }
 
   if (!data) {
-    return (
-      <Flex justify="center" minH="40vh" align="center">
-        <Box p={4} bg="red.50" color="red.700" borderRadius="xl" w="full" textAlign="center" fontWeight="semibold">
-          Laporan tidak ditemukan.
-        </Box>
-      </Flex>
-    );
+    return <Flex justify="center" minH="40vh" align="center"><Box p={4} bg="status.danger.bg" color="status.danger.text" borderRadius="xl" w="full" textAlign="center" fontWeight="semibold">Laporan tidak ditemukan.</Box></Flex>;
   }
 
   return (
-    <Box maxW="md" mx="auto" mt={12}>
-      <Heading size="lg" fontWeight="bold" color="gray.900" mb={2}>
-        {data.title}
-      </Heading>
-      <Text color="gray.600" mb={6}>{data.description}</Text>
-      <Box p={4} bg="blue.50" color="blue.700" mb={6} borderRadius="xl" fontSize="sm">
-        {data.criteria}
-      </Box>
+    <Box maxW="md" mx="auto" mt={12} bg="bg.surface" p={8} borderRadius="card" border="1px solid" borderColor="border.default" shadow="card-dark">
+      <HStack gap={3} mb={3}>
+        <Box boxSize={10} borderRadius="lg" bg="brand.subtle" color="brand.text" display="flex" alignItems="center" justifyContent="center"><FileText size={18} /></Box>
+        <Heading size="lg" fontWeight="bold" color="text.primary">{data.title}</Heading>
+      </HStack>
+      <Text color="text.secondary" mb={6}>{data.description}</Text>
+      <Box p={4} bg="brand.subtle" color="brand.text" mb={6} borderRadius="xl" fontSize="sm" border="1px solid" borderColor="border.default"><HStack gap={2}><Filter size={14} /><Text>{data.criteria}</Text></HStack></Box>
       <Stack gap={3} direction="row">
-        <a href={data.generateUrl} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
-          <Button colorPalette="green" borderRadius="xl" cursor="pointer">
-            Unduh Laporan
-          </Button>
-        </a>
-        <Link href="/admin/reports" style={{ textDecoration: 'none' }}>
-          <Button variant="outline" colorPalette="gray" borderRadius="xl" cursor="pointer">
-            Kembali ke Rekomendasi Laporan
-          </Button>
-        </Link>
+        <a href={data.generateUrl} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}><Button bg="status.success.bg" color="status.success.text" borderRadius="xl" cursor="pointer" _hover={{ bg: 'status.success.text', color: 'text.primary' }}><Download size={14} /> Unduh Laporan</Button></a>
+        <Link href="/admin/reports" style={{ textDecoration: 'none' }}><Button variant="outline" bg="bg.subtle" color="text.primary" borderColor="border.default" borderRadius="xl" cursor="pointer"><ArrowLeft size={14} /> Kembali</Button></Link>
       </Stack>
     </Box>
   );

@@ -95,11 +95,12 @@ export default function MonitoringListPage() {
         borderRadius="3xl"
         overflow="hidden"
         position="relative"
-        bg="linear-gradient(135deg, #eef2ff 0%, #e0f2fe 55%, #ecfdf5 100%)"
+        bg="bg.surface"
         border="1px solid"
-        borderColor="indigo.100"
+        borderColor="border.default"
         px={{ base: 6, md: 8 }}
         py={{ base: 8, md: 10 }}
+        shadow="card-dark"
       >
         {/* Decorative soft orbs */}
         <Box
@@ -109,7 +110,7 @@ export default function MonitoringListPage() {
           w="220px"
           h="220px"
           borderRadius="full"
-          bg="indigo.200"
+          bg="brand.subtle"
           opacity={0.35}
           pointerEvents="none"
         />
@@ -120,11 +121,10 @@ export default function MonitoringListPage() {
           w="180px"
           h="180px"
           borderRadius="full"
-          bg="cyan.200"
+          bg="bg.elevated"
           opacity={0.25}
           pointerEvents="none"
         />
-
         <Stack gap={6} position="relative">
           <Flex direction={{ base: 'column', lg: 'row' }} justify="space-between" gap={5}>
             <Box maxW="2xl">
@@ -133,8 +133,8 @@ export default function MonitoringListPage() {
                 px={3}
                 py={1.5}
                 borderRadius="full"
-                bg="indigo.600"
-                color="white"
+                bg="brand.solid"
+                color="text.inverted"
                 mb={4}
                 gap={1.5}
               >
@@ -144,10 +144,10 @@ export default function MonitoringListPage() {
                 </Text>
               </HStack>
 
-              <Heading as="h1" size="2xl" lineHeight="1.08" letterSpacing="tight" color="gray.900">
+              <Heading as="h1" size="2xl" lineHeight="1.08" letterSpacing="tight" color="text.primary">
                 Monitoring Ujian Aktif
               </Heading>
-              <Text mt={3} color="gray.500" maxW="lg" fontSize="sm" lineHeight="tall">
+              <Text mt={3} color="text.secondary" maxW="lg" fontSize="sm" lineHeight="tall">
                 Halaman ini hanya menampilkan ujian aktif. Riwayat dan jadwal mendatang dipisah agar pengawasan lebih fokus.
               </Text>
             </Box>
@@ -158,10 +158,10 @@ export default function MonitoringListPage() {
                   size="sm"
                   borderRadius="xl"
                   variant="outline"
-                  borderColor="gray.300"
-                  color="gray.700"
-                  bg="white"
-                  _hover={{ bg: 'gray.50', borderColor: 'indigo.400', color: 'indigo.700' }}
+                  borderColor="border.default"
+                  color="text.secondary"
+                  bg="bg.surface"
+                  _hover={{ bg: 'bg.elevated', borderColor: 'brand.text', color: 'text.primary' }}
                   fontWeight="medium"
                 >
                   <History size={14} />
@@ -173,10 +173,10 @@ export default function MonitoringListPage() {
                   size="sm"
                   borderRadius="xl"
                   variant="outline"
-                  borderColor="gray.300"
-                  color="gray.700"
-                  bg="white"
-                  _hover={{ bg: 'gray.50', borderColor: 'indigo.400', color: 'indigo.700' }}
+                  borderColor="border.default"
+                  color="text.secondary"
+                  bg="bg.surface"
+                  _hover={{ bg: 'bg.elevated', borderColor: 'brand.text', color: 'text.primary' }}
                   fontWeight="medium"
                 >
                   <CalendarClock size={14} />
@@ -188,12 +188,12 @@ export default function MonitoringListPage() {
 
           {/* ─── Search / Filter Inset Panel ─── */}
           <Box
-            bg="white"
+            bg="bg.elevated"
             borderRadius="2xl"
             border="1px solid"
-            borderColor="gray.200"
+            borderColor="border.default"
             p={4}
-            boxShadow="0 2px 16px rgba(15,23,42,0.06)"
+            shadow="card-dark"
           >
             <Flex direction={{ base: 'column', md: 'row' }} gap={3}>
               <Box position="relative" flex="1">
@@ -203,7 +203,7 @@ export default function MonitoringListPage() {
                   top="50%"
                   transform="translateY(-50%)"
                   zIndex={2}
-                  color="gray.400"
+                  color="text.muted"
                   pointerEvents="none"
                 >
                   <Search size={16} />
@@ -214,12 +214,12 @@ export default function MonitoringListPage() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   pl="38px"
-                  bg="gray.50"
-                  borderColor="gray.200"
-                  color="gray.800"
-                  _placeholder={{ color: 'gray.400' }}
+                  bg="input.bg"
+                  borderColor="input.border"
+                  color="text.primary"
+                  _placeholder={{ color: 'text.muted' }}
                   borderRadius="xl"
-                  _focus={{ borderColor: 'indigo.400', bg: 'white', boxShadow: '0 0 0 3px rgba(99,102,241,0.12)' }}
+                  _focus={{ borderColor: 'input.focus.border', bg: 'bg.surface', boxShadow: '0 0 0 3px var(--chakra-colors-brand-subtle)' }}
                 />
               </Box>
               <Input
@@ -228,21 +228,21 @@ export default function MonitoringListPage() {
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value)}
                 borderRadius="xl"
-                bg="gray.50"
-                borderColor="gray.200"
-                color="gray.700"
+                bg="input.bg"
+                borderColor="input.border"
+                color="text.primary"
                 w={{ base: 'full', md: '200px' }}
-                _focus={{ borderColor: 'indigo.400', bg: 'white' }}
+                _focus={{ borderColor: 'input.focus.border', bg: 'bg.surface' }}
               />
               <Button
                 id="live-monitoring-refresh"
                 onClick={() => refetch()}
                 disabled={isFetching}
                 borderRadius="xl"
-                bg="indigo.600"
-                color="white"
+                bg="brand.solid"
+                color="text.inverted"
                 fontWeight="semibold"
-                _hover={{ bg: 'indigo.700' }}
+                _hover={{ bg: 'brand.text' }}
                 flexShrink={0}
               >
                 <RefreshCw size={15} className={isFetching ? 'animate-spin' : ''} />
@@ -256,20 +256,20 @@ export default function MonitoringListPage() {
       {/* ─── Loading ─── */}
       {isLoading && (
         <Flex justify="center" align="center" direction="column" py={20} gap={3}>
-          <Spinner size="lg" color="indigo.500" />
-          <Text fontSize="sm" color="gray.400" fontWeight="medium">Memuat data ujian…</Text>
+          <Spinner size="lg" color="brand.solid" />
+          <Text fontSize="sm" color="text.secondary" fontWeight="medium">Memuat data ujian…</Text>
         </Flex>
       )}
 
       {/* ─── Live count bar ─── */}
       {!isLoading && filteredExams.length > 0 && (
         <Flex align="center" justify="space-between" px={1}>
-          <Text fontSize="sm" fontWeight="semibold" color="gray.700">
+          <Text fontSize="sm" fontWeight="semibold" color="text.primary">
             {filteredExams.length} ujian sedang berlangsung
           </Text>
           <Flex align="center" gap={1.5}>
-            <Box w="7px" h="7px" borderRadius="full" bg="green.500" className="animate-pulse" />
-            <Text fontSize="xs" color="gray.400" fontWeight="medium">Refresh otomatis tiap 15 detik</Text>
+            <Box w="7px" h="7px" borderRadius="full" bg="status.success.text" className="animate-pulse" />
+            <Text fontSize="xs" color="text.muted" fontWeight="medium">Refresh otomatis tiap 15 detik</Text>
           </Flex>
         </Flex>
       )}
@@ -281,121 +281,74 @@ export default function MonitoringListPage() {
             <Box
               key={exam.id}
               position="relative"
-              bg="white"
+              bg="bg.surface"
               borderWidth="1px"
-              borderColor="gray.200"
-              borderRadius="2xl"
-              boxShadow="0 2px 16px rgba(15,23,42,0.05)"
+              borderColor="border.default"
+              borderRadius="card"
+              shadow="card-dark"
               overflow="hidden"
-              transition="all 0.25s cubic-bezier(0.4,0,0.2,1)"
+              transition="all 0.2s ease"
               _hover={{
-                transform: 'translateY(-4px)',
-                boxShadow: '0 24px 60px rgba(99,102,241,0.12), 0 4px 16px rgba(15,23,42,0.07)',
-                borderColor: 'indigo.200',
+                transform: 'translateY(-2px)',
+                shadow: '0 8px 24px rgba(0,0,0,0.15)',
+                borderColor: 'brand.solid',
               }}
             >
               {/* Gradient accent top bar */}
-              <Box h="4px" bg="linear-gradient(90deg, #22c55e 0%, #06b6d4 50%, #6366f1 100%)" />
+              <Box h="4px" bg="linear-gradient(90deg, #1ABE71 0%, #2D9BF0 50%, #774AA4 100%)" />
 
               {/* Animated LIVE badge */}
-              <Box position="absolute" top="20px" right="16px">
+              <Box position="absolute" top="16px" right="12px">
                 <Flex
                   align="center"
-                  gap={1.5}
-                  px={2.5}
-                  py={1}
-                  borderRadius="full"
-                  bg="green.50"
+                  gap={1}
+                  px={2}
+                  py={0.5}
+                  borderRadius="pill"
+                  bg="status.success.bg"
                   border="1px solid"
-                  borderColor="green.200"
+                  borderColor="status.success.text"
                 >
-                  <Box w="6px" h="6px" borderRadius="full" bg="green.500" className="animate-pulse" />
-                  <Text fontSize="10px" fontWeight="bold" color="green.700" letterSpacing="0.08em">
+                  <Box w="5px" h="5px" borderRadius="full" bg="status.success.text" className="animate-pulse" />
+                  <Text fontSize="10px" fontWeight="bold" color="status.success.text" letterSpacing="0.08em">
                     LIVE
                   </Text>
                 </Flex>
               </Box>
 
-              <Flex p={5} direction="column" gap={4} h="100%">
-                {/* Status icon */}
-                <Flex
-                  w={10}
-                  h={10}
-                  borderRadius="xl"
-                  bg="green.50"
-                  border="1px solid"
-                  borderColor="green.100"
-                  align="center"
-                  justify="center"
-                >
-                  <Activity size={20} color="#16a34a" className="animate-pulse" />
-                </Flex>
-
+              <Flex p={4} direction="column" gap={3} h="100%">
                 {/* Title & Subject */}
                 <Box pr={14}>
-                  <Heading size="sm" color="gray.900" lineClamp={2} fontWeight="bold" letterSpacing="tight">
+                  <Heading size="sm" color="text.primary" lineClamp={2} fontWeight="bold" letterSpacing="tight">
                     {exam.title}
                   </Heading>
-                  <Text fontSize="xs" color="indigo.600" fontWeight="semibold" mt={1}>
+                  <Text fontSize="xs" color="brand.text" fontWeight="semibold" mt={1}>
                     {exam.subject.name}
                   </Text>
                 </Box>
 
-                {/* Divider */}
-                <Box h="1px" bg="gray.100" />
-
-                {/* Info rows with icon boxes */}
-                <Stack gap={2.5} flex="1">
-                  <Flex align="center" gap={2.5}>
-                    <Flex
-                      w="24px"
-                      h="24px"
-                      borderRadius="md"
-                      bg="gray.100"
-                      align="center"
-                      justify="center"
-                      flexShrink={0}
-                    >
-                      <Users size={12} color="#6b7280" />
-                    </Flex>
-                    <Text fontSize="xs" color="gray.500">
-                      <Text as="span" fontWeight="semibold" color="gray.800">
+                {/* Info rows padat */}
+                <Stack gap={2} flex="1">
+                  <Flex align="center" gap={2}>
+                    <Users size={13} color="var(--chakra-colors-text-muted)" />
+                    <Text fontSize="xs" color="text.secondary">
+                      <Text as="span" fontWeight="semibold" color="text.primary">
                         {exam._count?.examSessions ?? 0}
                       </Text>{' '}
                       peserta terdaftar
                     </Text>
                   </Flex>
 
-                  <Flex align="center" gap={2.5}>
-                    <Flex
-                      w="24px"
-                      h="24px"
-                      borderRadius="md"
-                      bg="gray.100"
-                      align="center"
-                      justify="center"
-                      flexShrink={0}
-                    >
-                      <Calendar size={12} color="#6b7280" />
-                    </Flex>
-                    <Text fontSize="xs" color="gray.500">
+                  <Flex align="center" gap={2}>
+                    <Calendar size={13} color="var(--chakra-colors-text-muted)" />
+                    <Text fontSize="xs" color="text.secondary">
                       {formatDateTime(exam.startTime)}
                     </Text>
                   </Flex>
 
-                  <Flex align="center" gap={2.5}>
-                    <Flex
-                      w="24px"
-                      h="24px"
-                      borderRadius="md"
-                      bg="orange.50"
-                      align="center"
-                      justify="center"
-                      flexShrink={0}
-                    >
-                      <Clock size={12} color="#d97706" />
-                    </Flex>
-                    <Text fontSize="xs" color="orange.600" fontWeight="semibold">
+                  <Flex align="center" gap={2}>
+                    <Clock size={13} color="var(--chakra-colors-status-warning-text)" />
+                    <Text fontSize="xs" color="status.warning.text" fontWeight="semibold">
                       {remaining(exam.endTime)} tersisa
                     </Text>
                   </Flex>
@@ -405,12 +358,12 @@ export default function MonitoringListPage() {
                 <Link href={`/admin/monitoring/${exam.id}`} style={{ width: '100%' }}>
                   <Button
                     w="full"
-                    bg="gray.900"
-                    color="white"
-                    borderRadius="xl"
+                    bg="brand.solid"
+                    color="text.inverted"
+                    borderRadius="card"
                     fontWeight="semibold"
                     fontSize="sm"
-                    _hover={{ bg: 'indigo.700' }}
+                    _hover={{ bg: 'brand.text' }}
                   >
                     Masuk Proktor
                     <ChevronRight size={16} />
@@ -427,32 +380,22 @@ export default function MonitoringListPage() {
                 direction="column"
                 align="center"
                 justify="center"
-                py={20}
+                py={16}
                 px={6}
                 textAlign="center"
-                borderRadius="3xl"
-                borderWidth="1.5px"
+                borderRadius="card"
+                borderWidth="1px"
                 borderStyle="dashed"
-                borderColor="gray.200"
-                bg="white"
+                borderColor="border.default"
+                bg="bg.surface"
               >
-                <Flex
-                  w={16}
-                  h={16}
-                  borderRadius="2xl"
-                  bg="gray.50"
-                  border="1px solid"
-                  borderColor="gray.200"
-                  align="center"
-                  justify="center"
-                  mb={4}
-                >
-                  <Activity size={28} color="#d1d5db" />
-                </Flex>
-                <Heading size="md" color="gray.700" mb={2}>
+                <Box p={4} borderRadius="2xl" bg="bg.subtle" color="text.muted" mb={4}>
+                  <Activity size={28} />
+                </Box>
+                <Heading size="md" color="text.primary" mb={2}>
                   Tidak ada ujian aktif
                 </Heading>
-                <Text fontSize="sm" color="gray.400" maxW="sm">
+                <Text fontSize="sm" color="text.secondary" maxW="sm">
                   {searchQuery || dateFilter
                     ? 'Tidak ada ujian berlangsung yang cocok dengan filter yang dipilih.'
                     : 'Ujian yang sedang berjalan akan muncul secara otomatis di sini.'}

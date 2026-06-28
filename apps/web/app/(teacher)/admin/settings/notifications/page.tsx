@@ -125,48 +125,48 @@ export default function NotificationSettingsPage() {
 
   if (isLoading) {
     return (
-      <Flex direction="column" align="center" justify="center" minH="50vh">
-        <Spinner size="xl" color="indigo.600" />
-        <Text color="gray.500" mt={4} fontWeight="medium">Memuat data kebijakan notifikasi...</Text>
+      <Flex direction="column" align="center" justify="center" minH="50vh" bg="bg.surface" border="1px solid" borderColor="border.default" borderRadius="card" shadow="card-dark">
+        <Spinner size="xl" color="brand.solid" />
+        <Text color="text.secondary" mt={4} fontWeight="medium">Memuat data kebijakan notifikasi...</Text>
       </Flex>
     );
   }
 
   return (
     <Stack gap={6} maxW="7xl" mx="auto" p={{ base: 2, md: 4 }}>
-      {/* Header */}
-      <Flex justify="space-between" align="center">
+      <Flex justify="space-between" align="center" wrap="wrap" gap={4}>
         <HStack gap={4}>
           <IconButton
             asChild
             variant="ghost"
-            _hover={{ bg: 'gray.100' }}
+            _hover={{ bg: 'bg.subtle' }}
             borderRadius="full"
             aria-label="Kembali ke Pengaturan"
             size="sm"
+            color="text.primary"
           >
             <Link href="/admin/settings">
               <ArrowLeft size={24} />
             </Link>
           </IconButton>
           <Box>
-            <Heading size="xl" fontWeight="black" color="gray.900" letterSpacing="tight">
+            <Heading size="xl" fontWeight="black" color="text.primary" letterSpacing="tight">
               Manajemen Kebijakan Notifikasi
             </Heading>
-            <Text color="gray.500" mt={1}>
+            <Text color="text.secondary" mt={1}>
               Atur hak akses penerimaan jenis notifikasi secara mutlak berdasarkan Peran (Role).
             </Text>
           </Box>
         </HStack>
       </Flex>
 
-      <Box bg="white" borderRadius="2xl" shadow="sm" borderWidth="1px" borderColor="gray.100" overflow="hidden">
-        <Box p={5} bg="amber.50/50" borderBottom="1px solid" borderColor="amber.100">
+      <Box bg="bg.surface" borderRadius="card" shadow="card-dark" borderWidth="1px" borderColor="border.default" overflow="hidden">
+        <Box p={5} bg="status.warning.bg" borderBottom="1px solid" borderColor="status.warning.text">
           <HStack gap={2.5} align="flex-start">
-            <ShieldAlert className="text-amber-600" size={20} style={{ flexShrink: 0, marginTop: '2px' }} />
+            <ShieldAlert color="var(--chakra-colors-status-warning-text)" size={20} style={{ flexShrink: 0, marginTop: '2px' }} />
             <Box>
-              <Text fontWeight="bold" color="amber.800" fontSize="sm">Catatan Kebijakan Mutlak</Text>
-              <Text color="amber.700" fontSize="xs" mt={0.5}>
+              <Text fontWeight="bold" color="status.warning.text" fontSize="sm">Catatan Kebijakan Mutlak</Text>
+              <Text color="text.secondary" fontSize="xs" mt={0.5}>
                 Kebijakan yang diatur di sini bersifat mutlak. Jika Anda mematikan suatu jenis notifikasi untuk suatu role, 
                 seluruh user dengan role tersebut tidak akan pernah dikirimkan notifikasi tersebut, mengabaikan pengaturan preferensi profil pribadi mereka.
               </Text>
@@ -176,11 +176,11 @@ export default function NotificationSettingsPage() {
 
         <Box overflowX="auto">
           <Table.Root variant="outline" size="md">
-            <Table.Header bg="gray.50/50">
+            <Table.Header bg="bg.elevated">
               <Table.Row>
-                <Table.ColumnHeader color="gray.700" fontWeight="bold">Jenis Notifikasi</Table.ColumnHeader>
+                <Table.ColumnHeader color="text.primary" fontWeight="bold">Jenis Notifikasi</Table.ColumnHeader>
                 {roles?.map((role) => (
-                  <Table.ColumnHeader key={role.id} color="gray.700" fontWeight="bold" textAlign="center" minW="140px">
+                  <Table.ColumnHeader key={role.id} color="text.primary" fontWeight="bold" textAlign="center" minW="140px">
                     {role.name}
                   </Table.ColumnHeader>
                 ))}
@@ -188,11 +188,11 @@ export default function NotificationSettingsPage() {
             </Table.Header>
             <Table.Body>
               {NOTIFICATION_TYPES.map((type) => (
-                <Table.Row key={type.value} _hover={{ bg: 'gray.50/30' }}>
+                <Table.Row key={type.value} _hover={{ bg: 'bg.subtle' }}>
                   <Table.Cell py={4}>
                     <Box>
-                      <Text fontWeight="semibold" color="gray.800" fontSize="sm">{type.label}</Text>
-                      <Text fontSize="2xs" color="gray.400" mt={0.5}>{type.desc}</Text>
+                      <Text fontWeight="semibold" color="text.primary" fontSize="sm">{type.label}</Text>
+                      <Text fontSize="2xs" color="text.muted" mt={0.5}>{type.desc}</Text>
                     </Box>
                   </Table.Cell>
                   {roles?.map((role) => {
@@ -216,7 +216,7 @@ export default function NotificationSettingsPage() {
           </Table.Root>
         </Box>
 
-        <Box p={6} borderTop="1px solid" borderColor="gray.100" bg="gray.50/30">
+        <Box p={6} borderTop="1px solid" borderColor="border.default" bg="bg.subtle">
           <Flex justify="flex-end" gap={3}>
             <Link href="/admin/settings" passHref>
               <Button variant="outline" colorPalette="gray" borderRadius="xl" fontWeight="semibold" fontSize="sm" px={5}>
@@ -230,9 +230,9 @@ export default function NotificationSettingsPage() {
                   handleSaveRolePolicies(role.id);
                 });
               }}
-              bg="indigo.600"
-              color="white"
-              _hover={{ bg: 'indigo.700' }}
+              bg="brand.solid"
+              color="text.inverted"
+              _hover={{ bg: 'brand.text' }}
               borderRadius="xl"
               fontWeight="bold"
               fontSize="sm"

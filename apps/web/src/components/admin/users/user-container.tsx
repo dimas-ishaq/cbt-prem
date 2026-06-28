@@ -309,44 +309,58 @@ export function UserContainer() {
 
       {/* Stats Cards */}
       <Flex gap={4} wrap="wrap">
-        {TABS.slice(1).map(({ key, label, icon: Icon }) => (
-          <Box
-            key={key}
-            flex="1"
-            minW="140px"
-            bg="bg.surface"
-            borderRadius="2xl"
-            borderWidth="1px"
-            borderColor="border.default"
-            p={4}
-            shadow="card-dark"
-            cursor="pointer"
-            onClick={() => setActiveTab(key)}
-            transition="all 0.2s"
-            _hover={{ shadow: '0 4px 16px rgba(0,0,0,0.5)', borderColor: 'brand.text' }}
-            borderBottomWidth={activeTab === key ? '3px' : '1px'}
-            borderBottomColor={activeTab === key ? 'brand.text' : 'border.default'}
-          >
-            <Flex align="center" gap={3}>
+        {(() => {
+          const tabMetaMap: Record<string, { color: string; bg: string }> = {
+            SUPER_ADMIN: { color: '#9C55E8', bg: 'rgba(156, 85, 232, 0.1)' },
+            GURU: { color: '#2D9BF0', bg: 'rgba(45, 155, 240, 0.1)' },
+            SISWA: { color: '#1ABE71', bg: 'rgba(26, 190, 113, 0.1)' },
+          };
+          return TABS.slice(1).map(({ key, label, icon: Icon }) => {
+            const meta = tabMetaMap[key] || { color: '#8A8A8A', bg: 'rgba(138, 138, 138, 0.1)' };
+            const isActive = activeTab === key;
+            return (
               <Box
-                p={2}
-                borderRadius="lg"
-                bg={key === 'SUPER_ADMIN' ? 'brand.subtle' : key === 'GURU' ? 'info.50' : 'status.success.bg'}
-                color={key === 'SUPER_ADMIN' ? 'brand.text' : key === 'GURU' ? 'info.600' : 'status.success.text'}
+                key={key}
+                flex="1"
+                minW="140px"
+                bg="bg.surface"
+                borderRadius="2xl"
+                borderWidth="1px"
+                borderColor="border.default"
+                p={4}
+                shadow="card-dark"
+                cursor="pointer"
+                onClick={() => setActiveTab(key)}
+                transition="all 0.2s"
+                _hover={{ shadow: '0 4px 16px rgba(0,0,0,0.5)', borderColor: meta.color }}
+                borderBottomWidth={isActive ? '3px' : '1px'}
+                borderBottomColor={isActive ? meta.color : 'border.default'}
               >
-                <Icon size={18} />
+                <Flex align="center" gap={3}>
+                  <Box
+                    p={2}
+                    borderRadius="lg"
+                    bg={meta.bg}
+                    color={meta.color}
+                    display="flex"
+                    alignItems="center"
+                    justifyContent="center"
+                  >
+                    <Icon size={20} />
+                  </Box>
+                  <Box>
+                    <Text fontSize="2xl" fontWeight="bold" color="text.primary" lineHeight="1">
+                      {counts[key]}
+                    </Text>
+                    <Text fontSize="xs" color="text.secondary" mt={0.5}>
+                      {label}
+                    </Text>
+                  </Box>
+                </Flex>
               </Box>
-              <Box>
-                <Text fontSize="2xl" fontWeight="bold" color="text.primary" lineHeight="1">
-                  {counts[key]}
-                </Text>
-                <Text fontSize="xs" color="text.secondary" mt={0.5}>
-                  {label}
-                </Text>
-              </Box>
-            </Flex>
-          </Box>
-        ))}
+            );
+          });
+        })()}
       </Flex>
 
       <UsersTable

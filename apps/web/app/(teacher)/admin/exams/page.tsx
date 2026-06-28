@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect, useMemo } from 'react';
 import api from '@/lib/api';
 import { TablePagination } from '@/components/ui/pagination';
-import { Plus, FileText, Trash2, Calendar, Clock, Lock, Pencil, Search, Filter, ClipboardList, ChartColumn, BadgeCheck, BookOpen } from 'lucide-react';
+import { Plus, FileText, Trash2, Calendar, Clock, Lock, Pencil, Search, Filter, ClipboardList, BadgeCheck, BookOpen } from 'lucide-react';
 import Link from 'next/link';
 import { Badge, Box, Flex, Heading, Text, Button, Table, HStack, Stack, Spinner, IconButton, Input, Select, createListCollection } from '@chakra-ui/react';
 import { toast } from '@/lib/toaster';
@@ -80,18 +80,50 @@ export default function ExamsPage() {
           </Link>
         </Flex>
 
-        <Flex gap={3} wrap="wrap" mt={5}>
+        <Flex gap={4} wrap="wrap" mt={5}>
           {[
-            { label: 'Total', value: counts.total },
-            { label: 'Draft', value: counts.draft },
-            { label: 'Published', value: counts.published },
-            { label: 'Ongoing', value: counts.ongoing },
-          ].map((item) => (
-            <Box key={item.label} minW="140px" flex="1" bg="bg.subtle" borderWidth="1px" borderColor="border.default" borderRadius="lg" p={4}>
-              <HStack gap={1.5} color="text.secondary" fontSize="xs" textTransform="uppercase" letterSpacing="0.08em"><ChartColumn size={12} /><Text>{item.label}</Text></HStack>
-              <Text fontSize="2xl" fontWeight="bold" color="text.primary" mt={1}>{item.value}</Text>
-            </Box>
-          ))}
+            { label: 'Total', value: counts.total, icon: ClipboardList, color: '#9C55E8', bg: 'rgba(156, 85, 232, 0.1)' },
+            { label: 'Draft', value: counts.draft, icon: FileText, color: '#F5A623', bg: 'rgba(245, 166, 35, 0.1)' },
+            { label: 'Published', value: counts.published, icon: BadgeCheck, color: '#1ABE71', bg: 'rgba(26, 190, 113, 0.1)' },
+            { label: 'Ongoing', value: counts.ongoing, icon: Clock, color: '#2D9BF0', bg: 'rgba(45, 155, 240, 0.1)' },
+          ].map((item) => {
+            const Icon = item.icon;
+            return (
+              <Flex
+                key={item.label}
+                minW="140px"
+                flex="1"
+                bg="bg.subtle"
+                borderWidth="1px"
+                borderColor="border.default"
+                borderRadius="xl"
+                p={4}
+                align="center"
+                gap={4}
+              >
+                <Flex
+                  w={10}
+                  h={10}
+                  borderRadius="lg"
+                  bg={item.bg}
+                  align="center"
+                  justify="center"
+                  color={item.color}
+                  flexShrink={0}
+                >
+                  <Icon size={20} />
+                </Flex>
+                <Box>
+                  <Text color="text.secondary" fontSize="xs" fontWeight="semibold" textTransform="uppercase" letterSpacing="0.08em">
+                    {item.label}
+                  </Text>
+                  <Text fontSize="2xl" fontWeight="bold" color="text.primary" mt={0.5}>
+                    {item.value}
+                  </Text>
+                </Box>
+              </Flex>
+            );
+          })}
         </Flex>
       </Box>
 

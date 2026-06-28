@@ -135,32 +135,77 @@ export default function MonitoringHistoryPage() {
       <Box
         borderRadius="3xl"
         overflow="hidden"
-        bg="linear-gradient(135deg, rgba(15,23,42,0.98), rgba(127,29,29,0.96) 52%, rgba(194,65,12,0.92))"
-        color="white"
+        position="relative"
+        bg="bg.surface"
+        border="1px solid"
+        borderColor="border.default"
         px={{ base: 6, md: 8 }}
-        py={{ base: 7, md: 9 }}
-        boxShadow="0 28px 80px rgba(15, 23, 42, 0.24)"
+        py={{ base: 8, md: 10 }}
+        shadow="card-dark"
       >
-        <Stack gap={6}>
+        {/* Decorative soft orbs */}
+        <Box
+          position="absolute"
+          top="-70px"
+          right="-50px"
+          w="220px"
+          h="220px"
+          borderRadius="full"
+          bg="brand.subtle"
+          opacity={0.35}
+          pointerEvents="none"
+        />
+        <Box
+          position="absolute"
+          bottom="-60px"
+          left="30%"
+          w="180px"
+          h="180px"
+          borderRadius="full"
+          bg="bg.elevated"
+          opacity={0.25}
+          pointerEvents="none"
+        />
+
+        <Stack gap={6} position="relative">
           <Flex direction={{ base: 'column', lg: 'row' }} justify="space-between" gap={5}>
             <Box maxW="2xl">
               <Link href="/admin/monitoring">
-                <Button mb={4} size="sm" borderRadius="xl" bg="whiteAlpha.160" color="white" _hover={{ bg: 'whiteAlpha.220' }}>
+                <Button
+                  mb={4}
+                  size="sm"
+                  borderRadius="xl"
+                  variant="outline"
+                  borderColor="border.default"
+                  color="text.secondary"
+                  bg="bg.surface"
+                  _hover={{ bg: 'bg.elevated', borderColor: 'brand.text', color: 'text.primary' }}
+                  fontWeight="medium"
+                >
                   <ChevronLeft size={16} />
                   Kembali ke Live Monitoring
                 </Button>
               </Link>
-              <Heading as="h1" size="2xl" lineHeight="1.05" letterSpacing="tight">
+              <Heading as="h1" size="2xl" lineHeight="1.05" letterSpacing="tight" color="text.primary">
                 History monitoring per mapel ujian
               </Heading>
-              <Text mt={3} color="whiteAlpha.820" maxW="2xl" fontSize="sm">
+              <Text mt={3} color="text.secondary" maxW="2xl" fontSize="sm">
                 Setiap grup menampilkan mapel dan ujian, lalu di dalamnya ada session siswa sebelumnya beserta pelanggaran yang pernah terjadi.
               </Text>
             </Box>
 
             <HStack alignSelf="start" gap={3} flexWrap="wrap">
               <Link href="/admin/monitoring/upcoming">
-                <Button size="sm" borderRadius="xl" bg="whiteAlpha.170" color="white" _hover={{ bg: 'whiteAlpha.240' }}>
+                <Button
+                  size="sm"
+                  borderRadius="xl"
+                  variant="outline"
+                  borderColor="border.default"
+                  color="text.secondary"
+                  bg="bg.surface"
+                  _hover={{ bg: 'bg.elevated', borderColor: 'brand.text', color: 'text.primary' }}
+                  fontWeight="medium"
+                >
                   <CalendarClock size={16} />
                   Upcoming
                 </Button>
@@ -168,48 +213,61 @@ export default function MonitoringHistoryPage() {
             </HStack>
           </Flex>
 
-          <Flex direction={{ base: 'column', md: 'row' }} gap={4}>
-            <Box position="relative" flex="1">
-              <Box position="absolute" left="14px" top="50%" transform="translateY(-50%)" zIndex={2} color="whiteAlpha.700">
-                <Search size={18} />
+          {/* ─── Search / Filter Inset Panel ─── */}
+          <Box
+            bg="bg.elevated"
+            borderRadius="2xl"
+            border="1px solid"
+            borderColor="border.default"
+            p={4}
+            shadow="card-dark"
+          >
+            <Flex direction={{ base: 'column', md: 'row' }} gap={4}>
+              <Box position="relative" flex="1">
+                <Box position="absolute" left="14px" top="50%" transform="translateY(-50%)" zIndex={2} color="text.muted">
+                  <Search size={18} />
+                </Box>
+                <Input
+                  id="history-monitoring-search"
+                  placeholder="Cari ujian, mapel, atau siswa..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  pl="40px"
+                  bg="input.bg"
+                  borderColor="input.border"
+                  color="text.primary"
+                  _placeholder={{ color: 'text.muted' }}
+                  borderRadius="xl"
+                  _focus={{ borderColor: 'input.focus.border', bg: 'bg.surface' }}
+                />
               </Box>
               <Input
-                id="history-monitoring-search"
-                placeholder="Cari ujian, mapel, atau siswa�"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                pl="40px"
-                bg="whiteAlpha.140"
-                borderColor="whiteAlpha.260"
-                color="white"
-                _placeholder={{ color: 'whiteAlpha.700' }}
+                id="history-monitoring-date"
+                type="date"
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
                 borderRadius="xl"
+                bg="input.bg"
+                borderColor="input.border"
+                color="text.primary"
+                w={{ base: 'full', md: '220px' }}
+                _focus={{ borderColor: 'input.focus.border', bg: 'bg.surface' }}
               />
-            </Box>
-            <Input
-              id="history-monitoring-date"
-              type="date"
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              borderRadius="xl"
-              bg="whiteAlpha.140"
-              borderColor="whiteAlpha.260"
-              color="white"
-              w={{ base: 'full', md: '220px' }}
-            />
-            <Button
-              id="history-monitoring-refresh"
-              onClick={() => refetch()}
-              disabled={isFetching}
-              borderRadius="xl"
-              bg="white"
-              color="gray.900"
-              fontWeight="semibold"
-            >
-              <RefreshCw size={16} className={isFetching ? 'animate-spin' : ''} />
-              Refresh
-            </Button>
-          </Flex>
+              <Button
+                id="history-monitoring-refresh"
+                onClick={() => refetch()}
+                disabled={isFetching}
+                borderRadius="xl"
+                bg="brand.solid"
+                color="text.inverted"
+                fontWeight="semibold"
+                _hover={{ bg: 'brand.text' }}
+              >
+                <RefreshCw size={16} className={isFetching ? 'animate-spin' : ''} />
+                Refresh
+              </Button>
+            </Flex>
+          </Box>
         </Stack>
       </Box>
 
@@ -224,11 +282,11 @@ export default function MonitoringHistoryPage() {
           {groupedHistory.map((group) => (
             <Box
               key={group.examId}
-              bg="white"
+              bg="bg.surface"
               borderWidth="1px"
-              borderColor="gray.200"
+              borderColor="border.default"
               borderRadius="3xl"
-              boxShadow="0 18px 48px rgba(15, 23, 42, 0.08)"
+              shadow="card-dark"
               overflow="hidden"
             >
               <Box h="6px" bg="linear-gradient(90deg, #f97316, #ef4444)" />
@@ -246,23 +304,23 @@ export default function MonitoringHistoryPage() {
                         {group.sessions.length} session
                       </Badge>
                     </HStack>
-                    <Heading size="lg" color="gray.800">
+                    <Heading size="lg" color="text.primary">
                       {group.title}
                     </Heading>
-                    <HStack mt={2} gap={4} flexWrap="wrap" color="gray.500">
+                    <HStack mt={2} gap={4} flexWrap="wrap" color="text.secondary">
                       <HStack gap={2}>
-                        <Icon as={Clock3} color="gray.400" />
+                        <Icon as={Clock3} color="text.muted" />
                         <Text fontSize="sm">Mulai {formatDateTime(group.examStartTime)}</Text>
                       </HStack>
                       <HStack gap={2}>
-                        <Icon as={CalendarClock} color="gray.400" />
+                        <Icon as={CalendarClock} color="text.muted" />
                         <Text fontSize="sm">Selesai {formatDateTime(group.examEndTime)}</Text>
                       </HStack>
                     </HStack>
                   </Box>
 
                   <Link href={`/admin/monitoring/${group.examId}`}>
-                    <Button borderRadius="xl" bg="gray.900" color="white">
+                    <Button borderRadius="xl" bg="brand.solid" color="text.inverted" _hover={{ bg: 'brand.text' }}>
                       Buka Detail Monitoring
                     </Button>
                   </Link>
@@ -273,26 +331,26 @@ export default function MonitoringHistoryPage() {
                     <Box
                       key={session.id}
                       borderWidth="1px"
-                      borderColor="gray.200"
+                      borderColor="border.default"
                       borderRadius="2xl"
                       p={4}
-                      bg="gray.50"
+                      bg="bg.subtle"
                     >
                       <Flex direction={{ base: 'column', md: 'row' }} justify="space-between" gap={4}>
                         <Stack gap={2}>
                           <HStack gap={2}>
-                            <Icon as={UserRound} color="gray.500" />
-                            <Text fontWeight="semibold" color="gray.800">
+                            <Icon as={UserRound} color="text.secondary" />
+                            <Text fontWeight="semibold" color="text.primary">
                               {session.student?.user?.fullName || session.student?.user?.username || 'Siswa'}
                             </Text>
                             <Badge colorPalette={session.status === 'LOCKED' ? 'red' : 'green'} borderRadius="full">
                               {session.status}
                             </Badge>
                           </HStack>
-                          <Text fontSize="sm" color="gray.500">
-                            {session.student?.rombel?.name || 'Tanpa rombel'} � {session.student?.user?.username || '-'}
+                          <Text fontSize="sm" color="text.secondary">
+                            {session.student?.rombel?.name || 'Tanpa rombel'} • {session.student?.user?.username || '-'}
                           </Text>
-                          <HStack gap={4} flexWrap="wrap" color="gray.600">
+                          <HStack gap={4} flexWrap="wrap" color="text.secondary">
                             <Text fontSize="sm">Mulai: {formatDateTime(session.startTime)}</Text>
                             <Text fontSize="sm">Selesai: {formatDateTime(session.endTime)}</Text>
                             <Text fontSize="sm">Jawaban: {session.answers?.length || 0}</Text>
@@ -300,7 +358,7 @@ export default function MonitoringHistoryPage() {
                         </Stack>
 
                         <Stack gap={2} minW={{ md: '260px' }}>
-                          <HStack gap={2} color="orange.600">
+                          <HStack gap={2} color="status.warning.text">
                             <Icon as={ShieldAlert} />
                             <Text fontSize="sm" fontWeight="semibold">
                               {session.violations?.length || 0} pelanggaran tercatat
@@ -308,27 +366,27 @@ export default function MonitoringHistoryPage() {
                           </HStack>
                           {session.violations?.length ? (
                             session.violations.slice(0, 3).map((violation) => (
-                              <Box key={violation.id} borderRadius="xl" bg="white" borderWidth="1px" borderColor="orange.100" p={3}>
+                              <Box key={violation.id} borderRadius="xl" bg="bg.surface" borderWidth="1px" borderColor="border.default" p={3}>
                                 <HStack justify="space-between" align="start" gap={3}>
                                   <HStack align="start" gap={2}>
-                                    <Icon as={AlertTriangle} color="orange.500" mt={0.5} />
+                                    <Icon as={AlertTriangle} color="status.warning.text" mt={0.5} />
                                     <Stack gap={0.5}>
-                                      <Text fontSize="sm" fontWeight="semibold" color="gray.800">
+                                      <Text fontSize="sm" fontWeight="semibold" color="text.primary">
                                         {violation.type}
                                       </Text>
-                                      <Text fontSize="xs" color="gray.500">
+                                      <Text fontSize="xs" color="text.secondary">
                                         {violation.description || 'Pelanggaran terdeteksi saat ujian berlangsung.'}
                                       </Text>
                                     </Stack>
                                   </HStack>
-                                  <Text fontSize="xs" color="gray.400" whiteSpace="nowrap">
+                                  <Text fontSize="xs" color="text.muted" whiteSpace="nowrap">
                                     {formatDateTime(violation.timestamp)}
                                   </Text>
                                 </HStack>
                               </Box>
                             ))
                           ) : (
-                            <Text fontSize="sm" color="gray.500">
+                            <Text fontSize="sm" color="text.secondary">
                               Tidak ada pelanggaran pada session ini.
                             </Text>
                           )}
@@ -351,16 +409,16 @@ export default function MonitoringHistoryPage() {
               textAlign="center"
               borderRadius="3xl"
               borderWidth="1px"
-              borderColor="gray.200"
-              bg="white"
+              borderColor="border.default"
+              bg="bg.surface"
             >
-              <Box p={4} borderRadius="2xl" bg="gray.50" color="gray.500" mb={4}>
+              <Box p={4} borderRadius="2xl" bg="bg.subtle" color="text.muted" mb={4}>
                 <CalendarClock size={28} />
               </Box>
-              <Heading size="md" color="gray.800">
+              <Heading size="md" color="text.primary">
                 Belum ada history monitoring
               </Heading>
-              <Text fontSize="sm" color="gray.500" mt={2} maxW="md">
+              <Text fontSize="sm" color="text.secondary" mt={2} maxW="md">
                 {searchQuery || dateFilter
                   ? 'Tidak ada riwayat monitoring yang cocok dengan filter saat ini.'
                   : 'Riwayat ujian selesai akan muncul di sini setelah session siswa terekam.'}

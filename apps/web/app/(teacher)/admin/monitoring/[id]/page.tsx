@@ -534,15 +534,15 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
           w={14}
           h={14}
           borderRadius="2xl"
-          bg="indigo.50"
+          bg="brand.subtle"
           border="1px solid"
-          borderColor="indigo.100"
+          borderColor="border.default"
           align="center"
           justify="center"
         >
-          <Spinner size="md" color="indigo.500" />
+          <Spinner size="md" color="brand.solid" />
         </Flex>
-        <Text fontSize="sm" color="gray.400" fontWeight="medium">Memuat data ujian…</Text>
+        <Text fontSize="sm" color="text.secondary" fontWeight="medium">Memuat data ujian…</Text>
       </Flex>
     );
   }
@@ -564,13 +564,13 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
     <Stack gap={5}>
       {/* ─── Command Bar Header ─── */}
       <Box
-        bg="white"
-        borderRadius="2xl"
+        bg="bg.surface"
+        borderRadius="card"
         border="1px solid"
-        borderColor="gray.200"
+        borderColor="border.default"
         px={5}
         py={4}
-        boxShadow="0 2px 16px rgba(15,23,42,0.05)"
+        shadow="card-dark"
       >
         <Flex align="center" gap={4} wrap="wrap">
           {/* Back + Title */}
@@ -582,12 +582,12 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
             </Link>
             <Box minW={0} flex="1">
               <Flex align="center" gap={2}>
-                <Monitor size={16} color="var(--chakra-colors-indigo-500)" style={{ flexShrink: 0 }} />
-                <Heading size="md" fontWeight="bold" color="gray.900" lineClamp={1}>
+                <Monitor size={16} color="var(--chakra-colors-brand-text)" style={{ flexShrink: 0 }} />
+                <Heading size="md" fontWeight="bold" color="text.primary" lineClamp={1}>
                   {exam?.title}
                 </Heading>
               </Flex>
-              <Text fontSize="xs" color="gray.400" mt={0.5}>
+              <Text fontSize="xs" color="text.secondary" mt={0.5}>
                 {exam?.subject?.name} · {exam?.examQuestions?.length} Soal · ID: #{id.slice(0, 8)}
               </Text>
             </Box>
@@ -602,19 +602,20 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
               px={3}
               py={1.5}
               borderRadius="xl"
-              bg={timer.urgent ? 'red.50' : 'gray.50'}
+              bg={timer.urgent ? 'status.danger.bg' : 'bg.subtle'}
               border="1px solid"
-              borderColor={timer.urgent ? 'red.200' : 'gray.200'}
+              borderColor={timer.urgent ? 'status.danger.text' : 'border.default'}
             >
-              <Timer size={13} color={timer.urgent ? '#dc2626' : '#9ca3af'} />
-              <Text fontSize="sm" fontWeight="bold" fontFamily="mono" color={timer.urgent ? 'red.600' : 'gray.800'}>
+              <Timer size={13} color={timer.urgent ? 'var(--chakra-colors-status-danger-text)' : 'var(--chakra-colors-text-muted)'} />
+              <Text fontSize="sm" fontWeight="bold" fontFamily="mono" color={timer.urgent ? 'status.danger.text' : 'text.primary'}>
                 {timer.text}
               </Text>
             </Flex>
 
             {/* Connection badge */}
             <Badge
-              colorPalette={connection === 'connected' ? 'green' : connection === 'connecting' ? 'amber' : 'red'}
+              bg={connection === 'connected' ? 'status.success.bg' : connection === 'connecting' ? 'status.warning.bg' : 'status.danger.bg'}
+              color={connection === 'connected' ? 'status.success.text' : connection === 'connecting' ? 'status.warning.text' : 'status.danger.text'}
               px={2.5}
               py={1.5}
               borderRadius="xl"
@@ -624,6 +625,8 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
               display="flex"
               alignItems="center"
               gap={1.5}
+              border="1px solid"
+              borderColor={connection === 'connected' ? 'status.success.text' : connection === 'connecting' ? 'status.warning.text' : 'status.danger.text'}
             >
               {connection === 'connected' ? (
                 <Wifi size={13} />
@@ -638,7 +641,7 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
             {/* Sync info + button */}
             <Flex align="center" gap={1.5}>
               {lastSyncedAt && (
-                <Text fontSize="11px" color="gray.400" whiteSpace="nowrap">
+                <Text fontSize="11px" color="text.muted" whiteSpace="nowrap">
                   Sinkron:{' '}
                   {lastSyncedAt.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
                 </Text>
@@ -700,59 +703,59 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
 
         {/* Selesai */}
         <Box
-          bg="white"
+          bg="bg.surface"
           borderRadius="xl"
           border="1px solid"
-          borderColor="indigo.200"
+          borderColor="border.default"
           borderTopWidth="3px"
-          borderTopColor="indigo.500"
+          borderTopColor="brand.solid"
           p={4}
-          boxShadow="0 2px 10px rgba(99,102,241,0.07)"
+          shadow="card-dark"
         >
-          <Text fontSize="11px" fontWeight="semibold" color="gray.500" textTransform="uppercase" letterSpacing="0.08em" mb={2}>
+          <Text fontSize="11px" fontWeight="semibold" color="text.muted" textTransform="uppercase" letterSpacing="0.08em" mb={2}>
             Selesai
           </Text>
-          <Text fontSize="2xl" fontWeight="bold" color="gray.900" lineHeight="1">{finishedCount}</Text>
-          <Text fontSize="xs" color="indigo.600" mt={1.5} fontWeight="medium">mengumpulkan jawaban</Text>
+          <Text fontSize="2xl" fontWeight="bold" color="text.primary" lineHeight="1">{finishedCount}</Text>
+          <Text fontSize="xs" color="brand.text" mt={1.5} fontWeight="medium">mengumpulkan jawaban</Text>
         </Box>
 
         {/* Offline */}
         <Box
-          bg="white"
+          bg="bg.surface"
           borderRadius="xl"
           border="1px solid"
-          borderColor="gray.200"
+          borderColor="border.default"
           borderTopWidth="3px"
-          borderTopColor="gray.400"
+          borderTopColor="text.muted"
           p={4}
-          boxShadow="0 2px 10px rgba(15,23,42,0.04)"
+          shadow="card-dark"
         >
-          <Text fontSize="11px" fontWeight="semibold" color="gray.500" textTransform="uppercase" letterSpacing="0.08em" mb={2}>
+          <Text fontSize="11px" fontWeight="semibold" color="text.muted" textTransform="uppercase" letterSpacing="0.08em" mb={2}>
             Offline
           </Text>
-          <Text fontSize="2xl" fontWeight="bold" color="gray.900" lineHeight="1">{offlineCount}</Text>
-          <Text fontSize="xs" color="gray.400" mt={1.5} fontWeight="medium">terputus sementara</Text>
+          <Text fontSize="2xl" fontWeight="bold" color="text.primary" lineHeight="1">{offlineCount}</Text>
+          <Text fontSize="xs" color="text.muted" mt={1.5} fontWeight="medium">terputus sementara</Text>
         </Box>
 
         {/* Violations */}
         <Box
-          bg={violations.length > 0 ? 'red.50' : 'white'}
+          bg={violations.length > 0 ? 'status.danger.bg' : 'bg.surface'}
           borderRadius="xl"
           border="1px solid"
-          borderColor={violations.length > 0 ? 'red.200' : 'gray.200'}
+          borderColor={violations.length > 0 ? 'status.danger.text' : 'border.default'}
           borderTopWidth="3px"
-          borderTopColor={violations.length > 0 ? 'red.500' : 'gray.300'}
+          borderTopColor={violations.length > 0 ? 'status.danger.text' : 'text.muted'}
           p={4}
-          boxShadow={violations.length > 0 ? '0 2px 10px rgba(239,68,68,0.1)' : '0 2px 10px rgba(15,23,42,0.04)'}
+          shadow="card-dark"
           transition="all 0.3s"
         >
-          <Text fontSize="11px" fontWeight="semibold" color="gray.500" textTransform="uppercase" letterSpacing="0.08em" mb={2}>
+          <Text fontSize="11px" fontWeight="semibold" color="text.muted" textTransform="uppercase" letterSpacing="0.08em" mb={2}>
             Pelanggaran
           </Text>
-          <Text fontSize="2xl" fontWeight="bold" color={violations.length > 0 ? 'red.600' : 'gray.900'} lineHeight="1">
+          <Text fontSize="2xl" fontWeight="bold" color={violations.length > 0 ? 'status.danger.text' : 'text.primary'} lineHeight="1">
             {violations.length}
           </Text>
-          <Text fontSize="xs" color={violations.length > 0 ? 'red.500' : 'gray.400'} mt={1.5} fontWeight="medium">
+          <Text fontSize="xs" color={violations.length > 0 ? 'status.danger.text' : 'text.muted'} mt={1.5} fontWeight="medium">
             total terdeteksi
           </Text>
         </Box>
@@ -763,11 +766,11 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
         {/* ─── Student Grid Panel ─── */}
         <Box
           gridColumn={{ lg: 'span 2' }}
-          bg="white"
-          borderRadius="2xl"
+          bg="bg.surface"
+          borderRadius="card"
           border="1px solid"
-          borderColor="gray.200"
-          boxShadow="0 2px 12px rgba(15,23,42,0.04)"
+          borderColor="border.default"
+          shadow="card-dark"
           p={6}
           display="flex"
           flexDirection="column"
@@ -862,18 +865,18 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
                   borderWidth="1px"
                   borderLeftWidth="3.5px"
                   transition="all 0.2s"
-                  bg={finished ? 'green.50/40' : locked ? 'red.50/30' : offline ? 'gray.50' : 'white'}
+                  bg={finished ? 'status.success.bg' : locked ? 'status.danger.bg' : offline ? 'bg.subtle' : 'bg.elevated'}
                   borderColor={
-                    finished ? 'green.200' :
-                    locked ? 'red.200' :
-                    offline ? 'gray.200' :
-                    alerted ? 'amber.200' : 'gray.200'
+                    finished ? 'status.success.text' :
+                    locked ? 'status.danger.text' :
+                    offline ? 'border.default' :
+                    alerted ? 'status.warning.text' : 'border.default'
                   }
                   borderLeftColor={
-                    finished ? '#10b981' :
-                    locked ? '#ef4444' :
-                    offline ? '#9ca3af' :
-                    alerted ? '#f59e0b' : '#6366f1'
+                    finished ? 'var(--chakra-colors-status-success-text)' :
+                    locked ? 'var(--chakra-colors-status-danger-text)' :
+                    offline ? 'var(--chakra-colors-text-muted)' :
+                    alerted ? 'var(--chakra-colors-status-warning-text)' : 'var(--chakra-colors-brand-solid)'
                   }
                   opacity={offline ? 0.72 : 1}
                   boxShadow="0 1px 4px rgba(15,23,42,0.05)"
@@ -911,22 +914,23 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
                         className={!offline && !finished && !locked ? 'animate-pulse' : ''}
                       />
                       <Box minW={0} flex="1">
-                        <Text fontWeight="semibold" fontSize="sm" color="gray.800" lineClamp={1}>
+                        <Text fontWeight="semibold" fontSize="sm" color="text.primary" lineClamp={1}>
                           {s.fullName || s.username}
                         </Text>
-                        <Text fontSize="11px" color="gray.400">
+                        <Text fontSize="11px" color="text.muted">
                           {new Date(s.lastActive).toLocaleTimeString('id-ID', { timeZone: settings?.timezone || 'Asia/Jakarta' })}
                         </Text>
                       </Box>
                     </Flex>
                     <Flex align="center" gap={1} flexShrink={0}>
                       {alerted && (
-                        <Badge colorPalette="orange" borderRadius="full" px={1.5} py={0.5} fontSize="10px">
+                        <Badge bg="status.warning.bg" color="status.warning.text" borderRadius="full" px={1.5} py={0.5} fontSize="10px">
                           {s.violationCount}⚠
                         </Badge>
                       )}
                       <Badge
-                        colorPalette={finished ? 'green' : locked ? 'red' : offline ? 'gray' : 'green'}
+                        bg={finished ? 'status.success.bg' : locked ? 'status.danger.bg' : offline ? 'bg.subtle' : 'brand.subtle'}
+                        color={finished ? 'status.success.text' : locked ? 'status.danger.text' : offline ? 'text.muted' : 'brand.text'}
                         borderRadius="full"
                         px={1.5}
                         py={0.5}
@@ -941,19 +945,19 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
                   {/* Progress bar */}
                   <Box mb={3}>
                     <Flex justify="space-between" fontSize="xs" mb={1.5}>
-                      <Text color="gray.400" fontWeight="medium">Progres</Text>
-                      <Text fontWeight="bold" color={done ? 'green.600' : 'gray.800'}>{Math.round(s.progress)}%</Text>
+                      <Text color="text.muted" fontWeight="medium">Progres</Text>
+                      <Text fontWeight="bold" color={done ? 'status.success.text' : 'text.primary'}>{Math.round(s.progress)}%</Text>
                     </Flex>
-                    <Box h="6px" borderRadius="full" bg="gray.100" overflow="hidden">
+                    <Box h="6px" borderRadius="full" bg="bg.subtle" overflow="hidden">
                       <Box
                         h="full"
                         borderRadius="full"
                         bg={
                           done
-                            ? 'linear-gradient(90deg, #10b981, #059669)'
+                            ? 'linear-gradient(90deg, var(--chakra-colors-status-success-text), #059669)'
                             : s.progress >= 50
-                            ? 'linear-gradient(90deg, #f59e0b, #d97706)'
-                            : 'linear-gradient(90deg, #6366f1, #4f46e5)'
+                            ? 'linear-gradient(90deg, var(--chakra-colors-status-warning-text), #d97706)'
+                            : 'linear-gradient(90deg, var(--chakra-colors-brand-solid), #4f46e5)'
                         }
                         transition="width 0.5s ease"
                         style={{ width: `${s.progress}%` }}
@@ -963,13 +967,13 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
 
                   {/* Meta info row */}
                   <Flex justify="space-between" align="center" fontSize="11px" mb={finished ? 0 : 3}>
-                    <Text color="gray.500">
+                    <Text color="text.muted">
                       {finished ? 'Ujian dikumpulkan' : `Soal #${s.currentQuestionIndex || 1}`}
                     </Text>
                     <Text
                       fontFamily="mono"
                       fontWeight="bold"
-                      color={finished ? 'green.600' : isEndingSoon(s.endTime) ? 'red.600' : 'gray.600'}
+                      color={finished ? 'status.success.text' : isEndingSoon(s.endTime) ? 'status.danger.text' : 'text.secondary'}
                     >
                       {finished ? '✓' : formatRemainingTime(s.endTime)}
                     </Text>
@@ -977,11 +981,11 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
 
                   {/* Action Control Panel */}
                   {!finished && (
-                    <Flex gap={1.5} pt={3} borderTop="1px solid" borderColor="gray.100">
+                    <Flex gap={1.5} pt={3} borderTop="1px solid" borderColor="border.default">
                       {locked ? (
                         <Button
                           size="xs"
-                          colorPalette="green"
+                          bg="status.success.bg" color="status.success.text"
                           borderRadius="lg"
                           flex={1}
                           onClick={() => unlockStudent(s.userId)}
@@ -994,7 +998,7 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
                         <Button
                           size="xs"
                           variant="outline"
-                          colorPalette="red"
+                          bg="status.danger.bg" color="status.danger.text"
                           borderRadius="lg"
                           flex={1}
                           onClick={() => lockStudent(s.userId)}
@@ -1007,7 +1011,8 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
                       <Button
                         size="xs"
                         variant="subtle"
-                        colorPalette="gray"
+                        bg="bg.subtle"
+                        color="text.primary"
                         borderRadius="lg"
                         flex={1}
                         onClick={() => forceSubmitStudent(s.userId, s.fullName || s.username)}
@@ -1052,28 +1057,28 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
         {/* ─── Violation Logs Panel ─── */}
         <Box
           bg="white"
-          borderRadius="2xl"
+          borderRadius="card"
           border="1px solid"
-          borderColor="gray.200"
-          boxShadow="0 2px 12px rgba(15,23,42,0.04)"
+          borderColor="border.default"
+          shadow="card-dark"
           p={6}
           display="flex"
           flexDirection="column"
           gap={5}
         >
           {/* Panel header */}
-          <Flex direction="column" gap={3} pb={3} borderBottom="1px solid" borderColor="gray.100">
+          <Flex direction="column" gap={3} pb={3} borderBottom="1px solid" borderColor="border.default">
             <Flex align="center" justify="space-between">
-              <Heading size="md" fontWeight="bold" color="gray.800" display="flex" alignItems="center" gap={2}>
-                <AlertTriangle size={18} color="#dc2626" />
+              <Heading size="md" fontWeight="bold" color="status.danger.text" display="flex" alignItems="center" gap={2}>
+                <AlertTriangle size={18} color="var(--chakra-colors-status-danger-text)" />
                 Pelanggaran
               </Heading>
               {violations.length > 0 && (
                 <Button
                   size="xs"
                   variant="ghost"
-                  color="red.500"
-                  _hover={{ bg: 'red.50', color: 'red.700' }}
+                  color="status.danger.text"
+                  _hover={{ bg: 'status.danger.bg', color: 'status.danger.text' }}
                   onClick={() => setViolations([])}
                   borderRadius="lg"
                   fontWeight="semibold"
@@ -1094,7 +1099,7 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
               >
                 <Select.HiddenSelect />
                 <Select.Control>
-                  <Select.Trigger borderRadius="lg" bg="gray.50">
+                  <Select.Trigger borderRadius="lg" bg="input.bg" borderColor="input.border">
                     <Select.ValueText placeholder="Semua Pelanggaran" />
                   </Select.Trigger>
                   <Select.IndicatorGroup>
@@ -1123,7 +1128,7 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
             pr={1}
             css={{
               '&::-webkit-scrollbar': { width: '5px' },
-              '&::-webkit-scrollbar-thumb': { background: 'var(--chakra-colors-red-200)', borderRadius: '10px' },
+              '&::-webkit-scrollbar-thumb': { background: 'var(--chakra-colors-status-danger-text)', borderRadius: '10px' },
             }}
           >
             {violations
@@ -1143,14 +1148,14 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
                     borderRadius="xl"
                     border="1px solid"
                     borderLeftWidth="3px"
-                    borderColor={`${meta.palette}.100`}
-                    borderLeftColor={`${meta.palette}.400`}
-                    bg={`${meta.palette}.50`}
+                    borderColor="border.default"
+                    borderLeftColor={meta.palette === 'red' ? 'status.danger.text' : meta.palette === 'amber' || meta.palette === 'orange' ? 'status.warning.text' : 'brand.solid'}
+                    bg="bg.elevated"
                     className="animate-fade-up"
                   >
                     <Flex justify="space-between" align="start" mb={1.5}>
-                      <Text fontWeight="semibold" fontSize="sm" color="gray.900">{v.username}</Text>
-                      <Text fontSize="10px" color="gray.400" whiteSpace="nowrap" ml={2}>
+                      <Text fontWeight="semibold" fontSize="sm" color="text.primary">{v.username}</Text>
+                      <Text fontSize="10px" color="text.muted" whiteSpace="nowrap" ml={2}>
                         {new Date(v.timestamp).toLocaleTimeString('id-ID', {
                           timeZone: settings?.timezone || 'Asia/Jakarta',
                           hour: '2-digit',
@@ -1160,7 +1165,8 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
                       </Text>
                     </Flex>
                     <Badge
-                      colorPalette={meta.palette}
+                      bg={meta.palette === 'red' ? 'status.danger.bg' : meta.palette === 'amber' || meta.palette === 'orange' ? 'status.warning.bg' : 'brand.subtle'}
+                      color={meta.palette === 'red' ? 'status.danger.text' : meta.palette === 'amber' || meta.palette === 'orange' ? 'status.warning.text' : 'brand.text'}
                       size="sm"
                       borderRadius="md"
                       mb={v.description ? 1.5 : 0}
@@ -1171,7 +1177,7 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
                       {meta.label}
                     </Badge>
                     {v.description && (
-                      <Text fontSize="xs" color="gray.600">{v.description}</Text>
+                      <Text fontSize="xs" color="text.secondary">{v.description}</Text>
                     )}
                   </Box>
                 );
@@ -1182,18 +1188,18 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
                 <Flex
                   w={14}
                   h={14}
-                  bg="green.50"
+                  bg="status.success.bg"
                   border="1px solid"
-                  borderColor="green.100"
+                  borderColor="status.success.text"
                   borderRadius="2xl"
                   align="center"
                   justify="center"
                   mb={4}
                 >
-                  <CheckCircle2 size={28} color="#16a34a" />
+                  <CheckCircle2 size={28} color="var(--chakra-colors-status-success-text)" />
                 </Flex>
-                <Text fontWeight="semibold" color="gray.700" mb={1}>Semua bersih</Text>
-                <Text fontSize="xs" color="gray.400" maxW="160px">
+                <Text fontWeight="semibold" color="text.primary" mb={1}>Semua bersih</Text>
+                <Text fontSize="xs" color="text.muted" maxW="160px">
                   Belum ada pelanggaran yang terdeteksi.
                 </Text>
               </Flex>

@@ -17,6 +17,8 @@ import path from 'path';
 
 import { SessionStatus } from '@prisma/client';
 import { ExamSessionsService } from '../exam-sessions/exam-sessions.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType, NotificationPriority } from '../notifications/dto/create-notification.dto';
 
 @WebSocketGateway({
   cors: {
@@ -46,6 +48,7 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
   }
 
   private examSessionsService: ExamSessionsService;
+  private notificationsService: NotificationsService;
 
   constructor(
     private jwtService: JwtService,
@@ -55,6 +58,7 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
 
   onModuleInit() {
     this.examSessionsService = this.moduleRef.get(ExamSessionsService, { strict: false });
+    this.notificationsService = this.moduleRef.get(NotificationsService, { strict: false });
   }
 
   sendToUser(userId: string, event: string, payload: any) {
@@ -151,7 +155,8 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     this.logger.warn(`Violation detected for ${client.data.user.username} in exam ${data.examId}: [${data.type}] - ${data.description}`);
     // Save to database
     const student = await this.prisma.student.findUnique({
-      where: { userId: client.data.user.sub }
+      where: { userId: client.data.user.sub },
+      include: { user: true },
     });
 
     if (student) {
@@ -162,6 +167,7 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
             studentId: student.id,
           },
         },
+        include: { exam: true },
       });
 
       if (session) {
@@ -173,6 +179,20 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
             level: 'RINGAN', // Default
           },
         });
+
+        // Trigger notification
+        await this.notificationsService.create({
+          type: NotificationType.VIOLATION_DETECTED,
+          priority: NotificationPriority.HIGH,
+          title: 'Pelanggaran Terdeteksi',
+          message: `Siswa ${student.user.fullName} terdeteksi melakukan pelanggaran: ${data.description} pada ujian ${session.exam.title}`,
+          referenceId: session.id,
+          referenceType: 'exam_session',
+          targets: [
+            { type: 'ROLE' as any, id: 'GURU' },
+            { type: 'ROLE' as any, id: 'SUPER_ADMIN' },
+          ],
+        }, client.data.user.sub);
       }
     }
 
