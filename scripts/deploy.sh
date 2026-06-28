@@ -16,23 +16,16 @@ if ! command -v pm2 >/dev/null 2>&1; then
   PM2_BIN="bunx pm2"
 fi
 
-[ -f .env ] || [ -f apps/api/.env ] || { echo "missing env file" >&2; exit 1; }
+[ -f apps/api/.env ] || cp apps/api/.env.example apps/api/.env
+[ -f apps/web/.env.local ] || cp apps/web/.env.example apps/web/.env.local
 
-if [ -f apps/api/.env ]; then
-  set -a
-  # shellcheck disable=SC1091
-  . apps/api/.env
-  set +a
-elif [ -f .env ]; then
-  set -a
-  # shellcheck disable=SC1091
-  . ./.env
-  set +a
-fi
+set -a
+# shellcheck disable=SC1091
+. apps/api/.env
+set +a
 
 bun install --frozen-lockfile
 
-# Generate web prod env
 mkdir -p apps/web
 cat > apps/web/.env.local <<EOF
 NEXT_PUBLIC_APP_URL=${FRONTEND_URL:-https://novatech.biz.id}
