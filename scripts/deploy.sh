@@ -21,10 +21,12 @@ if [ -f .env ]; then
 fi
 
 bun install --frozen-lockfile
+cd apps/api
+bunx prisma generate
+cd "$ROOT_DIR"
 bunx turbo run build --filter=api --filter=web
 
 cd apps/api
-bunx prisma generate
 bunx prisma migrate deploy
 cd "$ROOT_DIR"
 
