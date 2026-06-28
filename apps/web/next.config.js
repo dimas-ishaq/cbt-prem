@@ -46,25 +46,74 @@ const nextConfig = {
           // dalam embedded WebView yang bisa dianggap sebagai iframe.
           {
             key: 'Content-Security-Policy',
-            value: [
-              "default-src 'self'",
-              // Script: izinkan inline & eval — Chakra UI dan Next.js memerlukannya
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:",
-              // Style: izinkan inline — Chakra UI menggunakan CSS-in-JS
-              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-              // Font: izinkan dari Google Fonts dan data URI
-              "font-src 'self' data: https://fonts.gstatic.com",
-              // Gambar: izinkan data URI dan blob
-              "img-src 'self' data: blob:",
-              // Koneksi: izinkan ke API lokal dan WebSocket
-              "connect-src 'self' http://localhost:3001 ws://localhost:3000 ws://localhost:3001 http://localhost:3000",
-              // Media
-              "media-src 'self' blob: data:",
-              // Worker untuk Next.js
-              "worker-src 'self' blob:",
-              // Frame: izinkan 'self' agar SEB WebView tidak diblokir
-              "frame-ancestors 'self'",
-            ].join('; '),
+            value: (() => {
+              const getOrigin = (urlStr) => {
+                if (!urlStr) return '';
+                try {
+                  return new URL(urlStr).origin;
+                } catch (e) {
+                  return '';
+                }
+              };
+
+              const apiOrigin = getOrigin(process.env.NEXT_PUBLIC_API_URL);
+              const appOrigin = getOrigin(process.env.NEXT_PUBLIC_APP_URL);
+              const wsUrl = process.env.NEXT_PUBLIC_WS_URL;
+              
+              const connectSources = [
+                "'self'",
+                "http://localhost:3001",
+                "ws://localhost:3000",
+                "ws://localhost:3001",
+                "http://localhost:3000",
+                "https://static.cloudflareinsights.com",
+                "https://cloudflareinsights.com",
+              ];
+
+              if (apiOrigin) connectSources.push(apiOrigin);
+              if (appOrigin) connectSources.push(appOrigin);
+
+              if (wsUrl) {
+                if (wsUrl.startsWith('ws://') || wsUrl.startsWith('wss://')) {
+                  connectSources.push(wsUrl);
+                } else {
+                  const origin = getOrigin(wsUrl);
+                  if (origin) {
+                    connectSources.push(origin.replace(/^http/, 'ws'));
+                    connectSources.push(origin.replace(/^https/, 'wss'));
+                  }
+                }
+              }
+
+              // Jika ada origin domain custom, tambahkan wildcard ws/wss untuk mengantisipasi load balancer/tunnel
+              if (apiOrigin && apiOrigin.includes('.')) {
+                try {
+                  const host = new URL(apiOrigin).host;
+                  connectSources.push(`wss://${host}`);
+                  connectSources.push(`ws://${host}`);
+                } catch (e) {}
+              }
+
+              return [
+                "default-src 'self'",
+                // Script: izinkan inline & eval — Chakra UI dan Next.js memerlukannya, serta Cloudflare Insights
+                "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://static.cloudflareinsights.com",
+                // Style: izinkan inline — Chakra UI menggunakan CSS-in-JS
+                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+                // Font: izinkan dari Google Fonts dan data URI
+                "font-src 'self' data: https://fonts.gstatic.com",
+                // Gambar: izinkan data URI dan blob
+                "img-src 'self' data: blob:",
+                // Koneksi: izinkan ke API lokal, WebSocket, API custom dari env, dan Cloudflare
+                `connect-src ${connectSources.join(' ')}`,
+                // Media
+                "media-src 'self' blob: data:",
+                // Worker untuk Next.js
+                "worker-src 'self' blob:",
+                // Frame: izinkan 'self' agar SEB WebView tidak diblokir
+                "frame-ancestors 'self'",
+              ].join('; ');
+            })(),
           },
           // Izinkan SEB membuka halaman ini di embedded frame
           {
