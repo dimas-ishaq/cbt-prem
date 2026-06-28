@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/commo
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateQuestionBankDto } from './dto/create-question-bank.dto';
 import { UpdateQuestionBankDto } from './dto/update-question-bank.dto';
+import { Role } from '@prisma/client';
 
 @Injectable()
 export class QuestionBankService {
@@ -13,7 +14,7 @@ export class QuestionBankService {
     });
     if (!teacher) {
       const user = await this.prisma.user.findUnique({ where: { id: userId } });
-      if (user && (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN')) {
+      if (user && (user.role === Role.SUPER_ADMIN || user.role === Role.ADMIN_SEKOLAH)) {
         const fallbackTeacher = await this.prisma.teacher.findFirst();
         if (!fallbackTeacher) {
           throw new NotFoundException('No teachers registered in the system. Please add a teacher first.');
