@@ -40,7 +40,7 @@ export function RombelFormModal({ isOpen, editingName, formData, majorOptions, i
               <Text fontSize="xs" fontWeight="medium" color="text.primary" mb={1}>Tingkat Kelas <Box as="span" color="red.500">*</Box></Text>
               <NativeSelect.Root size="sm">
                 <NativeSelect.Field
-                  required
+                  aria-required="true"
                   value={formData.grade}
                   onChange={(e) => onFormChange({ ...formData, grade: e.target.value })}
                   borderRadius="md"
@@ -70,7 +70,7 @@ export function RombelFormModal({ isOpen, editingName, formData, majorOptions, i
               <NativeSelect.Root size="sm">
                 <NativeSelect.Field
                   id="rombel-major-select"
-                  required
+                  aria-required="true"
                   value={formData.majorId}
                   onChange={(e) => onFormChange({ ...formData, majorId: e.target.value })}
                   borderRadius="md"
