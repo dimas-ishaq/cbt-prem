@@ -11,10 +11,9 @@ need() { command -v "$1" >/dev/null 2>&1 || { echo "missing: $1" >&2; exit 1; };
 need bun
 need psql
 
+PM2_BIN="pm2"
 if ! command -v pm2 >/dev/null 2>&1; then
-  if command -v npm >/dev/null 2>&1; then
-    npm i -g pm2
-  fi
+  PM2_BIN="bunx pm2"
 fi
 
 [ -f .env ] || [ -f apps/api/.env ] || { echo "missing env file" >&2; exit 1; }
@@ -36,15 +35,9 @@ cd apps/api
 bunx prisma migrate deploy
 cd "$ROOT_DIR"
 
-if command -v pm2 >/dev/null 2>&1; then
-  pm2 delete cbt-api >/dev/null 2>&1 || true
-  pm2 delete cbt-web >/dev/null 2>&1 || true
-  pm2 start apps/api/dist/main.js --name cbt-api --time --update-env
-  pm2 start "bun run start --filter=web" --name cbt-web --time --update-env
-  pm2 save
-  pm2 status
-  exit 0
-fi
-
-echo "pm2 missing and auto-install failed" >&2
-exit 1
+$PM2_BIN delete cbt-api >/dev/null 2>&1 || true
+$PM2_BIN delete cbt-web >/dev/null 2>&1 || true
+$PM2_BIN start apps/api/dist/main.js --name cbt-api --time --update-env
+$PM2_BIN start "bun run start --filter=web" --name cbt-web --time --update-env
+$PM2_BIN save
+$PM2_BIN status
