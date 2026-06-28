@@ -31,8 +31,8 @@ export function RoleFormModal({ isOpen, mode, selectedRole, formData, statusOpti
   if (!isOpen) return null;
 
   return (
-    <Box position="fixed" inset={0} bg="blackAlpha.600" display="flex" alignItems="center" justifyContent="center" zIndex={50} py={6}>
-      <Box bg="white" borderRadius="xl" p={6} w="full" maxW="4xl" maxH="90vh" overflowY="auto" shadow="2xl" position="relative">
+    <Box position="fixed" inset={0} bg="blackAlpha.700" display="flex" alignItems="center" justifyContent="center" zIndex={50} py={6} backdropFilter="blur(8px)">
+      <Box bg="bg.surface" borderRadius="card" p={6} w="full" maxW="4xl" maxH="90vh" overflowY="auto" shadow="card-dark" position="relative" border="1px solid" borderColor="border.default">
         <Heading size="lg" fontWeight="bold" mb={4}>
           {mode === 'create' && 'Buat Role Baru'}
           {mode === 'edit' && `Ubah Role: ${selectedRole?.name}`}
@@ -43,11 +43,11 @@ export function RoleFormModal({ isOpen, mode, selectedRole, formData, statusOpti
           <Stack gap={6}>
             <Grid templateColumns={{ base: '1fr', md: '1fr 1fr' }} gap={4}>
               <Box>
-                <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Nama Role <Box as="span" color="red.500">*</Box></Text>
+                <Text fontSize="sm" fontWeight="medium" color="text.primary" mb={1}>Nama Role <Box as="span" color="status.danger.text">*</Box></Text>
                 <Input required value={formData.name} onChange={(e) => onFormChange({ ...formData, name: e.target.value })} placeholder="Contoh: Pengawas Ujian Piket" borderRadius="lg" />
               </Box>
               <Box>
-                <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Status Peran</Text>
+                <Text fontSize="sm" fontWeight="medium" color="text.primary" mb={1}>Status Peran</Text>
                 <Select.Root collection={statusOptions} value={[formData.isActive ? 'true' : 'false']} onValueChange={(details) => onFormChange({ ...formData, isActive: details.value[0] === 'true' })} positioning={{ sameWidth: true }}>
                   <Select.HiddenSelect />
                   <Select.Control>
@@ -64,7 +64,7 @@ export function RoleFormModal({ isOpen, mode, selectedRole, formData, statusOpti
             </Grid>
 
             <Box>
-              <Text fontSize="sm" fontWeight="medium" color="gray.700" mb={1}>Deskripsi Ringkas</Text>
+              <Text fontSize="sm" fontWeight="medium" color="text.primary" mb={1}>Deskripsi Ringkas</Text>
               <Textarea value={formData.description} onChange={(e) => onFormChange({ ...formData, description: e.target.value })} placeholder="Tulis tujuan hak akses role ini dibuat..." borderRadius="lg" rows={2} />
             </Box>
 
@@ -80,9 +80,9 @@ export function RoleFormModal({ isOpen, mode, selectedRole, formData, statusOpti
               />
             )}
 
-            <Flex justify="flex-end" gap={3} borderTop="1px solid" borderColor="gray.100" pt={4}>
+            <Flex justify="flex-end" gap={3} borderTop="1px solid" borderColor="border.default" pt={4}>
               <Button variant="outline" onClick={onClose} borderRadius="lg" cursor="pointer">Batal</Button>
-              <Button type="submit" bg="indigo.600" color="white" _hover={{ bg: 'indigo.700' }} borderRadius="lg" loading={isSubmitting} cursor="pointer">Simpan Perubahan</Button>
+              <Button type="submit" bg="brand.solid" color="text.inverted" _hover={{ bg: 'brand.text' }} borderRadius="lg" loading={isSubmitting} cursor="pointer">Simpan Perubahan</Button>
             </Flex>
           </Stack>
         </form>

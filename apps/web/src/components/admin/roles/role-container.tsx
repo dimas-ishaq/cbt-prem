@@ -193,8 +193,8 @@ export function RoleContainer() {
   if (rolesLoading || matrixLoading) {
     return (
       <Flex justify="center" align="center" py={16}>
-        <Spinner size="lg" color="indigo.600" />
-        <Text ml={3} color="gray.500">Memuat modul Manajemen Akses...</Text>
+        <Spinner size="lg" color="brand.text" />
+        <Text ml={3} color="text.secondary">Memuat modul Manajemen Akses...</Text>
       </Flex>
     );
   }
@@ -203,17 +203,17 @@ export function RoleContainer() {
     <Stack gap={6}>
       <Flex justify="space-between" align="center">
         <Box>
-          <Heading size="xl" fontWeight="bold" color="gray.900">
+          <Heading size="xl" fontWeight="bold" color="text.primary">
             Manajemen Akses & Role
           </Heading>
-          <Text color="gray.500" mt={1}>
+          <Text color="text.secondary" mt={1}>
             Rancang kustomisasi role pengguna dan pemetaan matriks permission secara dinamis.
           </Text>
         </Box>
         <Button
-          bg="indigo.600"
-          color="white"
-          _hover={{ bg: 'indigo.700' }}
+          bg="brand.solid"
+          color="text.inverted"
+          _hover={{ bg: 'brand.text' }}
           borderRadius="lg"
           px={4}
           py={2}
@@ -221,7 +221,7 @@ export function RoleContainer() {
           onClick={openCreateModal}
           cursor="pointer"
         >
-          <Plus size={20} style={{ marginRight: '6px' }} />
+          <Plus size={20} />
           Tambah Role Kustom
         </Button>
       </Flex>

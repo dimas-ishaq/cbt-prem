@@ -213,7 +213,7 @@ export default function SettingsPage() {
   if (!user || user.role !== 'SUPER_ADMIN') {
     return (
       <Flex direction="column" align="center" justify="center" py={20} gap={4}>
-        <ShieldAlert size={48} color="#f43f5e" />
+        <ShieldAlert size={48} color="var(--chakra-colors-status-danger-text)" />
         <Heading size="md" color="text.primary">Akses Ditolak</Heading>
         <Text color="text.secondary">Hanya Super Admin yang dapat mengakses menu pengaturan ini.</Text>
       </Flex>
@@ -223,62 +223,25 @@ export default function SettingsPage() {
   if (isLoading) {
     return (
       <Flex justify="center" align="center" py={16}>
-        <Spinner size="lg" color="indigo.600" />
+        <Spinner size="lg" color="brand.text" />
       </Flex>
     );
   }
 
   return (
     <Stack gap={8} maxW="4xl" position="relative">
-      {/* Decorative Blur Backgrounds */}
-      <Box
-        position="absolute"
-        top="-20px"
-        right="-50px"
-        w="250px"
-        h="250px"
-        borderRadius="full"
-        bg="indigo.500"
-        style={{ filter: 'blur(100px)', opacity: 0.08, zIndex: 0 }}
-      />
+      <Box position="absolute" top="-20px" right="-50px" w="250px" h="250px" borderRadius="full" bg="brand.subtle" style={{ filter: 'blur(100px)', opacity: 0.18, zIndex: 0 }} />
 
-      {/* Header Section */}
       <Box position="relative" zIndex={1}>
-        <Heading
-          size="2xl"
-          fontWeight="900"
-          letterSpacing="tight"
-          style={{
-            background: 'linear-gradient(135deg, #4f46e5 0%, #8b5cf6 50%, #3b82f6 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-          }}
-          display="flex"
-          alignItems="center"
-          gap={3}
-        >
-          <Settings size={32} className="text-indigo-600 animate-spin" style={{ animationDuration: '8s' }} />
+        <Heading size="2xl" fontWeight="900" letterSpacing="tight" color="brand.text" display="flex" alignItems="center" gap={3}>
+          <Settings size={32} />
           {t('settingsTitle')}
         </Heading>
-        <Text color="text.secondary" mt={2} fontSize="md">
-          {t('settingsDesc')}
-        </Text>
+        <Text color="text.secondary" mt={2} fontSize="md">{t('settingsDesc')}</Text>
       </Box>
 
-      {/* Main Form Layout */}
       <Stack gap={6} position="relative" zIndex={1}>
-        
-        {/* Brand & Logo Card */}
-        <Box
-          bg="bg.surface"
-          borderRadius="2xl"
-          border="1px solid"
-          borderColor="border.default"
-          boxShadow="0 10px 30px -10px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.01)"
-          p={8}
-          transition="all 0.25s"
-          _hover={{ borderColor: 'indigo.200', boxShadow: '0 12px 36px -8px rgba(99,102,241,0.06)' }}
-        >
+        <Box bg="bg.surface" borderRadius="card" border="1px solid" borderColor="border.default" shadow="card-dark" p={8} transition="all 0.25s" _hover={{ borderColor: 'brand.text' }}>
           <Stack gap={6}>
             <Box pb={4} borderBottom="1px solid" borderColor="border.default">
               <Heading size="md" fontWeight="bold" color="text.primary">
@@ -298,12 +261,12 @@ export default function SettingsPage() {
                 value={appName}
                 onChange={(e) => setAppName(e.target.value)}
                 placeholder="Novatech CBT"
-                bg="bg.canvas"
+                bg="bg.elevated"
                 borderRadius="xl"
                 h={12}
                 px={4}
                 borderColor="border.default"
-                _focus={{ borderColor: 'indigo.500', boxShadow: '0 0 0 1px #4f46e5', bg: 'bg.surface' }}
+                _focus={{ borderColor: 'brand.text', boxShadow: '0 0 0 1px var(--chakra-colors-brand-text)', bg: 'bg.surface' }}
                 transition="all 0.15s"
               />
             </Stack>
@@ -326,8 +289,8 @@ export default function SettingsPage() {
                   align="center"
                   justify="center"
                   border="2px dashed"
-                  borderColor={dragActive ? 'indigo.500' : 'border.default'}
-                  bg={dragActive ? 'rgba(99,102,241,0.03)' : 'bg.canvas'}
+                  borderColor={dragActive ? 'brand.text' : 'border.default'}
+                  bg={dragActive ? 'brand.subtle' : 'bg.elevated'}
                   borderRadius="2xl"
                   p={6}
                   minH="120px"
@@ -338,9 +301,9 @@ export default function SettingsPage() {
                   onDragOver={handleDrag}
                   onDrop={handleDrop}
                   transition="all 0.25s"
-                  _hover={{ borderColor: 'indigo.400', bg: 'rgba(99,102,241,0.01)', transform: 'translateY(-1px)' }}
+                  _hover={{ borderColor: 'brand.text', bg: 'bg.subtle', transform: 'translateY(-1px)' }}
                 >
-                  <Upload size={24} className={dragActive ? 'text-indigo-600 animate-bounce' : 'text-gray-400'} />
+                  <Upload size={24} color={dragActive ? 'var(--chakra-colors-brand-text)' : 'var(--chakra-colors-text-muted)'} />
                   <Text fontSize="sm" fontWeight="semibold" color="text.primary" mt={2}>
                     Klik untuk unggah atau seret file gambar ke sini
                   </Text>
@@ -362,7 +325,7 @@ export default function SettingsPage() {
                   direction="column"
                   align="center"
                   justify="center"
-                  bg="bg.canvas"
+                  bg="bg.elevated"
                   border="1px solid"
                   borderColor="border.default"
                   borderRadius="2xl"
@@ -377,7 +340,7 @@ export default function SettingsPage() {
                         h={14}
                         overflow="hidden"
                         borderRadius="xl"
-                        bg="white"
+                        bg="bg.surface"
                         boxShadow="0 4px 12px rgba(0,0,0,0.05)"
                         display="flex"
                         alignItems="center"
@@ -408,7 +371,7 @@ export default function SettingsPage() {
                   ) : (
                     <Flex direction="column" align="center" justify="center" gap={1}>
                       <Box p={2.5} borderRadius="xl" bg="bg.surface" border="1px solid" borderColor="border.default">
-                        <BookOpen size={18} className="text-gray-400" />
+                        <BookOpen size={18} color="var(--chakra-colors-text-muted)" />
                       </Box>
                       <Text fontSize="2xs" color="text.secondary" fontWeight="bold" mt={1}>LOGO DEFAULT</Text>
                     </Flex>
@@ -428,7 +391,7 @@ export default function SettingsPage() {
           boxShadow="0 10px 30px -10px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.01)"
           p={8}
           transition="all 0.25s"
-          _hover={{ borderColor: 'indigo.200', boxShadow: '0 12px 36px -8px rgba(99,102,241,0.06)' }}
+          _hover={{ borderColor: 'brand.text' }}
         >
           <Stack gap={6}>
             <Box pb={4} borderBottom="1px solid" borderColor="border.default">
@@ -442,7 +405,7 @@ export default function SettingsPage() {
 
             <Stack gap={2}>
               <Text fontWeight="bold" color="text.primary" fontSize="sm" display="flex" alignItems="center" gap={1.5}>
-                <Globe size={15} className="text-indigo-500" />
+                <Globe size={15} color="var(--chakra-colors-brand-text)" />
                 {t('timezoneLabel')}
               </Text>
               <Select.Root
@@ -484,7 +447,7 @@ export default function SettingsPage() {
           boxShadow="0 10px 30px -10px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.01)"
           p={8}
           transition="all 0.25s"
-          _hover={{ borderColor: 'indigo.200', boxShadow: '0 12px 36px -8px rgba(99,102,241,0.06)' }}
+          _hover={{ borderColor: 'brand.text' }}
         >
           <Stack gap={6}>
             <Box pb={4} borderBottom="1px solid" borderColor="border.default">
@@ -498,7 +461,7 @@ export default function SettingsPage() {
 
             <Stack gap={2}>
               <Text fontWeight="bold" color="text.primary" fontSize="sm" display="flex" alignItems="center" gap={1.5}>
-                <Languages size={15} className="text-indigo-500" />
+                <Languages size={15} color="var(--chakra-colors-brand-text)" />
                 Bahasa / Language
               </Text>
               <Select.Root
@@ -540,7 +503,7 @@ export default function SettingsPage() {
           boxShadow="0 10px 30px -10px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.01)"
           p={8}
           transition="all 0.25s"
-          _hover={{ borderColor: 'indigo.200', boxShadow: '0 12px 36px -8px rgba(99,102,241,0.06)' }}
+          _hover={{ borderColor: 'brand.text' }}
         >
           <Stack gap={6}>
             <Box pb={4} borderBottom="1px solid" borderColor="border.default">
@@ -554,7 +517,7 @@ export default function SettingsPage() {
 
             <Stack gap={2}>
               <Text fontWeight="bold" color="text.primary" fontSize="sm" display="flex" alignItems="center" gap={1.5}>
-                <Bookmark size={15} className="text-indigo-500" />
+                <Bookmark size={15} color="var(--chakra-colors-brand-text)" />
                 Tahun Ajaran Aktif
               </Text>
               <Select.Root
@@ -596,7 +559,7 @@ export default function SettingsPage() {
           boxShadow="0 10px 30px -10px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.01)"
           p={8}
           transition="all 0.25s"
-          _hover={{ borderColor: 'indigo.200', boxShadow: '0 12px 36px -8px rgba(99,102,241,0.06)' }}
+          _hover={{ borderColor: 'brand.text' }}
         >
           <Stack gap={6}>
             <Box pb={4} borderBottom="1px solid" borderColor="border.default">
@@ -614,9 +577,9 @@ export default function SettingsPage() {
                 <Text fontSize="xs" color="text.secondary" mt={0.5}>Atur hak akses notifikasi agar tidak spaming dan relevan.</Text>
               </Box>
               <Button
-                bg="indigo.50"
-                color="indigo.600"
-                _hover={{ bg: 'indigo.100' }}
+                bg="brand.subtle"
+                color="brand.text"
+                _hover={{ bg: 'bg.subtle' }}
                 borderRadius="xl"
                 fontWeight="bold"
                 onClick={() => router.push('/admin/settings/notifications')}
@@ -641,7 +604,7 @@ export default function SettingsPage() {
           boxShadow="0 10px 30px -10px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.01)"
           p={8}
           transition="all 0.25s"
-          _hover={{ borderColor: 'indigo.200', boxShadow: '0 12px 36px -8px rgba(99,102,241,0.06)' }}
+          _hover={{ borderColor: 'brand.text' }}
         >
           <Stack gap={6}>
             <Box pb={4} borderBottom="1px solid" borderColor="border.default">
@@ -659,7 +622,7 @@ export default function SettingsPage() {
                   <Text fontWeight="bold" color="text.primary" fontSize="sm">Aktifkan Integrasi Redis</Text>
                   <Text fontSize="xs" color="text.secondary">Status saat ini: {redisEnabled ? 'Aktif' : 'Nonaktif'}</Text>
                 </Box>
-                <Button variant={redisEnabled ? 'solid' : 'outline'} colorPalette="indigo" onClick={() => setRedisEnabled(!redisEnabled)}>
+                <Button variant={redisEnabled ? 'solid' : 'outline'} colorPalette="brand" onClick={() => setRedisEnabled(!redisEnabled)}>
                   {redisEnabled ? 'Aktif' : 'Nonaktif'}
                 </Button>
               </Flex>
@@ -670,14 +633,14 @@ export default function SettingsPage() {
                 <Input value={redisPassword} onChange={(e) => setRedisPassword(e.target.value)} type="password" placeholder="Redis Password" />
               </Stack>
 
-              <Box bg="gray.50" borderRadius="xl" p={4} borderWidth="1px" borderColor="gray.100">
+              <Box bg="bg.subtle" borderRadius="xl" p={4} borderWidth="1px" borderColor="border.default">
                 <Text fontSize="sm" fontWeight="semibold" mb={2}>Panduan Singkat</Text>
-                <Text fontSize="sm" color="gray.600">
+                <Text fontSize="sm" color="text.secondary">
                   Redis + BullMQ membantu memindahkan proses berat ke background worker, sehingga ujian tetap responsif walau ada import file besar atau proses laporan.
                 </Text>
               </Box>
 
-              <Button colorPalette="indigo" onClick={handleSyncRedis} loading={redisSyncLoading}>
+              <Button colorPalette="brand" onClick={handleSyncRedis} loading={redisSyncLoading}>
                 Uji & Sinkronkan Koneksi
               </Button>
             </Stack>
@@ -705,9 +668,9 @@ export default function SettingsPage() {
             </Text>
           </Box>
           <Button
-            bg="indigo.600"
+            bg="brand.solid"
             color="white"
-            _hover={{ bg: 'indigo.700', boxShadow: '0 4px 14px rgba(99,102,241,0.4)' }}
+            _hover={{ bg: 'brand.text' }}
             borderRadius="xl"
             h={12}
             px={8}
