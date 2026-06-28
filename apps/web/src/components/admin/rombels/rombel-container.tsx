@@ -212,8 +212,9 @@ export function RombelContainer() {
     let grade = '';
     let baseName = rombel.name;
     const parts = rombel.name.split(' ');
-    if (['X', 'XI', 'XII'].includes(parts[0])) {
-      grade = parts[0];
+    const firstPart = parts[0] ?? '';
+    if (['X', 'XI', 'XII'].includes(firstPart)) {
+      grade = firstPart;
       baseName = parts.slice(1).join(' ');
     }
     setFormData({
