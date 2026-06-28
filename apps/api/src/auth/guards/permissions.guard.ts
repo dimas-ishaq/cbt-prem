@@ -27,8 +27,13 @@ export class PermissionsGuard implements CanActivate {
       return false;
     }
 
-    // Super Admin has bypass access to all operations
-    if (user.role === 'SUPER_ADMIN') {
+    // Super Admin and Admin Sekolah have bypass access to all operations
+    if (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_SEKOLAH') {
+      return true;
+    }
+
+    // Guru has implicit access to view subjects (needed for creating exams/question banks)
+    if (user.role === 'GURU' && requiredPermissions.every(p => p === 'subjects:view')) {
       return true;
     }
 
