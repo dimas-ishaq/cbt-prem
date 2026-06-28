@@ -27,20 +27,20 @@ export class QuestionBankController {
   @UseGuards(JwtAuthGuard)
   @Permissions('question:bank:create')
   create(@Body() dto: CreateQuestionBankDto, @Request() req) {
-    return this.service.create(dto, req.user.id);
+    return this.service.create(dto, req.user.userId);
   }
 
   @Put(':id')
   @UseGuards(JwtAuthGuard)
   @Permissions('question:bank:update')
   update(@Param('id') id: string, @Body() dto: UpdateQuestionBankDto, @Request() req) {
-    return this.service.update(id, dto, req.user.id);
+    return this.service.update(id, dto, req.user.userId);
   }
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
   @Permissions('question:bank:delete')
   remove(@Param('id') id: string, @Request() req) {
-    return this.service.remove(id, req.user.id);
+    return this.service.remove(id, req.user.userId);
   }
 }
