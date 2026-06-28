@@ -23,6 +23,8 @@ describe('ExamSessions (e2e)', () => {
   const bankId       = 'bb000000-0000-4000-8000-000000000009';
   const q1           = 'bb000000-0000-4000-8000-00000000000a';
   const opt1         = 'bb000000-0000-4000-8000-00000000000b';
+  let raceSessionId: string;
+  let raceExamId: string;
 
   beforeAll(async () => {
     const mod = await Test.createTestingModule({ imports: [AppModule] }).compile();
@@ -132,4 +134,5 @@ describe('ExamSessions (e2e)', () => {
       .set('Authorization', `Bearer ${studentToken}`)
       .expect(400);
   });
+
 });

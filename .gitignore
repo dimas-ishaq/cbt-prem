@@ -28,8 +28,18 @@ build
 dist
 
 # Runtime / generated
-apps/api/uploads/tmp/
+uploads/
+tmp/
+*.tsbuildinfo
+
+# Per-app runtime
+apps/api/uploads/*
 apps/api/logs/
+apps/web/e2e-results/
+playwright-report/
+test-results/
+
+# Audit docs (local only)
 reports.md
 
 # Debug

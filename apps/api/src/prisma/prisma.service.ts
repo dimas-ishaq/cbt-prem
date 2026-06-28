@@ -6,6 +6,7 @@ import pg from 'pg';
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger('PrismaService');
+  private readonly pool: pg.Pool;
 
   constructor() {
     const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
@@ -19,6 +20,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         { emit: 'stdout', level: 'error' },
       ],
     });
+    this.pool = pool;
 
     (this as any).$on('query', (e: any) => {
       if (e.duration >= 150) {
@@ -35,5 +37,6 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
 
   async onModuleDestroy() {
     await this.$disconnect();
+    await this.pool.end();
   }
 }
