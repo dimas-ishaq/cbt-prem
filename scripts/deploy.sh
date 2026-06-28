@@ -46,6 +46,6 @@ cd "$ROOT_DIR"
 $PM2_BIN delete cbt-api >/dev/null 2>&1 || true
 $PM2_BIN delete cbt-web >/dev/null 2>&1 || true
 $PM2_BIN start apps/api/dist/main.js --name cbt-api --time --update-env
-$PM2_BIN start bash --name cbt-web --time -- -lc "cd apps/web && NEXT_PUBLIC_APP_URL=${FRONTEND_URL:-https://novatech.biz.id} NEXT_PUBLIC_API_URL=${PUBLIC_API_URL:-https://novatech.biz.id/api} NEXT_PUBLIC_WS_URL=${PUBLIC_WS_URL:-https://novatech.biz.id} bunx next start -p 3000"
+$PM2_BIN start bash --name cbt-web --time -- -lc "cd apps/web && NEXT_PUBLIC_APP_URL=${FRONTEND_URL:-https://novatech.biz.id} NEXT_PUBLIC_API_URL=${PUBLIC_API_URL:-https://novatech.biz.id/api} NEXT_PUBLIC_WS_URL=${PUBLIC_WS_URL:-${PUBLIC_API_URL%/*}} bunx next start -p 3000"
 $PM2_BIN save
 $PM2_BIN status
