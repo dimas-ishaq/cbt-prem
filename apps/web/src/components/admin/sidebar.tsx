@@ -38,6 +38,7 @@ import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useTranslation } from 'react-i18next';
 import { toast } from '@/lib/toaster';
+import { assetUrl } from '@/lib/env';
 
 const menuGroups = [
   {
@@ -281,7 +282,7 @@ export function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onMobile
                 >
                   {user?.photo ? (
                     <Image
-                      src={user.photo.startsWith('http') ? user.photo : `${(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api').replace(/\/api$/, '')}${user.photo}`}
+                      src={assetUrl(user.photo)}
                       alt="Avatar"
                       objectFit="cover"
                       w="full"

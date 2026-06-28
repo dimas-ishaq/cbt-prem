@@ -17,6 +17,7 @@ import {
 import { Camera, User, Mail, ShieldAlert } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
 import api from '@/lib/api';
+import { assetUrl } from '@/lib/env';
 import { toast } from '@/lib/toaster';
 
 export default function ProfilePage() {
@@ -34,7 +35,7 @@ export default function ProfilePage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api').replace(/\/api$/, '');
+  const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
   useEffect(() => {
     fetchProfile();
@@ -161,7 +162,7 @@ export default function ProfilePage() {
                   style={user?.photo ? {} : { background: 'linear-gradient(135deg, #4f46e5, #7c3aed)' }}
                 >
                   {user?.photo ? (
-                    <Image src={user.photo.startsWith('http') ? user.photo : `${apiBase}${user.photo}`} alt="Profile Avatar" objectFit="cover" w="full" h="full" />
+                    <Image src={assetUrl(user.photo)} alt="Profile Avatar" objectFit="cover" w="full" h="full" />
                   ) : (
                     user?.fullName?.charAt(0)?.toUpperCase() || 'A'
                   )}

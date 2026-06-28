@@ -24,18 +24,9 @@ import { ColorModeToggle } from '@/components/ui/color-mode-toggle';
 import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
+import { assetUrl } from '@/lib/env';
 
-const getAssetUrl = (url?: string) => {
-  if (!url) return '';
-  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
-    return url;
-  }
-  if (url.startsWith('/uploads/')) {
-    const apiBase = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api').replace(/\/api$/, '');
-    return `${apiBase}${url}`;
-  }
-  return url;
-};
+const getAssetUrl = assetUrl;
 
 export default function DashboardPage() {
   const { user, logout } = useAuthStore();
