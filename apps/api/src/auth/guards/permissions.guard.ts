@@ -32,8 +32,8 @@ export class PermissionsGuard implements CanActivate {
       return true;
     }
 
-    // Guru has implicit access to view subjects (needed for creating exams/question banks)
-    if (user.role === 'GURU' && requiredPermissions.every(p => p === 'subjects:view')) {
+    // Guru has implicit access to view subjects & majors (needed for creating exams/question banks)
+    if (user.role === 'GURU' && requiredPermissions.every(p => p === 'subjects:view' || p === 'majors:view')) {
       return true;
     }
 
