@@ -18,7 +18,12 @@ fi
 
 [ -f .env ] || [ -f apps/api/.env ] || { echo "missing env file" >&2; exit 1; }
 
-if [ -f .env ]; then
+if [ -f apps/api/.env ]; then
+  set -a
+  # shellcheck disable=SC1091
+  . apps/api/.env
+  set +a
+elif [ -f .env ]; then
   set -a
   # shellcheck disable=SC1091
   . ./.env
@@ -28,10 +33,11 @@ fi
 bun install --frozen-lockfile
 
 # Generate web prod env
+mkdir -p apps/web
 cat > apps/web/.env.local <<EOF
 NEXT_PUBLIC_APP_URL=${FRONTEND_URL:-https://novatech.biz.id}
-NEXT_PUBLIC_API_URL=${PUBLIC_API_URL:-${FRONTEND_URL:-https://novatech.biz.id}/api}
-NEXT_PUBLIC_WS_URL=${PUBLIC_WS_URL:-${FRONTEND_URL:-https://novatech.biz.id}}
+NEXT_PUBLIC_API_URL=${PUBLIC_API_URL:-https://novatech.biz.id/api}
+NEXT_PUBLIC_WS_URL=${PUBLIC_WS_URL:-https://novatech.biz.id}
 NEXT_PUBLIC_DEBUG=false
 EOF
 
