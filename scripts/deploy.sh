@@ -26,6 +26,11 @@ if [ -f .env ]; then
 fi
 
 bun install --frozen-lockfile
+
+if [ ! -f apps/web/.env.local ] && [ -f apps/web/.env.example ]; then
+  cp apps/web/.env.example apps/web/.env.local
+fi
+
 cd apps/api
 bunx prisma generate
 cd "$ROOT_DIR"
