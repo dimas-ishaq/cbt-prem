@@ -63,6 +63,7 @@ export default function SettingsPage() {
 
   const [appName, setAppName] = useState('Novatech CBT');
   const [logoUrl, setLogoUrl] = useState('');
+  const [faviconUrl, setFaviconUrl] = useState('');
   const [timezone, setTimezone] = useState('Asia/Jakarta');
   const [language, setLanguage] = useState('id');
   const [academicYear, setAcademicYear] = useState('2024/2025');
@@ -92,6 +93,7 @@ export default function SettingsPage() {
     if (settings) {
       setAppName(settings.appName || 'Novatech CBT');
       setLogoUrl(settings.logoUrl || '');
+      setFaviconUrl(settings.faviconUrl || '');
       setTimezone(settings.timezone || 'Asia/Jakarta');
       setLanguage(settings.language || 'id');
       setAcademicYear(settings.academicYear || '2024/2025');
@@ -99,6 +101,10 @@ export default function SettingsPage() {
       setRedisHost(settings.redisHost || '127.0.0.1');
       setRedisPort(settings.redisPort || '6379');
       setRedisPassword(settings.redisPassword || '');
+      if (settings.faviconUrl) {
+        const link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+        if (link) link.href = settings.faviconUrl;
+      }
     }
   }, [settings]);
 
@@ -116,7 +122,7 @@ export default function SettingsPage() {
   });
 
   const handleSave = () => {
-    saveMutation.mutate({ appName, logoUrl, timezone, language, academicYear });
+    saveMutation.mutate({ appName, logoUrl, faviconUrl, timezone, language, academicYear });
   };
 
   const processFile = (file: File) => {
@@ -378,6 +384,21 @@ export default function SettingsPage() {
                   )}
                 </Flex>
               </Flex>
+            </Stack>
+          </Stack>
+        </Box>
+
+        {/* Favicon Upload Zone */}
+        <Box bg="bg.surface" borderRadius="2xl" border="1px solid" borderColor="border.default" boxShadow="0 10px 30px -10px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.01)" p={8} transition="all 0.25s" _hover={{ borderColor: 'brand.text' }}>
+          <Stack gap={6}>
+            <Box pb={4} borderBottom="1px solid" borderColor="border.default">
+              <Heading size="md" fontWeight="bold" color="text.primary">Favicon</Heading>
+              <Text fontSize="xs" color="text.secondary" mt={0.5}>Upload icon kecil buat tab browser, PWA, dan bookmark.</Text>
+            </Box>
+            <Stack gap={3}>
+              <Text fontWeight="bold" color="text.primary" fontSize="sm">Favicon Site</Text>
+              <Input value={faviconUrl} onChange={(e) => setFaviconUrl(e.target.value)} placeholder="https://.../favicon.ico atau data:image/..." bg="bg.elevated" borderRadius="xl" h={12} px={4} borderColor="border.default" />
+              <Text fontSize="2xs" color="text.secondary">Pakai square 32x32 atau .ico. Kalau kosong, fallback /favicon.ico.</Text>
             </Stack>
           </Stack>
         </Box>
