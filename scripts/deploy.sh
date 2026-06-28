@@ -29,8 +29,8 @@ bun install --frozen-lockfile
 mkdir -p apps/web
 cat > apps/web/.env.local <<EOF
 NEXT_PUBLIC_APP_URL=${FRONTEND_URL:-https://novatech.biz.id}
-NEXT_PUBLIC_API_URL=${PUBLIC_API_URL:-https://novatech.biz.id/api}
-NEXT_PUBLIC_WS_URL=${PUBLIC_WS_URL:-https://novatech.biz.id}
+NEXT_PUBLIC_API_URL=${PUBLIC_API_URL:-https://api.novatech.biz.id/api}
+NEXT_PUBLIC_WS_URL=${PUBLIC_WS_URL:-https://api.novatech.biz.id}
 NEXT_PUBLIC_DEBUG=false
 EOF
 
