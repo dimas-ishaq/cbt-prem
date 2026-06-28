@@ -41,6 +41,7 @@ describe('SettingsService', () => {
       expect(result.timezone).toBe('Asia/Jakarta');
       expect(result.redisEnabled).toBe('false');
       expect(result.redisHost).toBe('127.0.0.1');
+      expect(result.faviconUrl).toBe('');
     });
 
     it('should decrypt redisPassword', async () => {
