@@ -7,11 +7,31 @@ import { UpdateQuestionBankDto } from './dto/update-question-bank.dto';
 export class QuestionBankService {
   constructor(private prisma: PrismaService) {}
 
-  async create(dto: CreateQuestionBankDto, teacherId: string) {
+  private async getTeacherOrThrow(userId: string) {
+    let teacher = await this.prisma.teacher.findUnique({
+      where: { userId },
+    });
+    if (!teacher) {
+      const user = await this.prisma.user.findUnique({ where: { id: userId } });
+      if (user && (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN')) {
+        const fallbackTeacher = await this.prisma.teacher.findFirst();
+        if (!fallbackTeacher) {
+          throw new NotFoundException('No teachers registered in the system. Please add a teacher first.');
+        }
+        teacher = fallbackTeacher;
+      } else {
+        throw new ForbiddenException('Only teachers or administrators can manage question banks');
+      }
+    }
+    return teacher;
+  }
+
+  async create(dto: CreateQuestionBankDto, userId: string) {
+    const teacher = await this.getTeacherOrThrow(userId);
     return this.prisma.questionBank.create({
       data: {
         ...dto,
-        teacherId,
+        teacherId: teacher.id,
       },
     });
   }
@@ -41,12 +61,13 @@ export class QuestionBankService {
     });
   }
 
-  async update(id: string, dto: UpdateQuestionBankDto, teacherId: string) {
+  async update(id: string, dto: UpdateQuestionBankDto, userId: string) {
+    const teacher = await this.getTeacherOrThrow(userId);
     const bank = await this.prisma.questionBank.findUnique({ where: { id } });
     if (!bank) {
       throw new NotFoundException('Question bank not found');
     }
-    if (bank.teacherId !== teacherId) {
+    if (bank.teacherId !== teacher.id) {
       throw new ForbiddenException('You do not own this question bank');
     }
     return this.prisma.questionBank.update({
@@ -56,12 +77,13 @@ export class QuestionBankService {
     });
   }
 
-  async remove(id: string, teacherId: string) {
+  async remove(id: string, userId: string) {
+    const teacher = await this.getTeacherOrThrow(userId);
     const bank = await this.prisma.questionBank.findUnique({ where: { id } });
     if (!bank) {
       throw new NotFoundException('Question bank not found');
     }
-    if (bank.teacherId !== teacherId) {
+    if (bank.teacherId !== teacher.id) {
       throw new ForbiddenException('You do not own this question bank');
     }
     return this.prisma.questionBank.delete({
