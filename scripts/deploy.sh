@@ -46,6 +46,6 @@ cd "$ROOT_DIR"
 $PM2_BIN delete cbt-api >/dev/null 2>&1 || true
 $PM2_BIN delete cbt-web >/dev/null 2>&1 || true
 $PM2_BIN start apps/api/dist/main.js --name cbt-api --time --update-env
-$PM2_BIN start bash --name cbt-web --time --update-env -- -lc "cd apps/web && PORT=3000 bun run start"
+$PM2_BIN start bash --name cbt-web --time --update-env -- -lc "cd apps/web && bunx next start -p 3000"
 $PM2_BIN save
 $PM2_BIN status
