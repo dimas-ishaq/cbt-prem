@@ -1,57 +1,237 @@
-# Rencana Kerja Terperinci: Implementasi Fitur CBT Premium & Professional
+# Rencana Kerja Audit & Hardening CBT
 
-Dokumen ini berisi daftar tugas bertahap (step-by-step) untuk memandu pengembangan fitur premium. Setiap tahap dirancang agar memiliki batasan file dan alur yang jelas.
+Dokumen ini jadi daftar task eksekusi sebelum status **production full**.  
+Aturan ceklis: **jangan centang kalau belum ada bukti test, review, dan verifikasi QA**.
 
----
+## Prinsip Kerja
+- Audit dulu, baru ubah.
+- Satu task = satu bukti validasi.
+- Semua task kritis harus lolos:
+  1. review code
+  2. unit test atau E2E
+  3. QA audit manual
+  4. rerun setelah fix
+- Kalau task belum punya bukti, status tetap `[ ]`.
 
-## 📋 DAFTAR TUGAS DAN CHECKLIST
-
-### 🛠️ TAHAP 1: Konfigurasi Redis & BullMQ Opsional (Superadmin Settings)
-Tujuan: Menyediakan antarmuka bagi Superadmin untuk mengaktifkan Redis, melakukan pengujian koneksi, dan meng-load adaptor BullMQ secara dinamis dengan panduan penggunaan.
-
-- `[x]` **1.1. Konfigurasi Backend & Penyimpanan Pengaturan (NestJS)**
-  - `[x]` Perbarui default settings di [settings.service.ts](file:///g:/Project/Javascript/cbt-prem/apps/api/src/settings/settings.service.ts) untuk mendefinisikan kunci baru: `redisEnabled` ("true"/"false"), `redisHost`, `redisPort`, dan `redisPassword`.
-  - `[x]` Buat controller endpoint `POST /settings/redis/sync` di [settings.controller.ts](file:///g:/Project/Javascript/cbt-prem/apps/api/src/settings/settings.controller.ts) yang mencoba koneksi Redis dengan ioredis dan menyimpan pengaturan ke database.
-- `[x]` **1.2. Antarmuka UI Pengaturan Redis di Frontend (Next.js & Chakra UI v3)**
-  - `[x]` Buka [settings/page.tsx](file:///g:/Project/Javascript/cbt-prem/apps/web/app/(teacher)/admin/settings/page.tsx) dan tambahkan Card UI baru: **"Integrasi Redis & BullMQ (Opsional)"**.
-  - `[x]` Buat form input untuk Toggle, Host, Port, Password.
-  - `[x]` Implementasikan tombol **"Uji & Sinkronkan Koneksi"** yang memanggil API backend dengan state loading dan toaster notification.
-- `[x]` **1.3. Panduan Penggunaan Langsung di UI**
-  - `[x]` Tambahkan panel edukatif / tooltip di bawah form Redis yang menjelaskan fungsi Redis + BullMQ serta status aktif/nonaktif saat ini.
-
----
-
-### 📊 TAHAP 2: Laporan & Analisis Ujian Visual (Exam Analytics & Server-Side PDF)
-Tujuan: Menampilkan visualisasi data kelulusan, distribusi nilai, analisis butir soal untuk guru, serta ekspor file PDF resmi dari server.
-
-- `[x]` **2.1. API Agregasi & Analitik Nilai Ujian (NestJS)**
-  - `[x]` Buat service method `analytics(id)` di [exams.service.ts](file:///g:/Project/Javascript/cbt-prem/apps/api/src/exams/exams.service.ts) untuk mengalkulasi total ketuntasan KKM, rata-rata kelas, distribusi kelompok nilai, dan tingkat kesulitan soal.
-  - `[x]` Daftarkan endpoint `GET /exams/:id/analytics` di [exams.controller.ts](file:///g:/Project/Javascript/cbt-prem/apps/api/src/exams/exams.controller.ts).
-- `[x]` **2.2. Generator PDF Hasil Ujian Server-Side (NestJS)**
-  - `[x]` Implementasikan endpoint `GET /exams/:id/analytics/pdf` yang menghasilkan stream file PDF formal menggunakan `pdfkit` memuat kop logo, tabel kelulusan, dan tanda tangan guru.
-- `[x]` **2.3. Halaman Analytics Dashboard di Frontend (Next.js & Recharts)**
-  - `[x]` Buat halaman baru di [results/[id]/analytics/page.tsx](file:///g:/Project/Javascript/cbt-prem/apps/web/app/(teacher)/admin/results/[id]/analytics/page.tsx).
-  - `[x]` Tampilkan grafik ringkasan menggunakan `recharts` (Bar Chart distribusi nilai, Pie Chart rasio kelulusan KKM).
-  - `[x]` Buat tabel *Item Analysis* tingkat kesulitan butir soal (Mudah, Sedang, Sulit).
-  - `[x]` Integrasikan tombol **"Ekspor Laporan PDF"** yang memicu download PDF dari server endpoint.
-  - `[x]` Hubungkan halaman dengan menambahkan tombol **"Analisis Grafik"** pada halaman utama list hasil ujian [results/[id]/page.tsx](file:///g:/Project/Javascript/cbt-prem/apps/web/app/(teacher)/admin/results/[id]/page.tsx).
+## Urutan Eksekusi
+1. Tutup gap security paling berisiko.
+2. Kunci flow ujian inti.
+3. Perkuat test otomatis.
+4. Tambah observability.
+5. Baru masuk load test dan production readiness.
 
 ---
 
-### ✏️ TAHAP 3: Antarmuka Penilaian Essay Kolektif (Manual Essay Grading)
-Tujuan: Mengaktifkan fungsionalitas penilaian manual bagi soal tipe essay secara cepat dan terpusat untuk guru.
+## P0 — Wajib sebelum production
 
-- `[x]` **Tahap 3: Antarmuka Penilaian Essay Kolektif (Manual Essay Grading)**
-  - `[x]` Penyesuaian Skema Database & Migrasi (Prisma): Tambah field `isGraded Boolean @default(false)` dan `score Float?` pada model `Answer`.
-  - `[x]` API Modul Penilaian Essay (NestJS): Mengimplementasikan `getEssayAnswersByExam(examId)` dan `gradeEssayAnswer(answerId, dto)` di [exam-sessions.service.ts](file:///g:/Project/Javascript/cbt-prem/apps/api/src/exam-sessions/exam-sessions.service.ts).
-  - `[x]` Halaman Portal Penilaian Essay di Frontend (Next.js): Membuat antarmuka penelaahan kolektif split-screen di [essay-grading/page.tsx](file:///g:/Project/Javascript/cbt-prem/apps/web/app/(teacher)/admin/results/[id]/essay-grading/page.tsx).
+### 1. Audit security schema dan auth
+**Target:** hilang risiko data sensitif dan akses liar.
+
+- `[ ]` Hapus / validasi field sensitif `plainPassword` pada Prisma `User`.
+- `[ ]` Audit semua flow auth, login, refresh, logout, role guard.
+- `[ ]` Pastikan token, cookie, dan session policy aman untuk production.
+- `[ ]` Tambah test untuk akses role: SISWA, GURU, ADMIN_SEKOLAH, PENGAWAS, SUPER_ADMIN.
+
+**Validasi wajib:**
+- `[ ]` QA cek tidak ada plain password tersimpan.
+- `[ ]` QA cek endpoint role-protected tidak bocor.
+- `[ ]` QA cek login fail, lockout, dan logout.
+
+### 2. Kunci CORS dan akses asset
+**Target:** cegah abuse cross-origin dan file exposure.
+
+- `[ ]` Ganti `origin: true` jadi allowlist eksplisit di backend.
+- `[ ]` Audit akses `/uploads/` dan endpoint file export.
+- `[ ]` Validasi upload file image / media dengan check tambahan selain mimetype.
+- `[ ]` Tambah test upload invalid, ukuran besar, dan file type liar.
+
+**Validasi wajib:**
+- `[ ]` QA uji origin valid dan invalid.
+- `[ ]` QA uji file upload aman dan file terblokir.
+
+### 3. Perkuat flow ujian inti
+**Target:** exam tidak gagal saat dipakai siswa sungguhan.
+
+- `[ ]` Audit start session, submit answer, auto-submit, expire session, lock session.
+- `[ ]` Pastikan flow ujian tidak bergantung state memory saja.
+- `[ ]` Pastikan retry submit tidak bikin duplikat data.
+- `[ ]` Tambah idempotency / anti double submit bila belum ada.
+
+**Validasi wajib:**
+- `[ ]` QA jalankan skenario penuh dari login sampai submit.
+- `[ ]` QA simulasi refresh browser, reconnect, dan server restart.
+- `[ ]` QA cek auto-submit saat waktu habis.
+
+### 4. Naikkan test otomatis
+**Target:** bug dasar ketangkap sebelum QA manual.
+
+- `[ ]` Tambah E2E backend untuk login, exam create, start session, submit answer, expired session.
+- `[ ]` Tambah E2E frontend untuk login, dashboard siswa, halaman exam, dashboard guru, dashboard admin.
+- `[ ]` Tambah test permission / guard per role.
+- `[ ]` Tambah test untuk notifikasi, logs, dan settings kritis.
+
+**Validasi wajib:**
+- `[ ]` Semua test jalan di CI.
+- `[ ]` Semua test stabil minimal 3x rerun tanpa flake.
 
 ---
 
-### 🛡️ TAHAP 4: Live Monitor Pengawas (Live Proctoring Dashboard)
-Tujuan: Menyediakan alat bagi pengawas ujian untuk memantau status fokus siswa secara realtime dan melakukan tindakan kendali jarak jauh (remote actions).
+## P1 — Sangat disarankan
 
-- `[x]` **4.1. Handler Event WebSocket (NestJS Gateway)**
-  - `[x]` Hubungkan event socket di [realtime.gateway.ts](file:///g:/Project/Javascript/cbt-prem/apps/api/src/realtime/realtime.gateway.ts) untuk mengelola ruang pengawasan (`join_proctor_room`), mendengarkan pelanggaran (`violation_detected`), dan melakukan aksi remote session lock.
-- `[x]` **4.2. UI Dashboard Pengawas Realtime (Next.js)**
-  - `[x]` Gunakan antarmuka yang sudah ada di [monitoring/page.tsx](file:///g:/Project/Javascript/cbt-prem/apps/web/app/(teacher)/admin/monitoring/page.tsx) dan [monitoring/[id]/page.tsx](file:///g:/Project/Javascript/cbt-prem/apps/web/app/(teacher)/admin/monitoring/[id]/page.tsx) untuk menampilkan grid peserta live, log ticker pelanggaran, dan kontrol blokir/reset sesi siswa secara realtime.
+### 5. Observability dan audit trail
+**Target:** gampang debug saat jam ujian.
+
+- `[ ]` Pastikan structured log untuk request, error, dan action penting.
+- `[ ]` Tambah request id / correlation id.
+- `[ ]` Audit logs untuk login, submit, grade, lock session, export.
+- `[ ]` Tambah health check DB dan Redis.
+
+**Validasi wajib:**
+- `[ ]` QA cek log muncul sesuai aksi.
+- `[ ]` QA cek health endpoint fail kalau dependency mati.
+
+### 6. Hardening notifikasi, laporan, dan export
+**Target:** modul pendukung aman dan konsisten.
+
+- `[ ]` Audit endpoint export PDF / Excel.
+- `[ ]` Audit notification delivery dan recipient access.
+- `[ ]` Audit permission report, logs, dan monitoring.
+- `[ ]` Tambah test akses unauthorized ke endpoint laporan.
+
+**Validasi wajib:**
+- `[ ]` QA cek file export tidak bisa diakses tanpa izin.
+- `[ ]` QA cek notif cuma sampai target benar.
+
+### 7. UX stabilitas frontend
+**Target:** siswa/guru/admin tidak mentok UI.
+
+- `[ ]` Review loading, error, empty state di halaman penting.
+- `[ ]` Pastikan navigasi role-based benar.
+- `[ ]` Audit accessibility basic: label, focus, keyboard, contrast.
+- `[ ]` Tambah Playwright untuk skenario utama tiap role.
+
+**Validasi wajib:**
+- `[ ]` QA cek alur tanpa mouse.
+- `[ ]` QA cek tampilan mobile dan desktop.
+
+---
+
+## P2 — Sesudah core aman
+
+### 8. Load test dan capacity check
+**Target:** ukur batas nyata.
+
+- `[ ]` Jalankan load test simulasi 300 pengguna.
+- `[ ]` Jalankan load test simulasi 500 pengguna.
+- `[ ]` Catat latency p95, error rate, dan bottleneck.
+- `[ ]` Optimasi query berat dan koneksi DB bila perlu.
+
+**Validasi wajib:**
+- `[ ]` QA review hasil load test.
+- `[ ]` Tidak ada error spike kritis.
+
+### 9. Backup, restore, dan disaster recovery
+**Target:** aman kalau data rusak / server mati.
+
+- `[ ]` Buat SOP backup database.
+- `[ ]` Uji restore ke environment non-prod.
+- `[ ]` Audit migration plan.
+- `[ ]` Pastikan seed/test data tidak campur production.
+
+**Validasi wajib:**
+- `[ ]` QA verifikasi restore berhasil.
+- `[ ]` QA verifikasi data hasil restore konsisten.
+
+---
+
+## Rencana Kerja Sprint
+
+### Sprint 1 — Security & Auth
+Fokus:
+- schema sensitif
+- CORS
+- upload access
+- role guard test
+
+Output wajib:
+- semua P0 bagian 1 dan 2 selesai
+- bukti QA audit security
+
+### Sprint 2 — Exam Core Stability
+Fokus:
+- session lifecycle
+- submit flow
+- idempotency
+- auto-submit reliability
+
+Output wajib:
+- semua P0 bagian 3 selesai
+- E2E exam flow hijau
+
+### Sprint 3 — Test Coverage
+Fokus:
+- backend E2E
+- frontend E2E
+- permission test
+- regression test
+
+Output wajib:
+- test suite stabil
+- minimal rerun 3x lolos
+
+### Sprint 4 — Observability & Production Readiness
+Fokus:
+- logs
+- health check
+- export hardening
+- load test
+
+Output wajib:
+- QA sign-off
+- checklist production review
+
+---
+
+## Permintaan Audit QA
+
+### Instruksi untuk QA
+QA harus lakukan audit lengkap berikut:
+1. login semua role
+2. akses halaman sesuai permission
+3. buat ujian
+4. mulai sesi ujian
+5. jawab soal
+6. submit manual
+7. tunggu auto-submit / expired session
+8. cek hasil, logs, dan export
+9. uji error path: invalid token, forbidden, upload salah, origin salah
+10. cek mobile, desktop, dan refresh/reconnect behavior
+
+### Output QA yang wajib ada
+- daftar bug + severity
+- screenshot / bukti langkah uji
+- status pass/fail per flow
+- rekomendasi blocker production
+- keputusan final: **lulus / belum lulus**
+
+### Kriteria ceklis final
+Task boleh dicentang hanya kalau:
+- code selesai
+- test ada
+- QA audit selesai
+- hasil masuk laporan
+- tidak ada blocker severity tinggi
+
+---
+
+## Definition of Done
+Satu task dianggap selesai kalau semua ini terpenuhi:
+- implementasi sesuai scope
+- test otomatis lolos
+- QA manual audit lolos
+- hasil terdokumentasi
+- tidak ada issue open severity tinggi
+
+## Catatan Jujur
+Kalau poin P0 belum lolos, **jangan sebut production ready**.  
+Kalau test masih minim, itu masih **beta**.

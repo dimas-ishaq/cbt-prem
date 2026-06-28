@@ -30,8 +30,18 @@ export class UsersController {
   /** GET /users?role=GURU — list all users (super admin only) */
   @Get()
   @Roles(Role.SUPER_ADMIN)
-  findAll(@Query() pagination: PaginationDto, @Query('role') role?: Role) {
-    return this.usersService.findAll(role, pagination.skip, pagination.take);
+  findAll(
+    @Query() pagination: PaginationDto,
+    @Query('role') role?: Role,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const hasPagination = page !== undefined || limit !== undefined;
+    return this.usersService.findAll(
+      role,
+      hasPagination ? pagination.skip : undefined,
+      hasPagination ? pagination.take : undefined,
+    );
   }
 
   /** GET /users/:id — single user detail */

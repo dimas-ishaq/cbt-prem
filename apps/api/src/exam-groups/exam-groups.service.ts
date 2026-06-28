@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateExamGroupDto } from './dto/create-exam-group.dto';
 import { UpdateExamGroupDto } from './dto/update-exam-group.dto';
 import * as ExcelJS from 'exceljs';
-import { Response } from 'express';
+import type { Response } from 'express';
 
 @Injectable()
 export class ExamGroupsService {

@@ -5,12 +5,13 @@ import { toast } from '@/lib/toaster';
 import { useAuthStore } from '@/store/auth.store';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
-import { Box, Flex, Heading, Text, Button, Stack, HStack, createListCollection } from '@chakra-ui/react';
+import { Box, Flex, Heading, Text, Button, Stack, HStack, createListCollection, Dialog, Portal, Input } from '@chakra-ui/react';
 import { useConfirm } from '@/components/ui/confirmation-dialog';
 import {
   Plus,
   Download,
   Upload,
+  AlertTriangle,
 } from 'lucide-react';
 import type { ActiveTab, UserData, UserFormData } from './user-types';
 import { TABS, countUsersByTab, filterUsers, paginateUsers } from './user-utils';
@@ -39,6 +40,9 @@ export function UserContainer() {
     username: '', email: '', password: '', fullName: '', role: 'SISWA', rombelId: '', nis: '',
   });
   const [newPassword, setNewPassword] = useState('');
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteConfirmationInput, setDeleteConfirmationInput] = useState('');
+  const [userToDelete, setUserToDelete] = useState<UserData | null>(null);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -379,9 +383,9 @@ export function UserContainer() {
         onEdit={openEditModal}
         onResetPassword={openResetPassword}
         onDelete={(u) => {
-          if (confirm(`Hapus akun "${u.fullName}"? Tindakan ini tidak dapat dibatalkan.`)) {
-            deleteMutation.mutate(u.id);
-          }
+          setUserToDelete(u);
+          setDeleteConfirmationInput('');
+          setIsDeleteModalOpen(true);
         }}
         onToggleActive={async (u) => {
           const confirmed = await confirmDialog({
@@ -414,6 +418,131 @@ export function UserContainer() {
           onSubmit={handleResetPassword}
         />
       )}
+
+      <Dialog.Root open={isDeleteModalOpen} onOpenChange={(d: any) => setIsDeleteModalOpen(d.open)} size="md">
+        <Portal>
+          <Dialog.Backdrop />
+          <Dialog.Positioner>
+            <Dialog.Content 
+              borderRadius="md" 
+              overflow="hidden" 
+              bg={{ base: '#FFFFFF', _dark: '#1B1B1B' }} 
+              border="1px solid" 
+              borderColor={{ base: '#E2E8F0', _dark: '#3D3D3D' }}
+            >
+              <Dialog.Header 
+                bg={{ base: '#F7FAFC', _dark: '#242424' }} 
+                py={4} 
+                borderBottom="1px solid" 
+                borderColor={{ base: '#E2E8F0', _dark: '#3D3D3D' }}
+              >
+                <Dialog.Title 
+                  fontSize="md" 
+                  fontWeight="bold" 
+                  color={{ base: '#E53E3E', _dark: '#EF4444' }} 
+                  display="flex" 
+                  alignItems="center" 
+                  gap={2}
+                >
+                  <AlertTriangle size={18} /> Hapus Akun Pengguna
+                </Dialog.Title>
+              </Dialog.Header>
+              <Dialog.Body p={6} bg={{ base: '#FFFFFF', _dark: '#1B1B1B' }}>
+                <Stack gap={4}>
+                  <Text fontSize="sm" color={{ base: '#2D3748', _dark: '#E0E0E0' }} lineHeight="relaxed">
+                    Apakah Anda yakin ingin menghapus akun <strong>{userToDelete?.fullName}</strong> ({userToDelete?.username})? 
+                    Tindakan ini tidak dapat dibatalkan dan semua data yang berkaitan dengan pengguna ini akan dihapus secara permanen.
+                  </Text>
+                  <Box 
+                    bg={{ base: '#FFF5F5', _dark: '#242424' }} 
+                    p={3} 
+                    borderRadius="sm" 
+                    borderLeft="4px solid" 
+                    borderColor={{ base: '#E53E3E', _dark: '#EF4444' }}
+                  >
+                    <Text fontSize="xs" color={{ base: '#E53E3E', _dark: '#EF4444' }} fontWeight="bold">
+                      PERINGATAN: Menghapus akun ini akan menghapus riwayat pengerjaan ujian dan data terkait lainnya.
+                    </Text>
+                  </Box>
+                  <Box mt={2}>
+                    <Text 
+                      fontSize="xs" 
+                      fontWeight="bold" 
+                      color={{ base: '#718096', _dark: '#8A8A8A' }} 
+                      mb={2} 
+                      textTransform="uppercase" 
+                      letterSpacing="wider"
+                    >
+                      Ketik &quot;hapus&quot; untuk mengonfirmasi:
+                    </Text>
+                    <Input
+                      value={deleteConfirmationInput}
+                      onChange={(e) => setDeleteConfirmationInput(e.target.value)}
+                      placeholder="Ketik hapus"
+                      borderRadius="sm"
+                      borderColor={{ base: '#CBD5E0', _dark: '#3D3D3D' }}
+                      bg={{ base: '#EDF2F7', _dark: '#2D2D2D' }}
+                      color={{ base: '#1A202C', _dark: '#E0E0E0' }}
+                      _focus={{ borderColor: { base: '#3182CE', _dark: '#9C55E8' }, outline: 'none' }}
+                    />
+                  </Box>
+                </Stack>
+              </Dialog.Body>
+              <Dialog.Footer 
+                p={6} 
+                bg={{ base: '#F7FAFC', _dark: '#242424' }} 
+                borderTop="1px solid" 
+                borderColor={{ base: '#E2E8F0', _dark: '#3D3D3D' }}
+              >
+                <Flex gap={3} width="full">
+                  <Dialog.ActionTrigger asChild>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      borderColor={{ base: '#CBD5E0', _dark: '#3D3D3D' }} 
+                      color={{ base: '#4A5568', _dark: '#E0E0E0' }}
+                      _hover={{ bg: { base: '#EDF2F7', _dark: '#2D2D2D' } }}
+                      borderRadius="sm" 
+                      flex={1}
+                      onClick={() => setIsDeleteModalOpen(false)}
+                    >
+                      Batal
+                    </Button>
+                  </Dialog.ActionTrigger>
+                  <Button
+                    onClick={() => {
+                      if (deleteConfirmationInput.trim().toLowerCase() === 'hapus' && userToDelete) {
+                        deleteMutation.mutate(userToDelete.id, {
+                          onSuccess: () => {
+                            setIsDeleteModalOpen(false);
+                            setUserToDelete(null);
+                            setDeleteConfirmationInput('');
+                          }
+                        });
+                      }
+                    }}
+                    disabled={deleteConfirmationInput.trim().toLowerCase() !== 'hapus' || deleteMutation.isPending}
+                    flex={1}
+                    bg={{ base: '#E53E3E', _dark: '#EF4444' }}
+                    color="#ffffff"
+                    _hover={{ bg: { base: '#C53030', _dark: '#D32F2F' } }}
+                    _disabled={{ 
+                      bg: { base: '#FED7D7', _dark: '#5D2A2A' }, 
+                      color: { base: '#E53E3E', _dark: '#8A8A8A' }, 
+                      cursor: 'not-allowed' 
+                    }}
+                    borderRadius="sm"
+                    loading={deleteMutation.isPending}
+                  >
+                    Hapus Permanen
+                  </Button>
+                </Flex>
+              </Dialog.Footer>
+              <Dialog.CloseTrigger color={{ base: '#4A5568', _dark: '#E0E0E0' }} />
+            </Dialog.Content>
+          </Dialog.Positioner>
+        </Portal>
+      </Dialog.Root>
     </Stack>
   );
 }

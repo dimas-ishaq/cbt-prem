@@ -1,93 +1,145 @@
-# 📜 CBT Premium Enterprise – Audit & Progress Report
+# Laporan Audit CBT Premium
 
-**Last Updated:** 2026-06-26  
-**Current Status:** ✅ Ready for Beta / Production Deployment  
-**Scope:** End‑to‑end audit of monorepo – `apps/web`, `apps/api`, `packages/ui`, data schema, security, CI/CD readiness.
+**Tanggal:** 2026-06-28  
+**Scope:** `apps/api`, `apps/web`, `packages/*`, test, config, struktur repo
 
----
+## Ringkasan Eksekutif
+Status saat ini: **belum layak produksi penuh**.  
+Basis fitur sudah lumayan lengkap: auth, role, exam, session, notifikasi, logs, dashboard, web admin/student flow. Tetapi bukti produksi belum kuat. Masih banyak indikator placeholder, test terlalu tipis, dan beberapa konfigurasi berisiko untuk skala sekolah nyata.
 
-## 1. Executive Overview
-- **MVP Completion:** 100% functional core modules (user, auth, CRUD master data, role‑based access).  
-- **Stability:** No regression detected in recent feature set; automated smoke tests pass.  
-- **Scalability:** Ready for 300‑500 concurrent students in beta; performance bottlenecks identified and documented.  
-- **Code Quality:** Monorepo structure enforced; TypeScript + strict linting in place; dependencies up‑to‑date.
+Verdict jujur: **siap untuk pilot / beta terbatas**, belum siap untuk seluruh siswa-guru-admin tanpa hardening tambahan.
 
----
+## Yang Sudah Bagus
+- Monorepo rapi: `apps/api`, `apps/web`, `packages/*`.
+- Backend pakai NestJS + Prisma + PostgreSQL. Stack masuk akal.
+- Ada domain penting: auth, exam, session, roles, logs, notifications, dashboard.
+- Frontend Next.js 16 + Chakra UI v3 + React Query + Zustand. Modern dan cukup stabil.
+- Ada E2E test, walau masih minim.
+- Ada logger, throttling, schedule, websocket, export libs. Fondasi fitur produksi sudah ada.
 
-## 2. Technical Audit Findings
-### 2.1 Backend (`apps/api`)
-- **Framework:** NestJS (v11) with Prisma ORM (PostgreSQL).  
-- **Data Model:** Efficient relational mapping; UUID primary keys; cascade deletes correctly defined.  
-- **Features Implemented:**  
-  - Exam scheduling with precise `startTime` / `endTime` enforcement.  
-  - Adaptive question bank (`PILIHAN_GANDA`, `ESSAY`).  
-  - Server‑side PDF generation for exam results (PDFKit).  
-  - Real‑time monitoring via Socket.IO + Redis (optional).  
-  - Role‑based route protection & JWT authentication.  
-- **Performance:**  
-  - Query latency < 50 ms for typical reads; pagination applied to list endpoints.  
-  - Rate limiting (`express-rate-limit`) on login prevents abuse.  
-- **Security:**  
-  - JWT stored in HttpOnly cookies; password hashed with bcrypt.  
-  - Redis adapter not yet production‑ready – placeholder implemented.  
-- **Testing:**  
-  - Unit & integration coverage ≥ 85% for critical services.  
-  - E2E tests (`nestjs-ejs`) validate login, exam flow, API restrictions.  
+## Temuan Kritis
+### 1) Test coverage belum cukup buat klaim production-ready
+Bukti dari repo:
+- `apps/api/test/flow.e2e-spec.ts` cuma cek `/health`.
+- `apps/web/e2e/login.spec.ts` masih mock-ish dan cuma cek form + redirect.
+- Banyak klaim coverage di report lama tidak terbukti dari file yang terlihat.
 
-### 2.2 Frontend (`apps/web`)
-- **Framework:** Next.js 16 (App Router).  
-- **UI Library:** Chakra UI v3 + custom token theme.  
-- **State Management:** TanStack Query + Zustand for session state.  
-- **Real‑time Features:** Socket.IO client for live proctoring dashboard.  
-- **Analytics:** Recharts visualizations; server‑side PDF export integration.  
-- **Accessibility:** Chakra UI defaults meet WCAG AA; focus management verified.  
+Dampak:
+- Risiko bug regresi tinggi.
+- Fitur exam flow, auto-submit, session lock, dan role guard belum tervalidasi kuat.
 
-### 2.3 Shared Packages
-- **`@repo/ui`**: Reusable Chakra component library; token‑based theming applied globally.  
-- **Linting & Formatting:** ESLint + Prettier enforced across monorepo; CI pipeline runs `npm run lint` on PRs.  
-- **Type Safety:** Strict TypeScript (`noImplicitAny`, `strictNullChecks`) configuration applied.
+Rekomendasi:
+- Tambah E2E untuk: login, create exam, start session, submit answer, auto-submit, expired session, role access.
+- Tambah smoke test per role: siswa, guru, admin.
 
----
+### 2) Security posture belum final
+Bukti:
+- `apps/api/src/main.ts` pakai CORS `origin: true`. Itu terlalu longgar buat production.
+- `app.module.ts` multer file filter cuma cek mimetype. Belum cukup buat validasi upload aman.
+- Ada static serving `/uploads/`. Perlu cek akses file, path traversal, dan auth untuk file sensitif.
+- Di schema ada field `plainPassword` pada `User`. Ini red flag besar. Kalau masih dipakai atau terisi, harus dibuang.
 
-## 3. Risk Assessment & Mitigation
-| Risk | Impact | Likelihood | Mitigation |
-|------|--------|------------|------------|
-| **Redis/BullMQ not production‑tested** | Job loss on server restart; possible double‑submit | Medium | Implement Redis adapter behind feature flag; add unit tests for queue persistence. |
-| **Auto‑submit timer reliance on in‑memory state** | Session may stay open after server restart | Medium | Replace with persistent scheduler (e.g., BullMQ + Redis). |
-| **Idempotency key missing on answer submission** | Potential duplicate submissions on retry | Low | Add idempotency header validation; store request IDs in DB. |
-| **Security of PDF export endpoint** | Unauthorized file download | Low | Add auth guard & role check; limit file size. |
-| **Performance under 500 concurrent users** | Degraded response times | Medium | Introduce query caching (Redis) & connection pooling; conduct load testing. |
+Dampak:
+- Risiko exposure data, upload abuse, dan origin abuse.
 
----
+Rekomendasi:
+- Set CORS allowlist eksplisit.
+- Hapus `plainPassword` bila masih ada di schema / migrasi.
+- Tambah guard + audit untuk semua endpoint export, upload, logs, notifications.
+- Tambah rate limit per route sensitif, bukan login saja.
 
-## 4. Roadmap (Next Sprint)
-1. **Hardening Redis Integration** – complete optional adapter, add admin UI toggle, comprehensive tests.  
-2. **Scheduler Robustness** – move to Redis‑backed job queue; add idempotency checks.  
-3. **Advanced Anti‑Cheat** – detect tab switching, window focus loss; log events to monitoring dashboard.  
-4. **Observability** – deploy health‑check endpoint, Centralized logging, real‑time metrics dashboard.  
-5. **Export & Reporting** – finalize PDF/Excel export for analytics; add download stats.  
+### 3) Kesiapan production infra belum jelas
+Bukti:
+- Banyak dependency infra ada: BullMQ, Redis, Socket.IO, scheduler. Tapi belum terlihat konfigurasi production-hardening yang solid dari artefak yang ada.
+- `ScheduleModule.forRoot()` jalan, tapi belum terlihat persistence/locking untuk job penting seperti auto-submit.
+- `prisma` pakai engine binary, tapi belum terlihat strategi migrasi, backup, dan health check database.
 
----
+Dampak:
+- Potensi job hilang saat restart.
+- Potensi session exam tidak sinkron.
 
-## 5. Verified Test Coverage (Snapshot)
-### Backend
-- `[x]` E2E `exam.spec.ts` – login flow, exam creation, submission, auto‑submit handling.  
-- `[x]` E2E `exam-session.spec.ts` – session lifecycle, pagination, access control.  
-- `[x]` Unit tests for `exam.service` analytics methods (≥ 90% coverage).  
+Rekomendasi:
+- Pastikan auto-submit, reminder, dan notification critical pakai queue/persistence.
+- Tambah health check DB/Redis.
+- Tambah backup dan restore runbook.
 
-### Frontend
-- `[x]` Playwright smoke test suite – admin dashboard navigation, PDF download, analytics chart rendering.  
-- `[x]` Component unit tests for `ExamCard`, `ExamList`, `AnalyticsChart` (≥ 80% coverage).  
+### 4) Observability masih belum cukup kuat
+Bukti:
+- Ada logger module, logs module, dashboard module.
+- Tidak terlihat bukti tracing, metrics, alerting, atau error budget.
 
-### Security
-- `[x]` Rate limiter on `/auth/login` – 5 attempts/IP blocked for 5 min.  
-- `[x]` JWT cookie flagged `HttpOnly`, `Secure`, `SameSite=Strict`.  
+Dampak:
+- Saat error di jam ujian, tim sulit root-cause cepat.
 
----
+Rekomendasi:
+- Tambah minimal: structured log, request id, error log, audit log event.
+- Tambah metrics dasar: login fail, exam submit fail, session timeout, websocket disconnect.
+- Tambah alert untuk error spike dan DB latency.
 
-## 6. Conclusion
-**Overall Status:** ✅ Ready for Beta Release (300‑500 students).  
-All core functionalities are stable, security controls are in place, and audit trails are documented. The remaining work focuses on production‑grade resilience (Redis persistence, scheduler robustness) and advanced anti‑cheat measures.
+### 5) Frontend siap pakai, tapi validasi user journey belum penuh
+Bukti:
+- Route ada: login, dashboard siswa, exam detail, admin panel, monitoring, logs, notifications.
+- Tapi test UI masih tipis.
 
-*Prepared by:* CBT Premium Development Team  
-*Date:* 2026‑06‑26
+Dampak:
+- Bug UX / akses role bisa lolos ke user.
+
+Rekomendasi:
+- Tambah Playwright untuk navigasi role-based.
+- Pastikan loading/error/empty state semua halaman penting ada.
+- Cek aksesibilitas dasar: label, focus, keyboard, kontras.
+
+## Risiko Produksi
+| Risiko | Dampak | Level |
+|---|---:|---:|
+| Test minim | Bug lolos ke siswa saat ujian | Tinggi |
+| CORS terlalu longgar | Abuse cross-origin | Tinggi |
+| Upload/static asset belum keras | Bocor file / abuse upload | Tinggi |
+| Session exam bergantung state runtime | Auto-submit gagal setelah restart | Sedang-Tinggi |
+| Observability belum matang | Downtime lama saat incident | Sedang |
+
+## Status Kesiapan per Peran
+### Siswa
+- Login, dashboard, dan exam flow terlihat ada.
+- Tapi belum cukup bukti bahwa session, submit, timeout, dan reconnect stabil.
+- **Status:** belum aman full production.
+
+### Guru
+- Admin/teacher panel lumayan lengkap.
+- CRUD dan monitoring ada.
+- Tapi pengujian end-to-end belum cukup.
+- **Status:** beta oke, production penuh belum.
+
+### Admin
+- Dashboard, logs, notifications, majors, exams, groups ada.
+- Namun audit trail dan observability belum cukup.
+- **Status:** beta oke, production penuh belum.
+
+## Rekomendasi Prioritas
+### P0 - Wajib sebelum production
+1. Hapus/cek `plainPassword` dari schema dan semua flow.
+2. Ubah CORS dari `origin: true` ke allowlist.
+3. Tambah E2E nyata untuk exam flow dan role access.
+4. Audit upload + static file access.
+5. Pastikan auto-submit/session critical tidak cuma hidup di memory.
+
+### P1 - Sangat disarankan
+1. Tambah health check untuk DB/Redis.
+2. Tambah structured logging + request id.
+3. Tambah rate limit granular.
+4. Tambah test untuk permission/guard.
+5. Tambah backup/restore SOP.
+
+### P2 - Nice to have
+1. Metrics dashboard.
+2. Load test 300-500 concurrent user.
+3. Offline resilience pada web untuk kondisi jaringan buruk.
+4. Anti-cheat tambahan bila memang masuk scope sekolah.
+
+## Kesimpulan Akhir
+Repo ini **punya fondasi kuat**, tapi **belum cukup keras untuk disebut production-ready penuh**.  
+Kalau targetnya **pilot terbatas**, bisa jalan setelah hardening minimum di P0.  
+Kalau targetnya **siswa-guru-admin skala penuh**, belum lolos audit karena test, security, dan infra resilience masih kurang.
+
+**Verdict:** `Beta siap`  
+**Production penuh:** `belum`

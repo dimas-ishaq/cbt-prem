@@ -43,6 +43,10 @@ export class StudentProfileController {
     }
 
     const ext = path.extname(file.originalname).toLowerCase();
+    const allowedExt = ['.jpg', '.jpeg', '.png', '.webp'];
+    if (!allowedExt.includes(ext)) {
+      throw new BadRequestException('Ekstensi file foto tidak valid');
+    }
     const filename = `${req.user.userId}${ext}`;
     const destDir = path.join(process.cwd(), 'uploads', 'photos');
 

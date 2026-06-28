@@ -93,7 +93,6 @@ export class UsersService {
         username: dto.username,
         email: dto.email || `${dto.username}@cbt.enterprise`,
         password: hashedPassword,
-        plainPassword: dto.password,
         fullName: dto.fullName,
         role,
         ...(role === Role.SISWA
@@ -175,7 +174,6 @@ export class UsersService {
     if (dto.photo !== undefined) data.photo = dto.photo;
     if (dto.password) {
       data.password = await bcrypt.hash(dto.password, 10);
-      data.plainPassword = dto.password;
     }
 
     return this.prisma.user.update({
@@ -222,7 +220,50 @@ export class UsersService {
       }
     }
 
-    return this.prisma.user.delete({ where: { id } });
+    return this.prisma.$transaction(async (tx) => {
+      // 1. Clean up student data
+      if (user.student) {
+        // Delete all exam sessions first (this cascades to Answers and Violations)
+        await tx.examSession.deleteMany({
+          where: { studentId: user.student.id },
+        });
+
+        // Delete the Student profile
+        await tx.student.delete({
+          where: { id: user.student.id },
+        });
+      }
+
+      // 2. Clean up teacher data
+      if (user.teacher) {
+        // Check for active exams or question banks
+        const examCount = await tx.exam.count({ where: { teacherId: user.teacher.id } });
+        const qbCount = await tx.questionBank.count({ where: { teacherId: user.teacher.id } });
+        if (examCount > 0 || qbCount > 0) {
+          throw new BadRequestException('Tidak dapat menghapus Guru yang memiliki data ujian atau bank soal aktif');
+        }
+
+        // Delete the Teacher profile
+        await tx.teacher.delete({
+          where: { id: user.teacher.id },
+        });
+      }
+
+      // 3. Nullify audit log user references to preserve system audit records
+      await tx.auditLog.updateMany({
+        where: { userId: id },
+        data: { userId: null },
+      });
+
+      // 4. Nullify notification creator references
+      await tx.notification.updateMany({
+        where: { createdBy: id },
+        data: { createdBy: null },
+      });
+
+      // 5. Finally delete the User (this cascades to UserRole, NotificationRecipient, NotificationPreference)
+      return tx.user.delete({ where: { id } });
+    });
   }
 
   // ─── Legacy create for auth service ──────────────────────────────────────
@@ -286,7 +327,6 @@ export class UsersService {
           include: { student: true, teacher: true },
         });
 
-        const plainPass = u.password || (existingUser ? undefined : defaultPassword);
         const hashedPassword = u.password
           ? await bcrypt.hash(u.password, 10)
           : existingUser
@@ -301,7 +341,6 @@ export class UsersService {
               fullName: u.fullName,
               role: roleValue as any,
               ...(hashedPassword ? { password: hashedPassword } : {}),
-              ...(plainPass ? { plainPassword: plainPass } : {}),
             },
           });
           if (roleValue === 'SISWA') {
@@ -345,7 +384,6 @@ export class UsersService {
               email: u.email || `${u.username}@cbt.enterprise`,
               fullName: u.fullName,
               password: hashedPassword!,
-              plainPassword: plainPass,
               role: roleValue as any,
               ...(roleValue === 'SISWA'
                 ? { student: { create: { nis: u.nis || `NIS-${Date.now()}`, ...rombelConnect } } }

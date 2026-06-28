@@ -194,7 +194,7 @@ export class RombelsService {
           select: {
             fullName: true,
             username: true,
-            plainPassword: true,
+
             photo: true,
           },
         },

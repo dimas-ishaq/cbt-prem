@@ -22,7 +22,7 @@ import { NotificationType, NotificationPriority } from '../notifications/dto/cre
 
 @WebSocketGateway({
   cors: {
-    origin: process.env.CORS_ORIGINS?.split(',') || ['http://localhost:3000'],
+    origin: (process.env.CORS_ORIGINS ?? process.env.CORS_ORIGIN)?.split(',') || ['http://localhost:3000'],
     methods: ['GET', 'POST'],
     credentials: true,
   },

@@ -1,18 +1,24 @@
-import { Injectable, ForbiddenException, NotFoundException, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException, OnModuleInit } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateNotificationDto, NotificationTargetType, NotificationType } from './dto/create-notification.dto';
 import { Role } from '@prisma/client';
 import { NotificationPriority } from './dto/create-notification.dto';
-import { RealtimeGateway } from '../realtime/realtime.gateway';
 import { UpdateNotificationPolicyDto } from './dto/update-policy.dto';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
 
 @Injectable()
-export class NotificationsService {
+export class NotificationsService implements OnModuleInit {
+  private realtimeGateway: RealtimeGateway;
+
   constructor(
     private readonly prisma: PrismaService,
-    @Inject(forwardRef(() => RealtimeGateway))
-    private readonly realtimeGateway: RealtimeGateway,
+    private readonly moduleRef: ModuleRef,
   ) {}
+
+  onModuleInit() {
+    this.realtimeGateway = this.moduleRef.get(RealtimeGateway, { strict: false });
+  }
 
   // Get all policies
   async getNotificationPolicies() {
@@ -185,7 +191,7 @@ export class NotificationsService {
     });
 
     for (const recipient of recipients) {
-      this.realtimeGateway.sendToUser(recipient.userId, 'new_notification', {
+      this.realtimeGateway?.sendToUser(recipient.userId, 'new_notification', {
         id: fullNotification.id,
         type: fullNotification.type,
         priority: fullNotification.priority,

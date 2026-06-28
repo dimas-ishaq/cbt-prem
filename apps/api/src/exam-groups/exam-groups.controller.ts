@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query, Res } from '@nestjs/common';
-import { Response } from 'express';
+import type { Response } from 'express';
 import { ExamGroupsService } from './exam-groups.service';
 import { CreateExamGroupDto } from './dto/create-exam-group.dto';
 import { UpdateExamGroupDto } from './dto/update-exam-group.dto';

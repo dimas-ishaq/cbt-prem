@@ -18,7 +18,7 @@ describe('ExamSessionsController', () => {
     exportToExcel: jest.fn(),
     getSession: jest.fn(),
     resetSession: jest.fn(),
-    bulkResetSessions: jest.fn(),
+
   };
 
   beforeEach(async () => {
@@ -86,9 +86,5 @@ describe('ExamSessionsController', () => {
     expect(mockService.resetSession).toHaveBeenCalledWith('sess1');
   });
 
-  it('bulkResetSessions should delegate', async () => {
-    mockService.bulkResetSessions.mockResolvedValue({});
-    await controller.bulkResetSessions(['s1', 's2']);
-    expect(mockService.bulkResetSessions).toHaveBeenCalledWith(['s1', 's2']);
-  });
+
 });

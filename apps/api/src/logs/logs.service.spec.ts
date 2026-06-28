@@ -16,7 +16,9 @@ describe('LogsService', () => {
   let service: LogsService;
 
   beforeEach(() => {
-    service = new LogsService();
+    service = new LogsService(
+      { setting: { findUnique: jest.fn(), upsert: jest.fn() } } as any
+    );
     jest.restoreAllMocks();
   });
 
