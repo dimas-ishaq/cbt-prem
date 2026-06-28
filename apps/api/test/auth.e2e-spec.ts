@@ -33,6 +33,13 @@ describe('Auth (e2e)', () => {
 
   afterAll(async () => { await app.close(); });
 
+  it('login reject unknown user', async () => {
+    await request(app.getHttpServer())
+      .post('/api/auth/login')
+      .send({ username: 'missing@e2e.test', password: 'password123' })
+      .expect(401);
+  });
+
   it('login success returns token pair', async () => {
     const res = await request(app.getHttpServer())
       .post('/api/auth/login')

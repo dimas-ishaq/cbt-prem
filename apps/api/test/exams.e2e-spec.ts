@@ -76,9 +76,10 @@ describe('ExamsController (e2e)', () => {
         endTime: new Date(Date.now() + 3600000).toISOString(),
         questionIds: [q1, q2],
         rombelIds: [rombelId],
-      });
-    if (res.status !== 201) console.log('EXAM CREATE FAIL:', JSON.stringify(res.body));
-    expect(res.status).toBe(201);
+      })
+      .expect(201);
+
+    expect(res.body.id).toBeTruthy();
   });
 
   it('/POST exams (reject no questions)', async () => {

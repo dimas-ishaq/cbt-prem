@@ -1,25 +1,15 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { ReportsController } from './reports.controller';
 import { ReportsService } from './reports.service';
 
 describe('ReportsController', () => {
-  let controller: ReportsController;
-  const mockService = { getAllReports: jest.fn() };
-
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
+  it('getReports delegates', async () => {
+    const service = { getAllReports: jest.fn().mockResolvedValue({ exam: [] }) };
+    const mod = await Test.createTestingModule({
       controllers: [ReportsController],
-      providers: [{ provide: ReportsService, useValue: mockService }],
+      providers: [{ provide: ReportsService, useValue: service }],
     }).compile();
-    controller = module.get(ReportsController);
-    jest.clearAllMocks();
-  });
-
-  it('should be defined', () => expect(controller).toBeDefined());
-
-  it('getReports should delegate', () => {
-    mockService.getAllReports.mockResolvedValue({ exam: [], student: [] });
-    controller.getReports();
-    expect(mockService.getAllReports).toHaveBeenCalled();
+    const controller = mod.get(ReportsController);
+    await expect(controller.getReports()).resolves.toEqual({ exam: [] });
   });
 });

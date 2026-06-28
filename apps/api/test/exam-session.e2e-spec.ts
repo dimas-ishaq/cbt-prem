@@ -96,11 +96,26 @@ describe('ExamSessions (e2e)', () => {
   });
 
   it('should submit answer successfully', async () => {
+    const res = await request(app.getHttpServer())
+      .post(`/api/exam-sessions/${sessionId}/submit-answer`)
+      .set('Authorization', `Bearer ${studentToken}`)
+      .send({ questionId: q1, selectedOptionId: opt1 })
+      .expect(201);
+
+    expect(res.body.questionId).toBe(q1);
+    expect(res.body.selectedOption).toBe(opt1);
+  });
+
+  it('should upsert same answer without duplicate row', async () => {
     await request(app.getHttpServer())
       .post(`/api/exam-sessions/${sessionId}/submit-answer`)
       .set('Authorization', `Bearer ${studentToken}`)
       .send({ questionId: q1, selectedOptionId: opt1 })
       .expect(201);
+
+    const prisma = app.get<PrismaService>(PrismaService);
+    const answers = await prisma.answer.findMany({ where: { examSessionId: sessionId, questionId: q1 } });
+    expect(answers).toHaveLength(1);
   });
 
   it('should finish session successfully', async () => {
@@ -109,5 +124,12 @@ describe('ExamSessions (e2e)', () => {
       .set('Authorization', `Bearer ${studentToken}`)
       .expect(201);
     expect(res.body.status).toBe('SUBMITTED');
+  });
+
+  it('should reject finish twice', async () => {
+    await request(app.getHttpServer())
+      .post(`/api/exam-sessions/${sessionId}/finish`)
+      .set('Authorization', `Bearer ${studentToken}`)
+      .expect(400);
   });
 });
