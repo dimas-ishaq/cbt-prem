@@ -89,8 +89,8 @@ export default function ExamAnalyticsPage({ params }: { params: Promise<{ id: st
   if (isLoading) {
     return (
       <Flex direction="column" align="center" justify="center" minH="60vh" gap={3}>
-        <Spinner size="xl" color="indigo.600" />
-        <Text color="gray.500" fontWeight="bold">Memuat Analitik Ujian...</Text>
+        <Spinner size="xl" color="brand.solid" />
+        <Text color="text.secondary" fontWeight="bold">Memuat Analitik Ujian...</Text>
       </Flex>
     );
   }
@@ -99,8 +99,8 @@ export default function ExamAnalyticsPage({ params }: { params: Promise<{ id: st
     return (
       <Flex direction="column" align="center" justify="center" minH="50vh" p={6}>
         <AlertCircle size={48} className="text-red-500 mb-3" />
-        <Heading size="md" color="gray.800" mb={1}>Gagal Memuat Analitik</Heading>
-        <Text color="gray.500" mb={4}>Data ujian tidak ditemukan atau belum memiliki lembar jawaban masuk.</Text>
+        <Heading size="md" color="text.primary" mb={1}>Gagal Memuat Analitik</Heading>
+        <Text color="text.secondary" mb={4}>Data ujian tidak ditemukan atau belum memiliki lembar jawaban masuk.</Text>
         <Link href={`/admin/results/${id}`} passHref>
           <Button colorPalette="indigo" borderRadius="xl">Kembali ke Sesi Hasil</Button>
         </Link>
@@ -115,7 +115,7 @@ export default function ExamAnalyticsPage({ params }: { params: Promise<{ id: st
   // Chart data configurations
   const passedFailedData = [
     { name: 'Tuntas KKM', value: summary.passed, color: '#10b981' }, // emerald.500
-    { name: 'Belum Tuntas', value: summary.failed, color: '#ef4444' }, // red.500
+    { name: 'Belum Tuntas', value: summary.failed, color: 'status.danger.text' },
   ];
 
   const paginatedItemAnalysis = useMemo(() => {
@@ -134,7 +134,7 @@ export default function ExamAnalyticsPage({ params }: { params: Promise<{ id: st
         w="300px"
         h="300px"
         borderRadius="full"
-        bg="indigo.400"
+        bg="brand.solid"
         style={{ filter: 'blur(130px)', opacity: 0.05, zIndex: 0 }}
       />
 
@@ -147,10 +147,10 @@ export default function ExamAnalyticsPage({ params }: { params: Promise<{ id: st
             </Button>
           </Link>
           <Box>
-            <Heading size="xl" fontWeight="900" letterSpacing="tight" color="gray.900">
+            <Heading size="xl" fontWeight="900" letterSpacing="tight" color="text.primary">
               Analisis Hasil Ujian
             </Heading>
-            <Text fontSize="sm" color="gray.500" mt={0.5}>
+            <Text fontSize="sm" color="text.secondary" mt={0.5}>
               {exam.title} ({exam.subject?.name}) • Standar KKM: {exam.passingGrade}
             </Text>
           </Box>
@@ -177,56 +177,56 @@ export default function ExamAnalyticsPage({ params }: { params: Promise<{ id: st
       {/* Summary Aggregate Cards */}
       <SimpleGrid columns={{ base: 1, sm: 2, lg: 4 }} gap={5} position="relative" zIndex={1}>
         {/* Total Participants */}
-        <Box bg="white" p={6} borderRadius="2xl" border="1px solid" borderColor="gray.100" shadow="sm">
+        <Box bg="bg.surface" p={6} borderRadius="2xl" border="1px solid" borderColor="border.default" shadow="sm">
           <HStack gap={4} align="center">
-            <Box p={3} bg="indigo.50" color="indigo.600" borderRadius="xl">
+            <Box p={3} bg="brand.subtle" color="brand.solid" borderRadius="xl">
               <Users size={20} />
             </Box>
             <Box>
-              <Text fontSize="xs" color="gray.450" fontWeight="bold" textTransform="uppercase">Total Peserta</Text>
-              <Text fontSize="2xl" fontWeight="extrabold" color="gray.850" mt={0.5}>{totalStudents} Siswa</Text>
+              <Text fontSize="xs" color="text.muted" fontWeight="bold" textTransform="uppercase">Total Peserta</Text>
+              <Text fontSize="2xl" fontWeight="extrabold" color="text.primary" mt={0.5}>{totalStudents} Siswa</Text>
             </Box>
           </HStack>
         </Box>
 
         {/* Passing Rate */}
-        <Box bg="white" p={6} borderRadius="2xl" border="1px solid" borderColor="gray.100" shadow="sm">
+        <Box bg="bg.surface" p={6} borderRadius="2xl" border="1px solid" borderColor="border.default" shadow="sm">
           <HStack gap={4} align="center">
             <Box p={3} bg="emerald.50" color="emerald.600" borderRadius="xl">
               <CheckCircle size={20} />
             </Box>
             <Box>
-              <Text fontSize="xs" color="gray.450" fontWeight="bold" textTransform="uppercase">Kelulusan (KKM)</Text>
+              <Text fontSize="xs" color="text.muted" fontWeight="bold" textTransform="uppercase">Kelulusan (KKM)</Text>
               <Text fontSize="2xl" fontWeight="extrabold" color="emerald.600" mt={0.5}>{passingRate.toFixed(1)}%</Text>
             </Box>
           </HStack>
         </Box>
 
         {/* Average Class Score */}
-        <Box bg="white" p={6} borderRadius="2xl" border="1px solid" borderColor="gray.100" shadow="sm">
+        <Box bg="bg.surface" p={6} borderRadius="2xl" border="1px solid" borderColor="border.default" shadow="sm">
           <HStack gap={4} align="center">
             <Box p={3} bg="amber.50" color="amber.600" borderRadius="xl">
               <Award size={20} />
             </Box>
             <Box>
-              <Text fontSize="xs" color="gray.450" fontWeight="bold" textTransform="uppercase">Rata-rata Nilai</Text>
-              <Text fontSize="2xl" fontWeight="extrabold" color="gray.850" mt={0.5}>{analytics.summary.average.toFixed(1)}</Text>
+              <Text fontSize="xs" color="text.muted" fontWeight="bold" textTransform="uppercase">Rata-rata Nilai</Text>
+              <Text fontSize="2xl" fontWeight="extrabold" color="text.primary" mt={0.5}>{analytics.summary.average.toFixed(1)}</Text>
             </Box>
           </HStack>
         </Box>
 
         {/* Highest & Lowest Score */}
-        <Box bg="white" p={6} borderRadius="2xl" border="1px solid" borderColor="gray.100" shadow="sm">
+        <Box bg="bg.surface" p={6} borderRadius="2xl" border="1px solid" borderColor="border.default" shadow="sm">
           <HStack gap={4} align="center">
             <Box p={3} bg="teal.50" color="teal.600" borderRadius="xl">
               <BarChart3 size={20} />
             </Box>
             <Box>
-              <Text fontSize="xs" color="gray.450" fontWeight="bold" textTransform="uppercase">Tertinggi / Terendah</Text>
-              <Text fontSize="md" fontWeight="extrabold" color="gray.850" mt={1}>
-                <Text as="span" color="green.600">{analytics.summary.highest}</Text>
-                <Text as="span" color="gray.400"> / </Text>
-                <Text as="span" color="red.600">{analytics.summary.lowest}</Text>
+              <Text fontSize="xs" color="text.muted" fontWeight="bold" textTransform="uppercase">Tertinggi / Terendah</Text>
+              <Text fontSize="md" fontWeight="extrabold" color="text.primary" mt={1}>
+                <Text as="span" color="status.success.text">{analytics.summary.highest}</Text>
+                <Text as="span" color="text.muted"> / </Text>
+                <Text as="span" color="status.danger.text">{analytics.summary.lowest}</Text>
               </Text>
             </Box>
           </HStack>
@@ -237,8 +237,8 @@ export default function ExamAnalyticsPage({ params }: { params: Promise<{ id: st
       {isMounted && (
         <SimpleGrid columns={{ base: 1, lg: 2 }} gap={6} position="relative" zIndex={1}>
           {/* Score Distribution Chart */}
-          <Box bg="white" p={6} borderRadius="2xl" border="1px solid" borderColor="gray.100" shadow="sm">
-            <Heading size="md" fontWeight="bold" color="gray.800" mb={6} display="flex" alignItems="center" gap={2}>
+          <Box bg="bg.surface" p={6} borderRadius="2xl" border="1px solid" borderColor="border.default" shadow="sm">
+            <Heading size="md" fontWeight="bold" color="text.primary" mb={6} display="flex" alignItems="center" gap={2}>
               <BarChart3 size={18} className="text-indigo-500" />
               Distribusi Kelompok Nilai Siswa
             </Heading>
@@ -259,8 +259,8 @@ export default function ExamAnalyticsPage({ params }: { params: Promise<{ id: st
           </Box>
 
           {/* Passing Rate Pie Chart */}
-          <Box bg="white" p={6} borderRadius="2xl" border="1px solid" borderColor="gray.100" shadow="sm">
-            <Heading size="md" fontWeight="bold" color="gray.800" mb={6} display="flex" alignItems="center" gap={2}>
+          <Box bg="bg.surface" p={6} borderRadius="2xl" border="1px solid" borderColor="border.default" shadow="sm">
+            <Heading size="md" fontWeight="bold" color="text.primary" mb={6} display="flex" alignItems="center" gap={2}>
               <CheckCircle size={18} className="text-emerald-500" />
               Rasio Ketuntasan Peserta (KKM)
             </Heading>
@@ -290,8 +290,8 @@ export default function ExamAnalyticsPage({ params }: { params: Promise<{ id: st
                   <HStack key={index} gap={3} align="center">
                     <Box w={3.5} h={3.5} borderRadius="full" bg={item.color} />
                     <Box>
-                      <Text fontSize="xs" fontWeight="semibold" color="gray.500">{item.name}</Text>
-                      <Text fontSize="sm" fontWeight="bold" color="gray.800">
+                      <Text fontSize="xs" fontWeight="semibold" color="text.secondary">{item.name}</Text>
+                      <Text fontSize="sm" fontWeight="bold" color="text.primary">
                         {item.value} Siswa ({totalStudents > 0 ? ((item.value / totalStudents) * 100).toFixed(0) : 0}%)
                       </Text>
                     </Box>
@@ -304,29 +304,29 @@ export default function ExamAnalyticsPage({ params }: { params: Promise<{ id: st
       )}
 
       {/* Item Analysis Table */}
-      <Box bg="white" borderRadius="2xl" border="1px solid" borderColor="gray.100" shadow="sm" overflow="hidden" position="relative" zIndex={1}>
-        <Box p={6} borderBottom="1px solid" borderColor="gray.100">
-          <Heading size="md" fontWeight="bold" color="gray.800" display="flex" alignItems="center" gap={2}>
+      <Box bg="bg.surface" borderRadius="2xl" border="1px solid" borderColor="border.default" shadow="sm" overflow="hidden" position="relative" zIndex={1}>
+        <Box p={6} borderBottom="1px solid" borderColor="border.default">
+          <Heading size="md" fontWeight="bold" color="text.primary" display="flex" alignItems="center" gap={2}>
             <BookOpen size={18} className="text-indigo-500" />
             Analisis Kualitas & Tingkat Kesukaran Soal
           </Heading>
-          <Text fontSize="xs" color="gray.450" mt={1}>
+          <Text fontSize="xs" color="text.muted" mt={1}>
             Mengukur persentase jawaban benar per butir soal untuk menganalisis tingkat kesulitan soal secara riil.
           </Text>
         </Box>
         
         <Box overflowX="auto">
           <Table.Root interactive>
-            <Table.Header bg="gray.50">
+            <Table.Header bg="bg.elevated">
               <Table.Row>
-                <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600">No</Table.ColumnHeader>
-                <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600">Butir Pertanyaan Soal</Table.ColumnHeader>
-                <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600" textAlign="center">Tingkat Kesukaran</Table.ColumnHeader>
-                <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600" textAlign="center">Rasio Benar</Table.ColumnHeader>
-                <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="gray.600" textAlign="right">Status Kualitas</Table.ColumnHeader>
+                <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="text.secondary">No</Table.ColumnHeader>
+                <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="text.secondary">Butir Pertanyaan Soal</Table.ColumnHeader>
+                <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="text.secondary" textAlign="center">Tingkat Kesukaran</Table.ColumnHeader>
+                <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="text.secondary" textAlign="center">Rasio Benar</Table.ColumnHeader>
+                <Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="text.secondary" textAlign="right">Status Kualitas</Table.ColumnHeader>
               </Table.Row>
             </Table.Header>
-            <Table.Body color="gray.700">
+            <Table.Body color="text.primary">
               {paginatedItemAnalysis.map((item, index) => {
                 const diffPercent = item.difficulty * 100;
                 let difficultyLabel = 'Sedang';
@@ -341,15 +341,15 @@ export default function ExamAnalyticsPage({ params }: { params: Promise<{ id: st
                 }
 
                 return (
-                  <Table.Row key={item.questionId} _hover={{ bg: 'gray.50/40' }} transition="all 0.15s">
-                    <Table.Cell px={6} py={4.5} fontWeight="bold" color="gray.500">{(currentPage - 1) * pageSize + index + 1}</Table.Cell>
+                  <Table.Row key={item.questionId} _hover={{ bg: 'bg.elevated' }} transition="all 0.15s">
+                    <Table.Cell px={6} py={4.5} fontWeight="bold" color="text.muted">{(currentPage - 1) * pageSize + index + 1}</Table.Cell>
                     <Table.Cell px={6} py={4.5} maxW="md">
-                      <Text lineClamp={2} fontSize="sm" fontWeight="medium" color="gray.800" dangerouslySetInnerHTML={{ __html: item.content }} />
+                      <Text lineClamp={2} fontSize="sm" fontWeight="medium" color="text.primary" dangerouslySetInnerHTML={{ __html: item.content }} />
                     </Table.Cell>
                     <Table.Cell px={6} py={4.5} textAlign="center" fontSize="sm" fontWeight="bold">
                       {diffPercent.toFixed(0)}%
                     </Table.Cell>
-                    <Table.Cell px={6} py={4.5} textAlign="center" fontSize="sm" color="gray.500" fontWeight="medium">
+                    <Table.Cell px={6} py={4.5} textAlign="center" fontSize="sm" color="text.secondary" fontWeight="medium">
                       {item.correct} / {item.total} Siswa
                     </Table.Cell>
                     <Table.Cell px={6} py={4.5} textAlign="right">

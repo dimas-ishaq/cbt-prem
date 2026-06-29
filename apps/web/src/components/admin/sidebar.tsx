@@ -180,7 +180,7 @@ export function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onMobile
               {!collapsed && (
                 <Box minW={0}>
                   <Text fontSize="sm" fontWeight="extrabold" color="sidebar.text.active" letterSpacing="wide" textTransform="uppercase" lineHeight="1" lineClamp={1}>
-                    {settings?.appName || 'Novatech CBT'}
+                    {settings?.appName || 'Nama Sekolah'}
                   </Text>
                   <Flex align="center" gap={1.5} mt={0.5} wrap="wrap">
                     <Text fontSize="2xs" color="brand.text" fontWeight="bold" letterSpacing="widest" textTransform="uppercase">

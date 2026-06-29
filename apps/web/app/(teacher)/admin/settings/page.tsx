@@ -106,6 +106,10 @@ export default function SettingsPage() {
         const link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
         if (link) link.href = settings.faviconUrl;
       }
+      localStorage.setItem('cbt-app-name', settings.appName || 'Novatech CBT');
+      localStorage.setItem('cbt-logo-url', settings.logoUrl || '');
+      document.cookie = `cbt-app-name=${encodeURIComponent(settings.appName || 'Novatech CBT')}; path=/; max-age=31536000; samesite=lax`;
+      document.cookie = `cbt-logo-url=${encodeURIComponent(settings.logoUrl || '')}; path=/; max-age=31536000; samesite=lax`;
     }
   }, [settings]);
 
@@ -115,6 +119,11 @@ export default function SettingsPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settings'] });
+      queryClient.invalidateQueries({ queryKey: ['settings/public'] });
+      localStorage.setItem('cbt-app-name', appName);
+      localStorage.setItem('cbt-logo-url', logoUrl);
+      document.cookie = `cbt-app-name=${encodeURIComponent(appName)}; path=/; max-age=31536000; samesite=lax`;
+      document.cookie = `cbt-logo-url=${encodeURIComponent(logoUrl)}; path=/; max-age=31536000; samesite=lax`;
       toast.success('Pengaturan berhasil disimpan!');
     },
     onError: (error: any) => {

@@ -101,8 +101,8 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
   if (isLoading) {
     return (
       <Flex direction="column" align="center" justify="center" minH="60vh">
-        <Spinner size="xl" color="indigo.600" />
-        <Text color="gray.500" mt={4} fontWeight="medium">Memuat detail lembar jawaban...</Text>
+        <Spinner size="xl" color="brand.solid" />
+        <Text color="text.secondary" mt={4} fontWeight="medium">Memuat detail lembar jawaban...</Text>
       </Flex>
     );
   }
@@ -111,10 +111,10 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
     return (
       <Flex direction="column" align="center" justify="center" minH="60vh" p={6} textAlign="center">
         <AlertTriangle size={48} className="text-red-500" style={{ marginBottom: '16px' }} />
-        <Heading size="md" fontWeight="bold" color="gray.950" mb={2}>Sesi Ujian Tidak Ditemukan</Heading>
-        <Text color="gray.500" mb={6}>Sesi lembar jawaban siswa mungkin telah dihapus atau link tidak valid.</Text>
+        <Heading size="md" fontWeight="bold" color="text.primary" mb={2}>Sesi Ujian Tidak Ditemukan</Heading>
+        <Text color="text.secondary" mb={6}>Sesi lembar jawaban siswa mungkin telah dihapus atau link tidak valid.</Text>
         <Link href="/admin/exams" passHref>
-          <Button bg="indigo.600" color="white" _hover={{ bg: 'indigo.700' }} borderRadius="lg">Kembali ke Daftar Ujian</Button>
+          <Button bg="brand.solid" color="text.inverted" _hover={{ bg: 'brand.text' }} borderRadius="lg">Kembali ke Daftar Ujian</Button>
         </Link>
       </Flex>
     );
@@ -135,18 +135,18 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
   return (
     <Stack gap={6} p={4} id="session-export" className="print-area paper-template paper-template-a4" style={{ width: '100%', maxWidth: '100%', margin: 0 }}>
       {/* Header bar */}
-      <Flex justify="space-between" align={{ base: 'start', md: 'center' }} direction={{ base: 'column', md: 'row' }} gap={4} pb={4} borderBottom="1px solid" borderColor="gray.100">
+      <Flex justify="space-between" align={{ base: 'start', md: 'center' }} direction={{ base: 'column', md: 'row' }} gap={4} pb={4} borderBottom="1px solid" borderColor="border.default">
         <Flex align="center" gap={4}>
           <Link href={`/admin/results/${session.examId}`} passHref className="no-print">
-            <Button variant="ghost" p={2} borderRadius="xl" border="1px solid" borderColor="gray.200" cursor="pointer" bg="white" _hover={{ bg: 'gray.50' }}>
+            <Button variant="ghost" p={2} borderRadius="xl" border="1px solid" borderColor="border.default" cursor="pointer" bg="bg.surface" _hover={{ bg: 'bg.elevated' }}>
               <ChevronLeft size={20} />
             </Button>
           </Link>
           <Box>
-            <Heading size="xl" fontWeight="black" color="gray.900" letterSpacing="tight">
+            <Heading size="xl" fontWeight="black" color="text.primary" letterSpacing="tight">
               Lembar Jawaban Siswa
             </Heading>
-            <Text fontSize="sm" color="gray.500" mt={0.5} className="no-print">
+            <Text fontSize="sm" color="text.secondary" mt={0.5} className="no-print">
               Evaluasi jawaban mandiri dan rekap nilai hasil ujian.
             </Text>
           </Box>
@@ -156,9 +156,9 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
           <Button
             onClick={handleExportPdf}
             variant="solid"
-            bg="indigo.600"
-            color="white"
-            _hover={{ bg: 'indigo.700' }}
+            bg="brand.solid"
+            color="text.inverted"
+            _hover={{ bg: 'brand.text' }}
             borderRadius="xl"
             fontWeight="semibold"
             size="md"
@@ -172,9 +172,9 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
           <Button
             onClick={handleReset}
             variant="outline"
-            borderColor="red.200"
-            color="red.600"
-            _hover={{ bg: 'red.50', borderColor: 'red.300' }}
+            borderColor="status.danger.text"
+            color="status.danger.text"
+            _hover={{ bg: 'status.danger.bg', borderColor: 'status.danger.text' }}
             borderRadius="xl"
             fontWeight="semibold"
             size="md"
@@ -191,67 +191,67 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
       {/* Overview stats cards */}
       <Grid templateColumns={{ base: '1fr', lg: '1fr 2fr' }} gap={6}>
         {/* Left Side: Score & Status Card */}
-        <Flex bg="white" border="1px solid" borderColor="gray.100" borderRadius="2xl" shadow="sm" p={6} flexDirection="column" justify="center" align="center" position="relative" overflow="hidden">
-          <Box position="absolute" top={0} left={0} right={0} h="4px" bg="indigo.600" className="no-print" />
-          <Text fontSize="2xs" color="gray.400" fontWeight="bold" textTransform="uppercase" letterSpacing="widest" mb={2}>TOTAL NILAI AKHIR</Text>
-          <Heading fontSize="6xl" fontWeight="black" color="indigo.600" lineHeight="1">{session.score ?? '--'}</Heading>
+        <Flex bg="bg.surface" border="1px solid" borderColor="border.default" borderRadius="2xl" shadow="sm" p={6} flexDirection="column" justify="center" align="center" position="relative" overflow="hidden">
+          <Box position="absolute" top={0} left={0} right={0} h="4px" bg="brand.solid" className="no-print" />
+          <Text fontSize="2xs" color="text.muted" fontWeight="bold" textTransform="uppercase" letterSpacing="widest" mb={2}>TOTAL NILAI AKHIR</Text>
+          <Heading fontSize="6xl" fontWeight="black" color="brand.solid" lineHeight="1">{session.score ?? '--'}</Heading>
           <Box mt={4} mb={2}>
             <Badge colorPalette={session.status === 'SUBMITTED' ? 'green' : 'yellow'} fontSize="xs" fontWeight="extrabold" px={3} py={1} borderRadius="full">
               {session.status}
             </Badge>
           </Box>
-          <Text fontSize="xs" color="gray.400" mt={2} textAlign="center" className="no-print">
+          <Text fontSize="xs" color="text.muted" mt={2} textAlign="center" className="no-print">
             Dinilai otomatis oleh sistem untuk Pilihan Ganda & Multi-respons.
           </Text>
         </Flex>
 
         {/* Right Side: Details Card */}
-        <Box bg="white" border="1px solid" borderColor="gray.100" borderRadius="2xl" shadow="sm" p={6}>
+        <Box bg="bg.surface" border="1px solid" borderColor="border.default" borderRadius="2xl" shadow="sm" p={6}>
           <SimpleGrid columns={{ base: 1, md: 2 }} gap={6}>
             <Stack gap={4}>
               <HStack gap={3}>
-                <Flex w={8} h={8} borderRadius="lg" bg="indigo.50" align="center" justify="center" color="indigo.600" className="no-print">
+                <Flex w={8} h={8} borderRadius="lg" bg="brand.subtle" align="center" justify="center" color="brand.solid" className="no-print">
                   <User size={16} />
                 </Flex>
                 <Box>
-                  <Text fontSize="2xs" color="gray.400" fontWeight="bold" textTransform="uppercase">Nama Siswa</Text>
-                  <Text fontWeight="semibold" color="gray.800" fontSize="sm">{session.student.user.fullName}</Text>
-                  <Text fontSize="2xs" color="gray.500">NIS: {session.student.nis}</Text>
+                  <Text fontSize="2xs" color="text.muted" fontWeight="bold" textTransform="uppercase">Nama Siswa</Text>
+                  <Text fontWeight="semibold" color="text.primary" fontSize="sm">{session.student.user.fullName}</Text>
+                  <Text fontSize="2xs" color="text.secondary">NIS: {session.student.nis}</Text>
                 </Box>
               </HStack>
 
               <HStack gap={3}>
-                <Flex w={8} h={8} borderRadius="lg" bg="indigo.50" align="center" justify="center" color="indigo.600" className="no-print">
+                <Flex w={8} h={8} borderRadius="lg" bg="brand.subtle" align="center" justify="center" color="brand.solid" className="no-print">
                   <BookOpen size={16} />
                 </Flex>
                 <Box>
-                  <Text fontSize="2xs" color="gray.400" fontWeight="bold" textTransform="uppercase">Mata Pelajaran & Ujian</Text>
-                  <Text fontWeight="semibold" color="gray.800" fontSize="sm">{session.exam.title}</Text>
-                  <Text fontSize="2xs" color="gray.500">{session.exam.subject.name}</Text>
+                  <Text fontSize="2xs" color="text.muted" fontWeight="bold" textTransform="uppercase">Mata Pelajaran & Ujian</Text>
+                  <Text fontWeight="semibold" color="text.primary" fontSize="sm">{session.exam.title}</Text>
+                  <Text fontSize="2xs" color="text.secondary">{session.exam.subject.name}</Text>
                 </Box>
               </HStack>
             </Stack>
 
             <Stack gap={4}>
               <HStack gap={3}>
-                <Flex w={8} h={8} borderRadius="lg" bg="indigo.50" align="center" justify="center" color="indigo.600" className="no-print">
+                <Flex w={8} h={8} borderRadius="lg" bg="brand.subtle" align="center" justify="center" color="brand.solid" className="no-print">
                   <Clock size={16} />
                 </Flex>
                 <Box>
-                  <Text fontSize="2xs" color="gray.400" fontWeight="bold" textTransform="uppercase">Durasi Pengerjaan</Text>
-                  <Text fontWeight="semibold" color="gray.800" fontSize="sm">{timeSpent}</Text>
-                  <Text fontSize="2xs" color="gray.500">
+                  <Text fontSize="2xs" color="text.muted" fontWeight="bold" textTransform="uppercase">Durasi Pengerjaan</Text>
+                  <Text fontWeight="semibold" color="text.primary" fontSize="sm">{timeSpent}</Text>
+                  <Text fontSize="2xs" color="text.secondary">
                     Mulai: {session.startTime ? new Date(session.startTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-'}
                   </Text>
                 </Box>
               </HStack>
 
               <HStack gap={3}>
-                <Flex w={8} h={8} borderRadius="lg" bg="indigo.50" align="center" justify="center" color="indigo.600" className="no-print">
+                <Flex w={8} h={8} borderRadius="lg" bg="brand.subtle" align="center" justify="center" color="brand.solid" className="no-print">
                   <CheckCircle2 size={16} />
                 </Flex>
                 <Box>
-                  <Text fontSize="2xs" color="gray.400" fontWeight="bold" textTransform="uppercase">Statistik Soal</Text>
+                  <Text fontSize="2xs" color="text.muted" fontWeight="bold" textTransform="uppercase">Statistik Soal</Text>
                   <HStack gap={2} mt={0.5}>
                     <Badge colorPalette="green" variant="subtle" size="sm">{correctCount} Benar</Badge>
                     <Badge colorPalette="red" variant="subtle" size="sm">{incorrectCount} Salah</Badge>
@@ -275,12 +275,12 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
           const isEssay = question.type === 'ESSAY';
           
           return (
-            <Box key={answer.id} bg="white" borderRadius="2xl" shadow="sm" border="1px solid" borderColor="gray.100" overflow="hidden" transition="border 0.2s" _hover={{ borderColor: 'gray.200' }} className="print-card">
+            <Box key={answer.id} bg="bg.surface" borderRadius="2xl" shadow="sm" border="1px solid" borderColor="border.default" overflow="hidden" transition="border 0.2s" _hover={{ borderColor: 'border.default' }} className="print-card">
               <Box p={6}>
                 {/* Info row */}
                 <Flex justify="space-between" align="center" mb={5} wrap="wrap" gap={3}>
                   <HStack gap={3}>
-                    <Flex w={8} h={8} borderRadius="xl" bg="indigo.50" align="center" justify="center" color="indigo.700" fontWeight="black" fontSize="sm">
+                    <Flex w={8} h={8} borderRadius="xl" bg="brand.subtle" align="center" justify="center" color="brand.solid" fontWeight="black" fontSize="sm">
                       {idx + 1}
                     </Flex>
                     <Badge colorPalette="blue" variant="solid" fontSize="2xs" fontWeight="bold" px={2.5} py={0.5} borderRadius="md">
@@ -306,7 +306,7 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
 
                   {/* Manual Grading */}
                   <HStack gap={3}>
-                    <HStack gap={2} bg="gray.50" px={3} py={1.5} borderRadius="xl" borderWidth="1px" borderColor="gray.250" className="print-card">
+                    <HStack gap={2} bg="bg.elevated" px={3} py={1.5} borderRadius="xl" borderWidth="1px" borderColor="border.default" className="print-card">
                       <Text fontSize="2xs" color="gray.500" fontWeight="bold" textTransform="uppercase">Skor Soal:</Text>
                       <Input
                         type="number"
@@ -319,15 +319,15 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
                         fontSize="xs"
                         fontWeight="extrabold"
                         borderRadius="md"
-                        bg="white"
-                        borderColor="gray.200"
-                        _focus={{ borderColor: 'indigo.500' }}
+                        bg="bg.surface"
+                        borderColor="border.default"
+                        _focus={{ borderColor: 'brand.solid' }}
                         p={1}
                         className="no-print"
                       />
                       {/* For printing, show read-only score */}
-                      <Text className="print-score-only" fontSize="xs" fontWeight="bold" color="indigo.600" display="none">{answer.score || 0}</Text>
-                      <Text color="gray.400" fontSize="xs" fontWeight="medium">/ {question.points} Poin</Text>
+                      <Text className="print-score-only" fontSize="xs" fontWeight="bold" color="brand.solid" display="none">{answer.score || 0}</Text>
+                      <Text color="text.muted" fontSize="xs" fontWeight="medium">/ {question.points} Poin</Text>
                     </HStack>
                     {(editingScores[answer.id] !== undefined && editingScores[answer.id] !== answer.score) && (
                       <IconButton
@@ -357,7 +357,7 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
                 />
 
                 {/* Student's Answer */}
-                <Box p={4} bg="gray.50" borderRadius="2xl" border="1px solid" borderColor="gray.100" className="print-card">
+                <Box p={4} bg="bg.elevated" borderRadius="2xl" border="1px solid" borderColor="border.default" className="print-card">
                   <Text fontSize="2xs" fontWeight="black" color="gray.400" textTransform="uppercase" letterSpacing="widest" mb={3}>
                     JAWABAN SISWA:
                   </Text>
@@ -378,19 +378,19 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
 
                         if (isSelected) {
                           if (opt.isCorrect) {
-                            optionBg = 'green.50';
-                            optionBorderColor = 'green.350';
+                            optionBg = 'status.success.bg';
+                            optionBorderColor = 'border.default';
                             badgeText = 'Jawaban Siswa (Benar)';
                             badgeColor = 'green';
                           } else {
-                            optionBg = 'red.50';
-                            optionBorderColor = 'red.350';
+                            optionBg = 'status.danger.bg';
+                            optionBorderColor = 'border.default';
                             badgeText = 'Jawaban Siswa (Salah)';
                             badgeColor = 'red';
                           }
                         } else if (opt.isCorrect) {
-                          optionBg = 'green.50/40';
-                          optionBorderColor = 'green.200';
+                          optionBg = 'brand.subtle';
+                          optionBorderColor = 'border.default';
                           badgeText = 'Kunci Jawaban';
                           badgeColor = 'green';
                         }
@@ -451,19 +451,19 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
 
                           if (isSelected) {
                             if (opt.isCorrect) {
-                              optionBg = 'green.50';
-                              optionBorderColor = 'green.350';
+                              optionBg = 'status.success.bg';
+                              optionBorderColor = 'border.default';
                               badgeText = 'Jawaban Siswa (Benar)';
                               badgeColor = 'green';
                             } else {
-                              optionBg = 'red.50';
-                              optionBorderColor = 'red.350';
+                              optionBg = 'status.danger.bg';
+                              optionBorderColor = 'border.default';
                               badgeText = 'Jawaban Siswa (Salah)';
                               badgeColor = 'red';
                             }
                           } else if (opt.isCorrect) {
-                            optionBg = 'green.50/40';
-                            optionBorderColor = 'green.200';
+                            optionBg = 'brand.subtle';
+                            optionBorderColor = 'border.default';
                             badgeText = 'Kunci Jawaban';
                             badgeColor = 'green';
                           }
@@ -524,8 +524,8 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
           <Dialog.Backdrop />
           <Dialog.Positioner>
             <Dialog.Content borderRadius="2xl" overflow="hidden">
-              <Dialog.Header bg="gray.50" py={4} borderBottom="1px solid" borderColor="gray.100">
-                <Dialog.Title fontSize="md" fontWeight="bold" color="red.600" display="flex" alignItems="center" gap={2}>
+              <Dialog.Header bg="bg.subtle" py={4} borderBottom="1px solid" borderColor="border.default">
+                <Dialog.Title fontSize="md" fontWeight="bold" color="status.danger.text" display="flex" alignItems="center" gap={2}>
                   <RotateCcw size={18} />
                   Reset Pengerjaan Siswa
                 </Dialog.Title>
@@ -537,7 +537,7 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
                   </Text>
                   
                   <Box>
-                    <Text fontSize="xs" fontWeight="bold" color="gray.550" mb={2} textTransform="uppercase" letterSpacing="wider">
+                    <Text fontSize="xs" fontWeight="bold" color="text.muted" mb={2} textTransform="uppercase" letterSpacing="wider">
                       Ketik "reset" untuk mengonfirmasi:
                     </Text>
                     <Input
@@ -545,13 +545,13 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
                       onChange={(e) => setResetConfirmationInput(e.target.value)}
                       placeholder="Ketik 'reset'"
                       borderRadius="lg"
-                      borderColor="gray.350"
-                      _focus={{ borderColor: 'red.500', boxShadow: '0 0 0 1px var(--chakra-colors-red-500)' }}
+                      borderColor="border.default"
+                      _focus={{ borderColor: 'status.danger.text', boxShadow: '0 0 0 1px var(--chakra-colors-status-danger-text)' }}
                     />
                   </Box>
                 </Stack>
               </Dialog.Body>
-              <Dialog.Footer p={6} borderTop="1px solid" borderColor="gray.100">
+              <Dialog.Footer p={6} borderTop="1px solid" borderColor="border.default">
                 <Flex gap={3} width="full">
                   <Dialog.ActionTrigger asChild>
                     <Button type="button" variant="outline" borderRadius="lg" cursor="pointer" flex={1}>
@@ -567,9 +567,9 @@ export default function SessionDetailPage({ params }: { params: Promise<{ id: st
                     }}
                     disabled={resetConfirmationInput.toLowerCase() !== 'reset' || resetMutation.isPending}
                     flex={1}
-                    bg="red.600"
-                    color="white"
-                    _hover={{ bg: 'red.700' }}
+                    bg="status.danger.text"
+                    color="text.inverted"
+                    _hover={{ bg: 'status.danger.text' }}
                     borderRadius="lg"
                     cursor="pointer"
                     loading={resetMutation.isPending}

@@ -34,6 +34,19 @@ export default function AdminLayout({
     },
   });
 
+  const getCookie = (name: string) => {
+    if (typeof document === 'undefined') return null;
+    return document.cookie.split('; ').find((row) => row.startsWith(`${name}=`))?.split('=')[1] ?? null;
+  };
+  const cachedAppName = typeof window !== 'undefined' ? decodeURIComponent(getCookie('cbt-app-name') || localStorage.getItem('cbt-app-name') || '') : null;
+  const cachedLogoUrl = typeof window !== 'undefined' ? decodeURIComponent(getCookie('cbt-logo-url') || localStorage.getItem('cbt-logo-url') || '') : null;
+  const { data: publicSettings } = useQuery({
+    queryKey: ['settings/public'],
+    queryFn: async () => (await api.get('/settings/public')).data,
+    staleTime: 1000 * 60 * 5,
+    initialData: cachedAppName || cachedLogoUrl ? { appName: cachedAppName, logoUrl: cachedLogoUrl } : undefined,
+  });
+
   useEffect(() => {
     if (settings?.language) {
       i18n.changeLanguage(settings.language);
@@ -88,64 +101,34 @@ export default function AdminLayout({
 
   if (!hasHydrated) {
     return (
-      <Flex minH="100vh" align="center" justify="center" px={6} bg="bg.canvas">
-        <Box
-          w="full"
-          maxW="sm"
-          borderRadius="2xl"
-          border="1px solid"
-          borderColor="border.default"
-          bg="bg.surface"
-          shadow="card"
-          overflow="hidden"
+      <Flex minH="100vh" direction="column" align="center" justify="center" gap={4} px={6} bg="bg.canvas">
+        <Flex
+          w={20}
+          h={20}
+          align="center"
+          justify="center"
+          borderRadius="full"
+          position="relative"
         >
-          <Box h="1.5" bg="brand.solid" />
-          <Stack gap={5} px={{ base: 5, md: 6 }} py={{ base: 6, md: 7 }} align="center" textAlign="center">
-            <Flex
-              w={20}
-              h={20}
-              align="center"
-              justify="center"
-              borderRadius="full"
-              position="relative"
-            >
-              <Spinner size="xl" color="brand.solid" thickness="3px" />
-              <Box position="absolute" inset={0} display="flex" alignItems="center" justifyContent="center">
-                <Image
-                  src={settings?.logoUrl || '/images/logo.png'}
-                  alt={settings?.appName || 'Logo sekolah'}
-                  width={28}
-                  height={28}
-                  style={{ objectFit: 'contain' }}
-                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-                />
-              </Box>
-            </Flex>
-            <Box>
-              <Heading size="sm" color="text.primary" fontWeight="bold" letterSpacing="-0.02em">
-                {settings?.appName || 'Nama Sekolah'}
-              </Heading>
-              <Text color="text.muted" fontSize="xs" mt={1}>
-                Menyiapkan panel admin
-              </Text>
-            </Box>
-            <Flex
-              align="center"
-              gap={2}
-              px={3}
-              py={1.5}
-              borderRadius="full"
-              bg="brand.subtle"
-              border="1px solid"
-              borderColor="brand.muted"
-              color="brand.text"
-            >
-              <Clock size={13} />
-              <Text fontSize="xs" fontWeight="bold">
-                Memverifikasi hak akses super admin
-              </Text>
-            </Flex>
-          </Stack>
+          <Spinner size="xl" color="brand.solid" />
+          <Box position="absolute" inset={0} display="flex" alignItems="center" justifyContent="center">
+            <Image
+              src={cachedLogoUrl || publicSettings?.logoUrl || '/images/logo.png'}
+              alt={cachedAppName || publicSettings?.appName || 'Logo sekolah'}
+              width={28}
+              height={28}
+              style={{ objectFit: 'contain' }}
+              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+            />
+          </Box>
+        </Flex>
+        <Box textAlign="center">
+          <Heading size="sm" color="text.primary" fontWeight="bold" letterSpacing="-0.02em">
+            {cachedAppName || publicSettings?.appName || 'Loding ...'}
+          </Heading>
+          <Text color="text.muted" fontSize="xs" mt={1}>
+            Mohon tunggu sebentar...
+          </Text>
         </Box>
       </Flex>
     );
@@ -191,10 +174,8 @@ export default function AdminLayout({
           alignItems="center"
           justifyContent="space-between"
           gap={4}
-          style={{
-            backdropFilter: 'blur(12px)',
-            backgroundColor: 'var(--header-bg)',
-          }}
+          bg="bg.surface"
+          style={{ backdropFilter: 'blur(12px)' }}
         >
           <Flex align="center" gap={3} minW={0}>
             {!isDesktop && (

@@ -14,7 +14,6 @@
   --brand-text: #3730a3;
   --border-default: #dde1ea;
   --border-strong: #b8c0d0;
-  --header-bg: rgba(255, 255, 255, 0.75);
 }
 
 .dark {
@@ -29,7 +28,6 @@
   --brand-text: #a5abfc;
   --border-default: #1c2d4a;
   --border-strong: #243550;
-  --header-bg: rgba(13, 21, 38, 0.75);
 }
 
 *, *::before, *::after { box-sizing: border-box; }

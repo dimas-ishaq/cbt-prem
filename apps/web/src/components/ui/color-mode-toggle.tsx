@@ -11,37 +11,37 @@ interface ColorModeToggleProps {
 
 const STORAGE_KEY = 'cbt-color-mode';
 
-function getInitialMode() {
-  if (typeof window === 'undefined') return 'light';
-  const stored = window.localStorage.getItem(STORAGE_KEY);
-  return stored === 'dark' ? 'dark' : 'light';
-}
-
-function applyMode(mode: 'light' | 'dark') {
+function applyMode(mode: 'light' | 'dark', persist = false) {
   const root = document.documentElement;
   root.classList.toggle('dark', mode === 'dark');
   root.style.colorScheme = mode;
-  window.localStorage.setItem(STORAGE_KEY, mode);
+  if (persist) localStorage.setItem(STORAGE_KEY, mode);
 }
 
 export function ColorModeToggle({ size = 'md', variant = 'icon' }: ColorModeToggleProps) {
   const [mounted, setMounted] = useState(false);
-  const [mode, setMode] = useState<'light' | 'dark'>('light');
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const stored = localStorage.getItem(STORAGE_KEY);
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return stored === 'dark' || (!stored && prefersDark);
+  });
 
   useEffect(() => {
-    const initialMode = getInitialMode();
-    setMode(initialMode);
-    applyMode(initialMode);
+    const stored = localStorage.getItem(STORAGE_KEY);
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const nextMode = stored === 'dark' || (!stored && prefersDark) ? 'dark' : 'light';
+    setIsDark(nextMode === 'dark');
+    applyMode(nextMode);
     setMounted(true);
   }, []);
 
   if (!mounted) return null;
 
-  const isDark = mode === 'dark';
   const toggle = () => {
     const nextMode = isDark ? 'light' : 'dark';
-    setMode(nextMode);
-    applyMode(nextMode);
+    setIsDark(!isDark);
+    applyMode(nextMode, true);
   };
 
   if (variant === 'switch') {

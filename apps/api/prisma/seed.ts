@@ -64,6 +64,7 @@ async function main() {
   const pwdPengawas = await bcrypt.hash('pengawas123', salt);
 
   const now = new Date();
+  const currentYear = now.getFullYear();
   let answerCount = 0;
 
   // ========================================================================
@@ -190,7 +191,7 @@ async function main() {
       prisma.student.create({
         data: {
           userId: u.id,
-          nis: `2024${String(10000 + i).slice(1)}`,
+          nis: `${currentYear}${String(10000 + i).slice(1)}`,
           rombelId: rombels[i % rombels.length].id,
           majorId: rombels[i % rombels.length].majorId,
         },
@@ -254,33 +255,33 @@ async function main() {
   // ========================================================================
   const examGroupsData = [
     {
-      name: 'ASAT 2024',
-      description: 'Asesmen Sumatif Akhir Tahun 2024',
-      academicYear: '2024/2025',
+      name: `ASAT ${currentYear - 1}`,
+      description: `Asesmen Sumatif Akhir Tahun ${currentYear - 1}`,
+      academicYear: `${currentYear - 1}/${currentYear}`,
       semester: 'Genap',
       startDate: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000),
       endDate: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000),
     },
     {
-      name: 'ASTS Genap 2025',
-      description: 'Asesmen Tengah Semester Genap 2025',
-      academicYear: '2024/2025',
+      name: `ASTS Genap ${currentYear}`,
+      description: `Asesmen Tengah Semester Genap ${currentYear}`,
+      academicYear: `${currentYear - 1}/${currentYear}`,
       semester: 'Genap',
       startDate: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000),
       endDate: new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000),
     },
     {
-      name: 'PAS 2024',
-      description: 'Penilaian Akhir Semester Ganjil 2024',
-      academicYear: '2024/2025',
+      name: `PAS ${currentYear - 1}`,
+      description: `Penilaian Akhir Semester Ganjil ${currentYear - 1}`,
+      academicYear: `${currentYear - 1}/${currentYear}`,
       semester: 'Ganjil',
       startDate: new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000),
       endDate: now,
     },
     {
-      name: 'Try Out 2025',
-      description: 'Try Out persiapan ujian nasional 2025',
-      academicYear: '2024/2025',
+      name: `Try Out ${currentYear}`,
+      description: `Try Out persiapan ujian nasional ${currentYear}`,
+      academicYear: `${currentYear - 1}/${currentYear}`,
       semester: 'Genap',
       startDate: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000),
       endDate: new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000),
@@ -609,7 +610,7 @@ async function main() {
   // ========================================================================
   const examsData = [
     {
-      title: 'UTS Matematika - Genap 2025',
+      title: `UTS Matematika - Genap ${currentYear}`,
       desc: 'Ujian Tengah Semester Matematika Wajib',
       subjectIdx: 0, teacherIdx: 0, groupIdx: 1,
       startOffsetMin: -10, endOffsetDays: 7,
@@ -620,7 +621,7 @@ async function main() {
       showScore: false, maxViolations: 3,
     },
     {
-      title: 'UAS Matematika - Ganjil 2024',
+      title: `UAS Matematika - Ganjil ${currentYear - 1}`,
       desc: 'Ujian Akhir Semester Matematika Wajib',
       subjectIdx: 0, teacherIdx: 0, groupIdx: 2,
       startOffsetMin: -5, endOffsetDays: 14,
@@ -631,7 +632,7 @@ async function main() {
       showScore: true, maxViolations: 5,
     },
     {
-      title: 'UTS Bahasa Indonesia - Genap 2025',
+      title: `UTS Bahasa Indonesia - Genap ${currentYear}`,
       desc: 'Ujian Tengah Semester Bahasa Indonesia',
       subjectIdx: 1, teacherIdx: 1, groupIdx: 1,
       startOffsetMin: -8, endOffsetDays: 7,
@@ -653,7 +654,7 @@ async function main() {
       showScore: false, maxViolations: 2,
     },
     {
-      title: 'UAS PPKN - Ganjil 2024',
+      title: `UAS PPKN - Ganjil ${currentYear - 1}`,
       desc: 'Ujian Akhir Semester PPKN',
       subjectIdx: 3, teacherIdx: 3, groupIdx: 2,
       startOffsetMin: -2, endOffsetDays: 10,

@@ -20,6 +20,7 @@ import {
 import { compressImage, createThumbnail, validateImageFile } from '@/utils/imageUtils';
 import { RichTextEditor } from '@/components/admin/rich-text-editor';
 import { useTranslation } from 'react-i18next';
+import { toast } from '@/lib/toaster';
 
 type Option = {
   content: string;

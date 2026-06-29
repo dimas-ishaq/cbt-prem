@@ -690,20 +690,20 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
       <SimpleGrid columns={{ base: 2, sm: 4 }} gap={4}>
         {/* Online */}
         <Box
-          bg="white"
+          bg="bg.surface"
           borderRadius="xl"
           border="1px solid"
-          borderColor="green.200"
+          borderColor="border.default"
           borderTopWidth="3px"
-          borderTopColor="green.500"
+          borderTopColor="status.success.text"
           p={4}
           boxShadow="0 2px 10px rgba(16,185,129,0.07)"
         >
-          <Text fontSize="11px" fontWeight="semibold" color="gray.500" textTransform="uppercase" letterSpacing="0.08em" mb={2}>
+          <Text fontSize="11px" fontWeight="semibold" color="text.muted" textTransform="uppercase" letterSpacing="0.08em" mb={2}>
             Aktif Online
           </Text>
-          <Text fontSize="2xl" fontWeight="bold" color="gray.900" lineHeight="1">{online}</Text>
-          <Text fontSize="xs" color="green.600" mt={1.5} fontWeight="medium">dari {total} peserta</Text>
+          <Text fontSize="2xl" fontWeight="bold" color="text.primary" lineHeight="1">{online}</Text>
+          <Text fontSize="xs" color="status.success.text" mt={1.5} fontWeight="medium">dari {total} peserta</Text>
         </Box>
 
         {/* Selesai */}
@@ -782,12 +782,12 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
           gap={5}
         >
           {/* Panel header */}
-          <Flex flexWrap="wrap" align="center" justify="space-between" gap={3} pb={4} borderBottom="1px solid" borderColor="gray.100">
-            <Heading size="md" fontWeight="bold" color="gray.800">Progres Siswa</Heading>
+          <Flex flexWrap="wrap" align="center" justify="space-between" gap={3} pb={4} borderBottom="1px solid" borderColor="border.default">
+            <Heading size="md" fontWeight="bold" color="text.primary">Progres Siswa</Heading>
             <Flex align="center" gap={2} wrap="wrap">
               {/* Search */}
               <Box position="relative">
-                <Box position="absolute" left="10px" top="50%" transform="translateY(-50%)" zIndex={2} color="gray.400" pointerEvents="none">
+                <Box position="absolute" left="10px" top="50%" transform="translateY(-50%)" zIndex={2} color="text.muted" pointerEvents="none">
                   <Search size={14} />
                 </Box>
                 <Input
@@ -798,9 +798,9 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
                   pl="30px"
                   size="sm"
                   borderRadius="lg"
-                  bg="gray.50"
-                  borderColor="gray.200"
-                  _focus={{ borderColor: 'indigo.400', bg: 'white' }}
+                  bg="bg.elevated"
+                  borderColor="border.default"
+                  _focus={{ borderColor: 'brand.solid', bg: 'bg.surface' }}
                 />
               </Box>
 
@@ -819,7 +819,7 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
                 >
                   <Select.HiddenSelect />
                   <Select.Control>
-                    <Select.Trigger borderRadius="lg" fontSize="sm" height="36px" bg="gray.50">
+                    <Select.Trigger borderRadius="lg" fontSize="sm" height="36px" bg="bg.elevated">
                       <Select.ValueText>
                         {progressFilterOptions.items.find(item => item.value === progressFilter)?.label || 'Semua Progres'}
                       </Select.ValueText>
@@ -891,12 +891,12 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
                           shadow: 'md',
                           transform: 'translateY(-1px)',
                           borderColor: finished
-                            ? 'green.300'
+                            ? 'status.success.subtle'
                             : locked
-                            ? 'red.300'
+                            ? 'status.danger.subtle'
                             : alerted
-                            ? 'amber.300'
-                            : 'indigo.300',
+                            ? 'status.warning.subtle'
+                            : 'brand.subtle',
                         }
                       : undefined
                   }
@@ -911,10 +911,10 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
                         mt={0.5}
                         flexShrink={0}
                         bg={
-                          finished ? 'green.500' :
-                          locked ? 'red.500' :
-                          offline ? 'gray.400' :
-                          alerted ? 'amber.500' : 'green.500'
+                          finished ? 'status.success.text' :
+                          locked ? 'status.danger.text' :
+                          offline ? 'text.muted' :
+                          alerted ? 'status.warning.text' : 'status.success.text'
                         }
                         className={!offline && !finished && !locked ? 'animate-pulse' : ''}
                       />
@@ -1048,10 +1048,10 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
 
             {displayed.length === 0 && (
               <Flex gridColumn="1 / -1" direction="column" align="center" justify="center" py={16} textAlign="center">
-                <Box mb={4} color="gray.300">
+                <Box mb={4} color="text.muted">
                   <Monitor size={42} />
                 </Box>
-                <Text color="gray.500" fontWeight="medium" fontSize="sm">
+                <Text color="text.secondary" fontWeight="medium" fontSize="sm">
                   {query ? 'Siswa tidak ditemukan' : 'Menunggu siswa masuk…'}
                 </Text>
               </Flex>
@@ -1061,7 +1061,7 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
 
         {/* ─── Violation Logs Panel ─── */}
         <Box
-          bg="white"
+          bg="bg.surface"
           borderRadius="card"
           border="1px solid"
           borderColor="border.default"
