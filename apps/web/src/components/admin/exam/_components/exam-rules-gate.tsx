@@ -29,25 +29,35 @@ const EXAM_TERMS = [
 
 export function ExamRulesGate({ checkedTerms, isTokenRequired, tokenInput, tokenError, isStarting, disableStart, onToggleTerm, onTokenChange, onStart }: ExamRulesGateProps) {
   return (
-    <Flex direction="column" justify="center" minH="screen" bg="dd.canvas" p={{ base: 4, md: 8 }}>
+    <Flex
+      direction="column"
+      justify="center"
+      align="center"
+      minH="100dvh"
+      bg="dd.canvas"
+      p={{ base: 4, md: 8 }}
+    >
       <Box
         maxW="3xl"
         mx="auto"
         w="full"
         bg="dd.surface"
+        position="relative"
         borderRadius="card"
         p={{ base: 6, md: 8 }}
         border="1px solid"
         borderColor="dd.border"
         boxShadow={{ base: 'card-light', _dark: 'card-dark' }}
+        transition="all 0.2s ease"
       >
-        <Stack gap={6}>
+        <Box position="absolute" inset={0} pointerEvents="none" opacity={0.12} bg="dd.brand.subtle" borderRadius="inherit" />
+        <Stack gap={6} position="relative">
           <Stack gap={2}>
             <Text color="dd.brand" fontSize="xs" fontWeight="bold" textTransform="uppercase" letterSpacing="0.14em">
               Konfirmasi Pengerjaan Ujian
             </Text>
             <Heading size="lg" color="dd.text" fontFamily="Inter, -apple-system, BlinkMacSystemFont, sans-serif" fontWeight="700">
-              Periksa informasi sebelum ujian dimulai
+              Periksa info sebelum ujian dimulai
             </Heading>
             <Text color="dd.text.muted" fontSize="13px" lineHeight="1.4" fontFamily="Inter, -apple-system, BlinkMacSystemFont, sans-serif">
               Setelah Anda menekan <b style={{ color: 'inherit' }}>Mulai Ujian</b>, sistem akan membuka sesi ujian Anda dan menghitung waktu pengerjaan sesuai durasi yang ditetapkan.
@@ -59,7 +69,7 @@ export function ExamRulesGate({ checkedTerms, isTokenRequired, tokenInput, token
             <Alert.Content>
               <Alert.Title color="dd.text" fontSize="13px" fontWeight="semibold">Informasi penting</Alert.Title>
               <Alert.Description color="dd.text.muted" fontSize="12px">
-                Layar ini adalah tahap konfirmasi sebelum sesi dimulai, bukan halaman submit akhir ujian.
+                Layar ini tahap konfirmasi sebelum sesi dimulai, bukan halaman submit akhir ujian.
               </Alert.Description>
             </Alert.Content>
           </Alert.Root>

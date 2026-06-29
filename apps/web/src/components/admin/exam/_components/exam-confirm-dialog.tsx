@@ -30,68 +30,66 @@ export function ExamConfirmDialog({
       <Portal>
         <Dialog.Backdrop />
         <Dialog.Positioner>
-          <Dialog.Content borderRadius="3xl" overflow="hidden" boxShadow="2xl">
+          <Dialog.Content borderRadius="3xl" overflow="hidden" boxShadow="2xl" bg="dd.surface">
             <Dialog.Header bg={hasUnanswered ? 'dd.status.warning.bg' : 'dd.brand.subtle'} py={5} borderBottom="1px solid" borderColor="dd.border">
               <Dialog.Title fontSize="lg" fontWeight="bold" color="dd.text" display="flex" alignItems="center" gap={2}>
-                {hasUnanswered ? <AlertTriangle size={22} className="text-amber-600 animate-bounce" /> : <Info size={22} className="text-indigo-600" />}
+                {hasUnanswered ? <AlertTriangle size={22} color="var(--chakra-colors-dd-status-warning-text)" /> : <Info size={22} color="var(--chakra-colors-dd-brand)" />}
                 Konfirmasi Selesaikan Ujian
               </Dialog.Title>
             </Dialog.Header>
 
-            <Dialog.Body p={6}>
+            <Dialog.Body p={6} bg="dd.surface">
               <Stack gap={5}>
                 <Text fontSize="sm" color="dd.text.muted" lineHeight="relaxed">
                   Apakah Anda yakin ingin mengakhiri sesi ujian ini? Setelah dikonfirmasi, Anda tidak dapat mengubah jawaban Anda lagi.
                 </Text>
 
-                {/* Question stats summary card */}
                 <Box p={4} bg="dd.surface.alt" borderRadius="card" border="1px solid" borderColor="dd.border">
                   <Text fontSize="xs" fontWeight="bold" color="dd.text.muted" mb={3} textTransform="uppercase" letterSpacing="0.05em">
                     Ringkasan Pengerjaan
                   </Text>
                   <Grid templateColumns="repeat(3, 1fr)" gap={3}>
                     <Box p={3} borderRadius="badge" bg="dd.status.success.bg" border="1px solid" borderColor="dd.border" textAlign="center">
-                      <Text fontSize="2xs" color="emerald.700" fontWeight="bold">Dijawab</Text>
-                      <Text fontSize="lg" fontWeight="extrabold" color="emerald.800">{answeredCount}</Text>
+                      <Text fontSize="2xs" color="dd.status.success.text" fontWeight="bold">Dijawab</Text>
+                      <Text fontSize="lg" fontWeight="extrabold" color="dd.status.success.text">{answeredCount}</Text>
                     </Box>
                     <Box p={3} borderRadius="badge" bg={hasUnanswered ? 'dd.status.danger.bg' : 'dd.surface.alt'} border="1px solid" borderColor="dd.border" textAlign="center">
-                      <Text fontSize="2xs" color={hasUnanswered ? 'red.700' : 'gray.600'} fontWeight="bold">Belum</Text>
-                      <Text fontSize="lg" fontWeight="extrabold" color={hasUnanswered ? 'red.800' : 'gray.800'}>{unansweredCount}</Text>
+                      <Text fontSize="2xs" color={hasUnanswered ? 'dd.status.danger.text' : 'dd.text.muted'} fontWeight="bold">Belum</Text>
+                      <Text fontSize="lg" fontWeight="extrabold" color={hasUnanswered ? 'dd.status.danger.text' : 'dd.text'}>{unansweredCount}</Text>
                     </Box>
                     <Box p={3} borderRadius="badge" bg={hasFlagged ? 'dd.status.warning.bg' : 'dd.surface.alt'} border="1px solid" borderColor="dd.border" textAlign="center">
-                      <Text fontSize="2xs" color={hasFlagged ? 'amber.700' : 'gray.600'} fontWeight="bold">Ragu-Ragu</Text>
-                      <Text fontSize="lg" fontWeight="extrabold" color={hasFlagged ? 'amber.800' : 'gray.800'}>{flaggedCount}</Text>
+                      <Text fontSize="2xs" color={hasFlagged ? 'dd.status.warning.text' : 'dd.text.muted'} fontWeight="bold">Ragu-Ragu</Text>
+                      <Text fontSize="lg" fontWeight="extrabold" color={hasFlagged ? 'dd.status.warning.text' : 'dd.text'}>{flaggedCount}</Text>
                     </Box>
                   </Grid>
                 </Box>
 
-                {/* Dynamic Warning Alert */}
                 {hasUnanswered ? (
                   <Flex gap={3} p={4} bg="dd.status.danger.bg" borderRadius="card" border="1px solid" borderColor="dd.border" align="start">
-                    <AlertTriangle size={20} className="text-red-650 shrink-0 mt-0.5" />
+                    <AlertTriangle size={20} color="var(--chakra-colors-dd-status-danger-text)" style={{ flexShrink: 0, marginTop: 2 }} />
                     <Stack gap={0.5}>
-                      <Text fontSize="xs" fontWeight="bold" color="red.800">Perhatian!</Text>
-                      <Text fontSize="xs" color="red.700" lineHeight="relaxed">
+                      <Text fontSize="xs" fontWeight="bold" color="dd.status.danger.text">Perhatian!</Text>
+                      <Text fontSize="xs" color="dd.status.danger.text" lineHeight="relaxed">
                         Anda harus menjawab seluruh <strong>{unansweredCount} soal</strong> yang tersisa sebelum diperbolehkan untuk menyelesaikan dan mengirimkan ujian.
                       </Text>
                     </Stack>
                   </Flex>
                 ) : hasFlagged ? (
                   <Flex gap={3} p={4} bg="dd.status.warning.bg" borderRadius="card" border="1px solid" borderColor="dd.border" align="start">
-                    <HelpCircle size={20} className="text-amber-650 shrink-0 mt-0.5" />
+                    <HelpCircle size={20} color="var(--chakra-colors-dd-status-warning-text)" style={{ flexShrink: 0, marginTop: 2 }} />
                     <Stack gap={0.5}>
-                      <Text fontSize="xs" fontWeight="bold" color="amber.800">Catatan</Text>
-                      <Text fontSize="xs" color="amber.700" lineHeight="relaxed">
+                      <Text fontSize="xs" fontWeight="bold" color="dd.status.warning.text">Catatan</Text>
+                      <Text fontSize="xs" color="dd.status.warning.text" lineHeight="relaxed">
                         Terdapat <strong>{flaggedCount} soal</strong> yang masih bertanda Ragu-Ragu. Anda dapat menyelesaikannya sekarang jika sudah yakin.
                       </Text>
                     </Stack>
                   </Flex>
                 ) : (
                   <Flex gap={3} p={4} bg="dd.status.success.bg" borderRadius="card" border="1px solid" borderColor="dd.border" align="start">
-                    <CheckCircle size={20} className="text-emerald-600 shrink-0 mt-0.5" />
+                    <CheckCircle size={20} color="var(--chakra-colors-dd-status-success-text)" style={{ flexShrink: 0, marginTop: 2 }} />
                     <Stack gap={0.5}>
-                      <Text fontSize="xs" fontWeight="bold" color="emerald.800">Luar Biasa!</Text>
-                      <Text fontSize="xs" color="emerald.700" lineHeight="relaxed">
+                      <Text fontSize="xs" fontWeight="bold" color="dd.status.success.text">Luar Biasa!</Text>
+                      <Text fontSize="xs" color="dd.status.success.text" lineHeight="relaxed">
                         Semua soal telah terjawab. Silakan periksa kembali jika masih ada sisa waktu, atau kirim sekarang.
                       </Text>
                     </Stack>
@@ -100,7 +98,7 @@ export function ExamConfirmDialog({
               </Stack>
             </Dialog.Body>
 
-            <Dialog.Footer p={6} borderTop="1px solid" borderColor="dd.border" gap={3}>
+            <Dialog.Footer p={6} borderTop="1px solid" borderColor="dd.border" gap={3} bg="dd.surface">
               <Button variant="outline" borderRadius="card" flex={1} onClick={onClose} disabled={isSubmitting}>
                 Batal
               </Button>
@@ -110,9 +108,9 @@ export function ExamConfirmDialog({
                 onClick={onConfirm}
                 loading={isSubmitting}
                 disabled={hasUnanswered || isSubmitting}
-                bg={hasUnanswered ? 'text.muted' : 'brand.solid'}
-                color="text.inverted"
-                _hover={{ bg: hasUnanswered ? 'text.muted' : 'brand.text' }}
+                bg={hasUnanswered ? 'dd.text.muted' : 'dd.brand'}
+                color="white"
+                _hover={{ bg: hasUnanswered ? 'dd.text.muted' : 'dd.brand.hover' }}
               >
                 {hasUnanswered ? 'Belum Lengkap' : 'Ya, Selesaikan'}
               </Button>

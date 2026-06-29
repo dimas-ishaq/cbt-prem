@@ -15,6 +15,7 @@ import { classifyExamMutationError, parsePendingExamAnswers } from './exam-utils
 import { ExamCompletion } from './_components/exam-completion';
 import { ExamConfirmDialog } from './_components/exam-confirm-dialog';
 import { ExamLockedOverlay } from './_components/exam-locked-overlay';
+import { ExamNotFound } from './_components/exam-not-found';
 import { ExamRulesGate } from './_components/exam-rules-gate';
 import { ExamHeader } from './_components/exam-header';
 import { TimeAddedDialog } from './_components/time-added-dialog';
@@ -74,7 +75,7 @@ export function ExamContainer({ examId }: Props) {
     refetchInterval: 30000,
   });
 
-  const { data: exam, isLoading: isLoadingExam } = useQuery({
+  const { data: exam, isLoading: isLoadingExam, error: examError } = useQuery({
     queryKey: ['exam', examId],
     queryFn: async () => (await api.get(`/exams/${examId}`)).data,
     enabled: !!token && !!examId,
@@ -344,8 +345,26 @@ export function ExamContainer({ examId }: Props) {
     }
   };
 
-  if (!exam && isLoadingExam) return <Flex align="center" justify="center" minH="screen" bg="dd.canvas"><Spinner size="xl" color="dd.brand" /></Flex>;
-  if (!exam) return <Flex align="center" justify="center" minH="screen" bg="dd.canvas"><Text color="dd.text" fontSize="13px">Ujian tidak ditemukan.</Text></Flex>;
+  if (isLoadingExam) {
+    return (
+      <Flex minH="100dvh" bg="dd.canvas" align="center" justify="center" fontFamily="Inter, -apple-system, BlinkMacSystemFont, sans-serif">
+        <Box textAlign="center">
+          <Spinner size="xl" color="dd.brand" mb={4} />
+          <Text color="dd.text.muted" fontSize="13px">Memuat ujian...</Text>
+        </Box>
+      </Flex>
+    );
+  }
+
+  if (examError) {
+    const axiosErr = examError as AxiosError;
+    const status = axiosErr.response?.status;
+    if (status === 403) return <ExamNotFound status="forbidden" />;
+    if (status === 404) return <ExamNotFound status="not-found" />;
+    return <ExamNotFound status="error" message={axiosErr.message} />;
+  }
+
+  if (!exam) return <ExamNotFound status="not-found" />;
   if (isCompleted) return <ExamCompletion subjectName={exam?.subject?.name} examTitle={exam?.title} />;
   if (isLocked) return <ExamLockedOverlay />;
 

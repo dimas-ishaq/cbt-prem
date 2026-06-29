@@ -2,21 +2,23 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Login Flow', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/login');
+    await page.goto('/login', { waitUntil: 'domcontentloaded' });
+    await page.waitForSelector('#login-username', { timeout: 10000 });
   });
 
   test('should display login form', async ({ page }) => {
-    await expect(page.getByLabel(/username/i)).toBeVisible();
-    await expect(page.getByLabel(/password/i)).toBeVisible();
-    await expect(page.getByRole('button', { name: /masuk|login/i })).toBeVisible();
+    await expect(page.locator('#login-username')).toBeVisible();
+    await expect(page.locator('#login-password')).toBeVisible();
+    await expect(page.locator('#login-submit')).toBeVisible();
   });
 
   test('should login successfully and redirect to dashboard', async ({ page }) => {
-    await page.fill('input[name="username"]', process.env.E2E_USERNAME || 'test-student');
-    await page.fill('input[name="password"]', process.env.E2E_PASSWORD || 'student123');
-    await page.click('button[type="submit"]');
+    await page.waitForSelector('#login-username', { timeout: 10000 });
+    await page.fill('#login-username', process.env.E2E_USERNAME || 'siswa1');
+    await page.fill('#login-password', process.env.E2E_PASSWORD || 'siswa123');
+    await page.click('#login-submit');
 
-    await page.waitForURL(/dashboard/);
+    await page.waitForURL(/dashboard/, { timeout: 15000 });
     await expect(page).toHaveURL(/dashboard/);
   });
 });

@@ -2,21 +2,21 @@ import { test, expect } from '@playwright/test';
 
 const CREDS = {
   student: {
-    username: process.env.E2E_USERNAME || 'test-student',
-    password: process.env.E2E_PASSWORD || 'student123',
+    username: process.env.E2E_USERNAME || 'siswa1',
+    password: process.env.E2E_PASSWORD || 'siswa123',
     role: 'SISWA',
     expectedURL: /dashboard/,
     expectedText: 'Portal Siswa',
   },
   teacher: {
-    username: process.env.E2E_TEACHER_USERNAME || 'test-guru',
+    username: process.env.E2E_TEACHER_USERNAME || 'guru1',
     password: process.env.E2E_TEACHER_PASSWORD || 'guru123',
     role: 'GURU',
     expectedURL: /admin/,
     expectedText: 'Dashboard',
   },
   superadmin: {
-    username: process.env.E2E_SA_USERNAME || 'superadmin',
+    username: process.env.E2E_SA_USERNAME || 'superadmin1',
     password: process.env.E2E_SA_PASSWORD || 'superadmin123',
     role: 'SUPER_ADMIN',
     expectedURL: /admin/,
