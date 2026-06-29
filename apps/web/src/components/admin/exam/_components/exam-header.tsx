@@ -8,12 +8,13 @@ interface ExamHeaderProps {
   startTime: string;
   duration: number;
   overrideEndTime?: string;
+  serverTime?: string;
   onTimeUp: () => void;
   onFinish: () => void;
   disableFinish?: boolean;
 }
 
-export function ExamHeader({ title, subjectName, startTime, duration, overrideEndTime, onTimeUp, onFinish, disableFinish }: ExamHeaderProps) {
+export function ExamHeader({ title, subjectName, startTime, duration, overrideEndTime, serverTime, onTimeUp, onFinish, disableFinish }: ExamHeaderProps) {
   return (
     <Flex
       as="header"
@@ -34,7 +35,7 @@ export function ExamHeader({ title, subjectName, startTime, duration, overrideEn
           {subjectName}
         </Text>
       </Box>
-      <ExamTimer startTime={startTime} duration={duration} overrideEndTime={overrideEndTime} onTimeUp={onTimeUp} />
+      <ExamTimer startTime={startTime} duration={duration} overrideEndTime={overrideEndTime} onTimeUp={onTimeUp} serverTime={serverTime} />
       <Button
         bg={disableFinish ? 'dd.surface.alt' : 'dd.status.danger.solid'}
         color={disableFinish ? 'dd.text.muted' : 'white'}

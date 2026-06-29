@@ -11,7 +11,7 @@ const nextConfig = {
     };
     return config;
   },
-
+  allowedDevOrigins: ['192.168.1.7'],
   turbopack: {
     resolveAlias: {
       html2canvas: 'html2canvas-pro',
@@ -26,7 +26,7 @@ const nextConfig = {
         headers: [
           {
             key: 'Cache-Control',
-            value: isProd 
+            value: isProd
               ? 'public, max-age=31536000, immutable'
               : 'no-store, max-age=0, must-revalidate',
           },
@@ -59,7 +59,7 @@ const nextConfig = {
               const apiOrigin = getOrigin(process.env.NEXT_PUBLIC_API_URL);
               const appOrigin = getOrigin(process.env.NEXT_PUBLIC_APP_URL);
               const wsUrl = process.env.NEXT_PUBLIC_WS_URL;
-              
+
               const connectSources = [
                 "'self'",
                 "http://localhost:3001",
@@ -91,7 +91,7 @@ const nextConfig = {
                   const host = new URL(apiOrigin).host;
                   connectSources.push(`wss://${host}`);
                   connectSources.push(`ws://${host}`);
-                } catch (e) {}
+                } catch (e) { }
               }
 
               // Gambar: izinkan data URI, blob, localhost/loopback API, dan origin custom

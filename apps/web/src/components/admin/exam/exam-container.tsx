@@ -65,6 +65,15 @@ export function ExamContainer({ examId }: Props) {
   const [tokenInput, setTokenInput] = useState('');
   const [tokenError, setTokenError] = useState('');
 
+  const { data: serverTime } = useQuery({
+    queryKey: ['server-time'],
+    queryFn: async () => {
+      const res = await api.get('/server-time');
+      return res.data.serverTime as string;
+    },
+    refetchInterval: 30000,
+  });
+
   const { data: exam, isLoading: isLoadingExam } = useQuery({
     queryKey: ['exam', examId],
     queryFn: async () => (await api.get(`/exams/${examId}`)).data,
@@ -293,6 +302,7 @@ export function ExamContainer({ examId }: Props) {
     ? new Date(new Date(sessionStartTime).getTime() + (exam?.duration ?? 0) * 60 * 1000).toISOString()
     : undefined;
   const timerEndTime = sessionEndTime || sessionDurationEndTime;
+  const timerServerTime = serverTime || undefined;
   // timerStartTime: gunakan waktu siswa mulai sesi (bukan waktu ujian dibuka).
   // Fallback ke exam.startTime hanya jika belum ada sesi (misal: sebelum mulai).
   const timerStartTime = sessionStartTime || exam?.startTime || new Date().toISOString();
@@ -392,7 +402,7 @@ export function ExamContainer({ examId }: Props) {
 
   return (
     <Box minH="screen" bg="dd.canvas">
-      <ExamHeader title={exam.title} subjectName={exam.subject?.name} startTime={timerStartTime} duration={exam.duration} overrideEndTime={timerEndTime} onTimeUp={finishExam} onFinish={handleManualFinishTrigger} disableFinish={unansweredCount > 0} />
+      <ExamHeader title={exam.title} subjectName={exam.subject?.name} startTime={timerStartTime} duration={exam.duration} overrideEndTime={timerEndTime} serverTime={timerServerTime} onTimeUp={finishExam} onFinish={handleManualFinishTrigger} disableFinish={unansweredCount > 0} />
       <Box flex={1} p={6}>
         <ExamWorkspace
           currentQuestion={currentQuestion}

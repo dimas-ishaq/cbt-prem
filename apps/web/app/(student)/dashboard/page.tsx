@@ -19,12 +19,13 @@ import {
   Badge,
   Spinner,
 } from '@chakra-ui/react';
-import { BookOpen, LogOut, Clock, Hash, Award, Users, History, Calendar } from 'lucide-react';
+import { BookOpen, LogOut, Clock, Hash, Award, Users, History, Calendar, User } from 'lucide-react';
 import { ColorModeToggle } from '@/components/ui/color-mode-toggle';
 import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { assetUrl } from '@/lib/env';
+import { getUpcomingExams } from '@/lib/exam-utils';
 
 const getAssetUrl = assetUrl;
 
@@ -34,7 +35,7 @@ export default function DashboardPage() {
   const queryClient = useQueryClient();
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
-  const [activeTab, setActiveTab] = useState<'exams' | 'history'>('exams');
+  const [activeTab, setActiveTab] = useState<'upcoming' | 'exams' | 'history'>('upcoming');
 
   const { data: settings } = useQuery({
     queryKey: ['settings'],
@@ -61,7 +62,7 @@ export default function DashboardPage() {
       const res = await api.get('/server-time');
       return res.data.serverTime;
     },
-    refetchInterval: 1000,
+    refetchInterval: 30000,
   });
 
   const formattedServerTime = serverTime
@@ -79,10 +80,7 @@ export default function DashboardPage() {
     },
   });
 
-  const upcomingExams = (exams || [])
-    .filter((exam: any) => new Date(exam.startTime).toDateString() > new Date().toDateString())
-    .sort((a: any, b: any) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
-    .slice(0, 3);
+  const upcomingExams = getUpcomingExams(exams || [], new Date());
 
   const uploadPhotoMutation = useMutation({
     mutationFn: async (file: File) => {
@@ -315,7 +313,7 @@ export default function DashboardPage() {
                 position="relative"
                 w="100px"
                 h="100px"
-                borderRadius="md"
+                borderRadius="full"
                 overflow="hidden"
                 bg="dd.surface.subtle"
                 border="1px solid"
@@ -333,8 +331,19 @@ export default function DashboardPage() {
                   />
                 ) : (
                   <Flex align="center" justify="center" w="full" h="full" direction="column" bg="dd.canvas">
-                    <BookOpen size={24} color="dd.icon.neutral" />
-                    <Text fontSize="10px" color="dd.text.muted" mt={1}>Tidak Ada Foto</Text>
+                    <Flex
+                      align="center"
+                      justify="center"
+                      w={12}
+                      h={12}
+                      borderRadius="full"
+                      bg="dd.brand.subtle"
+                      color="dd.brand"
+                      mb={1}
+                    >
+                      <User size={28} />
+                    </Flex>
+                    <Text fontSize="9px" color="dd.text.muted" fontWeight="semibold">Belum ada foto</Text>
                   </Flex>
                 )}
                 <Button
@@ -453,6 +462,23 @@ export default function DashboardPage() {
           <Button
             size="sm"
             variant="ghost"
+            bg={activeTab === 'upcoming' ? 'dd.brand' : 'transparent'}
+            color={activeTab === 'upcoming' ? 'white' : 'dd.text.muted'}
+            _hover={activeTab === 'upcoming' ? { bg: 'dd.brand.hover' } : { bg: 'dd.surface.alt' }}
+            borderRadius="sm"
+            fontWeight="bold"
+            px={4}
+            height="36px"
+            onClick={() => setActiveTab('upcoming')}
+            cursor="pointer"
+            gap={2}
+          >
+            <Calendar size={14} />
+            Ujian Mendatang
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
             bg={activeTab === 'exams' ? 'dd.brand' : 'transparent'}
             color={activeTab === 'exams' ? 'white' : 'dd.text.muted'}
             _hover={activeTab === 'exams' ? { bg: 'dd.brand.hover' } : { bg: 'dd.surface.alt' }}
@@ -487,7 +513,40 @@ export default function DashboardPage() {
         </Flex>
 
         {/* ── Tab Content Panel ────────────────────────────────── */}
-        {activeTab === 'exams' ? (
+        {activeTab === 'upcoming' ? (
+          <Stack gap={5}>
+            <Stack gap={1} mb={1}>
+              <Heading size="sm" fontWeight="bold" color="dd.text">
+                Ujian Mendatang
+              </Heading>
+              <Text color="dd.text.muted" fontSize="12px">
+                Jadwal ujian yang akan dimulai.
+              </Text>
+            </Stack>
+            {upcomingExams.length > 0 ? (
+              <Stack gap={3}>
+                {upcomingExams.map((exam: any) => {
+                  const start = new Date(exam.startTime).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
+                  const end = new Date(exam.endTime).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
+                  return (
+                    <Flex key={exam.id} justify="space-between" align={{ base: 'stretch', md: 'center' }} gap={3} direction={{ base: 'column', md: 'row' }} p={4} borderRadius="md" bg="dd.surface.alt" border="1px solid" borderColor="dd.border">
+                      <Box>
+                        <Text fontWeight="bold" color="dd.text">{exam.title}</Text>
+                        <Text fontSize="12px" color="dd.text.muted">{exam.subject?.name}</Text>
+                      </Box>
+                      <Stack gap={0.5} fontSize="11px" color="dd.text.muted" textAlign={{ base: 'left', md: 'right' }}>
+                        <Text>Mulai: {start}</Text>
+                        <Text>Selesai: {end}</Text>
+                      </Stack>
+                    </Flex>
+                  );
+                })}
+              </Stack>
+            ) : (
+              <Text color="dd.text.muted" fontSize="12px">Belum ada ujian yang dijadwalkan.</Text>
+            )}
+          </Stack>
+        ) : activeTab === 'exams' ? (
           <Stack gap={5}>
             <Stack gap={1} mb={1}>
               <Heading size="sm" fontWeight="bold" color="dd.text">

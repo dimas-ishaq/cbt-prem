@@ -6,4 +6,9 @@ export class AppController {
   health(): string {
     return 'ok';
   }
+
+  @Get('server-time')
+  serverTime() {
+    return { serverTime: new Date().toISOString() };
+  }
 }

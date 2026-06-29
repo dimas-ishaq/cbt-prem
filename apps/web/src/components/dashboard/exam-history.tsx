@@ -7,6 +7,7 @@ import { History, RotateCcw, Award } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 
+
 interface ExamSession {
   id: string;
   startTime: string;

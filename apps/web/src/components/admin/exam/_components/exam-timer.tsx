@@ -9,9 +9,10 @@ interface Props {
   duration: number; // in minutes
   overrideEndTime?: string;
   onTimeUp: () => void;
+  serverTime?: string;
 }
 
-export function ExamTimer({ startTime, duration, overrideEndTime, onTimeUp }: Props) {
+export function ExamTimer({ startTime, duration, overrideEndTime, onTimeUp, serverTime }: Props) {
   const getEndTime = () => {
     if (overrideEndTime) {
       return new Date(overrideEndTime).getTime();
@@ -20,31 +21,50 @@ export function ExamTimer({ startTime, duration, overrideEndTime, onTimeUp }: Pr
     return start + duration * 60 * 1000;
   };
 
+  const [serverOffsetMs, setServerOffsetMs] = useState(0);
   const [timeLeft, setTimeLeft] = useState<number>(() => {
     const end = getEndTime();
-    return Math.max(0, Math.floor((end - Date.now()) / 1000));
+    const now = Date.now();
+    return Math.max(0, Math.floor((end - now) / 1000));
   });
 
   useEffect(() => {
+    if (!serverTime) {
+      setServerOffsetMs(0);
+      return;
+    }
+
+    const syncClock = () => {
+      setServerOffsetMs(new Date(serverTime).getTime() - Date.now());
+    };
+
+    syncClock();
+    const syncTimer = setInterval(syncClock, 30000);
+    return () => clearInterval(syncTimer);
+  }, [serverTime]);
+
+  useEffect(() => {
     const end = getEndTime();
+    let timer: ReturnType<typeof setInterval> | null = null;
 
-    // Initial sync
-    setTimeLeft(Math.max(0, Math.floor((end - Date.now()) / 1000)));
-
-    const timer = setInterval(() => {
-      const now = Date.now();
+    const tick = () => {
+      const now = Date.now() + serverOffsetMs;
       const remaining = Math.max(0, Math.floor((end - now) / 1000));
-      
       setTimeLeft(remaining);
 
       if (remaining <= 0) {
-        clearInterval(timer);
+        if (timer) clearInterval(timer);
         onTimeUp();
       }
-    }, 1000);
+    };
 
-    return () => clearInterval(timer);
-  }, [startTime, duration, overrideEndTime, onTimeUp]);
+    tick();
+    timer = setInterval(tick, 1000);
+
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [startTime, duration, overrideEndTime, onTimeUp, serverOffsetMs]);
 
   const hours = Math.floor(timeLeft / 3600);
   const minutes = Math.floor((timeLeft % 3600) / 60);

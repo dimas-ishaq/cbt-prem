@@ -16,21 +16,18 @@ import {
   Spinner,
 } from '@chakra-ui/react';
 import { Calendar, Clock } from 'lucide-react';
+import { classifyExam, getAvailabilityLabel, getUpcomingExams } from '@/lib/exam-utils';
 
 interface Exam {
   id: string;
   title: string;
-  description: string;
+  description?: string;
   startTime: string;
   endTime: string;
-  duration: number;
-  subject: {
-    name: string;
-  };
-  examSessions?: Array<{
-    id: string;
-    status: string;
-  }>;
+  duration?: number;
+  subject?: { name?: string };
+  teacher?: { id?: string; nip?: string | null; user?: { fullName?: string; username?: string } | null } | null;
+  examSessions?: Array<{ id?: string; status?: string }>;
 }
 
 export function ExamList() {
@@ -63,24 +60,14 @@ export function ExamList() {
   }
 
   const now = new Date();
-  const todayKey = now.toISOString().slice(0, 10);
-  const dayKey = (value: string) => new Date(value).toISOString().slice(0, 10);
-  const sameDay = (value: string) => dayKey(value) === todayKey;
-  const upcomingExams = (exams || [])
-    .filter((exam) => dayKey(exam.startTime) > todayKey)
-    .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+  const upcomingExams = getUpcomingExams(exams || [], now);
   const activeExams = (exams || []).filter((exam) => {
-    const startTime = new Date(exam.startTime);
-    const endTime = new Date(exam.endTime);
-    return sameDay(exam.startTime) || (startTime <= now && now <= endTime);
+    const status = classifyExam(exam, now);
+    return status === 'active' || status === 'ended' || status === 'completed' || status === 'locked';
   });
-  const getAvailabilityLabel = (exam: Exam) => {
-    const startTime = new Date(exam.startTime);
-    const endTime = new Date(exam.endTime);
-    if (startTime <= now && now <= endTime) return 'SEDANG BERLANGSUNG';
-    if (sameDay(exam.startTime)) return 'HARI INI';
-    return 'BELUM MULAI';
-  };
+
+  const getTeacherName = (exam: Exam) =>
+    exam.teacher?.user?.fullName || exam.teacher?.user?.username || '-';
 
   return (
     <Stack gap={6} fontFamily="body">
@@ -98,11 +85,12 @@ export function ExamList() {
                 <Flex key={exam.id} justify="space-between" align={{ base: 'stretch', md: 'center' }} gap={3} direction={{ base: 'column', md: 'row' }} p={4} borderRadius="md" bg="dd.surface.alt" border="1px solid" borderColor="dd.border">
                   <Box>
                     <Heading size="xs" color="dd.text" fontWeight="bold">{exam.title}</Heading>
-                    <Text fontSize="12px" color={textMuted}>{exam.subject.name}</Text>
+                    <Text fontSize="12px" color={textMuted}>{exam.subject?.name || '-'}</Text>
                   </Box>
                   <Stack gap={0.5} fontSize="11px" color={textMuted} textAlign={{ base: 'left', md: 'right' }}>
                     <HStack gap={1.5}><Calendar size={12} color="var(--chakra-colors-dd-brand)" /><Text>Mulai: {startTime.toLocaleString('id-ID')}</Text></HStack>
                     <HStack gap={1.5}><Clock size={12} color="var(--chakra-colors-dd-brand)" /><Text>Selesai: {endTime.toLocaleString('id-ID')}</Text></HStack>
+                    <HStack gap={1.5}><Text fontSize="11px" color={textMuted}>Guru: {getTeacherName(exam)}</Text></HStack>
                   </Stack>
                 </Flex>
               );
@@ -147,7 +135,7 @@ export function ExamList() {
               <Flex justify="space-between" align="start" mb={4} gap={2}>
                 <HStack gap={1.5} flexWrap="wrap">
                   <Badge bg="dd.status.info.bg" color="dd.status.info.text" border="1px solid" borderColor="dd.border" px={2.5} py={0.5} borderRadius="badge" textTransform="uppercase" fontWeight="bold" fontSize="10px">
-                    {exam.subject.name}
+                    {exam.subject?.name || '-'}
                   </Badge>
                   <Badge bg="dd.brand.subtle" color="dd.brand" border="1px solid" borderColor="dd.border" px={2.5} py={0.5} borderRadius="badge" textTransform="uppercase" fontWeight="bold" fontSize="10px">
                     {getAvailabilityLabel(exam)}
@@ -201,6 +189,9 @@ export function ExamList() {
                 <HStack gap={1.5}>
                   <Clock size={12} color="var(--chakra-colors-dd-text-muted)" />
                   <Text>Selesai: {endTime.toLocaleString('id-ID')}</Text>
+                </HStack>
+                <HStack gap={1.5}>
+                  <Text color="dd.text.muted">Guru: {getTeacherName(exam)}</Text>
                 </HStack>
               </Stack>
             </Box>
@@ -315,5 +306,6 @@ export function ExamList() {
         </Box>
       )}
     </SimpleGrid>
+    </Stack>
   );
 }
