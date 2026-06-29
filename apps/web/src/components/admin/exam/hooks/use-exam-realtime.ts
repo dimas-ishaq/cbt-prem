@@ -59,11 +59,13 @@ export function useExamRealtime({ socket, examId, sessionId, playSuccess, setIsL
         }
       }
     };
+    const onReconnect = () => socket.emit('join_exam', { examId });
     socket.on('session_locked', onSessionLocked);
     socket.on('session_unlocked', onSessionUnlocked);
     socket.on('session_submitted', onSessionSubmitted);
     socket.on('time_added', onTimeAdded);
     socket.on('student_time_added', onTimeAdded);
+    socket.on('connect', onReconnect);
     socket.emit('join_exam', { examId });
     return () => {
       socket.off('session_locked', onSessionLocked);
@@ -71,6 +73,7 @@ export function useExamRealtime({ socket, examId, sessionId, playSuccess, setIsL
       socket.off('session_submitted', onSessionSubmitted);
       socket.off('time_added', onTimeAdded);
       socket.off('student_time_added', onTimeAdded);
+      socket.off('connect', onReconnect);
     };
   }, [socket, sessionId, examId, finishExam, playSuccess, setIsLocked, setSessionEndTime, setShowTimeAddedDialog, setTimeAddedMinutes]);
 }

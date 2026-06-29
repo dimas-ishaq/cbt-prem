@@ -5,6 +5,12 @@ export const APP_URL  = process.env.NEXT_PUBLIC_APP_URL  || 'http://localhost:30
 export function assetUrl(url?: string): string {
   if (!url) return '';
   if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) return url;
+  
+  // Normalize `/api/uploads/` by prepending the base API URL correctly
+  if (url.startsWith('/api/uploads/')) {
+    return `${API_BASE.replace(/\/api$/, '')}${url}`;
+  }
+  
   if (url.startsWith('/uploads/')) return `${API_BASE.replace(/\/api$/, '')}${url}`;
   return url;
 }

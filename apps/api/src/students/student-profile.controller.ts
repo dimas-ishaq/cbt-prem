@@ -16,6 +16,14 @@ import { Role } from '@prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
 
+const isValidImageBuffer = (file: Express.Multer.File) => {
+  const buf = file.buffer;
+  if (file.mimetype === 'image/jpeg') return buf.length > 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[buf.length - 2] === 0xff && buf[buf.length - 1] === 0xd9;
+  if (file.mimetype === 'image/png') return buf.length > 8 && buf.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+  if (file.mimetype === 'image/webp') return buf.length > 12 && buf.subarray(0, 4).toString('ascii') === 'RIFF' && buf.subarray(8, 12).toString('ascii') === 'WEBP';
+  return false;
+};
+
 @Controller('students/profile')
 @UseGuards(JwtAuthGuard)
 export class StudentProfileController {
@@ -47,6 +55,10 @@ export class StudentProfileController {
     if (!allowedExt.includes(ext)) {
       throw new BadRequestException('Ekstensi file foto tidak valid');
     }
+
+    if (!isValidImageBuffer(file)) {
+      throw new BadRequestException('Isi file foto tidak valid');
+    }
     const filename = `${req.user.userId}${ext}`;
     const destDir = path.join(process.cwd(), 'uploads', 'photos');
 
@@ -54,10 +66,15 @@ export class StudentProfileController {
       fs.mkdirSync(destDir, { recursive: true });
     }
 
+    for (const oldExt of allowedExt) {
+      const oldPath = path.join(destDir, `${req.user.userId}${oldExt}`);
+      if (oldPath !== path.join(destDir, filename) && fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+    }
+
     const newPath = path.join(destDir, filename);
     fs.writeFileSync(newPath, file.buffer);
 
-    const photoUrl = `/uploads/photos/${filename}`;
+    const photoUrl = `/api/uploads/photos/${filename}`;
     await this.studentsService.updatePhoto(req.user.userId, photoUrl);
 
     return { photoUrl };

@@ -1,23 +1,37 @@
 import { Controller, Post, Put, Body, UnauthorizedException, UseGuards, Get, Request, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
+import { AuditService } from '../audit/audit.service';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as fs from 'fs';
 import * as path from 'path';
 
+const isValidImageBuffer = (file: Express.Multer.File) => {
+  const buf = file.buffer;
+  if (file.mimetype === 'image/jpeg') return buf.length > 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[buf.length - 2] === 0xff && buf[buf.length - 1] === 0xd9;
+  if (file.mimetype === 'image/png') return buf.length > 8 && buf.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+  if (file.mimetype === 'image/webp') return buf.length > 12 && buf.subarray(0, 4).toString('ascii') === 'RIFF' && buf.subarray(8, 12).toString('ascii') === 'WEBP';
+  return false;
+};
+
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService, private auditService: AuditService) {}
 
   @Post('login')
   @UseGuards(ThrottlerGuard)
-  async login(@Body() body: any) {
+  async login(@Body() body: any, @Request() req: any) {
+    const ip = req.ip || req.connection?.remoteAddress;
+    const userAgent = req.headers?.['user-agent'];
     const user = await this.authService.validateUser(body.username, body.password);
     if (!user) {
+      await this.auditService.write({ action: 'LOGIN_FAILED', resource: 'Auth', ip, userAgent });
       throw new UnauthorizedException('Invalid credentials');
     }
-    return this.authService.login(user);
+    const result = await this.authService.login(user);
+    await this.auditService.write({ userId: user.id, action: 'LOGIN_SUCCESS', resource: 'Auth', ip, userAgent });
+    return result;
   }
 
   @Post('refresh')
@@ -57,6 +71,10 @@ export class AuthController {
     if (!allowedExt.includes(ext)) {
       throw new BadRequestException('Ekstensi file foto tidak valid');
     }
+
+    if (!isValidImageBuffer(file)) {
+      throw new BadRequestException('Isi file foto tidak valid');
+    }
     const filename = `user-${req.user.userId}${ext}`;
     const destDir = path.join(process.cwd(), 'uploads', 'photos');
 
@@ -64,10 +82,15 @@ export class AuthController {
       fs.mkdirSync(destDir, { recursive: true });
     }
 
+    for (const oldExt of allowedExt) {
+      const oldPath = path.join(destDir, `user-${req.user.userId}${oldExt}`);
+      if (oldPath !== path.join(destDir, filename) && fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+    }
+
     const newPath = path.join(destDir, filename);
     fs.writeFileSync(newPath, file.buffer);
 
-    const photoUrl = `/uploads/photos/${filename}`;
+    const photoUrl = `/api/uploads/photos/${filename}`;
     await this.authService.updateProfile(req.user.userId, { photo: photoUrl });
 
     return { photoUrl };

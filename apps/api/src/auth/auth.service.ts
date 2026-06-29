@@ -22,7 +22,7 @@ export class AuthService {
   }
 
   async login(user: any) {
-    const payload = { username: user.username, sub: user.id, role: user.role };
+    const payload = { username: user.username, sub: user.id, role: user.role, authVersion: user.authVersion ?? 0 };
     return {
       access_token: this.jwtService.sign(payload),
       refresh_token: this.jwtService.sign(payload, {
@@ -46,7 +46,7 @@ export class AuthService {
       const user = await this.usersService.findById(payload.sub);
       if (!user) throw new UnauthorizedException();
       
-      const newPayload = { username: user.username, sub: user.id, role: user.role };
+      const newPayload = { username: user.username, sub: user.id, role: user.role, authVersion: user.authVersion ?? 0 };
       return {
         access_token: this.jwtService.sign(newPayload),
       };

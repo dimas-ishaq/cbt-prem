@@ -319,20 +319,24 @@ export function ExamContainer({ examId }: Props) {
   // Enforce fullscreen if active session and forceFullscreen is enabled
   if (sessionId && exam?.forceFullscreen && !isFullscreen) {
     return (
-      <Flex position="fixed" inset={0} zIndex={99999} bg="gray.950" align="center" justify="center" p={6} textAlign="center">
-        <Box maxW="md" bg="gray.900" borderRadius="3xl" p={8} border="1px solid" borderColor="indigo.500/20" boxShadow="2xl">
-          <Flex w={16} h={16} bg="indigo.500/10" borderRadius="full" align="center" justify="center" mx="auto" mb={6} border="2px solid" borderColor="indigo.500/30">
-            <Maximize className="text-indigo-400 animate-pulse" size={32} />
+      <Flex position="fixed" inset={0} zIndex={99999} bg={{ base: '#F4F5F7', _dark: '#1B1B1B' }} align="center" justify="center" p={6} textAlign="center" fontFamily="Inter, -apple-system, BlinkMacSystemFont, sans-serif">
+        <Box maxW="md" bg={{ base: '#FFFFFF', _dark: '#242424' }} borderRadius="md" p={8} border="1px solid" borderColor={{ base: '#E1E4E8', _dark: '#3D3D3D' }} boxShadow="0 1px 4px rgba(0,0,0,0.05)">
+          <Flex w={16} h={16} bg="rgba(156, 85, 232, 0.15)" borderRadius="full" align="center" justify="center" mx="auto" mb={6} border="2px solid" borderColor="rgba(156, 85, 232, 0.3)">
+            <Maximize color="#9C55E8" className="animate-pulse" size={32} />
           </Flex>
-          <Heading size="lg" fontWeight="black" color="white" mb={3}>Wajib Mode Layar Penuh</Heading>
-          <Text color="gray.300" fontSize="sm" lineHeight="relaxed" mb={8}>
+          <Heading size="md" fontWeight="bold" color={{ base: '#1F2328', _dark: '#E0E0E0' }} mb={3}>Wajib Mode Layar Penuh</Heading>
+          <Text color={{ base: '#57606A', _dark: '#8A8A8A' }} fontSize="13px" lineHeight="1.4" mb={8}>
             Untuk menjaga integritas dan keamanan ujian, Anda wajib menggunakan mode layar penuh. Pengerjaan ujian akan ditangguhkan sampai Anda masuk ke mode ini.
           </Text>
           <Button
-            colorPalette="indigo"
+            bg="#774AA4"
+            color="#ffffff"
             size="lg"
-            borderRadius="2xl"
+            borderRadius="md"
             w="full"
+            fontSize="14px"
+            fontWeight="bold"
+            _hover={{ bg: '#6A3E92' }}
             onClick={() => {
               document.documentElement.requestFullscreen().catch((err) => {
                 console.error('Failed to enter fullscreen:', err);
@@ -346,7 +350,7 @@ export function ExamContainer({ examId }: Props) {
     );
   }
 
-  if (isRestoringSession) return <Flex align="center" justify="center" minH="screen"><Spinner size="xl" /></Flex>;
+  if (isRestoringSession) return <Flex align="center" justify="center" minH="screen" bg={{ base: '#F4F5F7', _dark: '#1B1B1B' }}><Spinner size="xl" color="#9C55E8" /></Flex>;
   if (!sessionId) {
     return (
       <ExamRulesGate
@@ -364,9 +368,9 @@ export function ExamContainer({ examId }: Props) {
   }
 
   return (
-    <Box minH="screen" bg="gray.50">
+    <Box minH="screen" bg={{ base: '#F4F5F7', _dark: '#1B1B1B' }}>
       <ExamHeader title={exam.title} subjectName={exam.subject?.name} startTime={timerStartTime} duration={exam.duration} overrideEndTime={timerEndTime} onTimeUp={finishExam} onFinish={handleManualFinishTrigger} disableFinish={unansweredCount > 0} />
-      <Box flex={1} p={8}>
+      <Box flex={1} p={6}>
         <ExamWorkspace
           currentQuestion={currentQuestion}
           currentQuestionIndex={currentQuestionIndex}

@@ -14,24 +14,34 @@ type NotificationPayload = {
   createdAt: string;
 };
 
+let socketSingleton: Socket | null = null;
+
 export function useSocket(): Socket | null {
-  const [socket, setSocket] = useState<Socket | null>(null);
+  const [socket, setSocket] = useState<Socket | null>(socketSingleton);
   const token = useAuthStore((s) => s.access_token);
 
   useEffect(() => {
     if (!token) {
+      socketSingleton?.disconnect();
+      socketSingleton = null;
       setSocket(null);
       return;
     }
 
-    const s = io(process.env.NEXT_PUBLIC_WS_URL || WS_URL, {
+    if (socketSingleton) {
+      setSocket(socketSingleton);
+      return;
+    }
+
+    socketSingleton = io(process.env.NEXT_PUBLIC_WS_URL || WS_URL, {
       auth: { token },
     });
 
-    setSocket(s);
+    setSocket(socketSingleton);
 
     return () => {
-      s.disconnect();
+      socketSingleton?.disconnect();
+      socketSingleton = null;
       setSocket(null);
     };
   }, [token]);

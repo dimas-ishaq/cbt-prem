@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import { User, Prisma, Role } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
@@ -9,7 +10,7 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private auditService: AuditService) {}
 
   // ─── Auth helpers ─────────────────────────────────────────────────────────
   async findOne(username: string): Promise<User | null> {
@@ -88,7 +89,7 @@ export class UsersService {
     const hashedPassword = await bcrypt.hash(dto.password, 10);
     const role = dto.role ?? Role.SISWA;
 
-    return this.prisma.user.create({
+    const created = await this.prisma.user.create({
       data: {
         username: dto.username,
         email: dto.email || `${dto.username}@cbt.enterprise`,
@@ -118,10 +119,24 @@ export class UsersService {
         createdAt: true,
       },
     });
+    await this.auditService.write({ action: 'USER_CREATE', resource: 'User', resourceId: created.id, after: created });
+    return created;
+  }
+
+  private async assertRoleUpdateAllowed(actorRole: Role, targetUser: User, nextRole?: Role) {
+    if (!nextRole || nextRole === targetUser.role) return;
+    if (targetUser.id === targetUser.id && nextRole !== targetUser.role) {
+      // ponytail: actor context not passed yet; block self-role edits at controller/service boundary.
+      if (nextRole !== targetUser.role) throw new ForbiddenException('Tidak boleh ubah role sendiri');
+    }
+    if (actorRole !== Role.SUPER_ADMIN) {
+      if (nextRole === Role.SUPER_ADMIN) throw new ForbiddenException('Tidak boleh assign Super Admin');
+      if (actorRole !== Role.ADMIN_SEKOLAH) throw new ForbiddenException('Tidak punya izin ubah role');
+    }
   }
 
   /** Update user profile (name, email) */
-  async updateUser(id: string, dto: UpdateUserDto) {
+  async updateUser(id: string, dto: UpdateUserDto, actorRole?: Role, actorUserId?: string) {
     const user = await this.findUserById(id);
 
     if (dto.email) {
@@ -131,7 +146,10 @@ export class UsersService {
       if (existing) throw new ConflictException('Email sudah digunakan oleh pengguna lain');
     }
 
-    return this.prisma.user.update({
+    if (actorUserId && actorUserId === id) {
+      throw new ForbiddenException('Tidak boleh ubah akses sendiri');
+    }
+    const updated = await this.prisma.user.update({
       where: { id },
       data: {
         ...(dto.fullName ? { fullName: dto.fullName } : {}),
@@ -145,6 +163,7 @@ export class UsersService {
               },
             }
           : {}),
+        authVersion: { increment: 1 },
       },
       select: {
         id: true,
@@ -155,6 +174,8 @@ export class UsersService {
         isActive: true,
       },
     });
+    await this.auditService.write({ userId: id, action: 'USER_UPDATE', resource: 'User', resourceId: id, after: updated });
+    return updated;
   }
 
   /** Update self profile (name, email, password) */
@@ -194,18 +215,21 @@ export class UsersService {
   /** Toggle user active/inactive */
   async toggleActive(id: string) {
     const user = await this.findUserById(id);
-    return this.prisma.user.update({
+    const updated = await this.prisma.user.update({
       where: { id },
-      data: { isActive: !user.isActive },
+      data: { isActive: !user.isActive, authVersion: { increment: 1 } },
       select: { id: true, isActive: true },
     });
+    await this.auditService.write({ userId: id, action: 'USER_TOGGLE_ACTIVE', resource: 'User', resourceId: id, after: updated });
+    return updated;
   }
 
   /** Reset password by admin */
   async resetPassword(id: string, dto: ResetPasswordDto) {
     await this.findUserById(id);
     const hashed = await bcrypt.hash(dto.newPassword, 10);
-    await this.prisma.user.update({ where: { id }, data: { password: hashed } });
+    await this.prisma.user.update({ where: { id }, data: { password: hashed, authVersion: { increment: 1 } } });
+    await this.auditService.write({ userId: id, action: 'USER_RESET_PASSWORD', resource: 'User', resourceId: id });
     return { success: true, message: 'Password berhasil direset' };
   }
 
@@ -262,7 +286,9 @@ export class UsersService {
       });
 
       // 5. Finally delete the User (this cascades to UserRole, NotificationRecipient, NotificationPreference)
-      return tx.user.delete({ where: { id } });
+      const deleted = await tx.user.delete({ where: { id } });
+      await tx.auditLog.create({ data: { userId: id, action: 'USER_DELETE', resource: 'User', resourceId: id } });
+      return deleted;
     });
   }
 

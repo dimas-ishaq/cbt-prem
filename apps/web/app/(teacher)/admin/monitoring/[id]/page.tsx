@@ -267,7 +267,10 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
 
     setConnection(socket.connected ? 'connected' : 'connecting');
 
-    const onConnect = () => setConnection('connected');
+    const onConnect = () => {
+      setConnection('connected');
+      socket.emit('join_proctor', { examId: id });
+    };
     const onDisconnect = () => setConnection('disconnected');
 
     socket.on('connect', onConnect);
@@ -381,11 +384,13 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
         });
         playSuccess();
 
+        const nextEndTime = pickLatestTime(d.newEndTime, d.endTime) || undefined;
         setStudents((prev) => {
           const s = prev[d.studentId];
           if (!s) return prev;
-          return { ...prev, [d.studentId]: { ...s, endTime: d.newEndTime } };
+          return { ...prev, [d.studentId]: { ...s, endTime: nextEndTime || s.endTime } };
         });
+        void syncSessions();
       },
     };
 

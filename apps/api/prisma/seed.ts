@@ -1025,14 +1025,14 @@ async function main() {
   // ========================================================================
   // 19. AUDIT LOGS (7)
   // ========================================================================
-  const auditLogsData: { userId: string; action: string; module: string }[] = [
-    { userId: superUsers[0].id, action: 'LOGIN', module: 'Auth' },
-    { userId: superUsers[0].id, action: 'SEED_DATABASE', module: 'System' },
-    { userId: teacherUsers[0].id, action: 'CREATE_EXAM', module: 'Exam' },
-    { userId: teacherUsers[1].id, action: 'CREATE_QUESTION', module: 'Question' },
-    { userId: studentUsers[0].id, action: 'START_EXAM', module: 'ExamSession' },
-    { userId: studentUsers[0].id, action: 'SUBMIT_ANSWER', module: 'Answer' },
-    { userId: superUsers[1].id, action: 'VIEW_REPORT', module: 'Report' },
+  const auditLogsData: { userId: string; action: string; resource: string }[] = [
+    { userId: superUsers[0].id, action: 'LOGIN', resource: 'Auth' },
+    { userId: superUsers[0].id, action: 'SEED_DATABASE', resource: 'System' },
+    { userId: teacherUsers[0].id, action: 'CREATE_EXAM', resource: 'Exam' },
+    { userId: teacherUsers[1].id, action: 'CREATE_QUESTION', resource: 'Question' },
+    { userId: studentUsers[0].id, action: 'START_EXAM', resource: 'ExamSession' },
+    { userId: studentUsers[0].id, action: 'SUBMIT_ANSWER', resource: 'Answer' },
+    { userId: superUsers[1].id, action: 'VIEW_REPORT', resource: 'Report' },
   ];
 
   await prisma.auditLog.createMany({ data: auditLogsData });

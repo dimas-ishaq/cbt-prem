@@ -1,6 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { ExamSessionsService } from './exam-sessions.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 describe('ExamSessionsService', () => {
   const prisma = {
@@ -11,22 +12,13 @@ describe('ExamSessionsService', () => {
     examQuestion: { findUnique: jest.fn() },
     $transaction: jest.fn(async (fn) => fn(prisma)),
   } as any;
-
-  const notif = { create: jest.fn() };
+  const notif = { create: jest.fn() } as any;
   let service: ExamSessionsService;
 
   beforeAll(async () => {
     const mod = await Test.createTestingModule({
-      providers: [
-        ExamSessionsService,
-        { provide: PrismaService, useValue: prisma },
-        { provide: 'NotificationsService', useValue: notif },
-      ],
-    })
-      .overrideProvider('NotificationsService')
-      .useValue(notif)
-      .compile();
-
+      providers: [ExamSessionsService, { provide: PrismaService, useValue: prisma }, { provide: NotificationsService, useValue: notif }],
+    }).compile();
     service = mod.get(ExamSessionsService);
     (service as any).notificationsService = notif;
   });
@@ -50,9 +42,7 @@ describe('ExamSessionsService', () => {
   });
 
   it('finishSession reject non-IP/LOCKED status', async () => {
-    prisma.examSession.findUnique.mockResolvedValue({
-      id: 'sess1', status: 'SUBMITTED', exam: {}, student: { user: {} }, answers: [], examId: 'e1',
-    });
+    prisma.examSession.findUnique.mockResolvedValue({ id: 'sess1', status: 'SUBMITTED', exam: {}, student: { user: {} }, answers: [], examId: 'e1' });
     await expect(service.finishSession('sess1')).rejects.toThrow('Session is not in progress or locked');
   });
 });

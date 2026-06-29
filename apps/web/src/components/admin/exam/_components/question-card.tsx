@@ -67,7 +67,7 @@ export function QuestionCard({ question, index, onAnswer, selectedAnswer, isFlag
     switch (question.mediaType) {
       case 'image':
         return (
-          <Box mb={6} borderRadius="2xl" overflow="hidden" border="1px solid" borderColor="gray.150" maxW="2xl" bg="white" boxShadow="xs">
+          <Box mb={5} borderRadius="md" overflow="hidden" border="1px solid" borderColor={{ base: '#E1E4E8', _dark: '#3D3D3D' }} maxW="2xl" bg={{ base: '#F9FAFC', _dark: '#1B1B1B' }} boxShadow="sm">
             <Image 
               src={question.mediaUrl} 
               alt="Question media" 
@@ -79,8 +79,8 @@ export function QuestionCard({ question, index, onAnswer, selectedAnswer, isFlag
         );
       case 'audio':
         return (
-          <Box mb={6} p={4} bg="gray.50/50" borderRadius="2xl" border="1px solid" borderColor="gray.150" maxW="2xl">
-            <Text fontSize="2xs" fontWeight="bold" color="gray.400" mb={2.5} textTransform="uppercase" letterSpacing="wider">
+          <Box mb={5} p={4} bg={{ base: '#F9FAFC', _dark: '#1B1B1B' }} borderRadius="md" border="1px solid" borderColor={{ base: '#E1E4E8', _dark: '#3D3D3D' }} maxW="2xl">
+            <Text fontSize="10px" fontWeight="bold" color={{ base: '#57606A', _dark: '#8A8A8A' }} mb={2.5} textTransform="uppercase" letterSpacing="wider">
               Lampiran Audio:
             </Text>
             <audio controls className="w-full">
@@ -91,7 +91,7 @@ export function QuestionCard({ question, index, onAnswer, selectedAnswer, isFlag
         );
       case 'video':
         return (
-          <Box mb={6} borderRadius="2xl" overflow="hidden" border="1px solid" borderColor="gray.150" bg="black" aspectRatio={16/9} maxW="2xl" boxShadow="sm">
+          <Box mb={5} borderRadius="md" overflow="hidden" border="1px solid" borderColor={{ base: '#E1E4E8', _dark: '#3D3D3D' }} bg={{ base: '#F9FAFC', _dark: '#1B1B1B' }} aspectRatio={16/9} maxW="2xl" boxShadow="sm">
             <video controls className="w-full h-full">
               <source src={question.mediaUrl} />
               Browser Anda tidak mendukung pemutar video.
@@ -114,7 +114,7 @@ export function QuestionCard({ question, index, onAnswer, selectedAnswer, isFlag
             width="full"
             disabled={isDisabled}
           >
-            <Stack gap={3.5}>
+            <Stack gap={2.5}>
               {question.options.map((option, idx) => {
                 const label = String.fromCharCode(65 + idx);
                 const isSelected = selectedAnswer === option.id;
@@ -125,43 +125,42 @@ export function QuestionCard({ question, index, onAnswer, selectedAnswer, isFlag
                     as="label"
                     display="flex"
                     alignItems="center"
-                    p={4}
+                    p={3.5}
                     border="1px solid"
-                    borderRadius="xl"
+                    borderRadius="md"
                     cursor={isDisabled ? 'not-allowed' : 'pointer'}
-                    transition="all 0.2s"
-                    borderColor={isSelected ? 'indigo.650' : 'gray.200'}
-                    bg={isSelected ? 'indigo.50/40' : 'white'}
-                    _hover={isSelected || isDisabled ? {} : { bg: 'gray.50/60', borderColor: 'gray.300' }}
-                    boxShadow={isSelected ? '0 0 0 2px rgba(79, 70, 229, 0.1)' : 'none'}
+                    transition="all 0.12s ease"
+                    borderColor={isSelected ? '#9C55E8' : { base: '#E1E4E8', _dark: '#3D3D3D' }}
+                    bg={isSelected ? { base: 'rgba(156, 85, 232, 0.05)', _dark: 'rgba(156, 85, 232, 0.08)' } : { base: '#FFFFFF', _dark: '#1B1B1B' }}
+                    _hover={isSelected || isDisabled ? {} : { bg: { base: '#F9FAFC', _dark: '#2D2D2D' }, borderColor: { base: '#D1D5DB', _dark: '#4D4D4D' } }}
+                    boxShadow={isSelected ? '0 0 0 1px #9C55E8' : 'none'}
                     disabled={isDisabled}
                   >
                     <RadioGroup.ItemHiddenInput />
-                    <RadioGroup.ItemIndicator colorPalette="indigo" mr={3} />
+                    <RadioGroup.ItemIndicator colorPalette="purple" mr={3} />
                     <Flex
                       flexShrink={0}
-                      w={8.5}
-                      h={8.5}
+                      w="32px"
+                      h="32px"
                       align="center"
                       justify="center"
-                      borderRadius="xl"
+                      borderRadius="md"
                       border="1px solid"
                       mr={4}
                       fontWeight="bold"
-                      fontSize="sm"
-                      transition="all 0.2s"
-                      bg={isSelected ? 'indigo.600' : 'white'}
-                      color={isSelected ? 'white' : 'gray.500'}
-                      borderColor={isSelected ? 'indigo.650' : 'gray.250'}
-                      boxShadow={isSelected ? 'md' : 'none'}
+                      fontSize="13px"
+                      transition="all 0.12s ease"
+                      bg={isSelected ? '#9C55E8' : { base: '#F9FAFC', _dark: '#2D2D2D' }}
+                      color={isSelected ? '#ffffff' : { base: '#57606A', _dark: '#8A8A8A' }}
+                      borderColor={isSelected ? '#9C55E8' : { base: '#E1E4E8', _dark: '#3D3D3D' }}
                     >
                       {label}
                     </Flex>
                     <RadioGroup.ItemText
-                      color="gray.700"
-                      fontSize="sm"
+                      color={{ base: '#1F2328', _dark: '#E0E0E0' }}
+                      fontSize="13px"
                       fontWeight="semibold"
-                      lineHeight="relaxed"
+                      lineHeight="1.4"
                       as="span"
                       dangerouslySetInnerHTML={{ __html: option.content }}
                     />
@@ -174,8 +173,8 @@ export function QuestionCard({ question, index, onAnswer, selectedAnswer, isFlag
 
       case 'MULTIPLE_RESPONSE':
         return (
-          <Stack gap={3.5}>
-            <Text fontSize="2xs" fontWeight="bold" color="gray.400" mb={2.5} textTransform="uppercase" letterSpacing="wider">
+          <Stack gap={2.5}>
+            <Text fontSize="10px" fontWeight="bold" color={{ base: '#57606A', _dark: '#8A8A8A' }} mb={1} textTransform="uppercase" letterSpacing="wider">
               Pilih satu atau lebih jawaban:
             </Text>
             {question.options.map((option, idx) => {
@@ -189,43 +188,42 @@ export function QuestionCard({ question, index, onAnswer, selectedAnswer, isFlag
                   as="label"
                   display="flex"
                   alignItems="center"
-                  p={4}
+                  p={3.5}
                   border="1px solid"
-                  borderRadius="xl"
+                  borderRadius="md"
                   cursor={isDisabled ? 'not-allowed' : 'pointer'}
-                  transition="all 0.2s"
-                  borderColor={isSelected ? 'indigo.650' : 'gray.200'}
-                  bg={isSelected ? 'indigo.50/40' : 'white'}
-                  _hover={isSelected || isDisabled ? {} : { bg: 'gray.50/60', borderColor: 'gray.300' }}
-                  boxShadow={isSelected ? '0 0 0 2px rgba(79, 70, 229, 0.1)' : 'none'}
+                  transition="all 0.12s ease"
+                  borderColor={isSelected ? '#9C55E8' : { base: '#E1E4E8', _dark: '#3D3D3D' }}
+                  bg={isSelected ? { base: 'rgba(156, 85, 232, 0.05)', _dark: 'rgba(156, 85, 232, 0.08)' } : { base: '#FFFFFF', _dark: '#1B1B1B' }}
+                  _hover={isSelected || isDisabled ? {} : { bg: { base: '#F9FAFC', _dark: '#2D2D2D' }, borderColor: { base: '#D1D5DB', _dark: '#4D4D4D' } }}
+                  boxShadow={isSelected ? '0 0 0 1px #9C55E8' : 'none'}
                   disabled={isDisabled}
                 >
                   <Checkbox.HiddenInput />
-                  <Checkbox.Control colorPalette="indigo" mr={3} />
+                  <Checkbox.Control colorPalette="purple" mr={3} borderColor={{ base: '#E1E4E8', _dark: '#3D3D3D' }} />
                   <Flex
                     flexShrink={0}
-                    w={8.5}
-                    h={8.5}
+                    w="32px"
+                    h="32px"
                     align="center"
                     justify="center"
-                    borderRadius="xl"
+                    borderRadius="md"
                     border="1px solid"
                     mr={4}
                     fontWeight="bold"
-                    fontSize="sm"
-                    transition="all 0.2s"
-                    bg={isSelected ? 'indigo.600' : 'white'}
-                    color={isSelected ? 'white' : 'gray.500'}
-                    borderColor={isSelected ? 'indigo.650' : 'gray.250'}
-                    boxShadow={isSelected ? 'md' : 'none'}
+                    fontSize="13px"
+                    transition="all 0.12s ease"
+                    bg={isSelected ? '#9C55E8' : { base: '#F9FAFC', _dark: '#2D2D2D' }}
+                    color={isSelected ? '#ffffff' : { base: '#57606A', _dark: '#8A8A8A' }}
+                    borderColor={isSelected ? '#9C55E8' : { base: '#E1E4E8', _dark: '#3D3D3D' }}
                   >
                     {label}
                   </Flex>
                   <Checkbox.Label
-                    color="gray.700"
-                    fontSize="sm"
+                    color={{ base: '#1F2328', _dark: '#E0E0E0' }}
+                    fontSize="13px"
                     fontWeight="semibold"
-                    lineHeight="relaxed"
+                    lineHeight="1.4"
                     as="span"
                     dangerouslySetInnerHTML={{ __html: option.content }}
                   />
@@ -237,29 +235,29 @@ export function QuestionCard({ question, index, onAnswer, selectedAnswer, isFlag
 
       case 'ESSAY':
         return (
-          <Stack gap={4}>
+          <Stack gap={3}>
             <Textarea
               w="full"
-              h={64}
+              h={56}
               p={4}
+              bg={{ base: '#F9FAFC', _dark: '#1B1B1B' }}
               border="1px solid"
-              borderColor="gray.200"
-              borderRadius="xl"
+              borderColor={{ base: '#E1E4E8', _dark: '#3D3D3D' }}
+              borderRadius="md"
               outline="none"
               resize="none"
-              color="gray.700"
-              lineHeight="relaxed"
-              fontSize="sm"
+              color={{ base: '#1F2328', _dark: '#E0E0E0' }}
+              lineHeight="1.4"
+              fontSize="13px"
               fontWeight="medium"
-              bg="gray.50/20"
-              _focus={{ ring: '4px', ringColor: 'indigo.50', borderColor: 'indigo.650' }}
+              _focus={{ borderColor: '#9C55E8', boxShadow: '0 0 0 1px #9C55E8' }}
               placeholder="Tuliskan lembar jawaban esai Anda di sini secara lengkap..."
               value={essayText}
               disabled={isDisabled}
               onChange={(e) => !isDisabled && setEssayText(e.target.value)}
               onBlur={() => !isDisabled && onAnswer(essayText)}
             />
-            <Flex justify="between" align="center" fontSize="2xs" color="gray.400" fontWeight="semibold" px={1}>
+            <Flex justify="space-between" align="center" fontSize="11px" color={{ base: '#57606A', _dark: '#8A8A8A' }} fontWeight="semibold" px={1}>
               <Text>Jawaban disimpan otomatis saat Anda beralih nomor atau mengklik area luar.</Text>
               <Text>{essayText.length} karakter</Text>
             </Flex>
@@ -267,47 +265,60 @@ export function QuestionCard({ question, index, onAnswer, selectedAnswer, isFlag
         );
 
       default:
-        return <Text color="red.500" fontWeight="bold">Tipe soal tidak didukung: {question.type}</Text>;
+        return <Text color="#EF4444" fontWeight="bold" fontSize="13px">Tipe soal tidak didukung: {question.type}</Text>;
     }
   };
 
   return (
-    <Box bg="white" p={8} borderRadius="2xl" boxShadow="sm" border="1px solid" borderColor="gray.100" position="relative">
+    <Box
+      bg={{ base: '#FFFFFF', _dark: '#242424' }}
+      p={6}
+      borderRadius="md"
+      boxShadow="0 1px 4px rgba(0,0,0,0.05)"
+      border="1px solid"
+      borderColor={{ base: '#E1E4E8', _dark: '#3D3D3D' }}
+      position="relative"
+      fontFamily="Inter, -apple-system, BlinkMacSystemFont, sans-serif"
+    >
       {/* Question Header Status */}
-      <Flex justify="between" align="center" mb={6}>
-        <Badge colorPalette="indigo" px={3} py={1.5} borderRadius="lg" variant="subtle" fontWeight="bold" fontSize="2xs" textTransform="uppercase" letterSpacing="wider">
+      <Flex justify="space-between" align="center" mb={5}>
+        <Badge bg="rgba(156, 85, 232, 0.15)" color="#9C55E8" border="1px solid" borderColor="rgba(156, 85, 232, 0.3)" px={3} py={1} borderRadius="md" fontWeight="bold" fontSize="11px" textTransform="uppercase" letterSpacing="wider">
           Soal No. {index + 1}
         </Badge>
         <Flex align="center" gap={3}>
-          <Badge bg="gray.100" color="gray.600" px={2.5} py={1} borderRadius="md" fontSize="2xs" fontWeight="extrabold" textTransform="uppercase" letterSpacing="wider">
+          <Badge bg={{ base: '#F9FAFC', _dark: '#1B1B1B' }} color={{ base: '#57606A', _dark: '#8A8A8A' }} border="1px solid" borderColor={{ base: '#E1E4E8', _dark: '#3D3D3D' }} px={2.5} py={1} borderRadius="md" fontSize="10px" fontWeight="bold" textTransform="uppercase" letterSpacing="wider">
             {question.type.replace('_', ' ')}
           </Badge>
           <Button
             onClick={onToggleFlag}
             size="sm"
-            variant={isFlagged ? 'subtle' : 'outline'}
-            colorPalette={isFlagged ? 'amber' : 'gray'}
+            bg={isFlagged ? '#F5A623' : { base: '#F9FAFC', _dark: '#1B1B1B' }}
+            color={isFlagged ? '#ffffff' : { base: '#57606A', _dark: '#8A8A8A' }}
+            border="1px solid"
+            borderColor={isFlagged ? '#F5A623' : { base: '#E1E4E8', _dark: '#3D3D3D' }}
             fontWeight="bold"
-            fontSize="xs"
-            borderRadius="lg"
+            fontSize="12px"
+            borderRadius="md"
             px={3}
-            py={1.5}
+            height="32px"
             cursor="pointer"
+            _hover={{ bg: isFlagged ? '#fbb33c' : { base: '#E1E4E8', _dark: '#2D2D2D' }, borderColor: isFlagged ? '#fbb33c' : { base: '#D1D5DB', _dark: '#4D4D4D' } }}
+            transition="all 0.15s ease"
           >
-            <Bookmark size={14} className={isFlagged ? 'fill-amber-500 text-amber-600' : 'text-gray-450'} />
-            <Text color={isFlagged ? 'amber.700' : 'gray.600'}>Ragu-Ragu</Text>
+            <Bookmark size={12} style={{ marginRight: 6 }} className={isFlagged ? 'fill-white text-white' : 'text-gray-450'} />
+            Ragu-Ragu
           </Button>
         </Flex>
       </Flex>
 
       {/* Question Content */}
-      <Box mb={8}>
+      <Box mb={6}>
         {renderMedia()}
         <Text 
-          fontSize="md"
-          color="gray.850"
+          fontSize="14px"
+          color={{ base: '#1F2328', _dark: '#E0E0E0' }}
           fontWeight="semibold"
-          lineHeight="relaxed"
+          lineHeight="1.4"
           dangerouslySetInnerHTML={{ __html: question.content }}
         />
       </Box>

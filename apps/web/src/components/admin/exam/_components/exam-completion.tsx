@@ -39,11 +39,12 @@ export function ExamCompletion({ subjectName, examTitle }: ExamCompletionProps) 
       position="fixed"
       inset={0}
       zIndex={99999}
-      bg="linear-gradient(135deg, #0f172a 0%, #1e293b 40%, #0f172a 100%)"
+      bg={{ base: '#F4F5F7', _dark: '#1B1B1B' }}
       align="center"
       justify="center"
       p={4}
       overflow="hidden"
+      fontFamily="Inter, -apple-system, BlinkMacSystemFont, sans-serif"
     >
       {/* Decorative background circles */}
       <Box
@@ -53,8 +54,8 @@ export function ExamCompletion({ subjectName, examTitle }: ExamCompletionProps) 
         w="500px"
         h="500px"
         borderRadius="full"
-        bg="emerald.500"
-        opacity={0.03}
+        bg="#1ABE71"
+        opacity={{ base: 0.02, _dark: 0.04 }}
         filter="blur(80px)"
       />
       <Box
@@ -64,8 +65,8 @@ export function ExamCompletion({ subjectName, examTitle }: ExamCompletionProps) 
         w="400px"
         h="400px"
         borderRadius="full"
-        bg="indigo.500"
-        opacity={0.04}
+        bg="#9C55E8"
+        opacity={{ base: 0.02, _dark: 0.04 }}
         filter="blur(80px)"
       />
 
@@ -77,53 +78,50 @@ export function ExamCompletion({ subjectName, examTitle }: ExamCompletionProps) 
       >
         {/* Animated check icon */}
         <Flex
-          w={24}
-          h={24}
-          bg="emerald.500/15"
+          w={20}
+          h={20}
+          bg="rgba(26, 190, 113, 0.15)"
           borderRadius="full"
           align="center"
           justify="center"
           mx="auto"
-          mb={8}
-          border="3px solid"
-          borderColor="emerald.400/40"
-          boxShadow="0 0 60px rgba(16, 185, 129, 0.15)"
+          mb={6}
+          border="2px solid"
+          borderColor="rgba(26, 190, 113, 0.3)"
+          boxShadow="0 0 40px rgba(26, 190, 113, 0.1)"
           css={{ animation: `${scaleIn} 0.7s cubic-bezier(0.34, 1.56, 0.64, 1), ${float} 3s ease-in-out 1s infinite` }}
         >
-          <CheckCircle size={48} color="#34d399" strokeWidth={2.5} />
+          <CheckCircle size={40} color="#1ABE71" strokeWidth={2.5} />
         </Flex>
 
         {/* Sparkle accent */}
         <Flex
           justify="center"
           gap={1}
-          mb={4}
+          mb={3}
           css={{ animation: `${fadeUp} 0.6s ease-out 0.2s both` }}
         >
-          <Sparkles size={16} color="#fbbf24" />
+          <Sparkles size={14} color="#F5A623" />
           <Text
-            fontSize="xs"
+            fontSize="11px"
             fontWeight="bold"
             textTransform="uppercase"
             letterSpacing="0.2em"
-            color="amber.400"
+            color="#F5A623"
           >
             Ujian Selesai
           </Text>
-          <Sparkles size={16} color="#fbbf24" />
+          <Sparkles size={14} color="#F5A623" />
         </Flex>
 
         {/* Main heading */}
         <Heading
-          size="2xl"
-          fontWeight="black"
+          size="xl"
+          fontWeight="700"
           mb={3}
+          color={{ base: '#1F2328', _dark: '#E0E0E0' }}
           css={{
             animation: `${fadeUp} 0.6s ease-out 0.3s both`,
-            background: 'linear-gradient(135deg, #ffffff 0%, #94a3b8 100%)',
-            backgroundClip: 'text',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
           }}
         >
           Terima Kasih! 🎉
@@ -131,8 +129,8 @@ export function ExamCompletion({ subjectName, examTitle }: ExamCompletionProps) 
 
         {/* Subject info */}
         <Text
-          fontSize="lg"
-          color="gray.300"
+          fontSize="15px"
+          color={{ base: '#57606A', _dark: '#8A8A8A' }}
           lineHeight="tall"
           mb={3}
           css={{ animation: `${fadeUp} 0.6s ease-out 0.4s both` }}
@@ -143,27 +141,20 @@ export function ExamCompletion({ subjectName, examTitle }: ExamCompletionProps) 
         {subjectName && (
           <Box
             display="inline-block"
-            px={5}
-            py={2}
+            px={4}
+            py={1.5}
             mb={6}
-            borderRadius="2xl"
-            bg="whiteAlpha.100"
+            borderRadius="md"
+            bg={{ base: '#FFFFFF', _dark: 'rgba(255, 255, 255, 0.06)' }}
             border="1px solid"
-            borderColor="whiteAlpha.200"
+            borderColor={{ base: '#E1E4E8', _dark: 'rgba(255, 255, 255, 0.12)' }}
             backdropFilter="blur(8px)"
             css={{ animation: `${fadeUp} 0.6s ease-out 0.5s both` }}
           >
             <Text
-              fontSize="md"
+              fontSize="13px"
               fontWeight="bold"
-              css={{
-                background: 'linear-gradient(90deg, #6ee7b7, #34d399, #6ee7b7)',
-                backgroundSize: '200% auto',
-                backgroundClip: 'text',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                animation: `${shimmer} 3s linear infinite`,
-              }}
+              color="#1ABE71"
             >
               📚 {subjectName}{examTitle ? ` — ${examTitle}` : ''}
             </Text>
@@ -172,18 +163,19 @@ export function ExamCompletion({ subjectName, examTitle }: ExamCompletionProps) 
 
         {/* Motivational card */}
         <Box
-          p={6}
-          mb={8}
-          borderRadius="3xl"
-          bg="whiteAlpha.50"
+          p={5}
+          mb={6}
+          borderRadius="md"
+          bg={{ base: '#FFFFFF', _dark: '#242424' }}
           border="1px solid"
-          borderColor="whiteAlpha.100"
+          borderColor={{ base: '#E1E4E8', _dark: '#3D3D3D' }}
+          boxShadow="0 1px 4px rgba(0,0,0,0.05)"
           css={{ animation: `${fadeUp} 0.6s ease-out 0.6s both` }}
         >
-          <Text fontSize="md" color="gray.300" lineHeight="tall">
+          <Text fontSize="13px" color={{ base: '#1F2328', _dark: '#E0E0E0' }} lineHeight="1.4">
             Jawabanmu sudah berhasil tersimpan dengan aman. Tetap semangat dan percaya pada hasil usahamu! 💪
           </Text>
-          <Text fontSize="sm" color="gray.500" mt={3}>
+          <Text fontSize="12px" color={{ base: '#57606A', _dark: '#8A8A8A' }} mt={3}>
             Hasil ujian akan diumumkan oleh guru mata pelajaran.
           </Text>
         </Box>
@@ -191,21 +183,23 @@ export function ExamCompletion({ subjectName, examTitle }: ExamCompletionProps) 
         {/* CTA Button */}
         <Button
           size="lg"
-          px={8}
-          borderRadius="2xl"
+          px={6}
+          height="40px"
+          borderRadius="md"
           fontWeight="bold"
+          fontSize="13px"
           bg="linear-gradient(135deg, #10b981, #059669)"
           color="white"
           _hover={{
             bg: 'linear-gradient(135deg, #059669, #047857)',
-            transform: 'translateY(-2px)',
-            boxShadow: '0 8px 30px rgba(16, 185, 129, 0.3)',
+            transform: 'translateY(-1px)',
+            boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)',
           }}
-          transition="all 0.2s ease"
+          transition="all 0.15s ease"
           onClick={() => router.push('/dashboard')}
           css={{ animation: `${fadeUp} 0.6s ease-out 0.7s both` }}
         >
-          Kembali ke Dashboard <ArrowRight size={18} style={{ marginLeft: 8 }} />
+          Kembali ke Dashboard <ArrowRight size={14} style={{ marginLeft: 6 }} />
         </Button>
       </Box>
     </Flex>

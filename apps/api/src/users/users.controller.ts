@@ -10,6 +10,7 @@ import {
   Query,
   UseGuards,
   Res,
+  Request,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -61,8 +62,8 @@ export class UsersController {
   /** PUT /users/:id — update profile */
   @Put(':id')
   @Roles(Role.SUPER_ADMIN)
-  update(@Param('id') id: string, @Body() dto: UpdateUserDto) {
-    return this.usersService.updateUser(id, dto);
+  update(@Param('id') id: string, @Body() dto: UpdateUserDto, @Request() req) {
+    return this.usersService.updateUser(id, dto, req.user.role, req.user.userId);
   }
 
   /** PATCH /users/:id/toggle-active — activate / deactivate */

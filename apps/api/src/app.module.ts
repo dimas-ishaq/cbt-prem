@@ -25,6 +25,7 @@ import { SubjectsModule } from './subjects/subjects.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { UploadsModule } from './uploads/uploads.module';
+import { AuditModule } from './audit/audit.module';
 import { ScheduleModule } from '@nestjs/schedule';
 @Module({
   imports: [
@@ -61,6 +62,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     ReportsModule,
     NotificationsModule,
     DashboardModule,
+    AuditModule,
     UploadsModule,
   ],
   controllers: [AppController],

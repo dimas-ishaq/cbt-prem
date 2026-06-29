@@ -53,8 +53,8 @@ export function ExamHistory() {
   if (isLoading) {
     return (
       <Flex justify="center" align="center" py={12}>
-        <Spinner size="lg" color="indigo.600" />
-        <Text ml={3} color="gray.600" fontWeight="medium">{t('loadingHistory')}</Text>
+        <Spinner size="lg" color="#9C55E8" />
+        <Text ml={3} color={{ base: '#57606A', _dark: '#8A8A8A' }} fontSize="13px" fontWeight="medium">{t('loadingHistory')}</Text>
       </Flex>
     );
   }
@@ -62,48 +62,80 @@ export function ExamHistory() {
   if (error) {
     return (
       <Flex justify="center" align="center" py={12}>
-        <Text color="red.500" fontWeight="bold">{t('errorLoadingHistory')}</Text>
+        <Text color="#EF4444" fontSize="13px" fontWeight="bold">{t('errorLoadingHistory')}</Text>
       </Flex>
     );
   }
 
   return (
-    <Box mt={8}>
+    <Box mt={4} fontFamily="Inter, -apple-system, BlinkMacSystemFont, sans-serif">
       <Stack gap={1} mb={5}>
         <HStack gap={2} align="center">
-          <History size={20} className="text-indigo-600" />
-          <Heading size="md" fontWeight="bold" color="text.primary">{t('historyTitle')}</Heading>
+          <History size={16} className="text-purple-500" />
+          <Heading size="sm" fontWeight="bold" color={{ base: '#1F2328', _dark: '#E0E0E0' }}>{t('historyTitle')}</Heading>
         </HStack>
-        <Text color="text.secondary" fontSize="sm">{t('historyDesc')}</Text>
+        <Text color={{ base: '#57606A', _dark: '#8A8A8A' }} fontSize="12px">{t('historyDesc')}</Text>
       </Stack>
 
       {history?.length === 0 ? (
-        <Box textAlign="center" py={12} bg="bg.surface" borderRadius="2xl" border="1px solid" borderColor="border.default">
-          <RotateCcw size={40} className="text-gray-300 mx-auto mb-3" />
-          <Text color="gray.500" fontSize="sm" fontWeight="medium">{t('emptyHistory')}</Text>
-          <Text color="gray.400" fontSize="xs" mt={1}>{t('emptyHistoryDesc')}</Text>
+        <Box textAlign="center" py={12} bg={{ base: '#FFFFFF', _dark: '#242424' }} borderRadius="md" border="1px solid" borderColor={{ base: '#E1E4E8', _dark: '#3D3D3D' }} boxShadow="0 1px 4px rgba(0,0,0,0.05)">
+          <RotateCcw size={32} className="text-gray-400 mx-auto mb-3" />
+          <Text color={{ base: '#1F2328', _dark: '#E0E0E0' }} fontSize="13px" fontWeight="medium">{t('emptyHistory')}</Text>
+          <Text color={{ base: '#57606A', _dark: '#8A8A8A' }} fontSize="11px" mt={1}>{t('emptyHistoryDesc')}</Text>
         </Box>
       ) : (
         <Stack gap={4}>
           {history?.map((session) => {
             const status = getStatusConfig(session.status, t);
             const duration = formatDuration(session.startTime, session.endTime, t);
+            
+            let statusBadge = (
+              <Badge bg={{ base: '#E1E4E8', _dark: '#2D2D2D' }} color={{ base: '#57606A', _dark: '#8A8A8A' }} border="1px solid" borderColor={{ base: '#D1D5DB', _dark: '#3D3D3D' }} px={2} py={0.5} borderRadius="md" fontSize="9px" fontWeight="bold">
+                {status.label}
+              </Badge>
+            );
+
+            if (status.color === 'green') {
+              statusBadge = (
+                <Badge bg="rgba(26, 190, 113, 0.15)" color="#1ABE71" border="1px solid" borderColor="rgba(26, 190, 113, 0.25)" px={2} py={0.5} borderRadius="md" fontSize="9px" fontWeight="bold">
+                  {status.label}
+                </Badge>
+              );
+            } else if (status.color === 'red') {
+              statusBadge = (
+                <Badge bg="rgba(239, 68, 68, 0.15)" color="#EF4444" border="1px solid" borderColor="rgba(239, 68, 68, 0.25)" px={2} py={0.5} borderRadius="md" fontSize="9px" fontWeight="bold">
+                  {status.label}
+                </Badge>
+              );
+            }
+
             return (
-              <Box key={session.id} p={5} bg="bg.surface" borderRadius="xl" border="1px solid" borderColor="border.default" boxShadow="sm" _hover={{ boxShadow: 'md', borderColor: 'border.muted' }}>
+              <Box 
+                key={session.id} 
+                p={4} 
+                bg={{ base: '#FFFFFF', _dark: '#242424' }} 
+                borderRadius="md" 
+                border="1px solid" 
+                borderColor={{ base: '#E1E4E8', _dark: '#3D3D3D' }} 
+                boxShadow="0 1px 4px rgba(0,0,0,0.05)" 
+                transition="all 0.15s ease"
+                _hover={{
+                  borderColor: '#9C55E8',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                }}
+              >
                 <Flex justify="space-between" align="start" gap={4} direction={{ base: 'column', md: 'row' }}>
                   <Stack gap={2} flex={1}>
-                    <Flex align="center" gap={3} mb={1}>
-                      <Badge colorPalette="blue" px={2.5} py={1} borderRadius="lg" textTransform="uppercase" fontWeight="bold" fontSize="2xs">
+                    <Flex align="center" gap={3}>
+                      <Badge bg="rgba(45, 155, 240, 0.15)" color="#2D9BF0" border="1px solid" borderColor="rgba(45, 155, 240, 0.25)" px={2.5} py={0.5} borderRadius="md" textTransform="uppercase" fontWeight="bold" fontSize="10px">
                         {session.exam.subject.name}
                       </Badge>
-                      <Badge colorPalette={status.color} px={2} py={0.5} borderRadius="md" fontSize="3xs" fontWeight="black">
-                        {status.label}
-                      </Badge>
+                      {statusBadge}
                     </Flex>
-                    <Heading size="sm" fontWeight="semibold" color="text.primary" lineClamp={1}>
+                    <Heading size="sm" fontWeight="bold" color={{ base: '#1F2328', _dark: '#E0E0E0' }} lineClamp={1}>
                       {session.exam.title}
                     </Heading>
-                    <Stack gap={0.5} fontSize="xs" color="text.secondary" fontWeight="medium">
+                    <Stack gap={0.5} fontSize="11px" color={{ base: '#57606A', _dark: '#8A8A8A' }} fontWeight="medium">
                       <HStack gap={1.5}>
                         <Text>{t('finishedAt')} {new Date(session.endTime).toLocaleString('id-ID')}</Text>
                       </HStack>
@@ -112,24 +144,39 @@ export function ExamHistory() {
                       </HStack>
                     </Stack>
                   </Stack>
-                  <Flex direction="column" align="center" gap={2} minW="100px">
+                  <Flex direction="column" align="center" gap={2} minW="100px" alignSelf={{ base: 'stretch', md: 'center' }}>
                     {session.score !== null && session.score !== undefined ? (
                       <>
-                        <Flex align="center" gap={1} color={status.color === 'red' ? 'red.600' : 'green.600'}>
-                          <Award size={18} />
-                          <Text fontSize="xl" fontWeight="extrabold" color={status.color === 'red' ? 'red.600' : 'green.600'}>
+                        <Flex align="center" gap={1} color={status.color === 'red' ? '#EF4444' : '#1ABE71'}>
+                          <Award size={16} />
+                          <Text fontSize="18px" fontWeight="extrabold">
                             {Math.round(session.score)}
                           </Text>
                         </Flex>
-                        <Text fontSize="2xs" color="text.muted" fontWeight="medium">{t('points')}</Text>
+                        <Text fontSize="10px" color={{ base: '#57606A', _dark: '#8A8A8A' }} fontWeight="medium">{t('points')}</Text>
                       </>
                     ) : (
-                      <Text fontSize="xs" color="gray.450" fontStyle="italic" fontWeight="medium">
+                      <Text fontSize="11px" color={{ base: '#57606A', _dark: '#8A8A8A' }} fontStyle="italic" fontWeight="medium">
                         {session.exam && (session.exam as any).showScore === false ? 'Dirahasiakan' : t('notGraded')}
                       </Text>
                     )}
                     <Link href={`/exams/${(session.exam as any).id}`} style={{ width: '100%' }}>
-                      <Button size="xs" variant="outline" w="full" mt={1} borderRadius="lg" fontSize="2xs" fontWeight="semibold" color="text.secondary" borderColor="border.default" _hover={{ bg: 'gray.50', borderColor: 'gray.300' }}>
+                      <Button 
+                        size="xs" 
+                        variant="ghost" 
+                        w="full" 
+                        mt={1} 
+                        borderRadius="md" 
+                        fontSize="11px" 
+                        fontWeight="bold" 
+                        bg={{ base: '#FFFFFF', _dark: '#2D2D2D' }}
+                        color={{ base: '#1F2328', _dark: '#E0E0E0' }} 
+                        border="1px solid"
+                        borderColor={{ base: '#E1E4E8', _dark: '#3D3D3D' }} 
+                        _hover={{ bg: { base: '#F9FAFC', _dark: '#3D3D3D' }, borderColor: '#9C55E8' }}
+                        height="28px"
+                        cursor="pointer"
+                      >
                         {t('viewDetails')}
                       </Button>
                     </Link>

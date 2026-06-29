@@ -29,26 +29,36 @@ const EXAM_TERMS = [
 
 export function ExamRulesGate({ checkedTerms, isTokenRequired, tokenInput, tokenError, isStarting, disableStart, onToggleTerm, onTokenChange, onStart }: ExamRulesGateProps) {
   return (
-    <Flex direction="column" justify="center" minH="screen" bg="gray.950" p={{ base: 4, md: 8 }}>
-      <Box maxW="3xl" mx="auto" w="full" bg="linear-gradient(180deg, rgba(23,25,35,0.98) 0%, rgba(12,14,20,0.98) 100%)" borderRadius="3xl" p={{ base: 6, md: 8 }} border="1px solid" borderColor="whiteAlpha.200" boxShadow="0 30px 80px rgba(0, 0, 0, 0.45)">
+    <Flex direction="column" justify="center" minH="screen" bg={{ base: '#F4F5F7', _dark: '#1B1B1B' }} p={{ base: 4, md: 8 }}>
+      <Box 
+        maxW="3xl" 
+        mx="auto" 
+        w="full" 
+        bg={{ base: '#FFFFFF', _dark: '#242424' }} 
+        borderRadius="md" 
+        p={{ base: 6, md: 8 }} 
+        border="1px solid" 
+        borderColor={{ base: '#E1E4E8', _dark: '#3D3D3D' }} 
+        boxShadow="0 1px 4px rgba(0,0,0,0.1)"
+      >
         <Stack gap={6}>
           <Stack gap={2}>
-            <Text color="cyan.300" fontSize="sm" fontWeight="bold" textTransform="uppercase" letterSpacing="0.14em">
+            <Text color="#9C55E8" fontSize="xs" fontWeight="bold" textTransform="uppercase" letterSpacing="0.14em">
               Konfirmasi Pengerjaan Ujian
             </Text>
-            <Heading size="xl" color="white">
+            <Heading size="lg" color={{ base: '#1F2328', _dark: '#E0E0E0' }} fontFamily="Inter, -apple-system, BlinkMacSystemFont, sans-serif" fontWeight="700">
               Periksa informasi sebelum ujian dimulai
             </Heading>
-            <Text color="gray.300" lineHeight="tall">
-              Setelah Anda menekan <b>Mulai Ujian</b>, sistem akan membuka sesi ujian Anda dan menghitung waktu pengerjaan sesuai durasi yang ditetapkan.
+            <Text color={{ base: '#57606A', _dark: '#8A8A8A' }} fontSize="13px" lineHeight="1.4" fontFamily="Inter, -apple-system, BlinkMacSystemFont, sans-serif">
+              Setelah Anda menekan <b style={{ color: 'inherit' }}>Mulai Ujian</b>, sistem akan membuka sesi ujian Anda dan menghitung waktu pengerjaan sesuai durasi yang ditetapkan.
             </Text>
           </Stack>
 
-          <Alert.Root status="info" variant="subtle" bg="cyan.500/12" borderRadius="2xl" borderWidth="1px" borderColor="cyan.400/30">
-            <Alert.Indicator color="cyan.300" />
+          <Alert.Root status="info" variant="subtle" bg={{ base: 'rgba(45, 155, 240, 0.08)', _dark: '#1B1B1B' }} borderRadius="md" borderWidth="1px" borderColor={{ base: 'rgba(45, 155, 240, 0.25)', _dark: '#3D3D3D' }}>
+            <Alert.Indicator color="#2D9BF0" />
             <Alert.Content>
-              <Alert.Title color="white">Informasi penting</Alert.Title>
-              <Alert.Description color="gray.200">
+              <Alert.Title color={{ base: '#1F2328', _dark: '#E0E0E0' }} fontSize="13px" fontWeight="semibold">Informasi penting</Alert.Title>
+              <Alert.Description color={{ base: '#57606A', _dark: '#8A8A8A' }} fontSize="12px">
                 Layar ini adalah tahap konfirmasi sebelum sesi dimulai, bukan halaman submit akhir ujian.
               </Alert.Description>
             </Alert.Content>
@@ -62,17 +72,20 @@ export function ExamRulesGate({ checkedTerms, isTokenRequired, tokenInput, token
                 onCheckedChange={(details) => onToggleTerm(id, details.checked === true)}
                 alignItems="flex-start"
                 p={4}
-                bg={checkedTerms[id] ? 'whiteAlpha.140' : 'whiteAlpha.80'}
-                borderRadius="2xl"
+                bg={checkedTerms[id] ? { base: 'rgba(156, 85, 232, 0.05)', _dark: '#2D2D2D' } : { base: '#F9FAFC', _dark: '#1B1B1B' }}
+                borderRadius="md"
                 borderWidth="1px"
-                borderColor={checkedTerms[id] ? 'cyan.400/40' : 'whiteAlpha.120'}
+                borderColor={checkedTerms[id] ? '#9C55E8' : { base: '#E1E4E8', _dark: '#3D3D3D' }}
+                cursor="pointer"
+                _hover={{ borderColor: '#9C55E8', bg: { base: '#F9FAFC', _dark: '#2D2D2D' } }}
+                transition="all 0.15s ease"
               >
                 <Checkbox.HiddenInput />
-                <Checkbox.Control mt="1" />
-                <Checkbox.Label>
-                  <Stack gap={1}>
-                    <Text color="white" fontWeight="semibold">{term.title}</Text>
-                    <Text color="gray.400" fontSize="sm">{term.description}</Text>
+                <Checkbox.Control mt="0.5" colorPalette="purple" borderColor={{ base: '#E1E4E8', _dark: '#3D3D3D' }} />
+                <Checkbox.Label cursor="pointer">
+                  <Stack gap={1} pl={2}>
+                    <Text color={{ base: '#1F2328', _dark: '#E0E0E0' }} fontWeight="semibold" fontSize="13px">{term.title}</Text>
+                    <Text color={{ base: '#57606A', _dark: '#8A8A8A' }} fontSize="12px">{term.description}</Text>
                   </Stack>
                 </Checkbox.Label>
               </Checkbox.Root>
@@ -81,24 +94,27 @@ export function ExamRulesGate({ checkedTerms, isTokenRequired, tokenInput, token
 
           {isTokenRequired && (
             <Stack gap={2}>
-              <Text color="white" fontWeight="semibold">Token ujian</Text>
+              <Text color={{ base: '#1F2328', _dark: '#E0E0E0' }} fontWeight="semibold" fontSize="13px">Token ujian</Text>
               <Input
                 value={tokenInput}
                 onChange={(e) => onTokenChange(e.target.value)}
                 placeholder="Masukkan token ujian dari pengawas"
-                bg="whiteAlpha.80"
-                borderColor={tokenError ? 'red.400' : 'whiteAlpha.200'}
-                color="white"
-                _placeholder={{ color: 'gray.500' }}
+                bg={{ base: '#F9FAFC', _dark: '#2D2D2D' }}
+                borderColor={tokenError ? '#EF4444' : { base: '#E1E4E8', _dark: '#3D3D3D' }}
+                color={{ base: '#1F2328', _dark: '#E0E0E0' }}
+                fontSize="13px"
+                borderRadius="sm"
+                _placeholder={{ color: { base: '#57606A', _dark: '#8A8A8A' } }}
+                _focus={{ borderColor: '#9C55E8', boxShadow: '0 0 0 1px #9C55E8' }}
               />
-              <Text color="gray.400" fontSize="sm">
+              <Text color={{ base: '#57606A', _dark: '#8A8A8A' }} fontSize="12px">
                 Token diperlukan hanya jika ujian ini dikunci dengan token oleh pengawas.
               </Text>
             </Stack>
           )}
 
           {tokenError && (
-            <Text color="red.300" fontSize="sm" fontWeight="medium">
+            <Text color="#EF4444" fontSize="12px" fontWeight="semibold">
               {tokenError}
             </Text>
           )}
@@ -110,10 +126,15 @@ export function ExamRulesGate({ checkedTerms, isTokenRequired, tokenInput, token
             disabled={disableStart}
             loading={isStarting}
             loadingText="Memulai ujian..."
-            bg="linear-gradient(135deg, #5B8CFF 0%, #7C5CFF 100%)"
-            color="white"
-            borderRadius="2xl"
-            _hover={{ opacity: 0.92 }}
+            bg="#774AA4"
+            color="#ffffff"
+            borderRadius="md"
+            fontSize="14px"
+            fontWeight="bold"
+            _hover={{ bg: '#6A3E92' }}
+            _active={{ bg: '#5A347D' }}
+            _disabled={{ bg: { base: '#F4F5F7', _dark: '#2D2D2D' }, color: { base: '#94A3B8', _dark: '#8A8A8A' }, cursor: 'not-allowed', opacity: 0.5 }}
+            transition="all 0.15s ease"
           >
             Mulai Ujian
           </Button>
@@ -122,4 +143,3 @@ export function ExamRulesGate({ checkedTerms, isTokenRequired, tokenInput, token
     </Flex>
   );
 }
-

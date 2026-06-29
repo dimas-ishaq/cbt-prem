@@ -20,11 +20,15 @@ describe('AuthController', () => {
     refreshToken: jest.fn(),
     updateProfile: jest.fn(),
   };
+  const auditServiceMock = { write: jest.fn() };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AuthController],
-      providers: [{ provide: AuthService, useValue: authServiceMock }],
+      providers: [
+        { provide: AuthService, useValue: authServiceMock },
+        { provide: require('../audit/audit.service').AuditService, useValue: auditServiceMock },
+      ],
     })
       .overrideGuard(ThrottlerGuard)
       .useClass(AllowAllGuard)
@@ -44,13 +48,13 @@ describe('AuthController', () => {
     authServiceMock.validateUser.mockResolvedValue({ id: '1', username: 'demo' });
     authServiceMock.login.mockResolvedValue({ access_token: 'token' });
 
-    const result = await controller.login({ username: 'demo', password: 'pass' });
+    const result = await controller.login({ username: 'demo', password: 'pass' }, { ip: '127.0.0.1', headers: {} } as any);
     expect(result).toEqual({ access_token: 'token' });
   });
 
   it('should reject login with wrong credentials', async () => {
     authServiceMock.validateUser.mockResolvedValue(null);
-    await expect(controller.login({ username: 'demo', password: 'wrong' })).rejects.toThrow('Invalid credentials');
+    await expect(controller.login({ username: 'demo', password: 'wrong' }, { ip: '127.0.0.1', headers: {} } as any)).rejects.toThrow('Invalid credentials');
   });
 
   it('should refresh token', async () => {
@@ -92,6 +96,7 @@ describe('AuthController', () => {
 
     it('should accept valid photo and return url', async () => {
       jest.spyOn(require('fs'), 'existsSync').mockReturnValue(true);
+      jest.spyOn(require('fs'), 'unlinkSync').mockReturnValue(undefined);
       jest.spyOn(require('fs'), 'writeFileSync').mockReturnValue(undefined);
       authServiceMock.updateProfile.mockResolvedValue({});
 
@@ -99,12 +104,12 @@ describe('AuthController', () => {
         mimetype: 'image/jpeg',
         size: 1024,
         originalname: 'photo.jpg',
-        buffer: Buffer.from([0xff, 0xd8, 0xff]),
+        buffer: Buffer.from([0xff, 0xd8, 0x00, 0x00, 0xff, 0xd9]),
       } as any;
 
       const result = await controller.uploadPhoto(req, file);
       expect(result).toHaveProperty('photoUrl');
-      expect(result.photoUrl).toMatch(/^\/uploads\/photos\//);
+      expect(result.photoUrl).toMatch(/^\/api\/uploads\/photos\//);
     });
   });
 });

@@ -19,44 +19,49 @@ export function ExamNav({ questions, currentIndex, onSelect, answeredQuestions, 
         const isCurrent = currentIndex === idx;
         const isFlagged = flaggedQuestions.includes(questionId);
 
-        let colorPalette = 'gray';
-        let variant: 'solid' | 'outline' | 'subtle' = 'outline';
-        let customStyles = {};
+        let bg: string | Record<string, string> = { base: '#F9FAFC', _dark: '#2D2D2D' };
+        let color: string | Record<string, string> = { base: '#1F2328', _dark: '#E0E0E0' };
+        let borderColor: string | Record<string, string> = { base: '#E1E4E8', _dark: '#3D3D3D' };
+        let hoverBg: string | Record<string, string> = { base: '#E1E4E8', _dark: '#3D3D3D' };
 
         if (isCurrent) {
-          colorPalette = 'indigo';
-          variant = 'solid';
+          bg = '#9C55E8';
+          color = '#ffffff';
+          borderColor = '#9C55E8';
+          hoverBg = '#a86bf5';
         } else if (isFlagged) {
-          variant = 'solid';
-          customStyles = {
-            bg: 'orange.400',
-            color: 'white',
-            borderColor: 'orange.500',
-            _hover: { bg: 'orange.500', transform: 'translateY(-2px)', shadow: 'md' },
-          };
+          bg = '#F5A623';
+          color = '#ffffff';
+          borderColor = '#F5A623';
+          hoverBg = '#fbb33c';
         } else if (isAnswered) {
-          colorPalette = 'emerald';
-          variant = 'solid';
+          bg = '#1ABE71';
+          color = '#ffffff';
+          borderColor = '#1ABE71';
+          hoverBg = '#22d884';
         }
 
         return (
           <Button
             key={idx}
             onClick={() => onSelect(idx)}
-            colorPalette={colorPalette}
-            variant={variant}
-            w={11}
-            h={11}
-            borderRadius="xl"
-            fontSize="sm"
+            bg={bg}
+            color={color}
+            border="1px solid"
+            borderColor={borderColor}
+            w="44px"
+            h="44px"
+            borderRadius="md"
+            fontSize="13px"
             fontWeight="bold"
             cursor="pointer"
-            boxShadow={isCurrent ? 'lg' : 'none'}
-            transform={isCurrent ? 'scale(1.05)' : 'none'}
-            zIndex={isCurrent ? 10 : 1}
-            _hover={isCurrent ? { transform: 'scale(1.05) translateY(-2px)', shadow: 'xl' } : undefined}
-            transition="all 0.2s"
-            {...customStyles}
+            boxShadow={isCurrent ? '0 0 8px rgba(156, 85, 232, 0.4)' : 'none'}
+            _hover={{
+              bg: hoverBg,
+              transform: 'translateY(-1px)',
+              shadow: 'sm',
+            }}
+            transition="all 0.15s ease"
           >
             {idx + 1}
           </Button>

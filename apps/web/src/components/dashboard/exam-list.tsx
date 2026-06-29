@@ -16,6 +16,7 @@ import {
   Spinner,
 } from '@chakra-ui/react';
 import { Calendar, Clock } from 'lucide-react';
+
 interface Exam {
   id: string;
   title: string;
@@ -44,8 +45,8 @@ export function ExamList() {
   if (isLoading) {
     return (
       <Flex justify="center" align="center" py={12}>
-        <Spinner size="lg" color="indigo.600" />
-        <Text ml={3} color="gray.600" fontWeight="medium">Memuat daftar ujian...</Text>
+        <Spinner size="lg" color="#9C55E8" />
+        <Text ml={3} color={{ base: '#57606A', _dark: '#8A8A8A' }} fontSize="13px" fontWeight="medium">Memuat daftar ujian...</Text>
       </Flex>
     );
   }
@@ -53,13 +54,13 @@ export function ExamList() {
   if (error) {
     return (
       <Flex justify="center" align="center" py={12}>
-        <Text color="red.500" fontWeight="bold">Gagal memuat daftar ujian</Text>
+        <Text color="#EF4444" fontSize="13px" fontWeight="bold">Gagal memuat daftar ujian</Text>
       </Flex>
     );
   }
 
   return (
-    <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} gap={6}>
+    <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} gap={6} fontFamily="Inter, -apple-system, BlinkMacSystemFont, sans-serif">
       {exams?.map((exam) => {
         const now = new Date();
         const startTime = new Date(exam.startTime);
@@ -75,70 +76,74 @@ export function ExamList() {
         return (
           <Box
             key={exam.id}
-            p={6}
-            bg="white"
-            borderRadius="2xl"
-            boxShadow="md"
+            p={5}
+            bg={{ base: '#FFFFFF', _dark: '#242424' }}
+            borderRadius="md"
+            boxShadow="0 1px 4px rgba(0,0,0,0.05)"
             border="1px solid"
-            borderColor={isCompleted ? (isLocked ? 'red.100' : 'emerald.100') : (isInProgress ? 'amber.100' : (isEnded ? 'gray.200' : 'gray.100'))}
+            borderColor={{ base: '#E1E4E8', _dark: '#3D3D3D' }}
             display="flex"
             flexDirection="column"
             justifyContent="space-between"
-            transition="all 0.2s"
-            _hover={{ transform: 'translateY(-4px)', boxShadow: 'lg', borderColor: isCompleted ? (isLocked ? 'red.200' : 'emerald.200') : (isInProgress ? 'amber.200' : 'indigo.100') }}
+            transition="all 0.15s ease"
+            _hover={{
+              borderColor: '#9C55E8',
+              transform: 'translateY(-2px)',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+            }}
           >
             <Box>
               <Flex justify="space-between" align="start" mb={4}>
-                <Badge colorPalette="blue" px={2.5} py={1} borderRadius="lg" textTransform="uppercase" fontWeight="bold" fontSize="2xs">
+                <Badge bg="rgba(45, 155, 240, 0.15)" color="#2D9BF0" border="1px solid" borderColor="rgba(45, 155, 240, 0.25)" px={2.5} py={0.5} borderRadius="md" textTransform="uppercase" fontWeight="bold" fontSize="10px">
                   {exam.subject.name}
                 </Badge>
                 <HStack gap={2}>
                   {isLocked && (
-                    <Badge colorPalette="red" px={2} py={0.5} borderRadius="md" fontSize="3xs" fontWeight="black">
+                    <Badge bg="rgba(239, 68, 68, 0.15)" color="#EF4444" border="1px solid" borderColor="rgba(239, 68, 68, 0.25)" px={2} py={0.5} borderRadius="md" fontSize="9px" fontWeight="bold">
                       TERKUNCI
                     </Badge>
                   )}
                   {!isLocked && isCompleted && (
-                    <Badge colorPalette="emerald" px={2} py={0.5} borderRadius="md" fontSize="3xs" fontWeight="black">
+                    <Badge bg="rgba(26, 190, 113, 0.15)" color="#1ABE71" border="1px solid" borderColor="rgba(26, 190, 113, 0.25)" px={2} py={0.5} borderRadius="md" fontSize="9px" fontWeight="bold">
                       SELESAI
                     </Badge>
                   )}
                   {isInProgress && (
-                    <Badge colorPalette="amber" px={2} py={0.5} borderRadius="md" fontSize="3xs" fontWeight="black" className="animate-pulse">
+                    <Badge bg="rgba(245, 166, 35, 0.15)" color="#F5A623" border="1px solid" borderColor="rgba(245, 166, 35, 0.25)" px={2} py={0.5} borderRadius="md" fontSize="9px" fontWeight="bold" className="animate-pulse">
                       AKTIF
                     </Badge>
                   )}
                   {!isCompleted && !isInProgress && isNotStarted && (
-                    <Badge colorPalette="blue" px={2} py={0.5} borderRadius="md" fontSize="3xs" fontWeight="black">
+                    <Badge bg={{ base: '#E1E4E8', _dark: '#2D2D2D' }} color={{ base: '#57606A', _dark: '#8A8A8A' }} border="1px solid" borderColor={{ base: '#D1D5DB', _dark: '#3D3D3D' }} px={2} py={0.5} borderRadius="md" fontSize="9px" fontWeight="bold">
                       BELUM DIMULAI
                     </Badge>
                   )}
                   {!isCompleted && !isInProgress && !isNotStarted && isEnded && (
-                    <Badge colorPalette="gray" px={2} py={0.5} borderRadius="md" fontSize="3xs" fontWeight="black">
+                    <Badge bg={{ base: '#E1E4E8', _dark: '#2D2D2D' }} color={{ base: '#57606A', _dark: '#8A8A8A' }} border="1px solid" borderColor={{ base: '#D1D5DB', _dark: '#3D3D3D' }} px={2} py={0.5} borderRadius="md" fontSize="9px" fontWeight="bold">
                       SUDAH BERAKHIR
                     </Badge>
                   )}
-                  <Text fontSize="sm" color="gray.450" fontWeight="semibold">
+                  <Text fontSize="12px" color={{ base: '#57606A', _dark: '#8A8A8A' }} fontWeight="semibold">
                     {exam.duration} Menit
                   </Text>
                 </HStack>
               </Flex>
               
-              <Heading size="md" fontWeight="bold" color="gray.800" mb={2} lineClamp={1}>
+              <Heading size="sm" fontWeight="bold" color={{ base: '#1F2328', _dark: '#E0E0E0' }} mb={2} lineClamp={1}>
                 {exam.title}
               </Heading>
               
-              <Text color="gray.600" fontSize="sm" mb={4} lineClamp={2}>
+              <Text color={{ base: '#57606A', _dark: '#8A8A8A' }} fontSize="12px" mb={4} lineClamp={2}>
                 {exam.description}
               </Text>
               
-              <Stack gap={1.5} fontSize="xs" color="gray.500" fontWeight="semibold" mb={6}>
+              <Stack gap={1.5} fontSize="11px" color={{ base: '#57606A', _dark: '#8A8A8A' }} fontWeight="semibold" mb={6}>
                 <HStack gap={1.5}>
-                  <Calendar size={13} className="text-gray-400" />
+                  <Calendar size={12} className="text-gray-400" />
                   <Text>Mulai: {startTime.toLocaleString('id-ID')}</Text>
                 </HStack>
                 <HStack gap={1.5}>
-                  <Clock size={13} className="text-gray-400" />
+                  <Clock size={12} className="text-gray-400" />
                   <Text>Selesai: {endTime.toLocaleString('id-ID')}</Text>
                 </HStack>
               </Stack>
@@ -147,14 +152,14 @@ export function ExamList() {
             {isLocked ? (
               <Button
                 w="full"
-                py={5}
-                bg="red.50"
-                color="red.700"
+                height="38px"
+                bg="rgba(239, 68, 68, 0.08)"
+                color="#EF4444"
                 border="1px solid"
-                borderColor="red.200"
-                borderRadius="xl"
-                fontWeight="extrabold"
-                fontSize="sm"
+                borderColor="rgba(239, 68, 68, 0.2)"
+                borderRadius="md"
+                fontWeight="bold"
+                fontSize="13px"
                 cursor="not-allowed"
                 disabled
               >
@@ -163,14 +168,14 @@ export function ExamList() {
             ) : isCompleted ? (
               <Button
                 w="full"
-                py={5}
-                bg="emerald.50"
-                color="emerald.700"
+                height="38px"
+                bg="rgba(26, 190, 113, 0.08)"
+                color="#1ABE71"
                 border="1px solid"
-                borderColor="emerald.200"
-                borderRadius="xl"
-                fontWeight="extrabold"
-                fontSize="sm"
+                borderColor="rgba(26, 190, 113, 0.2)"
+                borderRadius="md"
+                fontWeight="bold"
+                fontSize="13px"
                 cursor="not-allowed"
                 disabled
               >
@@ -179,14 +184,14 @@ export function ExamList() {
             ) : isEnded ? (
               <Button
                 w="full"
-                py={5}
-                bg="gray.100"
-                color="gray.500"
+                height="38px"
+                bg={{ base: '#F4F5F7', _dark: '#1B1B1B' }}
+                color={{ base: '#94A3B8', _dark: '#8A8A8A' }}
                 border="1px solid"
-                borderColor="gray.200"
-                borderRadius="xl"
-                fontWeight="extrabold"
-                fontSize="sm"
+                borderColor={{ base: '#E1E4E8', _dark: '#3D3D3D' }}
+                borderRadius="md"
+                fontWeight="bold"
+                fontSize="13px"
                 cursor="not-allowed"
                 disabled
               >
@@ -195,14 +200,14 @@ export function ExamList() {
             ) : isNotStarted ? (
               <Button
                 w="full"
-                py={5}
-                bg="gray.50"
-                color="gray.400"
+                height="38px"
+                bg={{ base: '#F4F5F7', _dark: '#1B1B1B' }}
+                color={{ base: '#94A3B8', _dark: '#8A8A8A' }}
                 border="1px dashed"
-                borderColor="gray.200"
-                borderRadius="xl"
-                fontWeight="extrabold"
-                fontSize="sm"
+                borderColor={{ base: '#E1E4E8', _dark: '#3D3D3D' }}
+                borderRadius="md"
+                fontWeight="bold"
+                fontSize="13px"
                 cursor="not-allowed"
                 disabled
               >
@@ -212,12 +217,13 @@ export function ExamList() {
               <Link href={`/exams/${exam.id}`} passHref style={{ width: '100%' }}>
                 <Button
                   w="full"
-                  py={5}
-                  bg="amber.500"
+                  height="38px"
+                  bg="#F5A623"
                   color="white"
-                  borderRadius="xl"
+                  borderRadius="md"
                   fontWeight="bold"
-                  _hover={{ bg: 'amber.600', textDecoration: 'none' }}
+                  fontSize="13px"
+                  _hover={{ bg: '#fbb33c', textDecoration: 'none' }}
                   textAlign="center"
                   display="block"
                   cursor="pointer"
@@ -229,12 +235,13 @@ export function ExamList() {
               <Link href={`/exams/${exam.id}`} passHref style={{ width: '100%' }}>
                 <Button
                   w="full"
-                  py={5}
-                  bg="indigo.600"
+                  height="38px"
+                  bg="#9C55E8"
                   color="white"
-                  borderRadius="xl"
+                  borderRadius="md"
                   fontWeight="bold"
-                  _hover={{ bg: 'indigo.700', textDecoration: 'none' }}
+                  fontSize="13px"
+                  _hover={{ bg: '#a86bf5', textDecoration: 'none' }}
                   textAlign="center"
                   display="block"
                   cursor="pointer"
@@ -247,7 +254,7 @@ export function ExamList() {
         );
       })}
       {exams?.length === 0 && (
-        <Box gridColumn="1 / -1" textAlign="center" py={12} color="gray.500" fontStyle="italic">
+        <Box gridColumn="1 / -1" textAlign="center" py={12} color={{ base: '#57606A', _dark: '#8A8A8A' }} fontStyle="italic" fontSize="13px">
           Belum ada ujian yang tersedia.
         </Box>
       )}

@@ -94,6 +94,19 @@ const nextConfig = {
                 } catch (e) {}
               }
 
+              // Gambar: izinkan data URI, blob, localhost/loopback API, dan origin custom
+              const imgSources = [
+                "'self'",
+                "data:",
+                "blob:",
+                "http://localhost:3001",
+                "http://127.0.0.1:3001",
+                "http://localhost:3000",
+                "http://127.0.0.1:3000",
+              ];
+              if (apiOrigin) imgSources.push(apiOrigin);
+              if (appOrigin) imgSources.push(appOrigin);
+
               return [
                 "default-src 'self'",
                 // Script: izinkan inline & eval — Chakra UI dan Next.js memerlukannya, serta Cloudflare Insights
@@ -102,8 +115,8 @@ const nextConfig = {
                 "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
                 // Font: izinkan dari Google Fonts dan data URI
                 "font-src 'self' data: https://fonts.gstatic.com",
-                // Gambar: izinkan data URI dan blob
-                "img-src 'self' data: blob:",
+                // Gambar: izinkan dari API/App local dan remote
+                `img-src ${imgSources.join(' ')}`,
                 // Koneksi: izinkan ke API lokal, WebSocket, API custom dari env, dan Cloudflare
                 `connect-src ${connectSources.join(' ')}`,
                 // Media

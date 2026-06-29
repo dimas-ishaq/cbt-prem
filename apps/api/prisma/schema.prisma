@@ -76,6 +76,7 @@ model User {
   fullName      String
   photo        String?
   role          Role      @default(SISWA)
+  authVersion   Int       @default(0)
   isActive      Boolean   @default(true)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -89,6 +90,20 @@ model User {
   roles         UserRole[]
 }
 
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action     String
+  resource   String?
+  resourceId String?
+  before     Json?
+  after      Json?
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+}
 
 model Teacher {
   id        String   @id @default(uuid())
@@ -293,16 +308,6 @@ model Violation {
   type          String         // TAB_SWITCH, DEVTOOLS, etc
   description   String?
   timestamp     DateTime       @default(now())
-}
-
-model AuditLog {
-  id        String   @id @default(uuid())
-  userId    String?
-  user      User?    @relation(fields: [userId], references: [id])
-  action    String
-  module    String
-  details   Json?
-  timestamp DateTime @default(now())
 }
 
 model Notification {
