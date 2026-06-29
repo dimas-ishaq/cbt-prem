@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import api from '@/lib/api';
 
 type SocketLike = {
@@ -32,6 +32,9 @@ export function useExamRealtime({ socket, examId, sessionId, playSuccess, setIsL
   setTimeAddedMinutes: (v: number) => void;
   setShowTimeAddedDialog: (v: boolean) => void;
 }) {
+  // Guard: cegah playSuccess false positive dari broadcast berlebih
+  const lastPlayedRef = useRef(0);
+
   useEffect(() => {
     if (!socket || !sessionId) return;
     const onSessionLocked = (data: unknown) => { if (isSessionEvent(data) && data.examId === examId) setIsLocked(true); };
@@ -39,13 +42,20 @@ export function useExamRealtime({ socket, examId, sessionId, playSuccess, setIsL
     const onSessionSubmitted = (data: unknown) => { if (isSessionEvent(data) && data.examId === examId) finishExam(); };
     const onTimeAdded = async (data: unknown) => {
       if (!isTimeAddedEvent(data) || data.examId !== examId) return;
+      // Hanya bunyi kalo beneran ada tambahan waktu (addedMinutes > 0)
+      const added = data.addedMinutes ?? 0;
+      if (added <= 0) return;
+      // Cooldown biar gak repetitif
+      const now = Date.now();
+      if (now - lastPlayedRef.current < 3000) return;
+      lastPlayedRef.current = now;
       try {
         const response = await api.get(`/exam-sessions/${sessionId}`);
         const refreshedEndTime = response.data?.endTime;
         const confirmedEndTime = refreshedEndTime ? new Date(refreshedEndTime).toISOString() : (data.newEndTime ? (typeof data.newEndTime === 'string' ? data.newEndTime : new Date(data.newEndTime).toISOString()) : null);
         if (confirmedEndTime) {
           setSessionEndTime(confirmedEndTime);
-          setTimeAddedMinutes(data.addedMinutes || 5);
+          setTimeAddedMinutes(added);
           setShowTimeAddedDialog(true);
           playSuccess();
         }
@@ -53,7 +63,7 @@ export function useExamRealtime({ socket, examId, sessionId, playSuccess, setIsL
         if (data.newEndTime) {
           const confirmedEndTime = typeof data.newEndTime === 'string' ? data.newEndTime : new Date(data.newEndTime).toISOString();
           setSessionEndTime(confirmedEndTime);
-          setTimeAddedMinutes(data.addedMinutes || 5);
+          setTimeAddedMinutes(added);
           setShowTimeAddedDialog(true);
           playSuccess();
         }
