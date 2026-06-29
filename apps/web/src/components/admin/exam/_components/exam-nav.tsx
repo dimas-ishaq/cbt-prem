@@ -19,26 +19,26 @@ export function ExamNav({ questions, currentIndex, onSelect, answeredQuestions, 
         const isCurrent = currentIndex === idx;
         const isFlagged = flaggedQuestions.includes(questionId);
 
-        let bg: string | Record<string, string> = { base: '#F9FAFC', _dark: '#2D2D2D' };
-        let color: string | Record<string, string> = { base: '#1F2328', _dark: '#E0E0E0' };
-        let borderColor: string | Record<string, string> = { base: '#E1E4E8', _dark: '#3D3D3D' };
-        let hoverBg: string | Record<string, string> = { base: '#E1E4E8', _dark: '#3D3D3D' };
+        let bg: string | Record<string, string> = 'dd.surface.alt';
+        let color: string | Record<string, string> = 'dd.text';
+        let borderColor: string | Record<string, string> = 'dd.border';
+        let hoverBg: string | Record<string, string> = 'dd.surface';
 
         if (isCurrent) {
-          bg = '#9C55E8';
-          color = '#ffffff';
-          borderColor = '#9C55E8';
-          hoverBg = '#a86bf5';
+          bg = 'dd.brand';
+          color = 'white';
+          borderColor = 'dd.brand';
+          hoverBg = 'dd.brand.hover';
         } else if (isFlagged) {
-          bg = '#F5A623';
-          color = '#ffffff';
-          borderColor = '#F5A623';
-          hoverBg = '#fbb33c';
+          bg = 'dd.status.warning.solid';
+          color = 'white';
+          borderColor = 'dd.status.warning.solid';
+          hoverBg = 'dd.status.warning.text';
         } else if (isAnswered) {
-          bg = '#1ABE71';
-          color = '#ffffff';
-          borderColor = '#1ABE71';
-          hoverBg = '#22d884';
+          bg = 'dd.status.success.solid';
+          color = 'white';
+          borderColor = 'dd.status.success.solid';
+          hoverBg = 'dd.status.success.text';
         }
 
         return (
@@ -55,7 +55,7 @@ export function ExamNav({ questions, currentIndex, onSelect, answeredQuestions, 
             fontSize="13px"
             fontWeight="bold"
             cursor="pointer"
-            boxShadow={isCurrent ? '0 0 8px rgba(156, 85, 232, 0.4)' : 'none'}
+            boxShadow={isCurrent ? '0 0 0 1px var(--chakra-colors-dd-brand)' : 'none'}
             _hover={{
               bg: hoverBg,
               transform: 'translateY(-1px)',

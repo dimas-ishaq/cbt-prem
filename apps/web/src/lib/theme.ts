@@ -334,6 +334,197 @@ const config = defineConfig({
             _dark: '#6366f1',
           },
         },
+
+        // ── Datadog student surface ───────────────────────────
+        'dd.canvas': {
+          value: {
+            base: '#f0f4f8',
+            _dark: '#1B1B1B',
+          },
+        },
+        'dd.surface': {
+          value: {
+            base: '#ffffff',
+            _dark: '#242424',
+          },
+        },
+        'dd.surface.alt': {
+          value: {
+            base: '#f8fafc',
+            _dark: '#2D2D2D',
+          },
+        },
+        'dd.surface.subtle': {
+          value: {
+            base: '#f0f4f8',
+            _dark: '#1B1B1B',
+          },
+        },
+        'dd.border': {
+          value: {
+            base: '#dde1ea',
+            _dark: '#3D3D3D',
+          },
+        },
+        'dd.border.strong': {
+          value: {
+            base: '#cfd7e2',
+            _dark: '#4D4D4D',
+          },
+        },
+        'dd.text': {
+          value: {
+            base: '#0d1226',
+            _dark: '#E0E0E0',
+          },
+        },
+        'dd.text.muted': {
+          value: {
+            base: '#4a5468',
+            _dark: '#8A8A8A',
+          },
+        },
+        'dd.text.onBrand': {
+          value: {
+            base: '#ffffff',
+            _dark: '#ffffff',
+          },
+        },
+        'dd.brand': {
+          value: {
+            base: '#9C55E8',
+            _dark: '#9C55E8',
+          },
+        },
+        'dd.brand.hover': {
+          value: {
+            base: '#a86bf5',
+            _dark: '#a86bf5',
+          },
+        },
+        'dd.brand.strong': {
+          value: {
+            base: '#774AA4',
+            _dark: '#774AA4',
+          },
+        },
+        'dd.brand.gradient': {
+          value: {
+            base: 'linear-gradient(135deg, #774AA4, #9C55E8)',
+            _dark: 'linear-gradient(135deg, #774AA4, #9C55E8)',
+          },
+        },
+        'dd.brand.subtle': {
+          value: {
+            base: 'rgba(156, 85, 232, 0.12)',
+            _dark: 'rgba(156, 85, 232, 0.16)',
+          },
+        },
+        'dd.icon.info': {
+          value: {
+            base: '#2D9BF0',
+            _dark: '#2D9BF0',
+          },
+        },
+        'dd.icon.warning': {
+          value: {
+            base: '#F5A623',
+            _dark: '#F5A623',
+          },
+        },
+        'dd.icon.neutral': {
+          value: {
+            base: '#9AA3B2',
+            _dark: '#9AA3B2',
+          },
+        },
+        'dd.icon.success': {
+          value: {
+            base: '#1ABE71',
+            _dark: '#1ABE71',
+          },
+        },
+        'dd.icon.danger': {
+          value: {
+            base: '#EF4444',
+            _dark: '#EF4444',
+          },
+        },
+        'dd.status.success.bg': {
+          value: {
+            base: 'rgba(26, 190, 113, 0.12)',
+            _dark: 'rgba(26, 190, 113, 0.10)',
+          },
+        },
+        'dd.status.success.text': {
+          value: {
+            base: '#1ABE71',
+            _dark: '#34d399',
+          },
+        },
+        'dd.status.success.solid': {
+          value: {
+            base: '#1ABE71',
+            _dark: '#1ABE71',
+          },
+        },
+        'dd.status.warning.bg': {
+          value: {
+            base: 'rgba(245, 166, 35, 0.12)',
+            _dark: 'rgba(245, 166, 35, 0.12)',
+          },
+        },
+        'dd.status.warning.text': {
+          value: {
+            base: '#F5A623',
+            _dark: '#F5A623',
+          },
+        },
+        'dd.status.warning.solid': {
+          value: {
+            base: '#F5A623',
+            _dark: '#F5A623',
+          },
+        },
+        'dd.status.danger.bg': {
+          value: {
+            base: 'rgba(239, 68, 68, 0.12)',
+            _dark: 'rgba(239, 68, 68, 0.12)',
+          },
+        },
+        'dd.status.danger.text': {
+          value: {
+            base: '#EF4444',
+            _dark: '#EF4444',
+          },
+        },
+        'dd.status.danger.solid': {
+          value: {
+            base: '#EF4444',
+            _dark: '#EF4444',
+          },
+        },
+        'dd.status.info.bg': {
+          value: {
+            base: 'rgba(45, 155, 240, 0.12)',
+            _dark: 'rgba(45, 155, 240, 0.10)',
+          },
+        },
+        'dd.status.info.text': {
+          value: {
+            base: '#2D9BF0',
+            _dark: '#2D9BF0',
+          },
+        },
+        'dd.status.info.solid': {
+          value: {
+            base: '#2D9BF0',
+            _dark: '#2D9BF0',
+          },
+        },
+        'dd.focus.ring': {
+          value: '0 0 0 1px #9C55E8',
+        },
       },
     },
   },

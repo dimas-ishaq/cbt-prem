@@ -54,7 +54,7 @@ export function ExamHistory() {
     return (
       <Flex justify="center" align="center" py={12}>
         <Spinner size="lg" color="#9C55E8" />
-        <Text ml={3} color={{ base: '#57606A', _dark: '#8A8A8A' }} fontSize="13px" fontWeight="medium">{t('loadingHistory')}</Text>
+        <Text ml={3} color={{ base: '#4a5468', _dark: '#8A8A8A' }} fontSize="13px" fontWeight="medium">{t('loadingHistory')}</Text>
       </Flex>
     );
   }
@@ -71,53 +71,53 @@ export function ExamHistory() {
     <Box mt={4} fontFamily="Inter, -apple-system, BlinkMacSystemFont, sans-serif">
       <Stack gap={1} mb={5}>
         <HStack gap={2} align="center">
-          <History size={16} className="text-purple-500" />
-          <Heading size="sm" fontWeight="bold" color={{ base: '#1F2328', _dark: '#E0E0E0' }}>{t('historyTitle')}</Heading>
+          <History size={16} color="#9C55E8" />
+          <Heading size="sm" fontWeight="bold" color={{ base: '#0d1226', _dark: '#E0E0E0' }}>{t('historyTitle')}</Heading>
         </HStack>
-        <Text color={{ base: '#57606A', _dark: '#8A8A8A' }} fontSize="12px">{t('historyDesc')}</Text>
+        <Text color={{ base: '#4a5468', _dark: '#8A8A8A' }} fontSize="12px">{t('historyDesc')}</Text>
       </Stack>
 
       {history?.length === 0 ? (
-        <Box textAlign="center" py={12} bg={{ base: '#FFFFFF', _dark: '#242424' }} borderRadius="md" border="1px solid" borderColor={{ base: '#E1E4E8', _dark: '#3D3D3D' }} boxShadow="0 1px 4px rgba(0,0,0,0.05)">
+        <Box textAlign="center" py={12} bg={{ base: '#ffffff', _dark: '#242424' }} borderRadius="md" border="1px solid" borderColor={{ base: '#dde1ea', _dark: '#3D3D3D' }} boxShadow="0 1px 4px rgba(0,0,0,0.05)">
           <RotateCcw size={32} className="text-gray-400 mx-auto mb-3" />
-          <Text color={{ base: '#1F2328', _dark: '#E0E0E0' }} fontSize="13px" fontWeight="medium">{t('emptyHistory')}</Text>
-          <Text color={{ base: '#57606A', _dark: '#8A8A8A' }} fontSize="11px" mt={1}>{t('emptyHistoryDesc')}</Text>
+          <Text color={{ base: '#0d1226', _dark: '#E0E0E0' }} fontSize="13px" fontWeight="medium">{t('emptyHistory')}</Text>
+          <Text color={{ base: '#4a5468', _dark: '#8A8A8A' }} fontSize="11px" mt={1}>{t('emptyHistoryDesc')}</Text>
         </Box>
       ) : (
-        <Stack gap={4}>
+        <Stack gap={3}>
           {history?.map((session) => {
             const status = getStatusConfig(session.status, t);
             const duration = formatDuration(session.startTime, session.endTime, t);
-            
+
             let statusBadge = (
-              <Badge bg={{ base: '#E1E4E8', _dark: '#2D2D2D' }} color={{ base: '#57606A', _dark: '#8A8A8A' }} border="1px solid" borderColor={{ base: '#D1D5DB', _dark: '#3D3D3D' }} px={2} py={0.5} borderRadius="md" fontSize="9px" fontWeight="bold">
+              <Badge bg={{ base: '#f0f4f8', _dark: '#2D2D2D' }} color={{ base: '#4a5468', _dark: '#8A8A8A' }} border="1px solid" borderColor={{ base: '#dde1ea', _dark: '#3D3D3D' }} px={2} py={0.5} borderRadius="md" fontSize="9px" fontWeight="bold">
                 {status.label}
               </Badge>
             );
 
             if (status.color === 'green') {
               statusBadge = (
-                <Badge bg="rgba(26, 190, 113, 0.15)" color="#1ABE71" border="1px solid" borderColor="rgba(26, 190, 113, 0.25)" px={2} py={0.5} borderRadius="md" fontSize="9px" fontWeight="bold">
+                <Badge bg="rgba(26, 190, 113, 0.12)" color="#1ABE71" border="1px solid" borderColor="rgba(26, 190, 113, 0.2)" px={2} py={0.5} borderRadius="md" fontSize="9px" fontWeight="bold">
                   {status.label}
                 </Badge>
               );
             } else if (status.color === 'red') {
               statusBadge = (
-                <Badge bg="rgba(239, 68, 68, 0.15)" color="#EF4444" border="1px solid" borderColor="rgba(239, 68, 68, 0.25)" px={2} py={0.5} borderRadius="md" fontSize="9px" fontWeight="bold">
+                <Badge bg="rgba(239, 68, 68, 0.12)" color="#EF4444" border="1px solid" borderColor="rgba(239, 68, 68, 0.2)" px={2} py={0.5} borderRadius="md" fontSize="9px" fontWeight="bold">
                   {status.label}
                 </Badge>
               );
             }
 
             return (
-              <Box 
-                key={session.id} 
-                p={4} 
-                bg={{ base: '#FFFFFF', _dark: '#242424' }} 
-                borderRadius="md" 
-                border="1px solid" 
-                borderColor={{ base: '#E1E4E8', _dark: '#3D3D3D' }} 
-                boxShadow="0 1px 4px rgba(0,0,0,0.05)" 
+              <Box
+                key={session.id}
+                p={4}
+                bg={{ base: '#ffffff', _dark: '#242424' }}
+                borderRadius="md"
+                border="1px solid"
+                borderColor={{ base: '#dde1ea', _dark: '#3D3D3D' }}
+                boxShadow="0 1px 4px rgba(0,0,0,0.05)"
                 transition="all 0.15s ease"
                 _hover={{
                   borderColor: '#9C55E8',

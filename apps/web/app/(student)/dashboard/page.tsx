@@ -109,40 +109,35 @@ export default function DashboardPage() {
   if (!user) return null;
 
   return (
-    <Box minH="100vh" bg={{ base: '#F4F5F7', _dark: '#1B1B1B' }} fontFamily="Inter, -apple-system, BlinkMacSystemFont, sans-serif">
+    <Box minH="100vh" bg="dd.canvas" fontFamily="Inter, -apple-system, BlinkMacSystemFont, sans-serif">
       {/* ── Navbar ─────────────────────────────────────── */}
       <Box
         as="nav"
-        bg={{ base: '#FFFFFF', _dark: '#242424' }}
+        bg="dd.surface"
         borderBottom="1px solid"
-        borderColor={{ base: '#E1E4E8', _dark: '#3D3D3D' }}
+        borderColor="dd.border"
         position="sticky"
         top={0}
         zIndex={10}
         style={{ backdropFilter: 'blur(10px)' }}
-        boxShadow="0 1px 4px rgba(0,0,0,0.02)"
+        boxShadow="0 1px 4px rgba(0,0,0,0.04)"
       >
-        <Container maxW="7xl" px={{ base: 4, sm: 6, lg: 8 }} py={3.5}>
+        <Container maxW="7xl" px={{ base: 4, sm: 6, lg: 8 }} py={3}>
           <Flex justify="space-between" align="center">
             {/* Logo */}
-            <Flex align="center" gap={3}>
+            <Flex align="center" gap={2.5}>
               <Flex
                 align="center"
                 justify="center"
-                w={9}
-                h={9}
+                w={8}
+                h={8}
                 borderRadius="md"
                 overflow="hidden"
                 bg={settings?.logoUrl ? 'white' : 'transparent'}
-                style={
+                backgroundImage={
                   settings?.logoUrl
-                    ? {}
-                    : {
-                        background:
-                          'linear-gradient(135deg, #774AA4, #9C55E8)',
-                        boxShadow:
-                          '0 4px 12px rgba(156,85,232,0.25)',
-                      }
+                    ? undefined
+                    : undefined
                 }
               >
                 {settings?.logoUrl ? (
@@ -154,13 +149,13 @@ export default function DashboardPage() {
                     objectFit="contain"
                   />
                 ) : (
-                  <BookOpen size={16} color="white" />
+                  <BookOpen size={14} color="white" />
                 )}
               </Flex>
               <Box>
                 <Text
                   fontWeight="bold"
-                  color={{ base: '#1F2328', _dark: '#E0E0E0' }}
+                  color="dd.text"
                   fontSize="13px"
                   letterSpacing="wide"
                   textTransform="uppercase"
@@ -170,7 +165,7 @@ export default function DashboardPage() {
                 </Text>
                 <Text
                   fontSize="10px"
-                  color={{ base: '#57606A', _dark: '#8A8A8A' }}
+                  color="dd.text.muted"
                   fontWeight="semibold"
                   letterSpacing="wider"
                   textTransform="uppercase"
@@ -182,11 +177,11 @@ export default function DashboardPage() {
             </Flex>
 
             {/* Right controls */}
-            <HStack gap={3}>
+            <HStack gap={2.5}>
               {/* Server time */}
-              <HStack gap={1.5} color={{ base: '#57606A', _dark: '#8A8A8A' }} display={{ base: 'none', md: 'flex' }} whiteSpace="nowrap">
-                <Clock size={12} className="text-purple-500" />
-                <Text fontSize="11px" fontWeight="semibold" fontFamily="Courier New, Courier, monospace">
+              <HStack gap={1.5} color="dd.text.muted" display={{ base: 'none', md: 'flex' }} whiteSpace="nowrap">
+                <Clock size={11} color="dd.brand" />
+                <Text fontSize="11px" fontWeight="semibold" fontFamily="ui-monospace, SFMono-Regular, 'Courier New', monospace">
                   {formattedServerTime}
                 </Text>
               </HStack>
@@ -194,25 +189,22 @@ export default function DashboardPage() {
               {/* User badge */}
               <Flex
                 align="center"
-                gap={2.5}
-                px={3}
-                py={1.5}
-                borderRadius="md"
+                gap={2}
+                px={2.5}
+                py={1}
+                borderRadius="sm"
                 border="1px solid"
-                borderColor={{ base: '#E1E4E8', _dark: '#3D3D3D' }}
-                bg={{ base: '#F9FAFC', _dark: '#1B1B1B' }}
+                borderColor="dd.border"
+                bg="dd.surface"
                 display={{ base: 'none', sm: 'flex' }}
               >
                 <Flex
                   w={5}
                   h={5}
-                  borderRadius="md"
+                  borderRadius="sm"
                   align="center"
                   justify="center"
-                  style={{
-                    background:
-                      'linear-gradient(135deg, #774AA4, #9C55E8)',
-                  }}
+                  bg="dd.brand.gradient"
                 >
                   <Text
                     fontSize="10px"
@@ -223,9 +215,9 @@ export default function DashboardPage() {
                   </Text>
                 </Flex>
                 <Text
-                  fontSize="12px"
+                  fontSize="11px"
                   fontWeight="semibold"
-                  color={{ base: '#1F2328', _dark: '#E0E0E0' }}
+                  color="dd.text"
                 >
                   {user.fullName}
                 </Text>
@@ -234,19 +226,20 @@ export default function DashboardPage() {
               <Button
                 size="sm"
                 variant="ghost"
-                color="#EF4444"
-                borderRadius="md"
+                color="dd.icon.danger"
+                borderRadius="sm"
                 _hover={{ bg: { base: 'rgba(239, 68, 68, 0.08)', _dark: 'rgba(239, 68, 68, 0.15)' } }}
                 onClick={() => {
                   logout();
                   router.push('/login');
                 }}
                 cursor="pointer"
-                gap={1.5}
-                height="32px"
+                gap={1}
+                height="30px"
+                fontSize="11px"
               >
-                <LogOut size={13} />
-                <Text fontSize="12px" fontWeight="bold">
+                <LogOut size={12} />
+                <Text fontSize="11px" fontWeight="bold">
                   Keluar
                 </Text>
               </Button>
@@ -256,15 +249,15 @@ export default function DashboardPage() {
       </Box>
 
       {/* ── Main Content ────────────────────────────────── */}
-      <Container as="main" maxW="7xl" px={{ base: 4, sm: 6, lg: 8 }} py={6}>
+      <Container as="main" maxW="7xl" px={{ base: 4, sm: 6, lg: 8 }} py={5}>
         {/* ── Student Profile & Welcome Header ──────────────────── */}
         <Box
-          mb={6}
+          mb={5}
           p={5}
           borderRadius="md"
           border="1px solid"
-          borderColor={{ base: '#E1E4E8', _dark: '#3D3D3D' }}
-          bg={{ base: '#FFFFFF', _dark: '#242424' }}
+          borderColor="dd.border"
+          bg="dd.surface"
           boxShadow="0 1px 4px rgba(0,0,0,0.05)"
           position="relative"
           overflow="hidden"
@@ -283,11 +276,11 @@ export default function DashboardPage() {
 
           {isLoadingProfile ? (
             <Flex justify="center" py={8}>
-              <Spinner size="lg" color="#9C55E8" />
+              <Spinner size="lg" color="dd.brand" />
             </Flex>
           ) : (
             <Flex
-              gap={6}
+              gap={5}
               direction={{ base: 'column', md: 'row' }}
               align={{ base: 'center', md: 'center' }}
               position="relative"
@@ -300,9 +293,9 @@ export default function DashboardPage() {
                 h="100px"
                 borderRadius="md"
                 overflow="hidden"
-                bg={{ base: '#F9FAFC', _dark: '#1B1B1B' }}
+                bg="dd.surface.subtle"
                 border="1px solid"
-                borderColor={{ base: '#E1E4E8', _dark: '#3D3D3D' }}
+                borderColor="dd.border"
                 flexShrink={0}
                 boxShadow="sm"
               >
@@ -315,9 +308,9 @@ export default function DashboardPage() {
                     objectFit="cover"
                   />
                 ) : (
-                  <Flex align="center" justify="center" w="full" h="full" direction="column" bg={{ base: '#F4F5F7', _dark: '#1B1B1B' }}>
-                    <BookOpen size={24} className="text-gray-400" />
-                    <Text fontSize="10px" color={{ base: '#57606A', _dark: '#8A8A8A' }} mt={1}>Tidak Ada Foto</Text>
+                  <Flex align="center" justify="center" w="full" h="full" direction="column" bg="dd.canvas">
+                    <BookOpen size={24} color="dd.icon.neutral" />
+                    <Text fontSize="10px" color="dd.text.muted" mt={1}>Tidak Ada Foto</Text>
                   </Flex>
                 )}
                 <Button
@@ -328,10 +321,10 @@ export default function DashboardPage() {
                   w="full"
                   h="6"
                   borderRadius="none"
-                  bg="blackAlpha.700"
+                  bg="rgba(13, 18, 38, 0.82)"
                   color="white"
                   fontSize="9px"
-                  _hover={{ bg: 'blackAlpha.900' }}
+                  _hover={{ bg: 'rgba(13, 18, 38, 0.92)' }}
                   cursor="pointer"
                   onClick={() => photoInputRef.current?.click()}
                   loading={isUploadingPhoto}
@@ -352,7 +345,7 @@ export default function DashboardPage() {
                 <Box>
                   <Text
                     fontSize="10px"
-                    color="#9C55E8"
+                    color="dd.brand"
                     fontWeight="black"
                     textTransform="uppercase"
                     letterSpacing="widest"
@@ -362,36 +355,36 @@ export default function DashboardPage() {
                   <Heading
                     size="md"
                     fontWeight="bold"
-                    color={{ base: '#1F2328', _dark: '#E0E0E0' }}
+                    color="dd.text"
                     letterSpacing="tight"
                     mt={0.5}
                   >
                     {profile?.fullName}
                   </Heading>
-                  <Text fontSize="12px" color={{ base: '#57606A', _dark: '#8A8A8A' }} mt={0.5}>
+                  <Text fontSize="12px" color="dd.text.muted" mt={0.5}>
                     {profile?.email}
                   </Text>
                 </Box>
 
-                <HStack gap={3} mt={2} flexWrap="wrap">
-                  <HStack gap={1.5} bg={{ base: '#F9FAFC', _dark: '#1B1B1B' }} px={3} py={1} borderRadius="md" border="1px solid" borderColor={{ base: '#E1E4E8', _dark: '#3D3D3D' }}>
-                    <Hash size={11} className="text-blue-500" />
-                    <Text fontWeight="bold" color={{ base: '#57606A', _dark: '#8A8A8A' }} fontSize="10px">NIS:</Text>
-                    <Badge bg="rgba(45, 155, 240, 0.15)" color="#2D9BF0" border="1px solid" borderColor="rgba(45, 155, 240, 0.25)" px={1.5} py={0.2} borderRadius="md" fontSize="9px" fontWeight="bold">
+                <HStack gap={2} mt={2} flexWrap="wrap">
+                  <HStack gap={1.5} bg="dd.surface.subtle" px={3} py={1} borderRadius="md" border="1px solid" borderColor="dd.border">
+                    <Hash size={11} color="dd.icon.info" />
+                    <Text fontWeight="bold" color="dd.text.muted" fontSize="10px">NIS:</Text>
+                    <Badge bg="dd.status.info.bg" color="dd.icon.info" border="1px solid" borderColor="dd.status.info.text" px={1.5} py={0.2} borderRadius="md" fontSize="9px" fontWeight="bold">
                       {profile?.nis ?? '-'}
                     </Badge>
                   </HStack>
-                  <HStack gap={1.5} bg={{ base: '#F9FAFC', _dark: '#1B1B1B' }} px={3} py={1} borderRadius="md" border="1px solid" borderColor={{ base: '#E1E4E8', _dark: '#3D3D3D' }}>
-                    <Award size={11} className="text-purple-500" />
-                    <Text fontWeight="bold" color={{ base: '#57606A', _dark: '#8A8A8A' }} fontSize="10px">JURUSAN:</Text>
-                    <Badge bg="rgba(156, 85, 232, 0.15)" color="#9C55E8" border="1px solid" borderColor="rgba(156, 85, 232, 0.25)" px={1.5} py={0.2} borderRadius="md" fontSize="9px" fontWeight="bold">
+                  <HStack gap={1.5} bg="dd.surface.subtle" px={3} py={1} borderRadius="md" border="1px solid" borderColor="dd.border">
+                    <Award size={11} color="dd.brand" />
+                    <Text fontWeight="bold" color="dd.text.muted" fontSize="10px">JURUSAN:</Text>
+                    <Badge bg="dd.brand.subtle" color="dd.brand" border="1px solid" borderColor="dd.brand" px={1.5} py={0.2} borderRadius="md" fontSize="9px" fontWeight="bold">
                       {profile?.major?.name ?? 'Belum Ditentukan'}
                     </Badge>
                   </HStack>
-                  <HStack gap={1.5} bg={{ base: '#F9FAFC', _dark: '#1B1B1B' }} px={3} py={1} borderRadius="md" border="1px solid" borderColor={{ base: '#E1E4E8', _dark: '#3D3D3D' }}>
-                    <Users size={11} className="text-green-500" />
-                    <Text fontWeight="bold" color={{ base: '#57606A', _dark: '#8A8A8A' }} fontSize="10px">ROMBEL:</Text>
-                    <Badge bg="rgba(26, 190, 113, 0.15)" color="#1ABE71" border="1px solid" borderColor="rgba(26, 190, 113, 0.25)" px={1.5} py={0.2} borderRadius="md" fontSize="9px" fontWeight="bold">
+                  <HStack gap={1.5} bg="dd.surface.subtle" px={3} py={1} borderRadius="md" border="1px solid" borderColor="dd.border">
+                    <Users size={11} color="dd.icon.success" />
+                    <Text fontWeight="bold" color="dd.text.muted" fontSize="10px">ROMBEL:</Text>
+                    <Badge bg="dd.status.success.bg" color="dd.icon.success" border="1px solid" borderColor="dd.status.success.text" px={1.5} py={0.2} borderRadius="md" fontSize="9px" fontWeight="bold">
                       {profile?.rombel?.name ?? 'Belum Ditentukan'}
                     </Badge>
                   </HStack>
@@ -402,14 +395,14 @@ export default function DashboardPage() {
         </Box>
 
         {/* ── Navigation Tabs ────────────────────────────────── */}
-        <Flex gap={2} mb={6} borderBottom="1px solid" borderColor={{ base: '#E1E4E8', _dark: '#3D3D3D' }} pb={3} wrap="wrap">
+        <Flex gap={2} mb={5} borderBottom="1px solid" borderColor="dd.border" pb={3} wrap="wrap">
           <Button
             size="sm"
             variant="ghost"
-            bg={activeTab === 'exams' ? '#9C55E8' : 'transparent'}
-            color={activeTab === 'exams' ? 'white' : { base: '#57606A', _dark: '#8A8A8A' }}
-            _hover={activeTab === 'exams' ? { bg: '#a86bf5' } : { bg: { base: '#F9FAFC', _dark: '#2D2D2D' } }}
-            borderRadius="md"
+            bg={activeTab === 'exams' ? 'dd.brand' : 'transparent'}
+            color={activeTab === 'exams' ? 'white' : 'dd.text.muted'}
+            _hover={activeTab === 'exams' ? { bg: 'dd.brand.hover' } : { bg: 'dd.surface.alt' }}
+            borderRadius="sm"
             fontWeight="bold"
             px={4}
             height="36px"
@@ -423,10 +416,10 @@ export default function DashboardPage() {
           <Button
             size="sm"
             variant="ghost"
-            bg={activeTab === 'history' ? '#9C55E8' : 'transparent'}
-            color={activeTab === 'history' ? 'white' : { base: '#57606A', _dark: '#8A8A8A' }}
-            _hover={activeTab === 'history' ? { bg: '#a86bf5' } : { bg: { base: '#F9FAFC', _dark: '#2D2D2D' } }}
-            borderRadius="md"
+            bg={activeTab === 'history' ? 'dd.brand' : 'transparent'}
+            color={activeTab === 'history' ? 'white' : 'dd.text.muted'}
+            _hover={activeTab === 'history' ? { bg: 'dd.brand.hover' } : { bg: 'dd.surface.alt' }}
+            borderRadius="sm"
             fontWeight="bold"
             px={4}
             height="36px"
@@ -442,11 +435,11 @@ export default function DashboardPage() {
         {/* ── Tab Content Panel ────────────────────────────────── */}
         {activeTab === 'exams' ? (
           <Stack gap={5}>
-            <Stack gap={1} mb={2}>
-              <Heading size="sm" fontWeight="bold" color={{ base: '#1F2328', _dark: '#E0E0E0' }}>
+            <Stack gap={1} mb={1}>
+              <Heading size="sm" fontWeight="bold" color="dd.text">
                 Daftar Ujian Tersedia
               </Heading>
-              <Text color={{ base: '#57606A', _dark: '#8A8A8A' }} fontSize="12px">
+              <Text color="dd.text.muted" fontSize="12px">
                 Pilih ujian aktif yang ingin Anda ikuti untuk memulai pengerjaan.
               </Text>
             </Stack>

@@ -56,18 +56,18 @@ export function ExamTimer({ startTime, duration, overrideEndTime, onTimeUp }: Pr
   const isWarning = timeLeft >= 300 && timeLeft < 900; // < 15 mins
 
   // Setup mode responsive styles
-  let textColor = { base: '#2D9BF0', _dark: '#2D9BF0' };
-  let borderColor = { base: '#E1E4E8', _dark: '#3D3D3D' };
-  let bgColor = { base: '#F9FAFC', _dark: '#1B1B1B' };
+  let textColor = 'dd.status.info.text';
+  let borderColor = 'dd.border';
+  let bgColor = 'dd.canvas';
 
   if (isCritical) {
-    textColor = { base: '#EF4444', _dark: '#EF4444' };
-    borderColor = { base: '#EF4444', _dark: '#EF4444' };
-    bgColor = { base: 'rgba(239, 68, 68, 0.1)', _dark: 'rgba(239, 68, 68, 0.12)' };
+    textColor = 'dd.status.danger.text';
+    borderColor = 'dd.status.danger.text';
+    bgColor = 'dd.status.danger.bg';
   } else if (isWarning) {
-    textColor = { base: '#F5A623', _dark: '#F5A623' };
-    borderColor = { base: '#F5A623', _dark: '#F5A623' };
-    bgColor = { base: 'rgba(245, 166, 35, 0.08)', _dark: 'rgba(245, 166, 35, 0.12)' };
+    textColor = 'dd.status.warning.text';
+    borderColor = 'dd.status.warning.text';
+    bgColor = 'dd.status.warning.bg';
   }
 
   return (

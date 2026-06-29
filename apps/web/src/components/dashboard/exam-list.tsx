@@ -77,11 +77,11 @@ export function ExamList() {
           <Box
             key={exam.id}
             p={5}
-            bg={{ base: '#FFFFFF', _dark: '#242424' }}
+            bg={{ base: '#ffffff', _dark: '#242424' }}
             borderRadius="md"
             boxShadow="0 1px 4px rgba(0,0,0,0.05)"
             border="1px solid"
-            borderColor={{ base: '#E1E4E8', _dark: '#3D3D3D' }}
+            borderColor={{ base: '#dde1ea', _dark: '#3D3D3D' }}
             display="flex"
             flexDirection="column"
             justifyContent="space-between"
@@ -93,57 +93,57 @@ export function ExamList() {
             }}
           >
             <Box>
-              <Flex justify="space-between" align="start" mb={4}>
-                <Badge bg="rgba(45, 155, 240, 0.15)" color="#2D9BF0" border="1px solid" borderColor="rgba(45, 155, 240, 0.25)" px={2.5} py={0.5} borderRadius="md" textTransform="uppercase" fontWeight="bold" fontSize="10px">
+              <Flex justify="space-between" align="start" mb={4} gap={2}>
+                <Badge bg="rgba(45, 155, 240, 0.12)" color="#2D9BF0" border="1px solid" borderColor="rgba(45, 155, 240, 0.2)" px={2.5} py={0.5} borderRadius="md" textTransform="uppercase" fontWeight="bold" fontSize="10px">
                   {exam.subject.name}
                 </Badge>
-                <HStack gap={2}>
+                <HStack gap={1.5} flexWrap="wrap" justify="flex-end">
                   {isLocked && (
-                    <Badge bg="rgba(239, 68, 68, 0.15)" color="#EF4444" border="1px solid" borderColor="rgba(239, 68, 68, 0.25)" px={2} py={0.5} borderRadius="md" fontSize="9px" fontWeight="bold">
+                    <Badge bg="rgba(239, 68, 68, 0.12)" color="#EF4444" border="1px solid" borderColor="rgba(239, 68, 68, 0.2)" px={2} py={0.5} borderRadius="md" fontSize="9px" fontWeight="bold">
                       TERKUNCI
                     </Badge>
                   )}
                   {!isLocked && isCompleted && (
-                    <Badge bg="rgba(26, 190, 113, 0.15)" color="#1ABE71" border="1px solid" borderColor="rgba(26, 190, 113, 0.25)" px={2} py={0.5} borderRadius="md" fontSize="9px" fontWeight="bold">
+                    <Badge bg="rgba(26, 190, 113, 0.12)" color="#1ABE71" border="1px solid" borderColor="rgba(26, 190, 113, 0.2)" px={2} py={0.5} borderRadius="md" fontSize="9px" fontWeight="bold">
                       SELESAI
                     </Badge>
                   )}
                   {isInProgress && (
-                    <Badge bg="rgba(245, 166, 35, 0.15)" color="#F5A623" border="1px solid" borderColor="rgba(245, 166, 35, 0.25)" px={2} py={0.5} borderRadius="md" fontSize="9px" fontWeight="bold" className="animate-pulse">
+                    <Badge bg="rgba(245, 166, 35, 0.12)" color="#F5A623" border="1px solid" borderColor="rgba(245, 166, 35, 0.2)" px={2} py={0.5} borderRadius="md" fontSize="9px" fontWeight="bold" className="animate-pulse">
                       AKTIF
                     </Badge>
                   )}
                   {!isCompleted && !isInProgress && isNotStarted && (
-                    <Badge bg={{ base: '#E1E4E8', _dark: '#2D2D2D' }} color={{ base: '#57606A', _dark: '#8A8A8A' }} border="1px solid" borderColor={{ base: '#D1D5DB', _dark: '#3D3D3D' }} px={2} py={0.5} borderRadius="md" fontSize="9px" fontWeight="bold">
+                    <Badge bg={{ base: '#f0f4f8', _dark: '#2D2D2D' }} color={{ base: '#4a5468', _dark: '#8A8A8A' }} border="1px solid" borderColor={{ base: '#dde1ea', _dark: '#3D3D3D' }} px={2} py={0.5} borderRadius="md" fontSize="9px" fontWeight="bold">
                       BELUM DIMULAI
                     </Badge>
                   )}
                   {!isCompleted && !isInProgress && !isNotStarted && isEnded && (
-                    <Badge bg={{ base: '#E1E4E8', _dark: '#2D2D2D' }} color={{ base: '#57606A', _dark: '#8A8A8A' }} border="1px solid" borderColor={{ base: '#D1D5DB', _dark: '#3D3D3D' }} px={2} py={0.5} borderRadius="md" fontSize="9px" fontWeight="bold">
+                    <Badge bg={{ base: '#f0f4f8', _dark: '#2D2D2D' }} color={{ base: '#4a5468', _dark: '#8A8A8A' }} border="1px solid" borderColor={{ base: '#dde1ea', _dark: '#3D3D3D' }} px={2} py={0.5} borderRadius="md" fontSize="9px" fontWeight="bold">
                       SUDAH BERAKHIR
                     </Badge>
                   )}
-                  <Text fontSize="12px" color={{ base: '#57606A', _dark: '#8A8A8A' }} fontWeight="semibold">
+                  <Text fontSize="12px" color={{ base: '#4a5468', _dark: '#8A8A8A' }} fontWeight="semibold">
                     {exam.duration} Menit
                   </Text>
                 </HStack>
               </Flex>
-              
-              <Heading size="sm" fontWeight="bold" color={{ base: '#1F2328', _dark: '#E0E0E0' }} mb={2} lineClamp={1}>
+
+              <Heading size="sm" fontWeight="bold" color={{ base: '#0d1226', _dark: '#E0E0E0' }} mb={2} lineClamp={1}>
                 {exam.title}
               </Heading>
-              
-              <Text color={{ base: '#57606A', _dark: '#8A8A8A' }} fontSize="12px" mb={4} lineClamp={2}>
+
+              <Text color={{ base: '#4a5468', _dark: '#8A8A8A' }} fontSize="12px" mb={4} lineClamp={2}>
                 {exam.description}
               </Text>
-              
-              <Stack gap={1.5} fontSize="11px" color={{ base: '#57606A', _dark: '#8A8A8A' }} fontWeight="semibold" mb={6}>
+
+              <Stack gap={1.5} fontSize="11px" color={{ base: '#4a5468', _dark: '#8A8A8A' }} fontWeight="semibold" mb={6}>
                 <HStack gap={1.5}>
-                  <Calendar size={12} className="text-gray-400" />
+                  <Calendar size={12} color="#9AA3B2" />
                   <Text>Mulai: {startTime.toLocaleString('id-ID')}</Text>
                 </HStack>
                 <HStack gap={1.5}>
-                  <Clock size={12} className="text-gray-400" />
+                  <Clock size={12} color="#9AA3B2" />
                   <Text>Selesai: {endTime.toLocaleString('id-ID')}</Text>
                 </HStack>
               </Stack>
@@ -185,10 +185,10 @@ export function ExamList() {
               <Button
                 w="full"
                 height="38px"
-                bg={{ base: '#F4F5F7', _dark: '#1B1B1B' }}
+                bg={{ base: '#f0f4f8', _dark: '#1B1B1B' }}
                 color={{ base: '#94A3B8', _dark: '#8A8A8A' }}
                 border="1px solid"
-                borderColor={{ base: '#E1E4E8', _dark: '#3D3D3D' }}
+                borderColor={{ base: '#dde1ea', _dark: '#3D3D3D' }}
                 borderRadius="md"
                 fontWeight="bold"
                 fontSize="13px"
@@ -201,10 +201,10 @@ export function ExamList() {
               <Button
                 w="full"
                 height="38px"
-                bg={{ base: '#F4F5F7', _dark: '#1B1B1B' }}
+                bg={{ base: '#f0f4f8', _dark: '#1B1B1B' }}
                 color={{ base: '#94A3B8', _dark: '#8A8A8A' }}
                 border="1px dashed"
-                borderColor={{ base: '#E1E4E8', _dark: '#3D3D3D' }}
+                borderColor={{ base: '#dde1ea', _dark: '#3D3D3D' }}
                 borderRadius="md"
                 fontWeight="bold"
                 fontSize="13px"

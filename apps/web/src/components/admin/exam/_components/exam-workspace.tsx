@@ -39,7 +39,7 @@ export function ExamWorkspace({ currentQuestion, currentQuestionIndex, answers, 
   const isLastQuestion = currentQuestionIndex === questions.length - 1;
 
   return (
-    <Box display="grid" gridTemplateColumns={{ base: '1fr', lg: 'minmax(0, 1fr) 360px' }} gap={6} fontFamily="Inter, -apple-system, BlinkMacSystemFont, sans-serif">
+    <Box display="grid" gridTemplateColumns={{ base: '1fr', lg: 'minmax(0, 1fr) 360px' }} gap={5} fontFamily="Inter, -apple-system, BlinkMacSystemFont, sans-serif">
       <Box>
         {currentQuestion && (
           <>
@@ -55,16 +55,16 @@ export function ExamWorkspace({ currentQuestion, currentQuestionIndex, answers, 
               <Button
                 onClick={onPrevious}
                 disabled={isFirstQuestion}
-                bg={{ base: '#FFFFFF', _dark: '#2D2D2D' }}
-                color={isFirstQuestion ? { base: '#94A3B8', _dark: '#8A8A8A' } : { base: '#1F2328', _dark: '#E0E0E0' }}
+                bg="dd.surface"
+                color={isFirstQuestion ? 'dd.text.muted' : 'dd.text'}
                 border="1px solid"
-                borderColor={{ base: '#E1E4E8', _dark: '#3D3D3D' }}
+                borderColor="dd.border"
                 borderRadius="md"
                 px={5}
                 height="38px"
                 fontSize="13px"
                 fontWeight="bold"
-                _hover={isFirstQuestion ? {} : { bg: { base: '#F9FAFC', _dark: '#3D3D3D' } }}
+                _hover={isFirstQuestion ? {} : { bg: 'dd.canvas' }}
                 cursor={isFirstQuestion ? 'not-allowed' : 'pointer'}
                 opacity={isFirstQuestion ? 0.5 : 1}
                 transition="all 0.15s ease"
@@ -74,16 +74,16 @@ export function ExamWorkspace({ currentQuestion, currentQuestionIndex, answers, 
               {!isLastQuestion ? (
                 <Button
                   onClick={onNext}
-                  bg="#9C55E8"
-                  color="#ffffff"
+                  bg="dd.brand"
+                  color="white"
                   border="1px solid"
-                  borderColor="#9C55E8"
+                  borderColor="dd.brand"
                   borderRadius="md"
                   px={5}
                   height="38px"
                   fontSize="13px"
                   fontWeight="bold"
-                  _hover={{ bg: '#a86bf5' }}
+                  _hover={{ bg: 'dd.brand.hover' }}
                   cursor="pointer"
                   transition="all 0.15s ease"
                 >
@@ -92,17 +92,17 @@ export function ExamWorkspace({ currentQuestion, currentQuestionIndex, answers, 
               ) : (
                 <Button
                   onClick={onFinish}
-                  bg={disableFinish ? { base: '#E1E4E8', _dark: '#2D2D2D' } : '#EF4444'}
-                  color={disableFinish ? { base: '#94A3B8', _dark: '#8A8A8A' } : '#ffffff'}
+                  bg={disableFinish ? 'dd.surface.alt' : 'dd.status.danger.solid'}
+                  color={disableFinish ? 'dd.text.muted' : 'white'}
                   border="1px solid"
-                  borderColor={disableFinish ? { base: '#E1E4E8', _dark: '#3D3D3D' } : '#EF4444'}
+                  borderColor={disableFinish ? 'dd.border' : 'dd.status.danger.solid' }
                   borderRadius="md"
                   px={5}
                   height="38px"
                   fontSize="13px"
                   fontWeight="bold"
                   disabled={disableFinish}
-                  _hover={disableFinish ? {} : { bg: '#D32F2F' }}
+                  _hover={disableFinish ? {} : { bg: 'dd.status.danger.solid' }}
                   cursor={disableFinish ? 'not-allowed' : 'pointer'}
                   opacity={disableFinish ? 0.5 : 1}
                   transition="all 0.15s ease"

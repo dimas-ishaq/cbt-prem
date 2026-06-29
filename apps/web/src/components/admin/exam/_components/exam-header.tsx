@@ -17,9 +17,9 @@ export function ExamHeader({ title, subjectName, startTime, duration, overrideEn
   return (
     <Flex
       as="header"
-      bg={{ base: '#FFFFFF', _dark: '#242424' }}
+      bg="dd.surface"
       borderBottom="1px solid"
-      borderColor={{ base: '#E1E4E8', _dark: '#3D3D3D' }}
+      borderColor="dd.border"
       px={6}
       py={4}
       justify="space-between"
@@ -27,17 +27,17 @@ export function ExamHeader({ title, subjectName, startTime, duration, overrideEn
       fontFamily="Inter, -apple-system, BlinkMacSystemFont, sans-serif"
     >
       <Box>
-        <Heading size="md" color={{ base: '#1F2328', _dark: '#E0E0E0' }} fontWeight="700">
+        <Heading size="md" color="dd.text" fontWeight="700">
           {title}
         </Heading>
-        <Text fontSize="12px" color={{ base: '#57606A', _dark: '#8A8A8A' }} mt={0.5}>
+        <Text fontSize="12px" color="dd.text.muted" mt={0.5}>
           {subjectName}
         </Text>
       </Box>
       <ExamTimer startTime={startTime} duration={duration} overrideEndTime={overrideEndTime} onTimeUp={onTimeUp} />
       <Button
-        bg={disableFinish ? { base: '#E1E4E8', _dark: '#2D2D2D' } : '#EF4444'}
-        color={disableFinish ? { base: '#94A3B8', _dark: '#8A8A8A' } : '#ffffff'}
+        bg={disableFinish ? 'dd.surface.alt' : 'dd.status.danger.solid'}
+        color={disableFinish ? 'dd.text.muted' : 'white'}
         onClick={onFinish}
         disabled={disableFinish}
         borderRadius="md"
@@ -45,8 +45,8 @@ export function ExamHeader({ title, subjectName, startTime, duration, overrideEn
         fontWeight="bold"
         px={4}
         height="36px"
-        _hover={disableFinish ? {} : { bg: '#D32F2F' }}
-        _active={disableFinish ? {} : { bg: '#C62828' }}
+        _hover={disableFinish ? {} : { bg: 'dd.status.danger.solid' }}
+        _active={disableFinish ? {} : { bg: 'dd.status.danger.solid' }}
         cursor={disableFinish ? 'not-allowed' : 'pointer'}
         opacity={disableFinish ? 0.6 : 1}
         transition="all 0.15s ease"

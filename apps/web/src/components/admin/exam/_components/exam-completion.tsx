@@ -39,7 +39,7 @@ export function ExamCompletion({ subjectName, examTitle }: ExamCompletionProps) 
       position="fixed"
       inset={0}
       zIndex={99999}
-      bg={{ base: '#F4F5F7', _dark: '#1B1B1B' }}
+      bg="dd.canvas"
       align="center"
       justify="center"
       p={4}
@@ -54,7 +54,7 @@ export function ExamCompletion({ subjectName, examTitle }: ExamCompletionProps) 
         w="500px"
         h="500px"
         borderRadius="full"
-        bg="#1ABE71"
+        bg="dd.status.success.solid"
         opacity={{ base: 0.02, _dark: 0.04 }}
         filter="blur(80px)"
       />
@@ -65,7 +65,7 @@ export function ExamCompletion({ subjectName, examTitle }: ExamCompletionProps) 
         w="400px"
         h="400px"
         borderRadius="full"
-        bg="#9C55E8"
+        bg="dd.brand"
         opacity={{ base: 0.02, _dark: 0.04 }}
         filter="blur(80px)"
       />
@@ -80,7 +80,7 @@ export function ExamCompletion({ subjectName, examTitle }: ExamCompletionProps) 
         <Flex
           w={20}
           h={20}
-          bg="rgba(26, 190, 113, 0.15)"
+          bg="dd.status.success.bg"
           borderRadius="full"
           align="center"
           justify="center"
@@ -91,7 +91,7 @@ export function ExamCompletion({ subjectName, examTitle }: ExamCompletionProps) 
           boxShadow="0 0 40px rgba(26, 190, 113, 0.1)"
           css={{ animation: `${scaleIn} 0.7s cubic-bezier(0.34, 1.56, 0.64, 1), ${float} 3s ease-in-out 1s infinite` }}
         >
-          <CheckCircle size={40} color="#1ABE71" strokeWidth={2.5} />
+          <CheckCircle size={40} color="var(--chakra-colors-dd-status-success-solid)" strokeWidth={2.5} />
         </Flex>
 
         {/* Sparkle accent */}
@@ -101,17 +101,17 @@ export function ExamCompletion({ subjectName, examTitle }: ExamCompletionProps) 
           mb={3}
           css={{ animation: `${fadeUp} 0.6s ease-out 0.2s both` }}
         >
-          <Sparkles size={14} color="#F5A623" />
+          <Sparkles size={14} color="var(--chakra-colors-dd-status-warning-text)" />
           <Text
             fontSize="11px"
             fontWeight="bold"
             textTransform="uppercase"
             letterSpacing="0.2em"
-            color="#F5A623"
+            color="var(--chakra-colors-dd-status-warning-text)"
           >
             Ujian Selesai
           </Text>
-          <Sparkles size={14} color="#F5A623" />
+          <Sparkles size={14} color="var(--chakra-colors-dd-status-warning-text)" />
         </Flex>
 
         {/* Main heading */}
@@ -119,7 +119,7 @@ export function ExamCompletion({ subjectName, examTitle }: ExamCompletionProps) 
           size="xl"
           fontWeight="700"
           mb={3}
-          color={{ base: '#1F2328', _dark: '#E0E0E0' }}
+          color="dd.text"
           css={{
             animation: `${fadeUp} 0.6s ease-out 0.3s both`,
           }}
@@ -130,7 +130,7 @@ export function ExamCompletion({ subjectName, examTitle }: ExamCompletionProps) 
         {/* Subject info */}
         <Text
           fontSize="15px"
-          color={{ base: '#57606A', _dark: '#8A8A8A' }}
+          color="dd.text.muted"
           lineHeight="tall"
           mb={3}
           css={{ animation: `${fadeUp} 0.6s ease-out 0.4s both` }}
@@ -145,16 +145,16 @@ export function ExamCompletion({ subjectName, examTitle }: ExamCompletionProps) 
             py={1.5}
             mb={6}
             borderRadius="md"
-            bg={{ base: '#FFFFFF', _dark: 'rgba(255, 255, 255, 0.06)' }}
+            bg="dd.surface"
             border="1px solid"
-            borderColor={{ base: '#E1E4E8', _dark: 'rgba(255, 255, 255, 0.12)' }}
+            borderColor="dd.border"
             backdropFilter="blur(8px)"
             css={{ animation: `${fadeUp} 0.6s ease-out 0.5s both` }}
           >
             <Text
               fontSize="13px"
               fontWeight="bold"
-              color="#1ABE71"
+              color="var(--chakra-colors-dd-status-success-text)"
             >
               📚 {subjectName}{examTitle ? ` — ${examTitle}` : ''}
             </Text>
@@ -166,16 +166,16 @@ export function ExamCompletion({ subjectName, examTitle }: ExamCompletionProps) 
           p={5}
           mb={6}
           borderRadius="md"
-          bg={{ base: '#FFFFFF', _dark: '#242424' }}
+          bg="dd.surface"
           border="1px solid"
-          borderColor={{ base: '#E1E4E8', _dark: '#3D3D3D' }}
+          borderColor="dd.border"
           boxShadow="0 1px 4px rgba(0,0,0,0.05)"
           css={{ animation: `${fadeUp} 0.6s ease-out 0.6s both` }}
         >
-          <Text fontSize="13px" color={{ base: '#1F2328', _dark: '#E0E0E0' }} lineHeight="1.4">
+          <Text fontSize="13px" color="dd.text" lineHeight="1.4">
             Jawabanmu sudah berhasil tersimpan dengan aman. Tetap semangat dan percaya pada hasil usahamu! 💪
           </Text>
-          <Text fontSize="12px" color={{ base: '#57606A', _dark: '#8A8A8A' }} mt={3}>
+          <Text fontSize="12px" color="dd.text.muted" mt={3}>
             Hasil ujian akan diumumkan oleh guru mata pelajaran.
           </Text>
         </Box>
@@ -188,12 +188,12 @@ export function ExamCompletion({ subjectName, examTitle }: ExamCompletionProps) 
           borderRadius="md"
           fontWeight="bold"
           fontSize="13px"
-          bg="linear-gradient(135deg, #10b981, #059669)"
+          bg="dd.status.success.solid"
           color="white"
           _hover={{
-            bg: 'linear-gradient(135deg, #059669, #047857)',
+            bg: 'dd.status.success.solid',
             transform: 'translateY(-1px)',
-            boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)',
+            boxShadow: '0 4px 12px rgba(26, 190, 113, 0.2)',
           }}
           transition="all 0.15s ease"
           onClick={() => router.push('/dashboard')}
