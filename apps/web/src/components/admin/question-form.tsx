@@ -92,7 +92,7 @@ export function QuestionForm({ onSubmit, onCancel, isSubmitting, initialData }: 
       setMediaType('image');
     } catch (error: unknown) {
       const message = error && typeof error === 'object' && 'response' in error ? ((error as ApiError).response?.data?.message || 'Upload gagal') : 'Upload gagal';
-      alert(message);
+      toast.error(message);
     } finally {
       setUploading(false);
       setEditorOpen(false);
@@ -103,7 +103,7 @@ export function QuestionForm({ onSubmit, onCancel, isSubmitting, initialData }: 
 
   const openCropEditor = (file: File) => {
     const error = validateImageFile(file);
-    if (error) return alert(error);
+    if (error) return toast.error(error);
     const url = URL.createObjectURL(file);
     const img = new window.Image();
     img.onload = () => {
@@ -111,7 +111,7 @@ export function QuestionForm({ onSubmit, onCancel, isSubmitting, initialData }: 
       setEditorFile(file);
       setEditorOpen(true);
     };
-    img.onerror = () => alert('Gagal memuat gambar');
+    img.onerror = () => toast.error('Gagal memuat gambar');
     img.src = url;
   };
 

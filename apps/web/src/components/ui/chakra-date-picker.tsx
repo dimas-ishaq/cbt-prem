@@ -95,7 +95,7 @@ export const ChakraDatePicker = ({ label = "Pilih Tanggal & Waktu", value, onCha
       </DatePicker.Control>
       <Portal>
         <DatePicker.Positioner>
-          <DatePicker.Content bg="white" p={4} borderRadius="xl" shadow="xl" border="1px solid" borderColor="gray.100">
+          <DatePicker.Content bg="bg.surface" p={4} borderRadius="xl" shadow="xl" border="1px solid" borderColor="border.default">
             <DatePicker.View view="day">
               <DatePicker.Header />
               <DatePicker.DayTable />

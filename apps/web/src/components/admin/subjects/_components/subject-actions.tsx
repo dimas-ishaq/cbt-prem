@@ -9,10 +9,10 @@ interface SubjectActionsProps {
 export function SubjectActions({ onEdit, onDelete }: SubjectActionsProps) {
   return (
     <HStack gap={2} justify="flex-end">
-      <IconButton aria-label="Edit mata pelajaran" variant="ghost" color="indigo.600" _hover={{ bg: 'indigo.50' }} size="sm" borderRadius="lg" onClick={onEdit} cursor="pointer">
+      <IconButton aria-label="Edit mata pelajaran" variant="ghost" color="brand.solid" _hover={{ bg: 'brand.subtle' }} size="sm" borderRadius="lg" onClick={onEdit} cursor="pointer">
         <Pencil size={18} />
       </IconButton>
-      <IconButton aria-label="Delete mata pelajaran" variant="ghost" color="red.600" _hover={{ bg: 'red.50' }} size="sm" borderRadius="lg" onClick={onDelete} cursor="pointer">
+      <IconButton aria-label="Delete mata pelajaran" variant="ghost" color="status.danger.text" _hover={{ bg: 'status.danger.bg' }} size="sm" borderRadius="lg" onClick={onDelete} cursor="pointer">
         <Trash2 size={18} />
       </IconButton>
     </HStack>

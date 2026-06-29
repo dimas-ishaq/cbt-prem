@@ -100,17 +100,19 @@ export function ExamConfirmDialog({
               </Stack>
             </Dialog.Body>
 
-            <Dialog.Footer p={6} borderTop="1px solid" borderColor="gray.100" gap={3}>
+            <Dialog.Footer p={6} borderTop="1px solid" borderColor="border.default" gap={3}>
               <Button variant="outline" borderRadius="xl" flex={1} onClick={onClose} disabled={isSubmitting}>
                 Batal
               </Button>
               <Button
-                colorPalette={hasUnanswered ? 'gray' : 'indigo'}
                 borderRadius="xl"
                 flex={1}
                 onClick={onConfirm}
                 loading={isSubmitting}
                 disabled={hasUnanswered || isSubmitting}
+                bg={hasUnanswered ? 'text.muted' : 'brand.solid'}
+                color="text.inverted"
+                _hover={{ bg: hasUnanswered ? 'text.muted' : 'brand.text' }}
               >
                 {hasUnanswered ? 'Belum Lengkap' : 'Ya, Selesaikan'}
               </Button>

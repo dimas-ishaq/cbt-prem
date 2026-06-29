@@ -64,8 +64,8 @@ export function MediaLibraryModal({ isOpen, onClose, onImageSelect }: MediaLibra
             </Flex>
           ) : media.length === 0 ? (
             <Flex direction="column" align="center" py={8} gap={3}>
-              <Text color="gray.500">Belum ada gambar yang diunggah.</Text>
-              <Button size="sm" variant="outline" colorScheme="teal" onClick={fetchMedia}>Muat Ulang</Button>
+              <Text color="text.secondary">Belum ada gambar yang diunggah.</Text>
+              <Button size="sm" variant="outline" colorPalette="teal" onClick={fetchMedia}>Muat Ulang</Button>
             </Flex>
           ) : (
             <SimpleGrid columns={{ base: 3, sm: 4, md: 5 }} gap={3}>

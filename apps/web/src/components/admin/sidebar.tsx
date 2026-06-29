@@ -151,13 +151,10 @@ export function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onMobile
         flexShrink={0}
         transition="left 0.25s ease, width 0.25s ease"
         overflow="hidden"
-        bg={{ base: 'sidebar.bg', lg: 'sidebar.bg' }}
+        bg="bg.surface"
         boxShadow={{ base: '2xl', lg: 'none' }}
-        backgroundImage={{
-          base: 'none',
-          lg: 'linear-gradient(180deg, var(--chakra-colors-sidebar-bg) 0%, color-mix(in srgb, var(--chakra-colors-sidebar-bg) 94%, black) 100%)',
-        }}
-        borderRight="1px solid var(--chakra-colors-sidebar-border)"
+        borderRight="1px solid"
+        borderColor="border.default"
       >
         <Box px={collapsed ? 3 : 5} py={5} borderBottom="1px solid" borderColor="sidebar.border">
           <Flex align="center" justify="space-between" gap={3}>
@@ -170,16 +167,14 @@ export function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onMobile
                 borderRadius="xl"
                 flexShrink={0}
                 overflow="hidden"
-                bg={(settings?.logoUrl && settings.logoUrl.trim() !== '') ? 'white' : 'transparent'}
-                style={(settings?.logoUrl && settings.logoUrl.trim() !== '') ? {} : {
-                  background: 'linear-gradient(135deg, #4f46e5 0%, #2563eb 100%)',
-                  boxShadow: '0 4px 12px rgba(79,70,229,0.4)',
-                }}
+                bg={(settings?.logoUrl && settings.logoUrl.trim() !== '') ? 'bg.surface' : 'brand.subtle'}
+                border="1px solid"
+                borderColor="border.default"
               >
                 {(settings?.logoUrl && settings.logoUrl.trim() !== '') ? (
                   <Image src={settings.logoUrl} alt="Logo" maxW="80%" maxH="80%" objectFit="contain" />
                 ) : (
-                  <BookOpen size={17} color="white" />
+                  <BookOpen size={17} color="var(--chakra-colors-brand-solid)" />
                 )}
               </Flex>
               {!collapsed && (
@@ -235,14 +230,14 @@ export function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onMobile
                     title={collapsed ? t(item.key) : undefined}
                     bg={isActive ? 'sidebar.item.active.bg' : 'transparent'}
                     _hover={{ bg: !isActive ? 'sidebar.item.hover.bg' : 'sidebar.item.active.bg' }}
-                    color={isActive ? 'sidebar.text.active' : 'sidebar.text'}
+                    color={isActive ? 'brand.text' : 'text.secondary'}
                   >
                     {isActive && (
-                      <Box position="absolute" left={0} top="20%" bottom="20%" w={0.5} borderRadius="full" bg="sidebar.text.active" />
+                      <Box position="absolute" left={0} top="20%" bottom="20%" w={0.5} borderRadius="full" bg="brand.solid" />
                     )}
                     <item.icon size={17} />
                     {!collapsed && (
-                      <Text fontSize="xs" fontWeight={isActive ? 'bold' : 'medium'} color={isActive ? 'sidebar.text.active' : 'sidebar.text'}>
+                      <Text fontSize="xs" fontWeight={isActive ? 'bold' : 'medium'} color={isActive ? 'brand.text' : 'text.secondary'}>
                         {t(item.key)}
                       </Text>
                     )}

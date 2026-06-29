@@ -137,11 +137,11 @@ export function NotificationBell() {
             right="16px"
             w="min(420px, calc(100vw - 1rem))"
             maxH="min(560px, calc(100vh - 5rem))"
-            bg="white"
+            bg="bg.surface"
             borderRadius="2xl"
             shadow="2xl"
             border="1px solid"
-            borderColor="gray.200"
+            borderColor="border.default"
             overflow="hidden"
             zIndex={9999}
           >
@@ -150,16 +150,16 @@ export function NotificationBell() {
               px={4}
               py={3}
               borderBottom="1px solid"
-              borderColor="gray.100"
+              borderColor="border.default"
               justify="space-between"
               align="center"
-              bg="gray.50"
+              bg="bg.elevated"
             >
               <Box>
                 <Text fontWeight="bold" fontSize="sm">
                   Notifikasi
                 </Text>
-                <Text fontSize="2xs" color="gray.500" mt={0.5}>
+                <Text fontSize="2xs" color="text.secondary" mt={0.5}>
                   Update terbaru dan status baca
                 </Text>
               </Box>
@@ -167,7 +167,7 @@ export function NotificationBell() {
                 <Button
                   size="xs"
                   variant="ghost"
-                  colorScheme="blue"
+                  colorPalette="blue"
                   onClick={() => {
                     useNotificationStore.getState().markAllRead();
                   }}
@@ -200,26 +200,26 @@ function NotificationList() {
 
   if (notifications.length === 0) {
     return (
-      <Flex py={14} px={6} justify="center" align="center" bg="gray.50">
-        <VStack gap={2.5} color="gray.400" textAlign="center">
+      <Flex py={14} px={6} justify="center" align="center" bg="bg.elevated">
+        <VStack gap={2.5} color="text.secondary" textAlign="center">
           <Box
             w={12}
             h={12}
             borderRadius="full"
-            bg="white"
+            bg="bg.surface"
             display="flex"
             alignItems="center"
             justifyContent="center"
             shadow="sm"
             border="1px solid"
-            borderColor="gray.100"
+            borderColor="border.default"
           >
             <Bell size={24} />
           </Box>
-          <Text fontSize="sm" fontWeight="medium" color="gray.500">
+          <Text fontSize="sm" fontWeight="medium" color="text.secondary">
             Belum ada notifikasi
           </Text>
-          <Text fontSize="xs" color="gray.400">
+          <Text fontSize="xs" color="text.muted">
             Notifikasi baru akan muncul di sini
           </Text>
         </VStack>
@@ -228,7 +228,7 @@ function NotificationList() {
   }
 
   return (
-    <Box overflowY="auto" maxH="440px" bg="white">
+    <Box overflowY="auto" maxH="440px" bg="bg.surface">
       {notifications.map((n) => (
         <NotificationItem key={n.id} notification={n} />
       ))}
@@ -253,22 +253,22 @@ function NotificationItem({
 
   const priorityColor =
     notification.priority === 'HIGH'
-      ? 'red.50'
+      ? 'red.subtle'
       : notification.priority === 'NORMAL'
-        ? 'blue.50'
-        : 'gray.50';
+        ? 'blue.subtle'
+        : 'bg.elevated';
 
   return (
     <Flex
       px={4}
       py={3.5}
       gap={3}
-      bg={notification.read ? 'white' : priorityColor}
+      bg={notification.read ? 'bg.surface' : priorityColor}
       borderBottom="1px solid"
-      borderColor="gray.100"
+      borderColor="border.default"
       cursor="pointer"
       transition="all 0.15s ease"
-      _hover={{ bg: notification.read ? 'gray.50' : 'gray.100' }}
+      _hover={{ bg: notification.read ? 'bg.elevated' : 'bg.elevated' }}
       onClick={() => markRead(notification.id)}
     >
       <Box
@@ -276,9 +276,9 @@ function NotificationItem({
         h="10px"
         mt="5px"
         borderRadius="full"
-        bg={notification.read ? 'transparent' : 'blue.500'}
+        bg={notification.read ? 'transparent' : 'blue.solid'}
         flexShrink={0}
-        boxShadow={notification.read ? 'none' : '0 0 0 4px rgba(59,130,246,0.12)'}
+        boxShadow={notification.read ? 'none' : '0 0 0 4px color-mix(in srgb, var(--chakra-colors-blue-solid) 18%, transparent)'}
       />
       <Box flex={1} minW={0}>
         <HStack gap={2} align="start" justify="space-between">
@@ -286,10 +286,10 @@ function NotificationItem({
             {notification.title}
           </Text>
         </HStack>
-        <Text fontSize="xs" color="gray.500" lineClamp={2} mt={1}>
+        <Text fontSize="xs" color="text.secondary" lineClamp={2} mt={1}>
           {notification.message}
         </Text>
-        <Text fontSize="2xs" color="gray.400" mt={1.5}>
+        <Text fontSize="2xs" color="text.muted" mt={1.5}>
           {timeAgo(notification.createdAt)}
         </Text>
       </Box>

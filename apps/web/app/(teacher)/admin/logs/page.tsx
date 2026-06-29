@@ -18,8 +18,10 @@ import {
   Text,
 } from '@chakra-ui/react';
 import { Activity, FileText, RefreshCw, Search, Settings, Trash2, Eraser } from 'lucide-react';
+import { useConfirm } from '@/components/ui/confirmation-dialog';
 
 export default function AdminLogsPage() {
+  const confirmDialog = useConfirm();
   const [selectedFile, setSelectedFile] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
   
@@ -79,7 +81,8 @@ export default function AdminLogsPage() {
 
   const handleClearLog = async () => {
     if (!selectedFile) return;
-    if (!confirm(`Apakah Anda yakin ingin mengosongkan berkas log ${selectedFile}?`)) return;
+    const confirmed = await confirmDialog({ title: 'Kosongkan Log', description: `Kosongkan berkas log ${selectedFile}? Isi log hilang, file tetap ada.`, confirmText: 'Kosongkan' });
+    if (!confirmed) return;
     setIsClearing(true);
     try {
       await api.post(`/logs/${selectedFile}/clear`);
@@ -93,7 +96,8 @@ export default function AdminLogsPage() {
 
   const handleDeleteLog = async () => {
     if (!selectedFile) return;
-    if (!confirm(`Apakah Anda yakin ingin menghapus berkas log ${selectedFile} secara permanen?`)) return;
+    const confirmed = await confirmDialog({ title: 'Hapus Log', description: `Hapus berkas log ${selectedFile} permanen? Aksi ini tidak bisa dibatalkan.`, confirmText: 'Hapus' });
+    if (!confirmed) return;
     setIsDeleting(true);
     try {
       await api.delete(`/logs/${selectedFile}`);

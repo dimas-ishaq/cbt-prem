@@ -92,6 +92,8 @@ const resources = {
       subjectUpdateError: 'Gagal memperbarui mata pelajaran',
       subjectDeleteSuccess: 'Mata pelajaran berhasil dihapus!',
       subjectDeleteError: 'Gagal menghapus mata pelajaran',
+      deleteSubjectTitle: 'Hapus Mata Pelajaran',
+      deleteSubjectConfirm: 'Apakah Anda yakin ingin menghapus mata pelajaran "{{name}}"? Relasi guru dan data turunannya akan ikut terpengaruh.',
       subjectImportSuccess: 'Import berhasil: {{count}} data',
       subjectImportError: 'Gagal import CSV',
       downloadTemplate: 'Unduh Template',
@@ -306,6 +308,8 @@ const resources = {
       subjectNameLabel: 'Subject Name',
       noSubjects: 'No subjects found.',
       confirmDeleteSubject: 'Are you sure you want to delete this subject?',
+      deleteSubjectTitle: 'Delete Subject',
+      deleteSubjectConfirm: 'Are you sure you want to delete subject "{{name}}"? Teacher links and downstream data will be affected.',
       
       // Users
       usersTitle: 'User Management',

@@ -9,6 +9,7 @@ import {
 import { useState, useEffect, useMemo } from 'react';
 import { ChakraDatePicker } from '@/components/ui/chakra-date-picker';
 import { TablePagination } from '@/components/ui/pagination';
+import { useConfirm } from '@/components/ui/confirmation-dialog';
 
 import {
   Box,
@@ -92,6 +93,7 @@ const accentMap = {
 
 export default function ExamGroupsPage() {
   const queryClient = useQueryClient();
+  const confirmDialog = useConfirm();
   const [searchText, setSearchText] = useState('');
   const [selectedYear, setSelectedYear] = useState('');
   const [selectedSemester, setSelectedSemester] = useState('');
@@ -202,10 +204,13 @@ export default function ExamGroupsPage() {
   });
 
   // ── Handlers ──
-  const handleDelete = (id: string) => {
-    if (confirm('Apakah Anda yakin ingin menghapus kelompok ujian ini?')) {
-      deleteMutation.mutate(id);
-    }
+  const handleDelete = async (group: ExamGroup) => {
+    const confirmed = await confirmDialog({
+      title: 'Hapus Kelompok Ujian',
+      description: `Apakah Anda yakin ingin menghapus kelompok ujian "${group.name}"? Ujian di dalamnya tetap ada, cuma label grup hilang.`,
+      confirmText: 'Hapus',
+    });
+    if (confirmed) deleteMutation.mutate(group.id);
   };
 
   const openCreateModal = () => {
@@ -551,9 +556,7 @@ export default function ExamGroupsPage() {
                             borderRadius="lg"
                             aria-label={`Hapus ${group.name}`}
                             onClick={() => {
-                              if (confirm('Yakin ingin menghapus kelompok ujian ini? Ujian yang ada di dalamnya tidak akan terhapus, hanya labelnya yang hilang.')) {
-                                deleteMutation.mutate(group.id);
-                              }
+                              handleDelete(group)
                             }}
                             cursor="pointer"
                           >

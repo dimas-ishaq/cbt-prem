@@ -60,24 +60,25 @@ export const ConfirmationProvider = ({ children }: { children: ReactNode }) => {
           justifyContent="center"
           zIndex={9999}
           p={4}
-          style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}
+          bg="blackAlpha.600"
+          backdropFilter="blur(4px)"
         >
-          <Box bg="white" borderRadius="xl" shadow="2xl" w="full" maxW="md" overflow="hidden">
-            <Flex px={6} py={4} borderBottom="1px solid" borderColor="gray.100" justify="space-between" align="center">
-              <Heading size="md" fontWeight="bold" color="gray.900">
+          <Box bg="bg.surface" borderRadius="xl" shadow="2xl" w="full" maxW="md" overflow="hidden" borderWidth="1px" borderColor="border.default">
+            <Flex px={6} py={4} borderBottomWidth="1px" borderColor="border.default" justify="space-between" align="center">
+              <Heading size="md" fontWeight="bold" color="text.primary">
                 {options.title}
               </Heading>
             </Flex>
             <Box p={6}>
-              <Text color="gray.600">
+              <Text color="text.secondary">
                 {options.description || 'Apakah Anda yakin?'}
               </Text>
             </Box>
-            <Flex px={6} py={4} bg="gray.50" justify="flex-end" gap={3}>
-              <Button onClick={handleCancel} variant="outline" color="gray.700" bg="white" borderRadius="lg" cursor="pointer">
+            <Flex px={6} py={4} bg="bg.elevated" justify="flex-end" gap={3}>
+              <Button onClick={handleCancel} variant="outline" color="text.primary" bg="bg.surface" borderRadius="lg" borderColor="border.default" cursor="pointer">
                 {options.cancelText || 'Batal'}
               </Button>
-              <Button onClick={handleConfirm} bg="indigo.600" color="white" borderRadius="lg" _hover={{ bg: 'indigo.700' }} cursor="pointer">
+              <Button onClick={handleConfirm} bg="status.danger.text" color="text.inverted" borderRadius="lg" _hover={{ bg: 'status.danger.text' }} cursor="pointer">
                 {options.confirmText || 'Ya, Lanjutkan'}
               </Button>
             </Flex>

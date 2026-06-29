@@ -122,14 +122,14 @@ export const ChakraFileInput: FC<ChakraFileInputProps> = ({
         opacity={disabled ? 0.5 : 1}
       >
         <VStack gap={3} onClick={() => !disabled && inputRef.current?.click()}>
-          <Box p={2} bg="indigo.100" borderRadius="lg" color="indigo.600">
+          <Box p={2} bg="brand.subtle" borderRadius="lg" color="brand.solid">
             <Upload size={24} />
           </Box>
           <VStack gap={1} textAlign="center">
-            <Text fontWeight="semibold" color="gray.900" fontSize="sm">
+            <Text fontWeight="semibold" color="text.primary" fontSize="sm">
               Klik untuk upload atau drag & drop
             </Text>
-            <Text fontSize="xs" color="gray.500">
+            <Text fontSize="xs" color="text.muted">
               Format: {accept} | Maksimal: {maxSize}MB
             </Text>
           </VStack>
@@ -137,7 +137,7 @@ export const ChakraFileInput: FC<ChakraFileInputProps> = ({
       </Box>
 
       {helperText && (
-        <Text fontSize="xs" color="gray.500" mt={2}>
+        <Text fontSize="xs" color="text.muted" mt={2}>
           {helperText}
         </Text>
       )}

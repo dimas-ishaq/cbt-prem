@@ -4,6 +4,7 @@ import { AdminSidebar } from '@/components/admin/sidebar';
 import { useAuthStore } from '@/store/auth.store';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { Box, Flex, Heading, Text, IconButton, Spinner, Stack, useBreakpointValue } from '@chakra-ui/react';
 import { ColorModeToggle } from '@/components/ui/color-mode-toggle';
 import { Breadcrumb } from '@/components/ui/breadcrumb';
@@ -90,34 +91,42 @@ export default function AdminLayout({
       <Flex minH="100vh" align="center" justify="center" px={6} bg="bg.canvas">
         <Box
           w="full"
-          maxW="lg"
-          borderRadius="3xl"
+          maxW="sm"
+          borderRadius="2xl"
           border="1px solid"
           borderColor="border.default"
           bg="bg.surface"
-          p={{ base: 6, md: 8 }}
-          shadow="xl"
-          textAlign="center"
+          shadow="card"
+          overflow="hidden"
         >
-          <Stack gap={5} align="center">
+          <Box h="1.5" bg="brand.solid" />
+          <Stack gap={5} px={{ base: 5, md: 6 }} py={{ base: 6, md: 7 }} align="center" textAlign="center">
             <Flex
-              w={18}
-              h={18}
+              w={20}
+              h={20}
               align="center"
               justify="center"
-              borderRadius="2xl"
-              bg="indigo.500/10"
-              border="1px solid"
-              borderColor="indigo.500/20"
+              borderRadius="full"
+              position="relative"
             >
-              <Spinner size="lg" color="indigo.600" />
+              <Spinner size="xl" color="brand.solid" thickness="3px" />
+              <Box position="absolute" inset={0} display="flex" alignItems="center" justifyContent="center">
+                <Image
+                  src={settings?.logoUrl || '/images/logo.png'}
+                  alt={settings?.appName || 'Logo sekolah'}
+                  width={28}
+                  height={28}
+                  style={{ objectFit: 'contain' }}
+                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                />
+              </Box>
             </Flex>
             <Box>
-              <Heading size="lg" color="gray.900" fontWeight="black" mb={2}>
-                Menyiapkan sesi aman...
+              <Heading size="sm" color="text.primary" fontWeight="bold" letterSpacing="-0.02em">
+                {settings?.appName || 'Nama Sekolah'}
               </Heading>
-              <Text color="gray.600" fontSize="sm" lineHeight="relaxed">
-                Kami sedang memulihkan status login Anda. Halaman admin akan dibuka kembali dalam beberapa detik tanpa perlu login ulang.
+              <Text color="text.muted" fontSize="xs" mt={1}>
+                Menyiapkan panel admin
               </Text>
             </Box>
             <Flex
@@ -126,12 +135,13 @@ export default function AdminLayout({
               px={3}
               py={1.5}
               borderRadius="full"
-              bg="indigo.500/8"
+              bg="brand.subtle"
               border="1px solid"
-              borderColor="indigo.500/15"
+              borderColor="brand.muted"
+              color="brand.text"
             >
-              <Clock size={13} className="text-indigo-500 animate-pulse" />
-              <Text fontSize="xs" fontWeight="bold" color="indigo.600">
+              <Clock size={13} />
+              <Text fontSize="xs" fontWeight="bold">
                 Memverifikasi hak akses super admin
               </Text>
             </Flex>
@@ -217,16 +227,15 @@ export default function AdminLayout({
                 gap={2}
                 px={3.5}
                 py={1.5}
-                bg="indigo.500/10"
+                bg="brand.subtle"
                 border="1px solid"
-                borderColor="indigo.500/20"
+                borderColor="brand.muted"
                 borderRadius="full"
                 fontSize="xs"
                 fontWeight="black"
-                color="indigo.600"
-                _dark={{ color: 'indigo.300', bg: 'indigo.950/30' }}
+                color="brand.text"
               >
-                <Clock size={13} className="animate-pulse text-indigo-500" />
+                <Clock size={13} />
                 <Text fontFamily="mono" fontSize="2xs">{timeStr}</Text>
               </Flex>
             )}

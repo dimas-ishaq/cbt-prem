@@ -138,10 +138,10 @@ export const ChakraComboBox: FC<ChakraComboBoxProps> = ({
               top={`${menuPosition.top}px`}
               left={`${menuPosition.left}px`}
               width={`${menuPosition.width}px`}
-              bg="white"
+              bg="bg.surface"
               borderRadius="lg"
               borderWidth="1px"
-              borderColor="gray.200"
+              borderColor="border.default"
               shadow="lg"
               zIndex={1000}
               maxH="300px"
@@ -166,23 +166,23 @@ export const ChakraComboBox: FC<ChakraComboBoxProps> = ({
                     gap={3}
                     p={2.5}
                     cursor="pointer"
-                    _hover={{ bg: 'red.50' }}
+                    _hover={{ bg: 'status.danger.bg' }}
                     onClick={() => {
                       onChange(null);
                       setIsOpen(false);
                     }}
                     transition="background 0.15s"
                     borderBottom="1px solid"
-                    borderColor="gray.100"
+                    borderColor="border.default"
                   >
-                    <Text fontSize="sm" color="red.600" fontWeight="medium">
+                    <Text fontSize="sm" color="status.danger.text" fontWeight="medium">
                       ✕ Hapus pilihan
                     </Text>
                   </Flex>
                 )}
 
                 {filteredOptions.length === 0 ? (
-                  <Text p={3} fontSize="sm" color="gray.500" textAlign="center">
+                  <Text p={3} fontSize="sm" color="text.muted" textAlign="center">
                     Tidak ada opsi
                   </Text>
                 ) : (
