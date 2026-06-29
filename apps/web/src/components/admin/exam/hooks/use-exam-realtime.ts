@@ -21,10 +21,11 @@ type TimeAddedEvent = SessionEvent & {
 const isSessionEvent = (data: unknown): data is SessionEvent => !!data && typeof data === 'object' && 'examId' in data;
 const isTimeAddedEvent = (data: unknown): data is TimeAddedEvent => isSessionEvent(data);
 
-export function useExamRealtime({ socket, examId, sessionId, playSuccess, setIsLocked, finishExam, setSessionEndTime, setTimeAddedMinutes, setShowTimeAddedDialog }: {
+export function useExamRealtime({ socket, examId, sessionId, userId, playSuccess, setIsLocked, finishExam, setSessionEndTime, setTimeAddedMinutes, setShowTimeAddedDialog }: {
   socket: SocketLike | null;
   examId: string;
   sessionId: string | null;
+  userId: string | null | undefined;
   playSuccess: () => void;
   setIsLocked: (v: boolean) => void;
   finishExam: () => void;
@@ -42,6 +43,7 @@ export function useExamRealtime({ socket, examId, sessionId, playSuccess, setIsL
     const onSessionSubmitted = (data: unknown) => { if (isSessionEvent(data) && data.examId === examId) finishExam(); };
     const onTimeAdded = async (data: unknown) => {
       if (!isTimeAddedEvent(data) || data.examId !== examId) return;
+      if (userId && 'studentId' in data && data.studentId && data.studentId !== userId) return;
       // Hanya bunyi kalo beneran ada tambahan waktu (addedMinutes > 0)
       const added = data.addedMinutes ?? 0;
       if (added <= 0) return;
