@@ -2,7 +2,7 @@ import * as dotenv from 'dotenv';
 import * as path from 'path';
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
-import { PrismaClient, Role, QuestionType, Difficulty, ExamStatus, SessionStatus, ViolationLevel, NotificationType, NotificationPriority, } from '@prisma/client';
+import { PrismaClient, Role, QuestionType, Difficulty, ExamStatus, SessionStatus, ViolationLevel, NotificationType, NotificationPriority } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import pg from 'pg';
 import * as bcrypt from 'bcryptjs';
@@ -11,22 +11,27 @@ const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
-function generateToken(length = 6) {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+// ─── Helpers ───
+function token(length = 6) {
+  const c = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  return Array.from({ length }, () => c[Math.floor(Math.random() * c.length)]).join('');
 }
+function rnd(min: number, max: number) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+function pick<T>(arr: T[]): T { return arr[Math.floor(Math.random() * arr.length)]; }
+function offsetDays(days: number) { return 24 * 60 * 60 * 1000 * days; }
+function offsetMin(min: number) { return 60 * 1000 * min; }
+function daysFromNow(days: number) { return new Date(Date.now() + offsetDays(days)); }
+function minFromNow(min: number) { return new Date(Date.now() + offsetMin(min)); }
 
-function randomInt(min: number, max: number) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
+// ─── Date anchors ───
+const now = new Date();
+const cy = now.getFullYear();
 
 async function main() {
   console.log('🌱 Start seeding...');
 
-  // ─── Cleanup (respect FK order) ───
-  // Clean implicit M:N join table for Subject-Teacher before deleting subjects/teachers
+  // ─── Cleanup FK-safe ───
   await prisma.$executeRawUnsafe('DELETE FROM "_SubjectToTeacher"');
-
   await prisma.answer.deleteMany({});
   await prisma.violation.deleteMany({});
   await prisma.examSession.deleteMany({});
@@ -52,26 +57,21 @@ async function main() {
   await prisma.rombel.deleteMany({});
   await prisma.major.deleteMany({});
   await prisma.setting.deleteMany({});
-
   console.log('🧹 Database cleaned.');
 
-  // ─── Hashing ───
+  // ─── Passwords ───
   const salt = await bcrypt.genSalt(10);
-  const pwdSuper = await bcrypt.hash('superadmin123', salt);
-  const pwdGuru = await bcrypt.hash('guru123', salt);
-  const pwdSiswa = await bcrypt.hash('siswa123', salt);
-  const pwdAdmin = await bcrypt.hash('admin123', salt);
-  const pwdPengawas = await bcrypt.hash('pengawas123', salt);
+  const pwdSuper   = await bcrypt.hash('superadmin123', salt);
+  const pwdGuru    = await bcrypt.hash('guru123', salt);
+  const pwdSiswa   = await bcrypt.hash('siswa123', salt);
+  const pwdAdmin   = await bcrypt.hash('admin123', salt);
+  const pwdPengawas= await bcrypt.hash('pengawas123', salt);
 
-  const now = new Date();
-  const currentYear = now.getFullYear();
-  let answerCount = 0;
-
-  // ========================================================================
-  // 1. SETTINGS (10+)
-  // ========================================================================
+  // ═══════════════════════════════════════════════════════════════
+  // 1. SETTINGS
+  // ═══════════════════════════════════════════════════════════════
   const settingsData = [
-    { key: 'appName', value: 'Novatech CBT' }, // Nama meringkas, tidak perlu nama panjang
+    { key: 'appName', value: 'Novatech CBT' },
     { key: 'logoUrl', value: '/images/logo.png' },
     { key: 'timezone', value: 'Asia/Jakarta' },
     { key: 'language', value: 'id' },
@@ -83,933 +83,635 @@ async function main() {
     { key: 'sebEnabled', value: 'false' },
     { key: 'maintenanceMode', value: 'false' },
   ];
-
   await prisma.setting.createMany({ data: settingsData });
-  console.log(`✅ Settings: ${settingsData.length} created.`);
+  console.log(`✅ Settings: ${settingsData.length}`);
 
-  // ========================================================================
-  // 2. MAJOR (4)
-  // ========================================================================
+  // ═══════════════════════════════════════════════════════════════
+  // 2. MAJORS
+  // ═══════════════════════════════════════════════════════════════
   const majorsData = [
     { name: 'Rekayasa Perangkat Lunak', code: 'RPL', description: 'Pengembangan perangkat lunak dan aplikasi.' },
     { name: 'Teknik Komputer & Jaringan', code: 'TKJ', description: 'Infrastruktur jaringan dan administrasi sistem.' },
     { name: 'Akuntansi & Keuangan', code: 'AKL', description: 'Akuntansi dan pengelolaan keuangan.' },
     { name: 'Multimedia', code: 'MM', description: 'Desain grafis, animasi, dan produksi multimedia.' },
+    { name: 'Perhotelan', code: 'HTL', description: 'Manajemen perhotelan dan pariwisata.' },
   ];
-
   await prisma.major.createMany({ data: majorsData });
   const majors = await prisma.major.findMany({ orderBy: { code: 'asc' } });
-  console.log(`✅ Majors: ${majors.length} created.`);
+  console.log(`✅ Majors: ${majors.length}`);
 
-  // ========================================================================
-  // 3. ROMBEL (3 per major = 12)
-  // ========================================================================
-  const rombelNames: { name: string; majorIdx: number }[] = [];
-  for (let i = 0; i < majors.length; i++) {
-    const prefix = majors[i].code;
+  // ═══════════════════════════════════════════════════════════════
+  // 3. ROMBEL (3 per major)
+  // ═══════════════════════════════════════════════════════════════
+  const rombels: { id: string; majorId: string }[] = [];
+  for (const m of majors) {
     for (let g = 1; g <= 3; g++) {
-      rombelNames.push({ name: `X ${prefix} ${g}`, majorIdx: i });
+      const r = await prisma.rombel.create({ data: { name: `X ${m.code} ${g}`, majorId: m.id } });
+      rombels.push({ id: r.id, majorId: m.id });
     }
   }
+  console.log(`✅ Rombels: ${rombels.length}`);
 
-  const rombels = await Promise.all(
-    rombelNames.map((r) =>
-      prisma.rombel.create({
-        data: {
-          name: r.name,
-          majorId: majors[r.majorIdx].id,
-        },
-      }),
-    ),
+  // ═══════════════════════════════════════════════════════════════
+  // 4. USERS
+  // ═══════════════════════════════════════════════════════════════
+  const superAdminNames = [
+    'Dimas Prasetyo', 'Sari Wulandari', 'Agus Hidayat',
+  ];
+  const superUsers = await Promise.all(
+    superAdminNames.map((name, i) =>
+      prisma.user.create({ data: { username: `superadmin${i + 1}`, email: `sa${i + 1}@cbt.com`, password: pwdSuper, fullName: name, role: Role.SUPER_ADMIN } })
+    )
   );
-  console.log(`✅ Rombels: ${rombels.length} created.`);
 
-  // ========================================================================
-  // 4. USERS – SuperAdmins (3), Teachers (6), Students (18), plus extras
-  // ========================================================================
-  const superUsers = await Promise.all([
-    prisma.user.create({
-      data: {
-        username: 'superadmin1', email: 'sa1@cbt.com', password: pwdSuper,
-        fullName: 'Super Admin Satu', role: Role.SUPER_ADMIN,
-      },
-    }),
-    prisma.user.create({
-      data: {
-        username: 'superadmin2', email: 'sa2@cbt.com', password: pwdSuper,
-        fullName: 'Super Admin Dua', role: Role.SUPER_ADMIN,
-      },
-    }),
-    prisma.user.create({
-      data: {
-        username: 'superadmin3', email: 'sa3@cbt.com', password: pwdSuper,
-        fullName: 'Super Admin Tiga', role: Role.SUPER_ADMIN,
-      },
-    }),
-  ]);
-
-  const teacherUsers = await Promise.all([
-    prisma.user.create({ data: { username: 'guru1', email: 'guru1@cbt.com', password: pwdGuru, fullName: 'Budi Santoso, S.Pd', role: Role.GURU } }),
-    prisma.user.create({ data: { username: 'guru2', email: 'guru2@cbt.com', password: pwdGuru, fullName: 'Siti Aminah, S.Pd', role: Role.GURU } }),
-    prisma.user.create({ data: { username: 'guru3', email: 'guru3@cbt.com', password: pwdGuru, fullName: 'Rudi Hartono, M.Pd', role: Role.GURU } }),
-    prisma.user.create({ data: { username: 'guru4', email: 'guru4@cbt.com', password: pwdGuru, fullName: 'Dewi Lestari, S.S', role: Role.GURU } }),
-    prisma.user.create({ data: { username: 'guru5', email: 'guru5@cbt.com', password: pwdGuru, fullName: 'Ahmad Fauzi, M.Si', role: Role.GURU } }),
-    prisma.user.create({ data: { username: 'guru6', email: 'guru6@cbt.com', password: pwdGuru, fullName: 'Fitri Handayani, S.Kom', role: Role.GURU } }),
-  ]);
-
+  const teacherNames = [
+    'Budi Santoso, S.Pd', 'Siti Aminah, S.Pd', 'Rudi Hartono, M.Pd',
+    'Dewi Lestari, S.S', 'Ahmad Fauzi, M.Si', 'Fitri Handayani, S.Kom',
+    'Hendra Gunawan, S.Pd', 'Maya Anggraini, S.Pd',
+  ];
+  const teacherUsers = await Promise.all(
+    teacherNames.map((name, i) =>
+      prisma.user.create({ data: { username: `guru${i + 1}`, email: `guru${i + 1}@cbt.com`, password: pwdGuru, fullName: name, role: Role.GURU } })
+    )
+  );
   const teachers = await Promise.all(
     teacherUsers.map((u, i) =>
-      prisma.teacher.create({
-        data: {
-          userId: u.id,
-          nip: `1987${String(100000 + i).slice(1)}`,
-        },
-      }),
-    ),
+      prisma.teacher.create({ data: { userId: u.id, nip: `1987${String(100000 + i).slice(1)}` } })
+    )
   );
 
-  // 18 students (3 per rombel × 6 rombels)
+  // 25 students spread across all rombels
   const studentNames = [
-    'Ani Rahmawati', 'Budi Hartono', 'Citra Dewi', 'Deni Saputra', 'Eka Puspita', 'Fajar Nugroho',
-    'Gita Permata', 'Hadi Prasetyo', 'Indah Lestari', 'Joko Susilo', 'Kartika Sari', 'Lukman Hakim',
-    'Mega Wati', 'Nanda Pratama', 'Oktaviani Putri', 'Putra Wirayudha', 'Qori Aulia', 'Rendi Saputra',
+    'Ani Rahmawati', 'Budi Hartono', 'Citra Dewi', 'Deni Saputra', 'Eka Puspita',
+    'Fajar Nugroho', 'Gita Permata', 'Hadi Prasetyo', 'Indah Lestari', 'Joko Susilo',
+    'Kartika Sari', 'Lukman Hakim', 'Mega Wati', 'Nanda Pratama', 'Oktaviani Putri',
+    'Putra Wirayudha', 'Qori Aulia', 'Rendi Saputra', 'Siska Amelia', 'Teguh Prayitno',
+    'Umi Kalsum', 'Vina Oktaviani', 'Wahyu Setiawan', 'Xena Aulia', 'Yoga Pratama',
   ];
-
   const studentUsers = await Promise.all(
     studentNames.map((name, i) =>
-      prisma.user.create({
-        data: {
-          username: `siswa${i + 1}`, email: `siswa${i + 1}@cbt.com`, password: pwdSiswa,
-          fullName: name, role: Role.SISWA,
-        },
-      }),
-    ),
+      prisma.user.create({ data: { username: `siswa${i + 1}`, email: `siswa${i + 1}@cbt.com`, password: pwdSiswa, fullName: name, role: Role.SISWA } })
+    )
   );
-
   const students = await Promise.all(
-    studentUsers.map((u, i) =>
-      prisma.student.create({
-        data: {
-          userId: u.id,
-          nis: `${currentYear}${String(10000 + i).slice(1)}`,
-          rombelId: rombels[i % rombels.length].id,
-          majorId: rombels[i % rombels.length].majorId,
-        },
-      }),
-    ),
+    studentUsers.map((u, i) => {
+      const rb = rombels[i % rombels.length];
+      return prisma.student.create({ data: { userId: u.id, nis: `${cy}${String(10000 + i).slice(1)}`, rombelId: rb.id, majorId: rb.majorId } });
+    })
   );
 
-  // Extra admin user (ADMIN_SEKOLAH)
+  // Extra admin & pengawas
   const adminSekolahUser = await prisma.user.create({
     data: { username: 'admin_sekolah', email: 'admin@cbt.com', password: pwdAdmin, fullName: 'Kepala Sekolah', role: Role.ADMIN_SEKOLAH },
   });
-
-  // Extra pengawas user
   const pengawasUser = await prisma.user.create({
     data: { username: 'pengawas1', email: 'pengawas@cbt.com', password: pwdPengawas, fullName: 'Pengawas Ujian', role: Role.PENGAWAS },
   });
+  console.log(`✅ Users: ${superUsers.length} SA, ${teachers.length} guru, ${students.length} siswa, + admin, + pengawas`);
 
-  console.log(`✅ Users: ${superUsers.length + teacherUsers.length + studentUsers.length + 2} created (${superUsers.length} SA, ${teacherUsers.length} teachers, ${studentUsers.length} students, 1 admin, 1 pengawas).`);
-
-  // ========================================================================
-  // 5. SUBJECT (6)
-  // ========================================================================
+  // ═══════════════════════════════════════════════════════════════
+  // 5. SUBJECTS
+  // ═══════════════════════════════════════════════════════════════
   const subjectsData = [
     { name: 'Matematika', code: 'MTK', description: 'Konsep numerik, aljabar, geometri, dan statistika.' },
     { name: 'Bahasa Indonesia', code: 'BIN', description: 'Keterampilan membaca, menulis, menyimak, dan berbicara.' },
     { name: 'Bahasa Inggris', code: 'BIG', description: 'Reading comprehension, grammar, and writing skills.' },
     { name: 'Pendidikan Pancasila', code: 'PPKN', description: 'Nilai kebangsaan, konstitusi, dan kewarganegaraan.' },
-    { name: 'Informatika', code: 'IF', description: 'Komputasi, algoritma, dan literasi digital.' },
-    { name: 'Produk Kreatif dan Kewirausahaan', code: 'PKK', description: 'Inovasi, bisnis, dan proyek kewirausahaan.' },
+    { name: 'Informatika', code: 'INF', description: 'Komputasi, algoritma, dan literasi digital.' },
+    { name: 'Produk Kreatif & Kewirausahaan', code: 'PKK', description: 'Inovasi, bisnis, dan proyek kewirausahaan.' },
+    { name: 'Pendidikan Agama Islam', code: 'PAI', description: 'Pendidikan agama Islam dan budi pekerti.' },
+    { name: 'Sejarah Indonesia', code: 'SJRH', description: 'Sejarah bangsa Indonesia.' },
   ];
-
   await prisma.subject.createMany({ data: subjectsData });
   const subjects = await prisma.subject.findMany({ orderBy: { code: 'asc' } });
-  console.log(`✅ Subjects: ${subjects.length} created.`);
+  console.log(`✅ Subjects: ${subjects.length}`);
 
-  // Link teachers to subjects (each teacher teaches 1–3 subjects)
-  const teacherSubjectMap = [
+  // Link teachers to subjects (each teacher 1-3 subjects)
+  const tsm = [
     [subjects[0].id, subjects[4].id],
-    [subjects[1].id],
+    [subjects[1].id, subjects[6].id],
     [subjects[2].id],
     [subjects[3].id],
     [subjects[0].id, subjects[2].id, subjects[5].id],
     [subjects[1].id, subjects[3].id, subjects[4].id],
+    [subjects[5].id, subjects[7].id],
+    [subjects[6].id, subjects[7].id],
   ];
-
   await Promise.all(
     teachers.map((t, i) =>
-      prisma.teacher.update({
-        where: { id: t.id },
-        data: {
-          subjects: {
-            connect: teacherSubjectMap[i].map((sid) => ({ id: sid })),
-          },
-        },
-      }),
-    ),
+      prisma.teacher.update({ where: { id: t.id }, data: { subjects: { connect: tsm[i].map((sid) => ({ id: sid })) } } })
+    )
   );
 
-  // ========================================================================
-  // 6. EXAM GROUP (4)
-  // ========================================================================
+  // ═══════════════════════════════════════════════════════════════
+  // 6. EXAM GROUPS (varied)
+  // ═══════════════════════════════════════════════════════════════
   const examGroupsData = [
-    {
-      name: `ASAT ${currentYear - 1}`,
-      description: `Asesmen Sumatif Akhir Tahun ${currentYear - 1}`,
-      academicYear: `${currentYear - 1}/${currentYear}`,
-      semester: 'Genap',
-      startDate: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000),
-      endDate: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000),
-    },
-    {
-      name: `ASTS Genap ${currentYear}`,
-      description: `Asesmen Tengah Semester Genap ${currentYear}`,
-      academicYear: `${currentYear - 1}/${currentYear}`,
-      semester: 'Genap',
-      startDate: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000),
-      endDate: new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000),
-    },
-    {
-      name: `PAS ${currentYear - 1}`,
-      description: `Penilaian Akhir Semester Ganjil ${currentYear - 1}`,
-      academicYear: `${currentYear - 1}/${currentYear}`,
-      semester: 'Ganjil',
-      startDate: new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000),
-      endDate: now,
-    },
-    {
-      name: `Try Out ${currentYear}`,
-      description: `Try Out persiapan ujian nasional ${currentYear}`,
-      academicYear: `${currentYear - 1}/${currentYear}`,
-      semester: 'Genap',
-      startDate: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000),
-      endDate: new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000),
-    },
+    { name: `PAS ${cy - 1}`,   desc: `Penilaian Akhir Semester Ganjil ${cy - 1}`,         year: `${cy - 1}/${cy}`, sem: 'Ganjil', start: daysFromNow(-90), end: daysFromNow(-1) },
+    { name: `ASTS Genap ${cy}`,desc: `Asesmen Tengah Semester Genap ${cy}`,               year: `${cy - 1}/${cy}`, sem: 'Genap',  start: daysFromNow(-14), end: daysFromNow(60) },
+    { name: `ASAT ${cy - 1}`,  desc: `Asesmen Sumatif Akhir Tahun ${cy - 1}`,             year: `${cy - 1}/${cy}`, sem: 'Genap',  start: daysFromNow(-45), end: daysFromNow(30) },
+    { name: `Try Out Nasional ${cy}`, desc: `Try Out persiapan ujian nasional ${cy}`,      year: `${cy - 1}/${cy}`, sem: 'Genap',  start: daysFromNow(-7),  end: daysFromNow(21) },
+    { name: `UTS ${cy}`,       desc: `Ujian Tengah Semester Ganjil ${cy}`,                 year: `${cy}/${cy + 1}`, sem: 'Ganjil', start: daysFromNow(45),  end: daysFromNow(90) },
   ];
-
   const examGroups = await Promise.all(
     examGroupsData.map((eg) =>
-      prisma.examGroup.create({
-        data: eg,
-      }),
-    ),
+      prisma.examGroup.create({ data: { name: eg.name, description: eg.desc, academicYear: eg.year, semester: eg.sem, startDate: eg.start, endDate: eg.end } })
+    )
   );
-  console.log(`✅ Exam Groups: ${examGroups.length} created.`);
+  console.log(`✅ Exam Groups: ${examGroups.length}`);
 
-  // ========================================================================
-  // 7. QUESTION BANKS (6)
-  // ========================================================================
+  // ═══════════════════════════════════════════════════════════════
+  // 7. QUESTION BANKS
+  // ═══════════════════════════════════════════════════════════════
   const qBanksData = [
-    { name: 'Bank Soal Matematika - UTS', subjectId: subjects[0].id, teacherId: teachers[0].id, category: 'UTS' },
-    { name: 'Bank Soal Matematika - UAS', subjectId: subjects[0].id, teacherId: teachers[0].id, category: 'UAS' },
-    { name: 'Bank Soal Bahasa Indonesia', subjectId: subjects[1].id, teacherId: teachers[1].id, category: 'UTS' },
-    { name: 'Bank Soal Bahasa Inggris', subjectId: subjects[2].id, teacherId: teachers[2].id, category: 'UTS' },
-    { name: 'Bank Soal PPKN', subjectId: subjects[3].id, teacherId: teachers[3].id, category: 'UAS' },
-    { name: 'Bank Soal PKK', subjectId: subjects[5].id, teacherId: teachers[4].id, category: 'UTS' },
+    { name: 'Bank Soal MTK - UTS',   subjIdx: 0, teacherIdx: 0, cat: 'UTS' },
+    { name: 'Bank Soal MTK - UAS',   subjIdx: 0, teacherIdx: 0, cat: 'UAS' },
+    { name: 'Bank Soal B. Indo',     subjIdx: 1, teacherIdx: 1, cat: 'UTS' },
+    { name: 'Bank Soal B. Inggris',  subjIdx: 2, teacherIdx: 2, cat: 'UAS' },
+    { name: 'Bank Soal PPKN',        subjIdx: 3, teacherIdx: 3, cat: 'UAS' },
+    { name: 'Bank Soal Informatika', subjIdx: 4, teacherIdx: 5, cat: 'UTS' },
+    { name: 'Bank Soal PKK',         subjIdx: 5, teacherIdx: 4, cat: 'UTS' },
+    { name: 'Bank Soal PAI',         subjIdx: 6, teacherIdx: 6, cat: 'UAS' },
+    { name: 'Bank Soal Sejarah',     subjIdx: 7, teacherIdx: 7, cat: 'UTS' },
   ];
-
   const qBanks = await Promise.all(
     qBanksData.map((qb) =>
-      prisma.questionBank.create({
-        data: qb,
-      }),
-    ),
+      prisma.questionBank.create({ data: { name: qb.name, subjectId: subjects[qb.subjIdx].id, teacherId: teachers[qb.teacherIdx].id, category: qb.cat } })
+    )
   );
-  console.log(`✅ Question Banks: ${qBanks.length} created.`);
+  console.log(`✅ Question Banks: ${qBanks.length}`);
 
-  // ========================================================================
-  // 8. QUESTIONS & OPTIONS (3-4 per bank = 18)
-  // ========================================================================
-  interface QuestionSeed {
-    type: QuestionType;
-    content: string;
-    difficulty: Difficulty;
-    points: number;
-    options: { content: string; isCorrect: boolean }[];
-  }
+  // ═══════════════════════════════════════════════════════════════
+  // 8. QUESTIONS with variety: PG, BS, MR, Essay, mediaUrl, tags
+  // ═══════════════════════════════════════════════════════════════
+  interface Opt { content: string; isCorrect: boolean }
+  interface QDef { type: QuestionType; content: string; difficulty: Difficulty; points: number; options: Opt[]; mediaUrl?: string; mediaType?: string; tags?: string[] }
 
-  const questionsSeed: Record<number, QuestionSeed[]> = {
-    // Bank 0 – Matematika UTS (4 soal)
-    0: [
-      {
-        type: QuestionType.PILIHAN_GANDA,
-        content: 'Hasil dari 12 × 15 adalah …',
-        difficulty: Difficulty.MUDAH,
-        points: 10,
-        options: [
-          { content: '150', isCorrect: false },
-          { content: '180', isCorrect: true },
-          { content: '210', isCorrect: false },
-          { content: '300', isCorrect: false },
-        ],
-      },
-      {
-        type: QuestionType.BENAR_SALAH,
-        content: 'Segitiga siku-siku memiliki sudut 90°.',
-        difficulty: Difficulty.MUDAH,
-        points: 5,
-        options: [
-          { content: 'Benar', isCorrect: true },
-          { content: 'Salah', isCorrect: false },
-        ],
-      },
-      {
-        type: QuestionType.MULTIPLE_RESPONSE,
-        content: 'Manakah bilangan prima?',
-        difficulty: Difficulty.SEDANG,
-        points: 15,
-        options: [
-          { content: '2', isCorrect: true },
-          { content: '4', isCorrect: false },
-          { content: '7', isCorrect: true },
-          { content: '9', isCorrect: false },
-        ],
-      },
-      {
-        type: QuestionType.PILIHAN_GANDA,
-        content: 'Keliling persegi dengan sisi 5 cm adalah …',
-        difficulty: Difficulty.MUDAH,
-        points: 10,
-        options: [
-          { content: '15 cm', isCorrect: false },
-          { content: '20 cm', isCorrect: true },
-          { content: '25 cm', isCorrect: false },
-          { content: '10 cm', isCorrect: false },
-        ],
-      },
+  const questionDefs: Record<number, QDef[]> = {
+    0: [ // MTK UTS — 5 soal
+      { type: 'PILIHAN_GANDA' as QuestionType, content: 'Nilai dari 12 × 15 adalah …', difficulty: 'MUDAH' as Difficulty, points: 10, options: [
+        { content: '150', isCorrect: false }, { content: '180', isCorrect: true }, { content: '210', isCorrect: false }, { content: '300', isCorrect: false },
+      ], tags: ['aritmatika', 'perkalian'] },
+      { type: 'BENAR_SALAH' as QuestionType, content: 'Segitiga siku-siku memiliki sudut 90°.', difficulty: 'MUDAH' as Difficulty, points: 5, options: [
+        { content: 'Benar', isCorrect: true }, { content: 'Salah', isCorrect: false },
+      ], tags: ['geometri'] },
+      { type: 'MULTIPLE_RESPONSE' as QuestionType, content: 'Manakah bilangan prima?', difficulty: 'SEDANG' as Difficulty, points: 15, options: [
+        { content: '2', isCorrect: true }, { content: '4', isCorrect: false }, { content: '7', isCorrect: true }, { content: '9', isCorrect: false },
+      ], tags: ['bilangan'] },
+      { type: 'PILIHAN_GANDA' as QuestionType, content: 'Keliling persegi dengan sisi 5 cm adalah …', difficulty: 'MUDAH' as Difficulty, points: 10, options: [
+        { content: '15 cm', isCorrect: false }, { content: '20 cm', isCorrect: true }, { content: '25 cm', isCorrect: false }, { content: '10 cm', isCorrect: false },
+      ], tags: ['geometri', 'keliling'] },
+      { type: 'ESSAY' as QuestionType, content: 'Gambarlah grafik fungsi y = 2x + 1 untuk x dari -3 sampai 3!', difficulty: 'SEDANG' as Difficulty, points: 20, options: [],
+        mediaUrl: '/media/mtk/grafik1.png', mediaType: 'image', tags: ['fungsi', 'grafik'] },
     ],
-
-    // Bank 1 – Matematika UAS (3 soal)
-    1: [
-      {
-        type: QuestionType.PILIHAN_GANDA,
-        content: 'Nilai dari √144 adalah …',
-        difficulty: Difficulty.MUDAH,
-        points: 10,
-        options: [
-          { content: '10', isCorrect: false },
-          { content: '12', isCorrect: true },
-          { content: '14', isCorrect: false },
-          { content: '16', isCorrect: false },
-        ],
-      },
-      {
-        type: QuestionType.ESSAY,
-        content: 'Jelaskan langkah-langkah menyelesaikan persamaan kuadrat!',
-        difficulty: Difficulty.SULIT,
-        points: 20,
-        options: [],
-      },
-      {
-        type: QuestionType.PILIHAN_GANDA,
-        content: 'Jika f(x)=2x+3, nilai f(5) adalah …',
-        difficulty: Difficulty.SEDANG,
-        points: 10,
-        options: [
-          { content: '10', isCorrect: false },
-          { content: '13', isCorrect: true },
-          { content: '15', isCorrect: false },
-          { content: '17', isCorrect: false },
-        ],
-      },
+    1: [ // MTK UAS — 4 soal
+      { type: 'PILIHAN_GANDA' as QuestionType, content: 'Nilai dari √144 adalah …', difficulty: 'MUDAH' as Difficulty, points: 10, options: [
+        { content: '10', isCorrect: false }, { content: '12', isCorrect: true }, { content: '14', isCorrect: false }, { content: '16', isCorrect: false },
+      ], tags: ['akar'] },
+      { type: 'ESSAY' as QuestionType, content: 'Jelaskan langkah-langkah menyelesaikan persamaan kuadrat ax² + bx + c = 0!', difficulty: 'SULIT' as Difficulty, points: 25, options: [], tags: ['persamaan-kuadrat'] },
+      { type: 'PILIHAN_GANDA' as QuestionType, content: 'Jika f(x) = 2x + 3, nilai f(5) adalah …', difficulty: 'SEDANG' as Difficulty, points: 10, options: [
+        { content: '10', isCorrect: false }, { content: '13', isCorrect: true }, { content: '15', isCorrect: false }, { content: '17', isCorrect: false },
+      ], tags: ['fungsi'] },
+      { type: 'BENAR_SALAH' as QuestionType, content: 'Luas lingkaran = π × r².', difficulty: 'MUDAH' as Difficulty, points: 5, options: [
+        { content: 'Benar', isCorrect: true }, { content: 'Salah', isCorrect: false },
+      ], tags: ['geometri', 'lingkaran'] },
     ],
-
-    // Bank 2 – Bahasa Indonesia UTS (3 soal)
-    2: [
-      {
-        type: QuestionType.PILIHAN_GANDA,
-        content: 'Antonim dari kata "besar" adalah …',
-        difficulty: Difficulty.MUDAH,
-        points: 10,
-        options: [
-          { content: 'Tinggi', isCorrect: false },
-          { content: 'Kecil', isCorrect: true },
-          { content: 'Lebar', isCorrect: false },
-          { content: 'Panjang', isCorrect: false },
-        ],
-      },
-      {
-        type: QuestionType.BENAR_SALAH,
-        content: 'Puisi diawali dengan bait.',
-        difficulty: Difficulty.MUDAH,
-        points: 5,
-        options: [
-          { content: 'Benar', isCorrect: true },
-          { content: 'Salah', isCorrect: false },
-        ],
-      },
-      {
-        type: QuestionType.PILIHAN_GANDA,
-        content: 'Penulisan kata baku yang benar adalah …',
-        difficulty: Difficulty.SEDANG,
-        points: 10,
-        options: [
-          { content: 'Aktif', isCorrect: true },
-          { content: 'Aktip', isCorrect: false },
-          { content: 'Efektif', isCorrect: false },
-          { content: 'Kreatif', isCorrect: false },
-        ],
-      },
+    2: [ // B. Indo — 4 soal
+      { type: 'PILIHAN_GANDA' as QuestionType, content: 'Antonim dari kata "besar" adalah …', difficulty: 'MUDAH' as Difficulty, points: 10, options: [
+        { content: 'Tinggi', isCorrect: false }, { content: 'Kecil', isCorrect: true }, { content: 'Lebar', isCorrect: false }, { content: 'Panjang', isCorrect: false },
+      ], tags: ['antonim', 'kosakata'] },
+      { type: 'BENAR_SALAH' as QuestionType, content: 'Puisi diawali dengan bait.', difficulty: 'MUDAH' as Difficulty, points: 5, options: [
+        { content: 'Benar', isCorrect: true }, { content: 'Salah', isCorrect: false },
+      ], tags: ['puisi'] },
+      { type: 'PILIHAN_GANDA' as QuestionType, content: 'Penulisan kata baku yang benar adalah …', difficulty: 'SEDANG' as Difficulty, points: 10, options: [
+        { content: 'Aktif', isCorrect: true }, { content: 'Aktip', isCorrect: false }, { content: 'Efektif', isCorrect: false }, { content: 'Kreatif', isCorrect: false },
+      ], tags: ['kata-baku'] },
+      { type: 'MULTIPLE_RESPONSE' as QuestionType, content: 'Manakah yang termasuk jenis kata kerja?', difficulty: 'SEDANG' as Difficulty, points: 15, options: [
+        { content: 'Berlari', isCorrect: true }, { content: 'Cantik', isCorrect: false }, { content: 'Memasak', isCorrect: true }, { content: 'Pintar', isCorrect: false },
+      ], tags: ['tata-bahasa'] },
     ],
-
-    // Bank 3 – Bahasa Inggris UTS (4 soal)
-    3: [
-      {
-        type: QuestionType.PILIHAN_GANDA,
-        content: '"What is the synonym of "happy"?"',
-        difficulty: Difficulty.MUDAH,
-        points: 10,
-        options: [
-          { content: 'Sad', isCorrect: false },
-          { content: 'Joyful', isCorrect: true },
-          { content: 'Angry', isCorrect: false },
-          { content: 'Tired', isCorrect: false },
-        ],
-      },
-      {
-        type: QuestionType.BENAR_SALAH,
-        content: '"The sun rises in the west."',
-        difficulty: Difficulty.MUDAH,
-        points: 5,
-        options: [
-          { content: 'True', isCorrect: false },
-          { content: 'False', isCorrect: true },
-        ],
-      },
-      {
-        type: QuestionType.MULTIPLE_RESPONSE,
-        content: 'Which of the following are fruits?',
-        difficulty: Difficulty.SEDANG,
-        points: 15,
-        options: [
-          { content: 'Apple', isCorrect: true },
-          { content: 'Carrot', isCorrect: false },
-          { content: 'Banana', isCorrect: true },
-          { content: 'Potato', isCorrect: false },
-        ],
-      },
-      {
-        type: QuestionType.ESSAY,
-        content: 'Write a short paragraph about your hobby!',
-        difficulty: Difficulty.SEDANG,
-        points: 20,
-        options: [],
-      },
+    3: [ // B. Inggris — 5 soal
+      { type: 'PILIHAN_GANDA' as QuestionType, content: '"What is the synonym of "happy"?"', difficulty: 'MUDAH' as Difficulty, points: 10, options: [
+        { content: 'Sad', isCorrect: false }, { content: 'Joyful', isCorrect: true }, { content: 'Angry', isCorrect: false }, { content: 'Tired', isCorrect: false },
+      ], tags: ['synonym', 'vocabulary'] },
+      { type: 'BENAR_SALAH' as QuestionType, content: '"The sun rises in the west."', difficulty: 'MUDAH' as Difficulty, points: 5, options: [
+        { content: 'True', isCorrect: false }, { content: 'False', isCorrect: true },
+      ], tags: ['reading'] },
+      { type: 'MULTIPLE_RESPONSE' as QuestionType, content: 'Which of the following are fruits?', difficulty: 'SEDANG' as Difficulty, points: 15, options: [
+        { content: 'Apple', isCorrect: true }, { content: 'Carrot', isCorrect: false }, { content: 'Banana', isCorrect: true }, { content: 'Potato', isCorrect: false },
+      ], tags: ['vocabulary'] },
+      { type: 'PILIHAN_GANDA' as QuestionType, content: '"He _____ to school every day." Pilih kata yang tepat.', difficulty: 'SEDANG' as Difficulty, points: 10, options: [
+        { content: 'go', isCorrect: false }, { content: 'goes', isCorrect: true }, { content: 'going', isCorrect: false }, { content: 'went', isCorrect: false },
+      ], tags: ['grammar', 'tenses'] },
+      { type: 'ESSAY' as QuestionType, content: 'Write a short paragraph (80-100 words) about your hobby. Include why you like it and how often you do it.', difficulty: 'SEDANG' as Difficulty, points: 20, options: [], tags: ['writing'] },
     ],
-
-    // Bank 4 – PPKN UAS (4 soal)
-    4: [
-      {
-        type: QuestionType.PILIHAN_GANDA,
-        content: 'Pancasila sebagai dasar negara tercantum dalam…',
-        difficulty: Difficulty.SEDANG,
-        points: 10,
-        options: [
-          { content: 'UUD 1945', isCorrect: false },
-          { content: 'Pembukaan UUD 1945', isCorrect: true },
-          { content: 'Tap MPR', isCorrect: false },
-          { content: 'Perpres', isCorrect: false },
-        ],
-      },
-      {
-        type: QuestionType.MULTIPLE_RESPONSE,
-        content: 'Hak warga negara yang dijamin UUD 1945 antara lain…',
-        difficulty: Difficulty.SEDANG,
-        points: 15,
-        options: [
-          { content: 'Mendapat pendidikan', isCorrect: true },
-          { content: 'Membayar pajak', isCorrect: false },
-          { content: 'Berpendapat', isCorrect: true },
-          { content: 'Melanggar hukum', isCorrect: false },
-        ],
-      },
-      {
-        type: QuestionType.PILIHAN_GANDA,
-        content: 'Sila ke-3 Pancasila dilambangkan dengan…',
-        difficulty: Difficulty.MUDAH,
-        points: 10,
-        options: [
-          { content: 'Bintang', isCorrect: false },
-          { content: 'Pohon Beringin', isCorrect: true },
-          { content: 'Rantai', isCorrect: false },
-          { content: 'Padi Kapas', isCorrect: false },
-        ],
-      },
-      {
-        type: QuestionType.BENAR_SALAH,
-        content: 'Indonesia memiliki 30 provinsi.',
-        difficulty: Difficulty.MUDAH,
-        points: 5,
-        options: [
-          { content: 'Benar', isCorrect: false },
-          { content: 'Salah', isCorrect: true },
-        ],
-      },
+    4: [ // PPKN — 4 soal
+      { type: 'PILIHAN_GANDA' as QuestionType, content: 'Pancasila sebagai dasar negara tercantum dalam…', difficulty: 'SEDANG' as Difficulty, points: 10, options: [
+        { content: 'UUD 1945', isCorrect: false }, { content: 'Pembukaan UUD 1945', isCorrect: true }, { content: 'Tap MPR', isCorrect: false }, { content: 'Perpres', isCorrect: false },
+      ], tags: ['pancasila', 'dasar-negara'] },
+      { type: 'MULTIPLE_RESPONSE' as QuestionType, content: 'Hak warga negara yang dijamin UUD 1945 antara lain…', difficulty: 'SEDANG' as Difficulty, points: 15, options: [
+        { content: 'Mendapat pendidikan', isCorrect: true }, { content: 'Membayar pajak', isCorrect: false }, { content: 'Berpendapat', isCorrect: true }, { content: 'Melanggar hukum', isCorrect: false },
+      ], tags: ['hak-warga', 'uud'] },
+      { type: 'PILIHAN_GANDA' as QuestionType, content: 'Sila ke-3 Pancasila dilambangkan dengan…', difficulty: 'MUDAH' as Difficulty, points: 10, options: [
+        { content: 'Bintang', isCorrect: false }, { content: 'Pohon Beringin', isCorrect: true }, { content: 'Rantai', isCorrect: false }, { content: 'Padi Kapas', isCorrect: false },
+      ], tags: ['pancasila', 'lambang'] },
+      { type: 'BENAR_SALAH' as QuestionType, content: 'NKRI adalah kepanjangan dari Negara Kesatuan Republik Indonesia.', difficulty: 'MUDAH' as Difficulty, points: 5, options: [
+        { content: 'Benar', isCorrect: true }, { content: 'Salah', isCorrect: false },
+      ], tags: ['nkri'] },
     ],
-
-    // Bank 5 – PKK UTS (3 soal)
-    5: [
-      {
-        type: QuestionType.PILIHAN_GANDA,
-        content: 'Kewirausahaan berasal dari kata "wira" yang berarti…',
-        difficulty: Difficulty.MUDAH,
-        points: 10,
-        options: [
-          { content: 'Usaha', isCorrect: false },
-          { content: 'Pahlawan', isCorrect: true },
-          { content: 'Dagang', isCorrect: false },
-          { content: 'Modal', isCorrect: false },
-        ],
-      },
-      {
-        type: QuestionType.BENAR_SALAH,
-        content: 'Inovasi adalah kunci utama dalam kewirausahaan.',
-        difficulty: Difficulty.MUDAH,
-        points: 5,
-        options: [
-          { content: 'Benar', isCorrect: true },
-          { content: 'Salah', isCorrect: false },
-        ],
-      },
-      {
-        type: QuestionType.ESSAY,
-        content: 'Sebutkan dan jelaskan 4 fungsi manajemen!',
-        difficulty: Difficulty.SULIT,
-        points: 20,
-        options: [],
-      },
+    5: [ // Informatika — 4 soal
+      { type: 'PILIHAN_GANDA' as QuestionType, content: 'Struktur data yang bersifat LIFO (Last In First Out) disebut…', difficulty: 'SEDANG' as Difficulty, points: 10, options: [
+        { content: 'Queue', isCorrect: false }, { content: 'Stack', isCorrect: true }, { content: 'Array', isCorrect: false }, { content: 'Linked List', isCorrect: false },
+      ], tags: ['struktur-data'] },
+      { type: 'BENAR_SALAH' as QuestionType, content: 'HTML adalah bahasa pemrograman.', difficulty: 'MUDAH' as Difficulty, points: 5, options: [
+        { content: 'Benar', isCorrect: false }, { content: 'Salah', isCorrect: true },
+      ], tags: ['html', 'web'] },
+      { type: 'PILIHAN_GANDA' as QuestionType, content: 'Protokol yang digunakan untuk mengirim email adalah…', difficulty: 'MUDAH' as Difficulty, points: 10, options: [
+        { content: 'FTP', isCorrect: false }, { content: 'SMTP', isCorrect: true }, { content: 'HTTP', isCorrect: false }, { content: 'TCP/IP', isCorrect: false },
+      ], tags: ['jaringan', 'protokol'] },
+      { type: 'ESSAY' as QuestionType, content: 'Jelaskan perbedaan antara algoritma iterasi dan rekursi. Berikan masing-masing satu contoh!', difficulty: 'SULIT' as Difficulty, points: 20, options: [], tags: ['algoritma'] },
+    ],
+    6: [ // PKK — 3 soal
+      { type: 'PILIHAN_GANDA' as QuestionType, content: 'Kewirausahaan berasal dari kata "wira" yang berarti…', difficulty: 'MUDAH' as Difficulty, points: 10, options: [
+        { content: 'Usaha', isCorrect: false }, { content: 'Pahlawan', isCorrect: true }, { content: 'Dagang', isCorrect: false }, { content: 'Modal', isCorrect: false },
+      ], tags: ['kewirausahaan'] },
+      { type: 'BENAR_SALAH' as QuestionType, content: 'Inovasi adalah kunci utama dalam kewirausahaan.', difficulty: 'MUDAH' as Difficulty, points: 5, options: [
+        { content: 'Benar', isCorrect: true }, { content: 'Salah', isCorrect: false },
+      ], tags: ['inovasi'] },
+      { type: 'ESSAY' as QuestionType, content: 'Sebutkan dan jelaskan 4 fungsi manajemen (POAC)!', difficulty: 'SULIT' as Difficulty, points: 20, options: [], tags: ['manajemen', 'poac'] },
+    ],
+    7: [ // PAI — 3 soal
+      { type: 'PILIHAN_GANDA' as QuestionType, content: 'Rukun Islam yang ke-3 adalah…', difficulty: 'MUDAH' as Difficulty, points: 10, options: [
+        { content: 'Syahadat', isCorrect: false }, { content: 'Puasa', isCorrect: true }, { content: 'Zakat', isCorrect: false }, { content: 'Haji', isCorrect: false },
+      ], tags: ['rukun-islam'] },
+      { type: 'BENAR_SALAH' as QuestionType, content: 'Al-Quran diturunkan kepada Nabi Muhammad SAW melalui Malaikat Jibril.', difficulty: 'MUDAH' as Difficulty, points: 5, options: [
+        { content: 'Benar', isCorrect: true }, { content: 'Salah', isCorrect: false },
+      ], tags: ['al-quran'] },
+      { type: 'PILIHAN_GANDA' as QuestionType, content: 'Jumlah surah dalam Al-Quran adalah…', difficulty: 'SEDANG' as Difficulty, points: 10, options: [
+        { content: '113', isCorrect: false }, { content: '114', isCorrect: true }, { content: '115', isCorrect: false }, { content: '120', isCorrect: false },
+      ], tags: ['al-quran'] },
+    ],
+    8: [ // Sejarah — 3 soal
+      { type: 'PILIHAN_GANDA' as QuestionType, content: 'Proklamasi kemerdekaan Indonesia dibacakan pada tanggal…', difficulty: 'MUDAH' as Difficulty, points: 10, options: [
+        { content: '16 Agustus 1945', isCorrect: false }, { content: '17 Agustus 1945', isCorrect: true }, { content: '18 Agustus 1945', isCorrect: false }, { content: '19 Agustus 1945', isCorrect: false },
+      ], tags: ['proklamasi', 'kemerdekaan'] },
+      { type: 'MULTIPLE_RESPONSE' as QuestionType, content: 'Tokoh-tokoh yang terlibat dalam peristiwa Rengasdengklok antara lain…', difficulty: 'SEDANG' as Difficulty, points: 15, options: [
+        { content: 'Soekarno', isCorrect: true }, { content: 'Moh. Hatta', isCorrect: true }, { content: 'Sutan Syahrir', isCorrect: false }, { content: 'Ahmad Soebardjo', isCorrect: false },
+      ], tags: ['rengasdengklok', 'tokoh'] },
+      { type: 'ESSAY' as QuestionType, content: 'Jelaskan latar belakang terjadinya peristiwa Rengasdengklok!', difficulty: 'SULIT' as Difficulty, points: 20, options: [], tags: ['rengasdengklok', 'sejarah'] },
     ],
   };
 
-  const questions: { id: string; bankIdx: number }[] = [];
-
-  for (const [bankIdx, seedArr] of Object.entries(questionsSeed)) {
-    const idx = Number(bankIdx);
-    for (const qs of seedArr) {
-      const q = await prisma.question.create({
+  interface QResult { id: string; bankIdx: number; type: QuestionType }
+  const questions: QResult[] = [];
+  for (const [bk, arr] of Object.entries(questionDefs)) {
+    const idx = Number(bk);
+    for (const q of arr) {
+      const created = await prisma.question.create({
         data: {
           questionBankId: qBanks[idx].id,
-          type: qs.type,
-          content: qs.content,
-          difficulty: qs.difficulty,
-          points: qs.points,
-          tags: [],
-          options: qs.options.length > 0 ? { create: qs.options.map((o, i) => ({ content: o.content, isCorrect: o.isCorrect, order: i + 1 })) } : undefined,
+          type: q.type,
+          content: q.content,
+          difficulty: q.difficulty,
+          points: q.points,
+          tags: q.tags ?? [],
+          mediaUrl: q.mediaUrl,
+          mediaType: q.mediaType,
+          options: q.options.length > 0
+            ? { create: q.options.map((o, i) => ({ content: o.content, isCorrect: o.isCorrect, order: i + 1 })) }
+            : undefined,
         },
       });
-      questions.push({ id: q.id, bankIdx: idx });
+      questions.push({ id: created.id, bankIdx: idx, type: q.type });
     }
   }
+  console.log(`✅ Questions: ${questions.length}`);
 
-  const totalQuestions = questions.length;
-  console.log(`✅ Questions: ${totalQuestions} created across ${qBanks.length} banks.`);
-
-  // ========================================================================
-  // 9. EXAMS (6)
-  // ========================================================================
-  const examsData = [
-    {
-      title: `UTS Matematika - Genap ${currentYear}`,
-      desc: 'Ujian Tengah Semester Matematika Wajib',
-      subjectIdx: 0, teacherIdx: 0, groupIdx: 1,
-      startOffsetMin: -10, endOffsetDays: 7,
-      duration: 90, passingGrade: 70, status: ExamStatus.ONGOING,
-      questionBankIdx: 0,
-      randomizeSoal: true, randomizeOpsi: true,
-      requireSeb: true, blockKeyCopyPaste: true, forceFullscreen: true,
-      showScore: false, maxViolations: 3,
-    },
-    {
-      title: `UAS Matematika - Ganjil ${currentYear - 1}`,
-      desc: 'Ujian Akhir Semester Matematika Wajib',
-      subjectIdx: 0, teacherIdx: 0, groupIdx: 2,
-      startOffsetMin: -5, endOffsetDays: 14,
-      duration: 120, passingGrade: 65, status: ExamStatus.ONGOING,
-      questionBankIdx: 1,
-      randomizeSoal: true, randomizeOpsi: true,
-      requireSeb: false, blockKeyCopyPaste: true, forceFullscreen: false,
-      showScore: true, maxViolations: 5,
-    },
-    {
-      title: `UTS Bahasa Indonesia - Genap ${currentYear}`,
-      desc: 'Ujian Tengah Semester Bahasa Indonesia',
-      subjectIdx: 1, teacherIdx: 1, groupIdx: 1,
-      startOffsetMin: -8, endOffsetDays: 7,
-      duration: 90, passingGrade: 70, status: ExamStatus.ONGOING,
-      questionBankIdx: 2,
-      randomizeSoal: true, randomizeOpsi: false,
-      requireSeb: false, blockKeyCopyPaste: false, forceFullscreen: false,
-      showScore: true, maxViolations: 0,
-    },
-    {
-      title: 'Try Out Bahasa Inggris',
-      desc: 'Try Out persiapan ASAT',
-      subjectIdx: 2, teacherIdx: 2, groupIdx: 3,
-      startOffsetMin: 60, endOffsetDays: 3,
-      duration: 60, passingGrade: 60, status: ExamStatus.PUBLISHED,
-      questionBankIdx: 3,
-      randomizeSoal: false, randomizeOpsi: true,
-      requireSeb: true, blockKeyCopyPaste: true, forceFullscreen: true,
-      showScore: false, maxViolations: 2,
-    },
-    {
-      title: `UAS PPKN - Ganjil ${currentYear - 1}`,
-      desc: 'Ujian Akhir Semester PPKN',
-      subjectIdx: 3, teacherIdx: 3, groupIdx: 2,
-      startOffsetMin: -2, endOffsetDays: 10,
-      duration: 90, passingGrade: 70, status: ExamStatus.ONGOING,
-      questionBankIdx: 4,
-      randomizeSoal: true, randomizeOpsi: true,
-      requireSeb: false, blockKeyCopyPaste: true, forceFullscreen: false,
-      showScore: true, maxViolations: 4,
-    },
-    {
-      title: 'UAS PKK (DRAFT)',
-      desc: 'Ujian Akhir Semester PKK - belum dipublikasikan',
-      subjectIdx: 5, teacherIdx: 4, groupIdx: 0,
-      startOffsetMin: 1440, endOffsetDays: 30,
-      duration: 90, passingGrade: 70, status: ExamStatus.DRAFT,
-      questionBankIdx: 5,
-      randomizeSoal: false, randomizeOpsi: false,
-      requireSeb: false, blockKeyCopyPaste: false, forceFullscreen: false,
-      showScore: true, maxViolations: 0,
-    },
+  // ═══════════════════════════════════════════════════════════════
+  // 9. EXAMS (varied status: DRAFT, PUBLISHED, ONGOING, COMPLETED)
+  // ═══════════════════════════════════════════════════════════════
+  const examsDef = [
+    // ── ONGOING exams (start in past, end in future) ──
+    { title: `UTS Matematika - Genap ${cy}`, desc: 'Ujian Tengah Semester Matematika Wajib', subjIdx: 0, teachIdx: 0, grpIdx: 1, start: daysFromNow(-14), end: daysFromNow(7), dur: 90, pg: 70, status: ExamStatus.ONGOING as const, bankIdx: 0, randQ: true, randO: true, seb: false, cpp: true, fs: true, mv: 3, show: false, token: true },
+    { title: `UAS Matematika - Ganjil ${cy - 1}`, desc: 'Ujian Akhir Semester Matematika', subjIdx: 0, teachIdx: 0, grpIdx: 0, start: daysFromNow(-91), end: daysFromNow(-65), dur: 120, pg: 65, status: ExamStatus.COMPLETED as const, bankIdx: 1, randQ: true, randO: true, seb: false, cpp: true, fs: false, mv: 5, show: true, token: false },
+    { title: `UTS B. Indonesia - Genap ${cy}`, desc: 'Ujian Tengah Semester Bahasa Indonesia', subjIdx: 1, teachIdx: 1, grpIdx: 1, start: daysFromNow(-12), end: daysFromNow(9), dur: 90, pg: 70, status: ExamStatus.ONGOING as const, bankIdx: 2, randQ: true, randO: false, seb: false, cpp: false, fs: false, mv: 0, show: true, token: false },
+    { title: 'Try Out B. Inggris', desc: 'Try Out persiapan ASAT Bahasa Inggris', subjIdx: 2, teachIdx: 2, grpIdx: 3, start: minFromNow(30), end: daysFromNow(14), dur: 60, pg: 60, status: ExamStatus.PUBLISHED as const, bankIdx: 3, randQ: false, randO: true, seb: true, cpp: true, fs: true, mv: 2, show: false, token: true },
+    { title: `UAS PPKN - Ganjil ${cy - 1}`, desc: 'Ujian Akhir Semester PPKN', subjIdx: 3, teachIdx: 3, grpIdx: 0, start: daysFromNow(-88), end: daysFromNow(-60), dur: 90, pg: 70, status: ExamStatus.COMPLETED as const, bankIdx: 4, randQ: true, randO: true, seb: false, cpp: true, fs: false, mv: 4, show: true, token: false },
+    // ── PUBLISHED (waiting for students) ──
+    { title: 'Try Out Informatika', desc: 'Try Out persiapan ASAT Informatika', subjIdx: 4, teachIdx: 5, grpIdx: 3, start: daysFromNow(5), end: daysFromNow(30), dur: 90, pg: 65, status: ExamStatus.PUBLISHED as const, bankIdx: 5, randQ: true, randO: true, seb: false, cpp: true, fs: true, mv: 3, show: true, token: false },
+    // ── DRAFT (not published) ──
+    { title: 'UAS PKK (DRAFT)', desc: 'Ujian Akhir Semester PKK - belum dipublikasikan', subjIdx: 5, teachIdx: 4, grpIdx: 2, start: daysFromNow(30), end: daysFromNow(60), dur: 90, pg: 70, status: ExamStatus.DRAFT as const, bankIdx: 6, randQ: false, randO: false, seb: false, cpp: false, fs: false, mv: 0, show: true, token: false },
+    { title: `PAS PAI ${cy}`, desc: 'Penilaian Akhir Semester PAI', subjIdx: 6, teachIdx: 6, grpIdx: 2, start: daysFromNow(21), end: daysFromNow(45), dur: 90, pg: 75, status: ExamStatus.PUBLISHED as const, bankIdx: 7, randQ: true, randO: false, seb: false, cpp: false, fs: false, mv: 2, show: true, token: true },
+    { title: 'UAS Sejarah Indonesia', desc: 'Ujian Akhir Semester Sejarah', subjIdx: 7, teachIdx: 7, grpIdx: 2, start: daysFromNow(25), end: daysFromNow(50), dur: 90, pg: 60, status: ExamStatus.PUBLISHED as const, bankIdx: 8, randQ: true, randO: true, seb: false, cpp: false, fs: false, mv: 0, show: true, token: false },
   ];
 
   const exams = await Promise.all(
-    examsData.map((ed) => {
-      const startTime = new Date(now.getTime() + ed.startOffsetMin * 60 * 1000);
-      const endTime = new Date(now.getTime() + ed.endOffsetDays * 24 * 60 * 60 * 1000);
-      return prisma.exam.create({
+    examsDef.map((ed) =>
+      prisma.exam.create({
         data: {
           title: ed.title,
           description: ed.desc,
-          subjectId: subjects[ed.subjectIdx].id,
-          teacherId: teachers[ed.teacherIdx].id,
-          examGroupId: examGroups[ed.groupIdx].id,
-          startTime,
-          endTime,
-          duration: ed.duration,
-          token: generateToken(8),
+          subjectId: subjects[ed.subjIdx].id,
+          teacherId: teachers[ed.teachIdx].id,
+          examGroupId: examGroups[ed.grpIdx].id,
+          startTime: ed.start,
+          endTime: ed.end,
+          duration: ed.dur,
+          token: ed.token ? token(8) : null,
           maxAttempts: 1,
-          randomizeSoal: ed.randomizeSoal,
-          randomizeOpsi: ed.randomizeOpsi,
-          passingGrade: ed.passingGrade,
+          randomizeSoal: ed.randQ,
+          randomizeOpsi: ed.randO,
+          passingGrade: ed.pg,
           status: ed.status,
-          showScore: ed.showScore,
-          sebConfigKey: ed.requireSeb ? `SEB-${ed.subjectIdx + 1}${ed.teacherIdx + 1}` : null,
-          sebBrowserKey: ed.requireSeb ? `BROWSER-${ed.subjectIdx + 1}${ed.teacherIdx + 1}` : null,
-          requireSeb: ed.requireSeb,
-          blockKeyCopyPaste: ed.blockKeyCopyPaste,
-          forceFullscreen: ed.forceFullscreen,
-          maxViolations: ed.maxViolations,
+          showScore: ed.show,
+          sebConfigKey: ed.seb ? `SEB-${ed.subjIdx + 1}${ed.teachIdx + 1}` : null,
+          sebBrowserKey: ed.seb ? `BROWSER-${ed.subjIdx + 1}${ed.teachIdx + 1}` : null,
+          requireSeb: ed.seb,
+          blockKeyCopyPaste: ed.cpp,
+          forceFullscreen: ed.fs,
+          maxViolations: ed.mv,
           examQuestions: {
-            create: questions
-              .filter((q) => q.bankIdx === ed.questionBankIdx)
-              .map((q, i) => ({ questionId: q.id, order: i + 1 })),
+            create: questions.filter((q) => q.bankIdx === ed.bankIdx).map((q, i) => ({ questionId: q.id, order: i + 1 })),
           },
         },
-      });
-    }),
+      })
+    )
   );
+  console.log(`✅ Exams: ${exams.length} (${examsDef.map((e) => e.status).join(', ')})`);
 
-  console.log(`✅ Exams: ${exams.length} created.`);
-
-  // ========================================================================
-  // 10. EXAM SESSIONS (3+ per exam, diverse statuses)
-  // ========================================================================
-  const examSessions: { id: string; examIdx: number; studentIdx: number; status: SessionStatus }[] = [];
+  // ═══════════════════════════════════════════════════════════════
+  // 10. EXAM SESSIONS (cover ALL statuses)
+  // ═══════════════════════════════════════════════════════════════
+  const sessionRecords: { id: string; examIdx: number; studentIdx: number; status: SessionStatus }[] = [];
+  const allSessionStatuses: SessionStatus[] = ['NOT_STARTED', 'IN_PROGRESS', 'SUBMITTED', 'FINISHED', 'LOCKED'];
 
   for (let ei = 0; ei < exams.length; ei++) {
-    const count = 3 + (ei % 3); // 3,4,5,3,4,3
-    const taken: number[] = [];
+    // Each exam gets 3-6 sessions covering a range of statuses
+    const count = 3 + (ei % 4); // 3,4,5,6,3,4,5,6,3
+    const usedStudents = new Set<number>();
 
-    for (let si = 0; si < count; si++) {
-      const studentIdx = (ei * 7 + si * 3) % students.length;
-      if (taken.includes(studentIdx)) continue;
-      taken.push(studentIdx);
-
-      const startMinAgo = randomInt(2, 30);
-
-      // Vary session statuses to cover all enum values
-      let sessionStatus: SessionStatus;
-      if (ei === 0 && si === 0) {
-        sessionStatus = SessionStatus.FINISHED;
-      } else if (ei === 1 && si === 1) {
-        sessionStatus = SessionStatus.SUBMITTED;
-      } else if (ei === 2 && si === 2) {
-        sessionStatus = SessionStatus.LOCKED;
-      } else if (ei === 5) {
-        sessionStatus = SessionStatus.NOT_STARTED;
-      } else {
-        sessionStatus = SessionStatus.IN_PROGRESS;
+    for (let si = 0; si < count && si < students.length; si++) {
+      let studentIdx = (ei * 7 + si * 5) % students.length;
+      // Collision avoidance
+      let attempts = 0;
+      while (usedStudents.has(studentIdx) && attempts < students.length) {
+        studentIdx = (studentIdx + 1) % students.length;
+        attempts++;
       }
+      if (usedStudents.has(studentIdx)) break;
+      usedStudents.add(studentIdx);
+
+      // Distribute statuses: first few get realistic, others mix
+      let sessStatus: SessionStatus;
+      if (si === 0) sessStatus = ei < 2 ? 'FINISHED' : 'IN_PROGRESS';
+      else if (si === 1) sessStatus = ei === 0 ? 'SUBMITTED' : ei === 8 ? 'NOT_STARTED' : 'IN_PROGRESS';
+      else if (si === 2) sessStatus = ei === 3 ? 'LOCKED' : 'SUBMITTED';
+      else if (si === 3) sessStatus = 'LOCKED';
+      else if (si === 4) sessStatus = 'NOT_STARTED';
+      else sessStatus = allSessionStatuses[si % allSessionStatuses.length];
+
+      // Adjust session status based on exam status
+      if (examsDef[ei].status === 'COMPLETED' && sessStatus === 'IN_PROGRESS') sessStatus = 'FINISHED';
+      if (examsDef[ei].status === 'DRAFT' && sessStatus !== 'NOT_STARTED') sessStatus = 'NOT_STARTED';
+      if (examsDef[ei].status === 'PUBLISHED' && (sessStatus === 'FINISHED' || sessStatus === 'SUBMITTED')) sessStatus = 'IN_PROGRESS';
+
+      const start = new Date(now.getTime() - rnd(5, 120) * 60 * 1000);
+      const end = ['SUBMITTED', 'FINISHED', 'LOCKED'].includes(sessStatus)
+        ? new Date(start.getTime() + rnd(10, examsDef[ei].dur) * 60 * 1000)
+        : undefined;
+      const score = end ? rnd(30, 100) : undefined;
 
       const session = await prisma.examSession.create({
         data: {
           examId: exams[ei].id,
           studentId: students[studentIdx].id,
-          startTime: sessionStatus === SessionStatus.IN_PROGRESS
-            ? new Date(now.getTime() - startMinAgo * 60 * 1000)
-            : new Date(now.getTime() - (startMinAgo + 60) * 60 * 1000),
-          endTime: [SessionStatus.SUBMITTED, SessionStatus.FINISHED, SessionStatus.LOCKED].includes(sessionStatus)
-            ? new Date(now.getTime() - startMinAgo * 60 * 1000)
-            : undefined,
-          status: sessionStatus,
-          ipAddress: `192.168.${randomInt(0, 255)}.${randomInt(1, 254)}`,
+          startTime: start,
+          endTime: end,
+          status: sessStatus,
+          score: score,
+          ipAddress: `192.168.${rnd(0, 255)}.${rnd(1, 254)}`,
           userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-          score: [SessionStatus.SUBMITTED, SessionStatus.FINISHED, SessionStatus.LOCKED].includes(sessionStatus)
-            ? randomInt(40, 100)
-            : undefined,
-          lastActiveAt: sessionStatus === SessionStatus.IN_PROGRESS
-            ? new Date(now.getTime() - randomInt(0, 5) * 60 * 1000)
-            : undefined,
+          lastActiveAt: sessStatus === 'IN_PROGRESS' ? new Date(now.getTime() - rnd(0, 10) * 60 * 1000) : undefined,
         },
       });
-
-      examSessions.push({ id: session.id, examIdx: ei, studentIdx, status: sessionStatus });
+      sessionRecords.push({ id: session.id, examIdx: ei, studentIdx, status: sessStatus });
     }
   }
+  console.log(`✅ Exam Sessions: ${sessionRecords.length} (statuses: ${[...new Set(sessionRecords.map(s => s.status))].join(', ')})`);
 
-  console.log(`✅ Exam Sessions: ${examSessions.length} created.`);
+  // ═══════════════════════════════════════════════════════════════
+  // 11. ANSWERS (for completed sessions: SUBMITTED, FINISHED, LOCKED)
+  // ═══════════════════════════════════════════════════════════════
+  let answerCount = 0;
+  const completedSet = new Set<SessionStatus>(['SUBMITTED', 'FINISHED', 'LOCKED']);
 
-  // ========================================================================
-  // 11. ANSWERS (covering sessions, including essay and media reference)
-  // ========================================================================
-  const completedStatuses = new Set([SessionStatus.SUBMITTED, SessionStatus.FINISHED, SessionStatus.LOCKED]);
-  const sessionsWithCompletedStatus = examSessions.filter((es) => completedStatuses.has(es.status));
+  for (const sr of sessionRecords) {
+    if (!completedSet.has(sr.status)) continue;
 
-  for (const es of sessionsWithCompletedStatus) {
-    const examQuestionsForExam = questions.filter((q) => q.bankIdx === examsData[es.examIdx].questionBankIdx);
-    if (examQuestionsForExam.length === 0) continue;
+    const ed = examsDef[sr.examIdx];
+    const examQuestionsForBank = questions.filter((q) => q.bankIdx === ed.bankIdx);
+    if (examQuestionsForBank.length === 0) continue;
 
-    const answerCountForSession = Math.min(randomInt(2, examQuestionsForExam.length), examQuestionsForExam.length);
+    const toAnswer = Math.min(rnd(2, examQuestionsForBank.length), examQuestionsForBank.length);
 
-    for (let ai = 0; ai < answerCountForSession; ai++) {
-      const q = examQuestionsForExam[ai];
+    for (let ai = 0; ai < toAnswer; ai++) {
+      const q = examQuestionsForBank[ai];
       const opts = await prisma.questionOption.findMany({ where: { questionId: q.id } });
       const correctOpt = opts.find((o) => o.isCorrect);
 
-      const isEssay = q.type === QuestionType.ESSAY;
-      const essayAnswer = isEssay
-        ? 'Jawaban essay siswa: Langkah-langkah sesuai materi yang diajarkan di kelas, mulai dari identifikasi, perhitungan, sampai kesimpulan akhir.'
-        : undefined;
+      const isEssay = q.type === 'ESSAY' as QuestionType;
+      const essayTexts = [
+        'Langkah-langkah penyelesaian: pertama identifikasi variabel, kedua hitung menggunakan rumus, terakhir simpulkan hasilnya.',
+        'Berdasarkan materi yang telah dipelajari, dapat disimpulkan bahwa konsep ini sangat penting dalam kehidupan sehari-hari.',
+        'Jawaban: a. Identifikasi masalah, b. Rumuskan hipotesis, c. Lakukan eksperimen, d. Analisis data, e. Tarik kesimpulan.',
+      ];
+
+      const essayAnswer = isEssay ? pick(essayTexts) : undefined;
+      const selectedOption = isEssay ? null : correctOpt?.id ?? null;
+      const correct = isEssay ? null : correctOpt ? true : false;
+      const sc = isEssay ? rnd(10, 20) : correctOpt ? q.type === 'MULTIPLE_RESPONSE' as QuestionType ? rnd(5, 15) : q.points : rnd(0, 2);
 
       await prisma.answer.create({
         data: {
-          examSessionId: es.id,
+          examSessionId: sr.id,
           questionId: q.id,
-          selectedOption: isEssay ? null : correctOpt?.id || null,
-          isCorrect: isEssay ? null : correctOpt ? true : null,
-          score: isEssay
-            ? randomInt(15, 20)
-            : correctOpt
-              ? await prisma.question.findUnique({ where: { id: q.id } }).then((q2) => q2?.points || 0)
-              : 0,
-          essayAnswer,
+          selectedOption: selectedOption,
+          isCorrect: correct,
+          score: sc,
+          essayAnswer: essayAnswer,
         },
       });
       answerCount++;
     }
   }
+  console.log(`✅ Answers: ${answerCount}`);
 
-  console.log(`✅ Answers: ${answerCount} created.`);
+  // ═══════════════════════════════════════════════════════════════
+  // 12. VIOLATIONS (varied levels & types)
+  // ═══════════════════════════════════════════════════════════════
+  const vTypes = ['TAB_SWITCH', 'COPY_PASTE', 'MOUSE_LEAVE', 'FULLSCREEN_EXIT', 'DEVELOPER_TOOLS', 'RIGHT_CLICK', 'IDLE_TIMEOUT', 'MULTI_SCREEN_DETECTED'];
+  const vDesc: Record<string, string> = {
+    TAB_SWITCH: 'Pindah tab sebanyak 2 kali selama ujian',
+    COPY_PASTE: 'Mendeteksi aktivitas copy-paste saat ujian',
+    MOUSE_LEAVE: 'Kursor meninggalkan area ujian',
+    FULLSCREEN_EXIT: 'Keluar dari mode fullscreen',
+    DEVELOPER_TOOLS: 'Membuka developer tools (console/inspect)',
+    RIGHT_CLICK: 'Melakukan klik kanan pada area ujian',
+    IDLE_TIMEOUT: 'Tidak ada aktivitas selama 10 menit',
+    MULTI_SCREEN_DETECTED: 'Mendeteksi multiple monitor saat ujian berlangsung',
+  };
+  const vLevels: ViolationLevel[] = ['RINGAN', 'SEDANG', 'BERAT', 'KRITIS'];
 
-  // ========================================================================
-  // 12. VIOLATIONS (varied levels and types)
-  // ========================================================================
-  const violationTypes = ['TAB_SWITCH', 'COPY_PASTE', 'MOUSE_LEAVE', 'FULLSCREEN_EXIT', 'DEVELOPER_TOOLS', 'RIGHT_CLICK'];
-  const violationLevels: ViolationLevel[] = ['RINGAN', 'SEDANG', 'BERAT', 'KRITIS'];
+  const violationsData: { examSessionId: string; level: ViolationLevel; type: string; description: string; timestamp: Date }[] = [];
+  for (const sr of sessionRecords) {
+    // Only violations for non-trivial sessions
+    if (sr.status === 'NOT_STARTED') continue;
+    if (Math.random() > 0.45) continue; // ~55% sessions have violations
 
-  const violationsData: { examSessionId: string; level: ViolationLevel; type: string; description: string }[] = [];
-
-  for (let vi = 0; vi < Math.min(8, examSessions.length); vi++) {
-    const es = examSessions[vi];
-    const vtype = violationTypes[vi % violationTypes.length];
-    const level = vi % 2 === 0 ? ViolationLevel.RINGAN : vi % 3 === 0 ? ViolationLevel.SEDANG : ViolationLevel.BERAT;
-
-    const descriptions: Record<string, string> = {
-      TAB_SWITCH: 'Pindah tab sebanyak 2 kali selama ujian',
-      COPY_PASTE: 'Mendeteksi aktivitas copy-paste saat ujian',
-      MOUSE_LEAVE: 'Kursor meninggalkan area ujian',
-      FULLSCREEN_EXIT: 'Keluar dari mode fullscreen',
-      DEVELOPER_TOOLS: 'Membuka developer tools (console/inspect)',
-      RIGHT_CLICK: 'Melihat source code/konteks menu',
-    };
-
-    violationsData.push({
-      examSessionId: es.id,
-      level,
-      type: vtype,
-      description: descriptions[vtype] || `Pelanggaran ${vtype} terdeteksi`,
-    });
-  }
-
-  await prisma.violation.createMany({ data: violationsData });
-  console.log(`✅ Violations: ${violationsData.length} created.`);
-
-  // ========================================================================
-  // 13. CUSTOM ROLES (4)
-  // ========================================================================
-  const customRolesData = [
-    { name: 'Administrator', slug: 'administrator', description: 'Akses penuh ke semua fitur', isSystem: true },
-    { name: 'Guru', slug: 'guru', description: 'Akses guru: buat soal, ujian, lihat hasil', isSystem: true },
-    { name: 'Pengawas', slug: 'pengawas', description: 'Akses monitoring ujian saja', isSystem: false },
-    { name: 'Kepala Sekolah', slug: 'kepala-sekolah', description: 'Akses laporan dan statistik', isSystem: false },
-  ];
-
-  await prisma.customRole.createMany({ data: customRolesData });
-  const customRoles = await prisma.customRole.findMany({ orderBy: { name: 'asc' } });
-  console.log(`✅ Custom Roles: ${customRoles.length} created.`);
-
-  // ========================================================================
-  // 14. MENU & SUBMENU (5 menus, 17 submenus)
-  // ========================================================================
-  const menusData = [
-    { name: 'Dashboard', icon: 'LayoutDashboard', orderIndex: 1 },
-    { name: 'Manajemen', icon: 'Settings', orderIndex: 2 },
-    { name: 'Ujian', icon: 'FileCheck', orderIndex: 3 },
-    { name: 'Laporan', icon: 'BarChart3', orderIndex: 4 },
-    { name: 'Pengaturan', icon: 'Cog', orderIndex: 5 },
-  ];
-
-  const menus = await Promise.all(
-    menusData.map((m) =>
-      prisma.menu.create({
-        data: m,
-      }),
-    ),
-  );
-  console.log(`✅ Menus: ${menus.length} created.`);
-
-  const subMenusData: { menuIdx: number; name: string; url: string; orderIndex: number }[] = [
-    // Dashboard
-    { menuIdx: 0, name: 'Overview', url: '/admin', orderIndex: 1 },
-    { menuIdx: 0, name: 'Aktivitas Terkini', url: '/admin/activity', orderIndex: 2 },
-    { menuIdx: 0, name: 'Statistik Cepat', url: '/admin/stats', orderIndex: 3 },
-
-    // Manajemen
-    { menuIdx: 1, name: 'Pengguna', url: '/admin/users', orderIndex: 1 },
-    { menuIdx: 1, name: 'Role & Permissions', url: '/admin/roles', orderIndex: 2 },
-    { menuIdx: 1, name: 'Jurusan', url: '/admin/majors', orderIndex: 4 },
-    { menuIdx: 1, name: 'Rombel', url: '/admin/rombels', orderIndex: 5 },
-
-    // Ujian
-    { menuIdx: 2, name: 'Bank Soal', url: '/admin/question-banks', orderIndex: 1 },
-    { menuIdx: 2, name: 'Buat Ujian', url: '/admin/exams/create', orderIndex: 2 },
-    { menuIdx: 2, name: 'Daftar Ujian', url: '/admin/exams', orderIndex: 3 },
-    { menuIdx: 2, name: 'Monitoring', url: '/admin/monitoring', orderIndex: 4 },
-    { menuIdx: 2, name: 'Kelompok Ujian', url: '/admin/exam-groups', orderIndex: 5 },
-
-    // Laporan
-    { menuIdx: 3, name: 'Hasil Ujian', url: '/admin/results', orderIndex: 1 },
-    { menuIdx: 3, name: 'Analisis Soal', url: '/admin/analysis', orderIndex: 2 },
-    { menuIdx: 3, name: 'Rekap Pelanggaran', url: '/admin/violations', orderIndex: 3 },
-
-    // Pengaturan
-    { menuIdx: 4, name: 'Pengaturan Umum', url: '/admin/settings', orderIndex: 1 },
-    { menuIdx: 4, name: 'Tema & Tampilan', url: '/admin/theme', orderIndex: 2 },
-  ];
-
-  const subMenus = await Promise.all(
-    subMenusData.map((sm) =>
-      prisma.subMenu.create({
-        data: {
-          menuId: menus[sm.menuIdx].id,
-          name: sm.name,
-          url: sm.url,
-          orderIndex: sm.orderIndex,
-        },
-      }),
-    ),
-  );
-  console.log(`✅ Sub-Menus: ${subMenus.length} created.`);
-
-  // ========================================================================
-  // 15. PERMISSIONS (3+ per submenu = 50+)
-  // ========================================================================
-  const permissionActions = ['create', 'read', 'update', 'delete', 'export', 'approve', 'monitor', 'lock', 'unlock'];
-  const permissionsData: { subMenuIdx: number; name: string; action: string; securityRiskLevel: string }[] = [];
-
-  for (let si = 0; si < subMenus.length; si++) {
-    const baseName = subMenusData[si]?.name || `submenu-${si}`;
-    const actionCount = 3 + (si % 2); // 3 or 4 actions per submenu
-
-    for (let ai = 0; ai < actionCount; ai++) {
-      const action = permissionActions[(si + ai) % permissionActions.length];
-      const risk = ai === 0 ? 'LOW' : ai === 1 ? 'MEDIUM' : ai === 2 ? 'HIGH' : 'CRITICAL';
-      permissionsData.push({
-        subMenuIdx: si,
-        name: `${baseName}:${action}`,
-        action,
-        securityRiskLevel: risk,
+    const vCount = rnd(1, 4);
+    for (let vi = 0; vi < vCount; vi++) {
+      const vt = vTypes[(sr.examIdx + vi) % vTypes.length];
+      violationsData.push({
+        examSessionId: sr.id,
+        level: vLevels[rnd(0, vLevels.length - 1)],
+        type: vt,
+        description: vDesc[vt] || `Pelanggaran ${vt}`,
+        timestamp: new Date(now.getTime() - rnd(1, 120) * 60 * 1000),
       });
     }
   }
+  if (violationsData.length > 0) {
+    await prisma.violation.createMany({ data: violationsData });
+  }
+  console.log(`✅ Violations: ${violationsData.length}`);
 
-  const permissions = await Promise.all(
-    permissionsData.map((pd) =>
-      prisma.permission.create({
+  // ═══════════════════════════════════════════════════════════════
+  // 13. EXAM TARGETS (rombels + majors)
+  // ═══════════════════════════════════════════════════════════════
+  for (let i = 0; i < exams.length; i++) {
+    const rb = rombels[i % rombels.length];
+    await prisma.examTargetRombel.create({ data: { examId: exams[i].id, rombelId: rb.id } });
+    await prisma.examTargetMajor.create({ data: { examId: exams[i].id, majorId: rb.majorId } });
+  }
+  console.log('✅ Exam Targets: created');
+
+  // ═══════════════════════════════════════════════════════════════
+  // 14. CUSTOM ROLES
+  // ═══════════════════════════════════════════════════════════════
+  const cRoles = await Promise.all([
+    prisma.customRole.create({ data: { name: 'Administrator', slug: 'administrator', description: 'Akses penuh ke semua fitur', isSystem: true } }),
+    prisma.customRole.create({ data: { name: 'Guru', slug: 'guru', description: 'Akses guru: buat soal, ujian, lihat hasil', isSystem: true } }),
+    prisma.customRole.create({ data: { name: 'Pengawas', slug: 'pengawas', description: 'Akses monitoring ujian saja', isSystem: false } }),
+    prisma.customRole.create({ data: { name: 'Kepala Sekolah', slug: 'kepala-sekolah', description: 'Akses laporan dan statistik', isSystem: false } }),
+    prisma.customRole.create({ data: { name: 'Wali Kelas', slug: 'wali-kelas', description: 'Akses laporan per rombel', isSystem: false } }),
+  ]);
+  console.log(`✅ Custom Roles: ${cRoles.length}`);
+
+  // ═══════════════════════════════════════════════════════════════
+  // 15. MENUS & SUBMENUS
+  // ═══════════════════════════════════════════════════════════════
+  const menuDefs = [
+    { name: 'Dashboard', icon: 'LayoutDashboard', order: 1, subs: [
+      { name: 'Overview', url: '/admin', order: 1 },
+      { name: 'Aktivitas Terkini', url: '/admin/activity', order: 2 },
+      { name: 'Statistik Cepat', url: '/admin/stats', order: 3 },
+    ]},
+    { name: 'Manajemen', icon: 'Settings', order: 2, subs: [
+      { name: 'Pengguna', url: '/admin/users', order: 1 },
+      { name: 'Role & Permissions', url: '/admin/roles', order: 2 },
+      { name: 'Jurusan', url: '/admin/majors', order: 3 },
+      { name: 'Rombel', url: '/admin/rombels', order: 4 },
+    ]},
+    { name: 'Ujian', icon: 'FileCheck', order: 3, subs: [
+      { name: 'Bank Soal', url: '/admin/question-banks', order: 1 },
+      { name: 'Buat Ujian', url: '/admin/exams/create', order: 2 },
+      { name: 'Daftar Ujian', url: '/admin/exams', order: 3 },
+      { name: 'Monitoring', url: '/admin/monitoring', order: 4 },
+      { name: 'Kelompok Ujian', url: '/admin/exam-groups', order: 5 },
+    ]},
+    { name: 'Laporan', icon: 'BarChart3', order: 4, subs: [
+      { name: 'Hasil Ujian', url: '/admin/results', order: 1 },
+      { name: 'Analisis Soal', url: '/admin/analysis', order: 2 },
+      { name: 'Rekap Pelanggaran', url: '/admin/violations', order: 3 },
+    ]},
+    { name: 'Pengaturan', icon: 'Cog', order: 5, subs: [
+      { name: 'Pengaturan Umum', url: '/admin/settings', order: 1 },
+      { name: 'Tema & Tampilan', url: '/admin/theme', order: 2 },
+    ]},
+  ];
+
+  const menus: { id: string; subIds: string[] }[] = [];
+  for (const md of menuDefs) {
+    const menu = await prisma.menu.create({ data: { name: md.name, icon: md.icon, orderIndex: md.order } });
+    const subIds: string[] = [];
+    for (const sm of md.subs) {
+      const sub = await prisma.subMenu.create({ data: { menuId: menu.id, name: sm.name, url: sm.url, orderIndex: sm.order } });
+      subIds.push(sub.id);
+    }
+    menus.push({ id: menu.id, subIds });
+  }
+  const allSubMenus = menus.flatMap((m) => m.subIds);
+  console.log(`✅ Menus: ${menus.length}, Submenus: ${allSubMenus.length}`);
+
+  // ═══════════════════════════════════════════════════════════════
+  // 16. PERMISSIONS
+  // ═══════════════════════════════════════════════════════════════
+  const permActions = ['create', 'read', 'update', 'delete', 'export', 'approve', 'monitor', 'lock', 'unlock'];
+  const permLevels = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
+  const perms: { id: string }[] = [];
+
+  for (const subId of allSubMenus) {
+    // Get subMenu name for permission name
+    const count = 3 + rnd(0, 2); // 3-5 per submenu
+    for (let pi = 0; pi < count; pi++) {
+      const action = permActions[(perms.length + pi) % permActions.length];
+      const risk = permLevels[pi % permLevels.length];
+      const perm = await prisma.permission.create({
         data: {
-          subMenuId: subMenus[pd.subMenuIdx].id,
-          name: pd.name,
-          action: pd.action,
-          securityRiskLevel: pd.securityRiskLevel,
+          subMenuId: subId,
+          name: `submenu-${subId.slice(0, 8)}:${action}`,
+          action,
+          securityRiskLevel: risk,
         },
-      }),
-    ),
-  );
-  console.log(`✅ Permissions: ${permissions.length} created.`);
+      });
+      perms.push({ id: perm.id });
+    }
+  }
+  console.log(`✅ Permissions: ${perms.length}`);
 
-  // ========================================================================
-  // 16. ROLE PERMISSION
-  // ========================================================================
-  const rolePerms: { roleIdx: number; permIdx: number }[] = [];
-
-  for (let ri = 0; ri < customRoles.length; ri++) {
-    const assignAll = ri === 0;
-    const everyN = ri === 0 ? 1 : ri + 1;
-
-    for (let pi = 0; pi < permissions.length; pi++) {
-      if (assignAll || (pi + 1) % everyN === 0) {
-        rolePerms.push({ roleIdx: ri, permIdx: pi });
+  // ═══════════════════════════════════════════════════════════════
+  // 17. ROLE ↔ PERMISSION assignments
+  // ═══════════════════════════════════════════════════════════════
+  const rpData: { roleId: string; permissionId: string }[] = [];
+  for (let ri = 0; ri < cRoles.length; ri++) {
+    const skipEvery = ri === 0 ? 1 : ri + 1; // Admin gets all, others sparse
+    for (let pi = 0; pi < perms.length; pi++) {
+      if (ri === 0 || (pi + 1) % skipEvery === 0) {
+        rpData.push({ roleId: cRoles[ri].id, permissionId: perms[pi].id });
       }
     }
   }
+  await prisma.rolePermission.createMany({ data: rpData });
+  console.log(`✅ Role-Permissions: ${rpData.length}`);
 
-  await prisma.rolePermission.createMany({
-    data: rolePerms.map((rp) => ({
-      roleId: customRoles[rp.roleIdx].id,
-      permissionId: permissions[rp.permIdx].id,
-    })),
-  });
-  console.log(`✅ Role-Permissions: ${rolePerms.length} assigned.`);
-
-  // ========================================================================
-  // 17. USER ROLES
-  // ========================================================================
-  const userRolesData: { userId: string; roleIdx: number }[] = [
-    ...superUsers.map((u) => ({ userId: u.id, roleIdx: 0 })),
-    ...teachers.map((_, i) => ({ userId: teacherUsers[i].id, roleIdx: 1 })),
-    { userId: adminSekolahUser.id, roleIdx: 0 },
-    { userId: pengawasUser.id, roleIdx: 2 },
+  // ═══════════════════════════════════════════════════════════════
+  // 18. USER ROLES
+  // ═══════════════════════════════════════════════════════════════
+  const userRolesData: { userId: string; roleId: string }[] = [
+    ...superUsers.map((u) => ({ userId: u.id, roleId: cRoles[0].id })),
+    ...teachers.map((_, i) => ({ userId: teacherUsers[i].id, roleId: cRoles[1].id })),
+    { userId: adminSekolahUser.id, roleId: cRoles[3].id },
+    { userId: pengawasUser.id, roleId: cRoles[2].id },
   ];
+  await prisma.userRole.createMany({ data: userRolesData });
+  console.log(`✅ User-Roles: ${userRolesData.length}`);
 
-  await prisma.userRole.createMany({
-    data: userRolesData.map((ur) => ({
-      userId: ur.userId,
-      roleId: customRoles[ur.roleIdx].id,
-    })),
-  });
-  console.log(`✅ User-Roles: ${userRolesData.length} created.`);
-
-  // ========================================================================
-  // 18. ROLE AUDIT LOGS (5)
-  // ========================================================================
+  // ═══════════════════════════════════════════════════════════════
+  // 19. ROLE AUDIT LOGS
+  // ═══════════════════════════════════════════════════════════════
   const auditActions = ['ROLE_CREATED', 'ROLE_UPDATED', 'ROLE_DELETED', 'PERMISSION_GRANTED', 'PERMISSION_REVOKED'];
   const roleAuditLogs = await Promise.all(
-    customRoles.slice(0, 3).map((role, i) =>
+    cRoles.slice(0, 4).map((role, i) =>
       prisma.roleAuditLog.create({
         data: {
           roleId: role.id,
@@ -1018,156 +720,144 @@ async function main() {
           ipAddress: `192.168.1.${100 + i}`,
           userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
         },
-      }),
-    ),
+      })
+    )
   );
-  console.log(`✅ Role Audit Logs: ${roleAuditLogs.length} created.`);
+  console.log(`✅ Role Audit Logs: ${roleAuditLogs.length}`);
 
-  // ========================================================================
-  // 19. AUDIT LOGS (7)
-  // ========================================================================
-  const auditLogsData: { userId: string; action: string; resource: string }[] = [
-    { userId: superUsers[0].id, action: 'LOGIN', resource: 'Auth' },
-    { userId: superUsers[0].id, action: 'SEED_DATABASE', resource: 'System' },
+  // ═══════════════════════════════════════════════════════════════
+  // 20. AUDIT LOGS (general)
+  // ═══════════════════════════════════════════════════════════════
+  const auditData: { userId: string; action: string; resource: string; ip?: string; userAgent?: string }[] = [
+    { userId: superUsers[0].id, action: 'LOGIN', resource: 'Auth', ip: '192.168.1.10' },
+    { userId: superUsers[0].id, action: 'SEED_DATABASE', resource: 'System', ip: '192.168.1.10' },
     { userId: teacherUsers[0].id, action: 'CREATE_EXAM', resource: 'Exam' },
     { userId: teacherUsers[1].id, action: 'CREATE_QUESTION', resource: 'Question' },
     { userId: studentUsers[0].id, action: 'START_EXAM', resource: 'ExamSession' },
     { userId: studentUsers[0].id, action: 'SUBMIT_ANSWER', resource: 'Answer' },
     { userId: superUsers[1].id, action: 'VIEW_REPORT', resource: 'Report' },
+    { userId: teacherUsers[2].id, action: 'GRADE_ESSAY', resource: 'Answer' },
+    { userId: adminSekolahUser.id, action: 'EXPORT_RESULTS', resource: 'Report' },
+    { userId: pengawasUser.id, action: 'MONITOR_EXAM', resource: 'Monitoring' },
+    { userId: teacherUsers[3].id, action: 'GENERATE_MEDIA', resource: 'Question' },
+    { userId: superUsers[2].id, action: 'UPDATE_SETTING', resource: 'Settings' },
+  ];
+  await prisma.auditLog.createMany({ data: auditData });
+  console.log(`✅ Audit Logs: ${auditData.length}`);
+
+  // ═══════════════════════════════════════════════════════════════
+  // 21. NOTIFICATIONS + RECIPIENTS + PREFERENCES
+  // ═══════════════════════════════════════════════════════════════
+  const notifDefs = [
+    { type: 'EXAM_REMINDER' as NotificationType, priority: 'HIGH' as NotificationPriority, title: 'Pengumuman Ujian', msg: 'Ujian Matematika akan dimulai dalam 30 menit.', ref: exams[0]?.id, refType: 'exam', recip: [teacherUsers[0].id, superUsers[0].id] },
+    { type: 'VIOLATION_DETECTED' as NotificationType, priority: 'URGENT' as NotificationPriority, title: 'Pelanggaran Terdeteksi', msg: 'Siswa terdeteksi membuka tab baru selama ujian berlangsung.', ref: exams[0]?.id, refType: 'exam', recip: [teacherUsers[0].id, pengawasUser.id] },
+    { type: 'SYSTEM_ANNOUNCEMENT' as NotificationType, priority: 'NORMAL' as NotificationPriority, title: 'Sistem Siap Digunakan', msg: 'Seeder berhasil menjalankan semua data awal dengan sukses.', ref: null, refType: null, recip: superUsers.map((u) => u.id) },
+    { type: 'EXAM_SUBMITTED' as NotificationType, priority: 'NORMAL' as NotificationPriority, title: 'Siswa Selesai Ujian', msg: 'Sejumlah siswa telah menyelesaikan Try Out Bahasa Inggris.', ref: exams[3]?.id, refType: 'exam', recip: [teacherUsers[2].id, superUsers[0].id] },
+    { type: 'SESSION_EXPIRED' as NotificationType, priority: 'HIGH' as NotificationPriority, title: 'Sesi Ujian Berakhir', msg: 'Sesi ujian untuk 3 siswa telah berakhir otomatis karena waktu habis.', ref: exams[1]?.id, refType: 'exam', recip: [teacherUsers[0].id, pengawasUser.id, superUsers[1].id] },
+    { type: 'EXAM_AUTO_SUBMIT' as NotificationType, priority: 'NORMAL' as NotificationPriority, title: 'Pengumpulan Otomatis', msg: 'Jawaban siswa yang belum dikumpulkan telah di-submit otomatis.', ref: exams[4]?.id, refType: 'exam', recip: [teacherUsers[3].id] },
+    { type: 'IMPORT_COMPLETED' as NotificationType, priority: 'NORMAL' as NotificationPriority, title: 'Import Soal Selesai', msg: 'Bank soal berhasil diimport dari file Excel.', ref: null, refType: null, recip: [teacherUsers[1].id, superUsers[0].id] },
+    { type: 'EXAM_REMINDER' as NotificationType, priority: 'HIGH' as NotificationPriority, title: 'Jadwal Ujian Besok', msg: 'Pengingat: Try Out Informatika akan dimulai besok pukul 08:00.', ref: exams[5]?.id, refType: 'exam', recip: [teacherUsers[5].id, pengawasUser.id] },
   ];
 
-  await prisma.auditLog.createMany({ data: auditLogsData });
-  console.log(`✅ Audit Logs: ${auditLogsData.length} created.`);
-
-  // ========================================================================
-  // 20. NOTIFICATIONS (5) + RECIPIENTS
-  // ========================================================================
-  const createdNotifications: { id: string }[] = [];
-  const notifTypes = [
-    'EXAM_REMINDER',
-    'VIOLATION_DETECTED',
-    'SYSTEM_ANNOUNCEMENT',
-    'EXAM_SUBMITTED',
-    'SESSION_EXPIRED',
-  ] as const;
-  for (let ni = 0; ni < 5; ni++) {
-    const notification = await prisma.notification.create({
+  const notifIds: string[] = [];
+  for (const nd of notifDefs) {
+    const n = await prisma.notification.create({
       data: {
-        type: notifTypes[ni],
-        priority: ni === 1 ? 'URGENT' : ni === 0 ? 'HIGH' : 'NORMAL',
-        title: ['Ujian Dimulai', 'Pelanggaran Terdeteksi', 'Seeder Selesai', 'Siswa Selesai Ujian', 'Monitoring Aktif'][ni],
-        message: [
-          'UTS Matematika telah dimulai oleh 5 siswa.',
-          'Siswa Ani Rahmawati terdeteksi membuka tab baru selama ujian.',
-          'Seeder berhasil menjalankan semua data.',
-          '3 siswa telah menyelesaikan Try Out Bahasa Inggris.',
-          'Anda ditugaskan sebagai pengawas untuk UAS PPKN.',
-        ][ni],
-        referenceId: exams[ni]?.id || null,
-        referenceType: exams[ni] ? 'exam' : null,
+        type: nd.type,
+        priority: nd.priority,
+        title: nd.title,
+        message: nd.msg,
+        referenceId: nd.ref,
+        referenceType: nd.refType,
         createdBy: superUsers[0].id,
       },
     });
-    createdNotifications.push({ id: notification.id });
-    const recipientUserIds: string[] = [
-      [teacherUsers[0].id, superUsers[1].id],
-      [teacherUsers[1].id, pengawasUser.id],
-      superUsers.map((u) => u.id),
-      [teacherUsers[2].id, superUsers[0].id],
-      [pengawasUser.id, superUsers[0].id],
-    ][ni];
+    notifIds.push(n.id);
     await prisma.notificationRecipient.createMany({
-      data: recipientUserIds.map((userId) => ({ notificationId: notification.id, userId })),
+      data: nd.recip.map((uid) => ({ notificationId: n.id, userId: uid })),
     });
   }
-  console.log(`✅ Notifications: ${createdNotifications.length} created.`);
-  // ========================================================================
-  // 20b. NOTIFICATION PREFERENCES
-  // ========================================================================
-  const notifPrefUsers = [...superUsers, ...teacherUsers.slice(0, 3), pengawasUser];
-  const allNotifTypes: string[] = [
-    'EXAM_SUBMITTED', 'EXAM_AUTO_SUBMIT', 'VIOLATION_DETECTED', 'IMPORT_COMPLETED', 'IMPORT_FAILED', 'EXAM_REMINDER', 'SESSION_EXPIRED', 'SYSTEM_ANNOUNCEMENT'
-  ];
-  const notifPrefsData: { userId: string; type: string; enabled: boolean }[] = [];
-  for (const u of notifPrefUsers) {
+  console.log(`✅ Notifications: ${notifIds.length}`);
+
+  // ── Notification Preferences ──
+  const allNotifTypes = ['EXAM_SUBMITTED', 'EXAM_AUTO_SUBMIT', 'VIOLATION_DETECTED', 'IMPORT_COMPLETED', 'IMPORT_FAILED', 'EXAM_REMINDER', 'SESSION_EXPIRED', 'SYSTEM_ANNOUNCEMENT'];
+  const prefUsers = [...superUsers, ...teacherUsers.slice(0, 4), pengawasUser, adminSekolahUser];
+  const prefData: { userId: string; type: string; enabled: boolean }[] = [];
+  for (const u of prefUsers) {
     for (const nt of allNotifTypes) {
-      notifPrefsData.push({ userId: u.id, type: nt, enabled: true });
+      prefData.push({ userId: u.id, type: nt, enabled: true });
     }
   }
-  await prisma.notificationPreference.createMany({ data: notifPrefsData });
-  console.log(`✅ Notification Preferences: ${notifPrefsData.length} created.`);
+  await prisma.notificationPreference.createMany({ data: prefData });
+  console.log(`✅ Notification Preferences: ${prefData.length}`);
 
-  // ========================================================================
-  // 21. EXAM TARGETS (rombels + majors)
-  // ========================================================================
-  await prisma.examTargetRombel.createMany({
-    data: exams.map((e, i) => ({ examId: e.id, rombelId: rombels[i % rombels.length].id })),
-  });
-  await prisma.examTargetMajor.createMany({
-    data: exams.map((e, i) => ({ examId: e.id, majorId: rombels[i % rombels.length].majorId })),
-  });
-  console.log('✅ Exam Targets: created for all exams.');
-
-  // Add media to first question (image reference)
-  const firstQuestion = await prisma.question.findFirst({ orderBy: { createdAt: 'asc' } });
-  if (firstQuestion) {
-    await prisma.question.update({
-      where: { id: firstQuestion.id },
-      data: { mediaUrl: '/media/matematika/grafik1.png', mediaType: 'image' },
-    });
+  // ── Notification Role Policies ──
+  for (const role of cRoles.slice(0, 4)) {
+    for (const nt of allNotifTypes) {
+      await prisma.notificationRolePolicy.create({
+        data: { roleId: role.id, type: nt as NotificationType, isEnabled: true },
+      }).catch(() => {}); // skip duplicates
+    }
   }
+  console.log('✅ Notification Role Policies: created');
 
-  // ─── Summary ───
-  console.log('═══════════════════════════════════════');
-  console.log('🌱 Seeding completed successfully!');
-  console.log('═══════════════════════════════════════');
-  console.log(' 📊 Summary:');
-  console.log(` • Settings: ${settingsData.length}`);
-  console.log(` • Majors: ${majors.length}`);
-  console.log(` • Rombels: ${rombels.length}`);
-  console.log(` • Users: ${await prisma.user.count()}`);
-  console.log(` - Super Admins: ${superUsers.length}`);
-  console.log(` - Teachers: ${teacherUsers.length}`);
-  console.log(` - Students: ${studentUsers.length}`);
-  console.log(` - Other: 2 (admin, pengawas)`);
-  console.log(` • Subjects: ${subjects.length}`);
-  console.log(` • Exam Groups: ${examGroups.length}`);
-  console.log(` • Question Banks: ${qBanks.length}`);
-  console.log(` • Questions: ${questions.length}`);
-  console.log(` • Exams: ${exams.length}`);
-  console.log(` • Exam Sessions: ${examSessions.length}`);
-  console.log(` • Answers: ${answerCount}`);
-  console.log(` • Violations: ${violationsData.length}`);
-  console.log(` • Custom Roles: ${customRoles.length}`);
-  console.log(` • Menus: ${menus.length}`);
-  console.log(` • Sub-Menus: ${subMenus.length}`);
-  console.log(` • Permissions: ${permissions.length}`);
-  console.log(` • Role-Permissions: ${rolePerms.length}`);
-  console.log(` • User-Roles: ${userRolesData.length}`);
-  console.log(` • Role Audit Logs: ${roleAuditLogs.length}`);
-  console.log(` • Audit Logs: ${auditLogsData.length}`);
-  console.log(` • Notifications: ${createdNotifications.length}`);
-  console.log(` • Notification Preferences: ${notifPrefsData.length}`);
-  console.log(' • Exam Targets: created');
-  console.log('═══════════════════════════════════════');
+  // ═══════════════════════════════════════════════════════════════
+  // SUMMARY
+  // ═══════════════════════════════════════════════════════════════
+  const summary = [
+    ['Settings', settingsData.length],
+    ['Majors', majors.length],
+    ['Rombels', rombels.length],
+    ['Users', await prisma.user.count()],
+    ['Subjects', subjects.length],
+    ['Exam Groups', examGroups.length],
+    ['Question Banks', qBanks.length],
+    ['Questions', questions.length],
+    ['Exams', exams.length],
+    ['Exam Sessions', sessionRecords.length],
+    ['Answers', answerCount],
+    ['Violations', violationsData.length],
+    ['Custom Roles', cRoles.length],
+    ['Menus', menus.length],
+    ['Sub-Menus', allSubMenus.length],
+    ['Permissions', perms.length],
+    ['Role-Permissions', rpData.length],
+    ['User-Roles', userRolesData.length],
+    ['Role Audit Logs', roleAuditLogs.length],
+    ['Audit Logs', auditData.length],
+    ['Notifications', notifIds.length],
+    ['Notification Prefs', prefData.length],
+  ];
+  const maxLen = Math.max(...summary.map(([k]) => k.length));
+  console.log('\n' + '═'.repeat(50));
+  console.log('🌱 SEEDING COMPLETE');
+  console.log('═'.repeat(50));
+  for (const [k, v] of summary) {
+    console.log(` ${k.padEnd(maxLen)} : ${v}`);
+  }
+  console.log('═'.repeat(50));
 
+  // Print tokens for exams that have them
   const tokenExams = await prisma.exam.findMany({
     where: { token: { not: null } },
     select: { title: true, token: true },
   });
-
-  console.log('\n🔑 Exam Tokens:');
-  for (const e of tokenExams) {
-    console.log(` ${e.title}: token = ${e.token}`);
+  if (tokenExams.length > 0) {
+    console.log('\n🔑 Exam Tokens:');
+    for (const e of tokenExams) {
+      console.log(` ${e.title}: ${e.token}`);
+    }
   }
 
-  console.log('\n✨ SEMUA FITUR SUDAH TERISI! Terdapat:');
-  console.log(' ✅ 11 tipe data utama (settings, majors, rombels, users, exam-groups, question-banks, questions, exams, exam-sessions, answers, violations, custom-roles, menus, submenus, permissions, audit-logs, notifications)');
-  console.log(' ✅ Semua enum values diuji coba (SessionStatus: IN_PROGRESS, SUBMITTED, FINISHED, LOCKED, NOT_STARTED; ExamStatus: ONGOING, PUBLISHED, DRAFT; ViolationLevel: RINGAN, SEDANG, BERAT, KRITIS)');
-  console.log(' ✅ Essays, media reference, essay answers');
-  console.log(' ✅ Violations dengan berbagai tipe dan deskripsi');
-  console.log(' ✅ Role-based access (administrator, guru, pengawas, kepala sekolah)');
-  console.log(' ✅ DRAFT exam uji kontrol');
+  console.log('\n✨ Coverage:');
+  console.log('  ExamStatus:', Object.values(ExamStatus).join(', '));
+  console.log('  SessionStatus:', Object.values(SessionStatus).join(', '));
+  console.log('  QuestionType:', Object.values(QuestionType).join(', '));
+  console.log('  Difficulty:', Object.values(Difficulty).join(', '));
+  console.log('  ViolationLevel:', Object.values(ViolationLevel).join(', '));
+  console.log('  NotificationType:', Object.values(NotificationType).join(', '));
+  console.log('  NotificationPriority:', Object.values(NotificationPriority).join(', '));
+  console.log('  Roles:', Object.values(Role).join(', '));
 }
 
 main()
