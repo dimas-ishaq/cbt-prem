@@ -24,6 +24,7 @@ export default function AdminLayout({
   const isDesktop = useBreakpointValue({ base: false, lg: true }) ?? false;
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   const { i18n } = useTranslation();
   const { data: settings } = useQuery({
@@ -46,6 +47,14 @@ export default function AdminLayout({
     staleTime: 1000 * 60 * 5,
     initialData: cachedAppName || cachedLogoUrl ? { appName: cachedAppName, logoUrl: cachedLogoUrl } : undefined,
   });
+
+  const displayAppName = mounted ? (cachedAppName || publicSettings?.appName || 'Loding ...') : 'Loding ...';
+  const displayLogoUrl = mounted ? (cachedLogoUrl || publicSettings?.logoUrl || '/images/logo.png') : '/images/logo.png';
+  const displayLogoAlt = mounted ? (cachedAppName || publicSettings?.appName || 'Logo sekolah') : 'Logo sekolah';
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (settings?.language) {
@@ -113,8 +122,8 @@ export default function AdminLayout({
           <Spinner size="xl" color="brand.solid" />
           <Box position="absolute" inset={0} display="flex" alignItems="center" justifyContent="center">
             <Image
-              src={cachedLogoUrl || publicSettings?.logoUrl || '/images/logo.png'}
-              alt={cachedAppName || publicSettings?.appName || 'Logo sekolah'}
+              src={displayLogoUrl}
+              alt={displayLogoAlt}
               width={28}
               height={28}
               style={{ objectFit: 'contain' }}
@@ -124,7 +133,7 @@ export default function AdminLayout({
         </Flex>
         <Box textAlign="center">
           <Heading size="sm" color="text.primary" fontWeight="bold" letterSpacing="-0.02em">
-            {cachedAppName || publicSettings?.appName || 'Loding ...'}
+            {displayAppName}
           </Heading>
           <Text color="text.muted" fontSize="xs" mt={1}>
             Mohon tunggu sebentar...
