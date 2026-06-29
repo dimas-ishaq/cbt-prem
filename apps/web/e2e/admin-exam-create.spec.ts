@@ -1,11 +1,9 @@
 import { test, expect, Page } from '@playwright/test';
 
+test.use({ storageState: 'playwright/.auth/admin.json' });
+
 const loginAsTeacher = async ({ page }: { page: Page }) => {
-  await page.goto('/login');
-  await page.fill('#login-username', 'test-teacher');
-  await page.fill('#login-password', 'teacher123');
-  await page.click('#login-submit');
-  await page.waitForURL(/admin/);
+  await page.goto('/admin');
 };
 
 test('Guru membuat ujian baru', async ({ page }) => {

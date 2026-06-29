@@ -11,6 +11,7 @@ import api from '@/lib/api';
 import { useSocket } from '@/hooks/useSocket';
 import { useSound } from '@/hooks/useSound';
 import { useAuthStore } from '@/store/auth.store';
+import { classifyExamMutationError, parsePendingExamAnswers } from './exam-utils';
 import { ExamCompletion } from './_components/exam-completion';
 import { ExamConfirmDialog } from './_components/exam-confirm-dialog';
 import { ExamLockedOverlay } from './_components/exam-locked-overlay';
@@ -85,20 +86,41 @@ export function ExamContainer({ examId }: Props) {
     setSessionEndTime,
   } = useExamSession(examId, token, user?.role);
 
+  const pendingSyncLockRef = useRef(false);
+  const answerRevisionRef = useRef(0);
+  const finishReasonRef = useRef<'manual' | 'timer' | 'violation' | 'system' | null>(null);
+
+  const readPendingAnswers = () => {
+    if (!sessionId) return {};
+    try {
+      return parsePendingExamAnswers(localStorage.getItem(`exam_pending_sync_${examId}_${sessionId}`) ? JSON.parse(localStorage.getItem(`exam_pending_sync_${examId}_${sessionId}`) || '{}') : {});
+    } catch (error) {
+      console.error('Failed to parse pending sync answers:', error);
+      return {};
+    }
+  };
+
+  const writePendingAnswers = (pending: Record<string, unknown>) => {
+    if (!sessionId) return;
+    localStorage.setItem(`exam_pending_sync_${examId}_${sessionId}`, JSON.stringify(pending));
+  };
+
   // Sync function to upload pending answers
   // NOTE: defined before finishExam so finishExam can call it
   const syncPendingAnswers = async () => {
     if (!sessionId || !exam) return;
-    const pendingStr = localStorage.getItem(`exam_pending_sync_${examId}_${sessionId}`);
-    if (!pendingStr) return;
+    if (pendingSyncLockRef.current) return;
 
+    pendingSyncLockRef.current = true;
     try {
-      const pending = JSON.parse(pendingStr);
+      const pending = readPendingAnswers();
       const keys = Object.keys(pending);
       if (keys.length === 0) return;
 
       for (const qId of keys) {
         const item = pending[qId];
+        if (!item || !item.questionObjId) continue;
+
         const payload: any = { questionId: item.questionObjId };
         if (item.type === 'ESSAY') {
           payload.essayAnswer = item.answer;
@@ -108,49 +130,48 @@ export function ExamContainer({ examId }: Props) {
 
         try {
           await api.post(`/exam-sessions/${sessionId}/submit-answer`, payload);
-          // Remove from pending on success
-          const currentPending = JSON.parse(localStorage.getItem(`exam_pending_sync_${examId}_${sessionId}`) || '{}');
+          const currentPending = readPendingAnswers();
           delete currentPending[qId];
-          localStorage.setItem(`exam_pending_sync_${examId}_${sessionId}`, JSON.stringify(currentPending));
+          writePendingAnswers(currentPending);
         } catch (err) {
-          const status = (err as AxiosError)?.response?.status;
-          // 400 means session is no longer active (locked/submitted) — skip remaining answers
-          if (status === 400) {
-            console.warn(`Skipping answer sync for question ${qId}: session no longer active (400).`);
-            break;
+          const classified = classifyExamMutationError(err);
+          if (classified.kind === 'already-completed' || classified.kind === 'not-found') {
+            console.warn(`Skip sync for ${qId}: session completed or missing (${classified.status ?? 'n/a'}).`);
+            return;
           }
-          console.error(`Failed to sync answer for question ${qId}:`, err);
+          console.error(`Failed to sync answer for question ${qId}:`, classified.message || err);
+          throw err;
         }
       }
-    } catch (e) {
-      console.error('Failed to parse pending sync answers:', e);
+    } finally {
+      pendingSyncLockRef.current = false;
     }
   };
 
-  const finishExam = async () => {
+  const finishExam = async (reason: 'manual' | 'timer' | 'violation' | 'system' = 'system') => {
     if (!sessionId) return;
-    // Prevent concurrent calls (e.g. violation auto-submit races with timer expiry or manual submit)
     if (isFinishingRef.current) return;
     isFinishingRef.current = true;
+    finishReasonRef.current = reason;
 
     try {
-      // Sync all pending (locally stored) answers to the server first,
-      // so that when auto-finish is triggered (e.g. by violation limit),
-      // all answers already answered by the student are collected.
       try {
         await syncPendingAnswers();
-      } catch (e) {
-        console.error('Failed to sync pending answers before finishing:', e);
+      } catch (error) {
+        const classified = classifyExamMutationError(error);
+        if (classified.kind !== 'already-completed' && classified.kind !== 'not-found') {
+          console.error('Failed to sync pending answers before finishing:', classified.message || error);
+        }
       }
 
       try {
-        await api.post(`/exam-sessions/${sessionId}/finish`);
+        await api.post(`/exam-sessions/${sessionId}/finish`, { reason });
       } catch (err) {
-        const status = (err as AxiosError)?.response?.status;
-        // 400 means the session was already submitted/finished from another source
-        // (e.g. backend auto-submit, proctor, or duplicate call) — treat as success
-        if (status === 400) {
-          console.warn('Session already submitted or not in progress (400) — treating as finished.');
+        const classified = classifyExamMutationError(err);
+        if (classified.kind === 'already-completed') {
+          console.warn('Session already completed - treating as finished.');
+        } else if (classified.kind === 'not-found') {
+          console.warn('Session missing - treating as finished to avoid duplicate state.');
         } else {
           throw err;
         }
@@ -159,12 +180,14 @@ export function ExamContainer({ examId }: Props) {
       try {
         localStorage.removeItem(`exam_backup_${examId}_${sessionId}`);
         localStorage.removeItem(`exam_pending_sync_${examId}_${sessionId}`);
+        localStorage.removeItem(`exam_finish_reason_${examId}_${sessionId}`);
       } catch (e) {
         console.error('Failed to clear local storage on finish:', e);
       }
       setIsCompleted(true);
     } finally {
       isFinishingRef.current = false;
+      finishReasonRef.current = null;
     }
   };
 
@@ -311,8 +334,8 @@ export function ExamContainer({ examId }: Props) {
     }
   };
 
-  if (!exam && isLoadingExam) return <Flex align="center" justify="center" minH="screen"><Spinner size="xl" /></Flex>;
-  if (!exam) return <Flex align="center" justify="center" minH="screen"><Text color="dd.text" fontSize="13px">Ujian tidak ditemukan.</Text></Flex>;
+  if (!exam && isLoadingExam) return <Flex align="center" justify="center" minH="screen" bg="dd.canvas"><Spinner size="xl" color="dd.brand" /></Flex>;
+  if (!exam) return <Flex align="center" justify="center" minH="screen" bg="dd.canvas"><Text color="dd.text" fontSize="13px">Ujian tidak ditemukan.</Text></Flex>;
   if (isCompleted) return <ExamCompletion subjectName={exam?.subject?.name} examTitle={exam?.title} />;
   if (isLocked) return <ExamLockedOverlay />;
 

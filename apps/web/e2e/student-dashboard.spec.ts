@@ -1,14 +1,10 @@
 import { test, expect } from '@playwright/test';
 
-const API_URL = 'http://localhost:3001';
-
 test.describe('Student Dashboard Smoke Tests', () => {
+  test.use({ storageState: 'playwright/.auth/user.json' });
+
   test.beforeEach(async ({ page }) => {
-    await page.goto('/login');
-    await page.fill('input[name="username"]', 'test-student');
-    await page.fill('input[name="password"]', 'student123');
-    await page.click('button[type="submit"]');
-    await page.waitForURL('/dashboard');
+    await page.goto('/dashboard');
   });
 
   test('should display dashboard header', async ({ page }) => {
@@ -25,7 +21,6 @@ test.describe('Student Dashboard Smoke Tests', () => {
   });
 
   test('should show server time', async ({ page }) => {
-    // Server time should be displayed (format: "Senin, 01 Jan 2024, 08:00:00" or dot-formatted "08.00.00")
     await expect(page.locator('text=/\\d{2}[.:]\\d{2}[.:]\\d{2}/').first()).toBeVisible();
   });
 });

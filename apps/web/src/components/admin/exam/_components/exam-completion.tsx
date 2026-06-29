@@ -87,7 +87,7 @@ export function ExamCompletion({ subjectName, examTitle }: ExamCompletionProps) 
           mx="auto"
           mb={6}
           border="2px solid"
-          borderColor="rgba(26, 190, 113, 0.3)"
+          borderColor="dd.status.success.text"
           boxShadow="0 0 40px rgba(26, 190, 113, 0.1)"
           css={{ animation: `${scaleIn} 0.7s cubic-bezier(0.34, 1.56, 0.64, 1), ${float} 3s ease-in-out 1s infinite` }}
         >
@@ -144,7 +144,7 @@ export function ExamCompletion({ subjectName, examTitle }: ExamCompletionProps) 
             px={4}
             py={1.5}
             mb={6}
-            borderRadius="md"
+            borderRadius="badge"
             bg="dd.surface"
             border="1px solid"
             borderColor="dd.border"
@@ -165,11 +165,11 @@ export function ExamCompletion({ subjectName, examTitle }: ExamCompletionProps) 
         <Box
           p={5}
           mb={6}
-          borderRadius="md"
+          borderRadius="card"
           bg="dd.surface"
           border="1px solid"
           borderColor="dd.border"
-          boxShadow="0 1px 4px rgba(0,0,0,0.05)"
+          boxShadow={{ base: 'card-light', _dark: 'card-dark' }}
           css={{ animation: `${fadeUp} 0.6s ease-out 0.6s both` }}
         >
           <Text fontSize="13px" color="dd.text" lineHeight="1.4">

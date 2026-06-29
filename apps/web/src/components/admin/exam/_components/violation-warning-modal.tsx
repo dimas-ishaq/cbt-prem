@@ -12,16 +12,16 @@ export function ViolationWarningModal({ open, message, onAcknowledge }: Violatio
 
   return (
     <Flex position="fixed" inset={0} zIndex={50} bg="blackAlpha.600" backdropFilter="blur(4px)" align="center" justify="center" p={4}>
-      <Box bg="bg.surface" w="full" maxW="md" borderRadius="2xl" p={6} boxShadow="2xl" border="1px solid" borderColor="border.default" textAlign="center" className="animate-bounce-short">
-        <Flex w={14} h={14} bg="status.danger.bg" borderRadius="full" align="center" justify="center" mx="auto" mb={4} border="1px solid" borderColor="border.default">
+      <Box bg="dd.surface" w="full" maxW="md" borderRadius="card" p={6} boxShadow={{ base: 'card-light', _dark: 'card-dark' }} border="1px solid" borderColor="dd.border" textAlign="center" className="animate-bounce-short">
+        <Flex w={14} h={14} bg="dd.status.danger.bg" borderRadius="full" align="center" justify="center" mx="auto" mb={4} border="1px solid" borderColor="dd.border">
           <AlertTriangle className="text-red-600" size={28} />
         </Flex>
-        <Heading size="md" fontWeight="bold" color="text.primary">Peringatan Keamanan Ujian</Heading>
-        <Text color="text.secondary" fontSize="sm" mt={2} lineHeight="relaxed">{message}</Text>
-        <Box mt={4} p={3} bg="status.warning.bg" border="1px solid" borderColor="border.default" borderRadius="xl" fontSize="xs" color="status.warning.text" fontWeight="medium">
+        <Heading size="md" fontWeight="bold" color="dd.text">Peringatan Keamanan Ujian</Heading>
+        <Text color="dd.text.muted" fontSize="sm" mt={2} lineHeight="relaxed">{message}</Text>
+        <Box mt={4} p={3} bg="dd.status.warning.bg" border="1px solid" borderColor="dd.border" borderRadius="card" fontSize="xs" color="dd.status.warning.text" fontWeight="medium">
           Aktivitas perpindahan layar dicatat oleh sistem pengawas (proctoring). Pelanggaran berulang dapat membatalkan sesi ujian Anda.
         </Box>
-        <Button onClick={onAcknowledge} mt={6} w="full" py={5} bg="brand.solid" color="text.inverted" fontWeight="bold" borderRadius="xl" _hover={{ bg: 'brand.text' }} cursor="pointer" fontSize="sm">
+        <Button onClick={onAcknowledge} mt={6} w="full" py={5} bg="dd.brand" color="dd.text.onBrand" fontWeight="bold" borderRadius="card" _hover={{ bg: 'dd.brand.hover' }} cursor="pointer" fontSize="sm">
           Saya Mengerti & Kembali ke Ujian
         </Button>
       </Box>

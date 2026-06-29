@@ -24,7 +24,7 @@ export function ExamHeader({ title, subjectName, startTime, duration, overrideEn
       py={4}
       justify="space-between"
       align="center"
-      fontFamily="Inter, -apple-system, BlinkMacSystemFont, sans-serif"
+      fontFamily="body"
     >
       <Box>
         <Heading size="md" color="dd.text" fontWeight="700">
@@ -40,7 +40,7 @@ export function ExamHeader({ title, subjectName, startTime, duration, overrideEn
         color={disableFinish ? 'dd.text.muted' : 'white'}
         onClick={onFinish}
         disabled={disableFinish}
-        borderRadius="md"
+        borderRadius="card"
         fontSize="13px"
         fontWeight="bold"
         px={4}

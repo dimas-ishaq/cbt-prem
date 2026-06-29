@@ -15,6 +15,18 @@ type ExamConfigSource = {
   sebConfigKey?: string | null;
 };
 
+type PendingExamAnswer = {
+  answer: string;
+  type?: string;
+  questionObjId?: string;
+  revision: number;
+  updatedAt: number;
+};
+
+export type PendingExamAnswerMap = Record<string, PendingExamAnswer>;
+
+export type ExamMutationErrorKind = 'already-completed' | 'not-found' | 'locked' | 'server-error' | 'bad-request' | 'unknown';
+
 export function parseSessionAnswers(data: SessionData | null | undefined): Record<string, string> {
   const existingAnswers: Record<string, string> = {};
 
@@ -29,6 +41,77 @@ export function parseSessionAnswers(data: SessionData | null | undefined): Recor
   });
 
   return existingAnswers;
+}
+
+export function parsePendingExamAnswers(data: unknown): PendingExamAnswerMap {
+  if (!data || typeof data !== 'object') return {};
+
+  const entries = Object.entries(data as Record<string, unknown>);
+  const result: PendingExamAnswerMap = {};
+
+  entries.forEach(([questionId, value]) => {
+    if (!value || typeof value !== 'object') return;
+    const item = value as Partial<PendingExamAnswer>;
+    if (typeof item.answer !== 'string') return;
+
+    result[questionId] = {
+      answer: item.answer,
+      type: typeof item.type === 'string' ? item.type : undefined,
+      questionObjId: typeof item.questionObjId === 'string' ? item.questionObjId : undefined,
+      revision: Number.isFinite(item.revision) ? Number(item.revision) : 0,
+      updatedAt: Number.isFinite(item.updatedAt) ? Number(item.updatedAt) : 0,
+    };
+  });
+
+  return result;
+}
+
+export function mergeRestoredAnswers(currentAnswers: Record<string, string>, backup: Record<string, string>, validQuestionIds: Set<string>) {
+  const merged = { ...currentAnswers };
+  let restoredCount = 0;
+  let skippedCount = 0;
+
+  Object.entries(backup).forEach(([questionId, answer]) => {
+    if (!validQuestionIds.has(questionId)) {
+      skippedCount += 1;
+      return;
+    }
+
+    if (merged[questionId]?.trim()) {
+      return;
+    }
+
+    if (typeof answer === 'string' && answer.trim()) {
+      merged[questionId] = answer;
+      restoredCount += 1;
+    }
+  });
+
+  return { answers: merged, restoredCount, skippedCount };
+}
+
+export function classifyExamMutationError(error: unknown): { status: number | null; kind: ExamMutationErrorKind; message: string } {
+  const response = error && typeof error === 'object' && 'response' in error ? (error as { response?: { status?: number; data?: { message?: unknown; error?: unknown } } }).response : undefined;
+  const status = response?.status ?? null;
+  const message = String(response?.data?.message ?? response?.data?.error ?? (error instanceof Error ? error.message : ''));
+  const normalized = message.toLowerCase();
+
+  if (status === 400) {
+    if (normalized.includes('already submitted') || normalized.includes('not in progress') || normalized.includes('locked')) {
+      return { status, kind: 'already-completed', message };
+    }
+    return { status, kind: 'bad-request', message };
+  }
+
+  if (status === 404) {
+    return { status, kind: 'not-found', message };
+  }
+
+  if (status && status >= 500) {
+    return { status, kind: 'server-error', message };
+  }
+
+  return { status, kind: 'unknown', message };
 }
 
 export function generateSEBConfig(exam: ExamConfigSource): string {

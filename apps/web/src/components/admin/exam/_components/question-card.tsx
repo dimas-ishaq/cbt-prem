@@ -127,7 +127,7 @@ export function QuestionCard({ question, index, onAnswer, selectedAnswer, isFlag
                     alignItems="center"
                     p={3.5}
                     border="1px solid"
-                    borderRadius="md"
+                    borderRadius="badge"
                     cursor={isDisabled ? 'not-allowed' : 'pointer'}
                     transition="all 0.12s ease"
                     borderColor={isSelected ? 'dd.brand' : 'dd.border'}
@@ -144,7 +144,7 @@ export function QuestionCard({ question, index, onAnswer, selectedAnswer, isFlag
                       h="32px"
                       align="center"
                       justify="center"
-                      borderRadius="md"
+                      borderRadius="badge"
                       border="1px solid"
                       mr={4}
                       fontWeight="bold"
@@ -194,7 +194,7 @@ export function QuestionCard({ question, index, onAnswer, selectedAnswer, isFlag
                   cursor={isDisabled ? 'not-allowed' : 'pointer'}
                   transition="all 0.12s ease"
                   borderColor={isSelected ? 'dd.brand' : 'dd.border'}
-                  bg={isSelected ? { base: 'rgba(156, 85, 232, 0.05)', _dark: 'rgba(156, 85, 232, 0.08)' } : { base: 'white', _dark: 'dd.canvas' }}
+                  bg={isSelected ? 'dd.brand.subtle' : 'dd.surface'}
                   _hover={isSelected || isDisabled ? {} : { bg: 'dd.canvas', borderColor: 'dd.border.strong' }}
                   boxShadow={isSelected ? 'dd.focus.ring' : 'none'}
                   disabled={isDisabled}
@@ -207,7 +207,7 @@ export function QuestionCard({ question, index, onAnswer, selectedAnswer, isFlag
                     h="32px"
                     align="center"
                     justify="center"
-                    borderRadius="md"
+                    borderRadius="badge"
                     border="1px solid"
                     mr={4}
                     fontWeight="bold"
@@ -273,8 +273,8 @@ export function QuestionCard({ question, index, onAnswer, selectedAnswer, isFlag
     <Box
       bg="dd.surface"
       p={6}
-      borderRadius="md"
-      boxShadow="0 1px 4px rgba(0,0,0,0.05)"
+      borderRadius="card"
+      boxShadow={{ base: 'card-light', _dark: 'card-dark' }}
       border="1px solid"
       borderColor="dd.border"
       position="relative"
@@ -282,11 +282,11 @@ export function QuestionCard({ question, index, onAnswer, selectedAnswer, isFlag
     >
       {/* Question Header Status */}
       <Flex justify="space-between" align="center" mb={5}>
-        <Badge bg="dd.brand.subtle" color="dd.brand" border="1px solid" borderColor="dd.brand" px={3} py={1} borderRadius="md" fontWeight="bold" fontSize="11px" textTransform="uppercase" letterSpacing="wider">
+        <Badge bg="dd.brand.subtle" color="dd.brand" border="1px solid" borderColor="dd.brand" px={3} py={1} borderRadius="badge" fontWeight="bold" fontSize="11px" textTransform="uppercase" letterSpacing="wider">
           Soal No. {index + 1}
         </Badge>
         <Flex align="center" gap={3}>
-          <Badge bg={{ base: 'dd.canvas', _dark: 'dd.canvas' }} color="dd.text.muted" border="1px solid" borderColor="dd.border" px={2.5} py={1} borderRadius="md" fontSize="10px" fontWeight="bold" textTransform="uppercase" letterSpacing="wider">
+          <Badge bg="dd.surface.alt" color="dd.text.muted" border="1px solid" borderColor="dd.border" px={2.5} py={1} borderRadius="badge" fontSize="10px" fontWeight="bold" textTransform="uppercase" letterSpacing="wider">
             {question.type.replace('_', ' ')}
           </Badge>
           <Button

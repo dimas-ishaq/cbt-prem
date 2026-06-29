@@ -82,9 +82,9 @@ export default function ExamsPage() {
 
         <Flex gap={4} wrap="wrap" mt={5}>
           {[
-            { label: 'Total', value: counts.total, icon: ClipboardList, color: '#9C55E8', bg: 'rgba(156, 85, 232, 0.1)' },
-            { label: 'Draft', value: counts.draft, icon: FileText, color: '#F5A623', bg: 'rgba(245, 166, 35, 0.1)' },
-            { label: 'Published', value: counts.published, icon: BadgeCheck, color: '#1ABE71', bg: 'rgba(26, 190, 113, 0.1)' },
+            { label: 'Total', value: counts.total, icon: ClipboardList, color: 'dd.brand', bg: 'dd.brand.subtle' },
+            { label: 'Draft', value: counts.draft, icon: FileText, color: 'dd.status.warning.solid', bg: 'dd.status.warning.bg' },
+            { label: 'Published', value: counts.published, icon: BadgeCheck, color: 'dd.status.success.solid', bg: 'dd.status.success.bg' },
             { label: 'Ongoing', value: counts.ongoing, icon: Clock, color: '#2D9BF0', bg: 'rgba(45, 155, 240, 0.1)' },
           ].map((item) => {
             const Icon = item.icon;

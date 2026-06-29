@@ -295,7 +295,7 @@ export default function MonitoringListPage() {
               }}
             >
               {/* Gradient accent top bar */}
-              <Box h="4px" bg="linear-gradient(90deg, #1ABE71 0%, #2D9BF0 50%, #774AA4 100%)" />
+              <Box h="4px" bg="dd.brand.gradient" />
 
               {/* Animated LIVE badge */}
               <Box position="absolute" top="16px" right="12px">

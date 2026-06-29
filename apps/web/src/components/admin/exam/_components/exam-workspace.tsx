@@ -39,7 +39,7 @@ export function ExamWorkspace({ currentQuestion, currentQuestionIndex, answers, 
   const isLastQuestion = currentQuestionIndex === questions.length - 1;
 
   return (
-    <Box display="grid" gridTemplateColumns={{ base: '1fr', lg: 'minmax(0, 1fr) 360px' }} gap={5} fontFamily="Inter, -apple-system, BlinkMacSystemFont, sans-serif">
+    <Box display="grid" gridTemplateColumns={{ base: '1fr', lg: 'minmax(0, 1fr) 360px' }} gap={5} fontFamily="body">
       <Box>
         {currentQuestion && (
           <>
@@ -59,7 +59,7 @@ export function ExamWorkspace({ currentQuestion, currentQuestionIndex, answers, 
                 color={isFirstQuestion ? 'dd.text.muted' : 'dd.text'}
                 border="1px solid"
                 borderColor="dd.border"
-                borderRadius="md"
+                borderRadius="card"
                 px={5}
                 height="38px"
                 fontSize="13px"
@@ -78,7 +78,7 @@ export function ExamWorkspace({ currentQuestion, currentQuestionIndex, answers, 
                   color="white"
                   border="1px solid"
                   borderColor="dd.brand"
-                  borderRadius="md"
+                  borderRadius="card"
                   px={5}
                   height="38px"
                   fontSize="13px"
@@ -96,7 +96,7 @@ export function ExamWorkspace({ currentQuestion, currentQuestionIndex, answers, 
                   color={disableFinish ? 'dd.text.muted' : 'white'}
                   border="1px solid"
                   borderColor={disableFinish ? 'dd.border' : 'dd.status.danger.solid' }
-                  borderRadius="md"
+                  borderRadius="card"
                   px={5}
                   height="38px"
                   fontSize="13px"

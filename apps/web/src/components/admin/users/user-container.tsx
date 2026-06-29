@@ -230,25 +230,25 @@ export function UserContainer() {
 
   // Render
   return (
-    <Stack gap={6} bg="bg.canvas" color="text.primary" minH="100vh">
+    <Stack gap={6} bg="bg.canvas" color="dd.text" minH="100vh">
       {/* Header */}
       <Flex justify="space-between" align="center" wrap="wrap" gap={4}>
         <Box>
           <Text color="brand.text" fontSize="xs" fontWeight="semibold" textTransform="uppercase" letterSpacing="0.12em" mb={2}>
             User dashboard
           </Text>
-          <Heading size="xl" fontWeight="bold" color="text.primary">
+          <Heading size="xl" fontWeight="bold" color="dd.text">
             Manajemen Akun Pengguna
           </Heading>
-          <Text color="text.secondary" mt={1} fontSize="sm">
+          <Text color="dd.text.muted" mt={1} fontSize="sm">
             Kelola semua akun pengguna sistem — Super Admin, Guru, dan Siswa
           </Text>
         </Box>
         <HStack gap={3} flexWrap="wrap">
           <Button
             variant="outline"
-            borderColor="border.default"
-            color="text.secondary"
+            borderColor="dd.border"
+            color="dd.text.muted"
             _hover={{ bg: 'bg.elevated', borderColor: 'brand.text', color: 'text.primary' }}
             borderRadius="lg"
             size="sm"
@@ -260,8 +260,8 @@ export function UserContainer() {
           </Button>
           <Button
             variant="outline"
-            borderColor="border.default"
-            color="text.secondary"
+            borderColor="dd.border"
+            color="dd.text.muted"
             _hover={{ bg: 'bg.elevated', borderColor: 'brand.text', color: 'text.primary' }}
             borderRadius="lg"
             size="sm"
@@ -274,8 +274,8 @@ export function UserContainer() {
           </Button>
           <Button
             variant="outline"
-            borderColor="border.default"
-            color="text.secondary"
+            borderColor="dd.border"
+            color="dd.text.muted"
             _hover={{ bg: 'bg.elevated', borderColor: 'brand.text', color: 'text.primary' }}
             borderRadius="lg"
             size="sm"
@@ -315,9 +315,9 @@ export function UserContainer() {
       <Flex gap={4} wrap="wrap">
         {(() => {
           const tabMetaMap: Record<string, { color: string; bg: string }> = {
-            SUPER_ADMIN: { color: '#9C55E8', bg: 'rgba(156, 85, 232, 0.1)' },
-            GURU: { color: '#2D9BF0', bg: 'rgba(45, 155, 240, 0.1)' },
-            SISWA: { color: '#1ABE71', bg: 'rgba(26, 190, 113, 0.1)' },
+            SUPER_ADMIN: { color: 'dd.brand', bg: 'dd.brand.subtle' },
+            GURU: { color: 'dd.status.info.solid', bg: 'dd.status.info.bg' },
+            SISWA: { color: 'dd.status.success.solid', bg: 'dd.status.success.bg' },
           };
           return TABS.slice(1).map(({ key, label, icon: Icon }) => {
             const meta = tabMetaMap[key] || { color: '#8A8A8A', bg: 'rgba(138, 138, 138, 0.1)' };
@@ -327,12 +327,12 @@ export function UserContainer() {
                 key={key}
                 flex="1"
                 minW="140px"
-                bg="bg.surface"
+                bg="dd.surface"
                 borderRadius="2xl"
                 borderWidth="1px"
-                borderColor="border.default"
+                borderColor="dd.border"
                 p={4}
-                shadow="card-dark"
+                boxShadow='card-dark'
                 cursor="pointer"
                 onClick={() => setActiveTab(key)}
                 transition="all 0.2s"
@@ -353,10 +353,10 @@ export function UserContainer() {
                     <Icon size={20} />
                   </Box>
                   <Box>
-                    <Text fontSize="2xl" fontWeight="bold" color="text.primary" lineHeight="1">
+                    <Text fontSize="2xl" fontWeight="bold" color="dd.text" lineHeight="1">
                       {counts[key]}
                     </Text>
-                    <Text fontSize="xs" color="text.secondary" mt={0.5}>
+                    <Text fontSize="xs" color="dd.text.muted" mt={0.5}>
                       {label}
                     </Text>
                   </Box>
@@ -424,22 +424,22 @@ export function UserContainer() {
           <Dialog.Backdrop />
           <Dialog.Positioner>
             <Dialog.Content 
-              borderRadius="md" 
+              borderRadius="card" 
               overflow="hidden" 
-              bg={{ base: '#FFFFFF', _dark: '#1B1B1B' }} 
+              bg="dd.surface" 
               border="1px solid" 
-              borderColor={{ base: '#E2E8F0', _dark: '#3D3D3D' }}
+              borderColor="dd.border"
             >
               <Dialog.Header 
-                bg={{ base: '#F7FAFC', _dark: '#242424' }} 
+                bg="dd.surface.alt" 
                 py={4} 
                 borderBottom="1px solid" 
-                borderColor={{ base: '#E2E8F0', _dark: '#3D3D3D' }}
+                borderColor="dd.border"
               >
                 <Dialog.Title 
                   fontSize="md" 
                   fontWeight="bold" 
-                  color={{ base: '#E53E3E', _dark: '#EF4444' }} 
+                  color="dd.status.danger.text" 
                   display="flex" 
                   alignItems="center" 
                   gap={2}
@@ -447,20 +447,20 @@ export function UserContainer() {
                   <AlertTriangle size={18} /> Hapus Akun Pengguna
                 </Dialog.Title>
               </Dialog.Header>
-              <Dialog.Body p={6} bg={{ base: '#FFFFFF', _dark: '#1B1B1B' }}>
+              <Dialog.Body p={6} bg="dd.surface">
                 <Stack gap={4}>
-                  <Text fontSize="sm" color={{ base: '#2D3748', _dark: '#E0E0E0' }} lineHeight="relaxed">
+                  <Text fontSize="sm" color="dd.text" lineHeight="relaxed">
                     Apakah Anda yakin ingin menghapus akun <strong>{userToDelete?.fullName}</strong> ({userToDelete?.username})? 
                     Tindakan ini tidak dapat dibatalkan dan semua data yang berkaitan dengan pengguna ini akan dihapus secara permanen.
                   </Text>
                   <Box 
-                    bg={{ base: '#FFF5F5', _dark: '#242424' }} 
+                    bg="dd.status.danger.bg" 
                     p={3} 
-                    borderRadius="sm" 
+                    borderRadius="badge" 
                     borderLeft="4px solid" 
-                    borderColor={{ base: '#E53E3E', _dark: '#EF4444' }}
+                    borderColor='dd.status.danger.text'
                   >
-                    <Text fontSize="xs" color={{ base: '#E53E3E', _dark: '#EF4444' }} fontWeight="bold">
+                    <Text fontSize="xs" color="dd.status.danger.text" fontWeight="bold">
                       PERINGATAN: Menghapus akun ini akan menghapus riwayat pengerjaan ujian dan data terkait lainnya.
                     </Text>
                   </Box>
@@ -468,7 +468,7 @@ export function UserContainer() {
                     <Text 
                       fontSize="xs" 
                       fontWeight="bold" 
-                      color={{ base: '#718096', _dark: '#8A8A8A' }} 
+                      color="dd.text.muted" 
                       mb={2} 
                       textTransform="uppercase" 
                       letterSpacing="wider"
@@ -479,30 +479,30 @@ export function UserContainer() {
                       value={deleteConfirmationInput}
                       onChange={(e) => setDeleteConfirmationInput(e.target.value)}
                       placeholder="Ketik hapus"
-                      borderRadius="sm"
-                      borderColor={{ base: '#CBD5E0', _dark: '#3D3D3D' }}
-                      bg={{ base: '#EDF2F7', _dark: '#2D2D2D' }}
-                      color={{ base: '#1A202C', _dark: '#E0E0E0' }}
-                      _focus={{ borderColor: { base: '#3182CE', _dark: '#9C55E8' }, outline: 'none' }}
+                      borderRadius="badge"
+                      borderColor="dd.border"
+                      bg="dd.surface.alt"
+                      color="dd.text"
+                      _focus={{ borderColor: 'dd.brand', outline: 'none' }}
                     />
                   </Box>
                 </Stack>
               </Dialog.Body>
               <Dialog.Footer 
                 p={6} 
-                bg={{ base: '#F7FAFC', _dark: '#242424' }} 
+                bg="dd.surface.alt" 
                 borderTop="1px solid" 
-                borderColor={{ base: '#E2E8F0', _dark: '#3D3D3D' }}
+                borderColor="dd.border"
               >
                 <Flex gap={3} width="full">
                   <Dialog.ActionTrigger asChild>
                     <Button 
                       type="button" 
                       variant="outline" 
-                      borderColor={{ base: '#CBD5E0', _dark: '#3D3D3D' }} 
+                      borderColor="dd.border" 
                       color={{ base: '#4A5568', _dark: '#E0E0E0' }}
-                      _hover={{ bg: { base: '#EDF2F7', _dark: '#2D2D2D' } }}
-                      borderRadius="sm" 
+                      _hover={{ bg: 'dd.surface.alt' }}
+                      borderRadius="badge" 
                       flex={1}
                       onClick={() => setIsDeleteModalOpen(false)}
                     >
@@ -523,15 +523,15 @@ export function UserContainer() {
                     }}
                     disabled={deleteConfirmationInput.trim().toLowerCase() !== 'hapus' || deleteMutation.isPending}
                     flex={1}
-                    bg={{ base: '#E53E3E', _dark: '#EF4444' }}
+                    bg="dd.status.danger.solid"
                     color="#ffffff"
-                    _hover={{ bg: { base: '#C53030', _dark: '#D32F2F' } }}
+                    _hover={{ bg: 'dd.status.danger.text' }}
                     _disabled={{ 
-                      bg: { base: '#FED7D7', _dark: '#5D2A2A' }, 
-                      color: { base: '#E53E3E', _dark: '#8A8A8A' }, 
+                      bg: 'dd.status.danger.bg', 
+                      color: 'dd.text.muted', 
                       cursor: 'not-allowed' 
                     }}
-                    borderRadius="sm"
+                    borderRadius="badge"
                     loading={deleteMutation.isPending}
                   >
                     Hapus Permanen

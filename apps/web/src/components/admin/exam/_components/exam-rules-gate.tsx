@@ -35,11 +35,11 @@ export function ExamRulesGate({ checkedTerms, isTokenRequired, tokenInput, token
         mx="auto"
         w="full"
         bg="dd.surface"
-        borderRadius="md"
+        borderRadius="card"
         p={{ base: 6, md: 8 }}
         border="1px solid"
         borderColor="dd.border"
-        boxShadow="0 1px 4px rgba(0,0,0,0.1)"
+        boxShadow={{ base: 'card-light', _dark: 'card-dark' }}
       >
         <Stack gap={6}>
           <Stack gap={2}>
@@ -73,7 +73,7 @@ export function ExamRulesGate({ checkedTerms, isTokenRequired, tokenInput, token
                 alignItems="flex-start"
                 p={4}
                 bg={checkedTerms[id] ? 'dd.brand.subtle' : 'dd.canvas'}
-                borderRadius="md"
+                borderRadius="badge"
                 borderWidth="1px"
                 borderColor={checkedTerms[id] ? 'dd.brand' : 'dd.border'}
                 cursor="pointer"
@@ -81,7 +81,7 @@ export function ExamRulesGate({ checkedTerms, isTokenRequired, tokenInput, token
                 transition="all 0.15s ease"
               >
                 <Checkbox.HiddenInput />
-                <Checkbox.Control mt="0.5" colorPalette="purple" borderColor="dd.border"/>
+                <Checkbox.Control mt="0.5" colorPalette="purple" borderColor="dd.border" />
                 <Checkbox.Label cursor="pointer">
                   <Stack gap={1} pl={2}>
                     <Text color="dd.text" fontWeight="semibold" fontSize="13px">{term.title}</Text>
@@ -103,7 +103,7 @@ export function ExamRulesGate({ checkedTerms, isTokenRequired, tokenInput, token
                 borderColor={tokenError ? 'dd.status.danger.text' : 'dd.border'}
                 color="dd.text"
                 fontSize="13px"
-                borderRadius="sm"
+                borderRadius="badge"
                 _placeholder={{ color: 'dd.text.muted' }}
                 _focus={{ borderColor: 'dd.brand', boxShadow: 'dd.focus.ring' }}
               />

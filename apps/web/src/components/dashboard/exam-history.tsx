@@ -52,9 +52,9 @@ export function ExamHistory() {
 
   if (isLoading) {
     return (
-      <Flex justify="center" align="center" py={12}>
-        <Spinner size="lg" color="#9C55E8" />
-        <Text ml={3} color={{ base: '#4a5468', _dark: '#8A8A8A' }} fontSize="13px" fontWeight="medium">{t('loadingHistory')}</Text>
+      <Flex justify="center" align="center" py={12} gap={3}>
+        <Spinner size="lg" color="dd.brand" />
+        <Text color="dd.text.muted" fontSize="13px" fontWeight="medium">{t('loadingHistory')}</Text>
       </Flex>
     );
   }
@@ -62,26 +62,26 @@ export function ExamHistory() {
   if (error) {
     return (
       <Flex justify="center" align="center" py={12}>
-        <Text color="#EF4444" fontSize="13px" fontWeight="bold">{t('errorLoadingHistory')}</Text>
+        <Text color="dd.status.danger.text" fontSize="13px" fontWeight="bold">{t('errorLoadingHistory')}</Text>
       </Flex>
     );
   }
 
   return (
-    <Box mt={4} fontFamily="Inter, -apple-system, BlinkMacSystemFont, sans-serif">
+    <Box mt={4} fontFamily="body">
       <Stack gap={1} mb={5}>
         <HStack gap={2} align="center">
-          <History size={16} color="#9C55E8" />
+          <History size={16} color="var(--chakra-colors-dd-brand)" />
           <Heading size="sm" fontWeight="bold" color={{ base: '#0d1226', _dark: '#E0E0E0' }}>{t('historyTitle')}</Heading>
         </HStack>
-        <Text color={{ base: '#4a5468', _dark: '#8A8A8A' }} fontSize="12px">{t('historyDesc')}</Text>
+        <Text color="dd.text.muted" fontSize="12px">{t('historyDesc')}</Text>
       </Stack>
 
       {history?.length === 0 ? (
-        <Box textAlign="center" py={12} bg={{ base: '#ffffff', _dark: '#242424' }} borderRadius="md" border="1px solid" borderColor={{ base: '#dde1ea', _dark: '#3D3D3D' }} boxShadow="0 1px 4px rgba(0,0,0,0.05)">
-          <RotateCcw size={32} className="text-gray-400 mx-auto mb-3" />
-          <Text color={{ base: '#0d1226', _dark: '#E0E0E0' }} fontSize="13px" fontWeight="medium">{t('emptyHistory')}</Text>
-          <Text color={{ base: '#4a5468', _dark: '#8A8A8A' }} fontSize="11px" mt={1}>{t('emptyHistoryDesc')}</Text>
+        <Box textAlign="center" py={12} bg="dd.surface" borderRadius="card" border="1px solid" borderColor="dd.border" boxShadow={{ base: 'card-light', _dark: 'card-dark' }}>
+          <RotateCcw size={32} color="var(--chakra-colors-dd-text-muted)" className="mx-auto mb-3" />
+          <Text color="dd.text" fontSize="13px" fontWeight="medium">{t('emptyHistory')}</Text>
+          <Text color="dd.text.muted" fontSize="11px" mt={1}>{t('emptyHistoryDesc')}</Text>
         </Box>
       ) : (
         <Stack gap={3}>
@@ -90,20 +90,20 @@ export function ExamHistory() {
             const duration = formatDuration(session.startTime, session.endTime, t);
 
             let statusBadge = (
-              <Badge bg={{ base: '#f0f4f8', _dark: '#2D2D2D' }} color={{ base: '#4a5468', _dark: '#8A8A8A' }} border="1px solid" borderColor={{ base: '#dde1ea', _dark: '#3D3D3D' }} px={2} py={0.5} borderRadius="md" fontSize="9px" fontWeight="bold">
+              <Badge bg="dd.surface.alt" color="dd.text.muted" border="1px solid" borderColor="dd.border" px={2} py={0.5} borderRadius="badge" fontSize="9px" fontWeight="bold">
                 {status.label}
               </Badge>
             );
 
             if (status.color === 'green') {
               statusBadge = (
-                <Badge bg="rgba(26, 190, 113, 0.12)" color="#1ABE71" border="1px solid" borderColor="rgba(26, 190, 113, 0.2)" px={2} py={0.5} borderRadius="md" fontSize="9px" fontWeight="bold">
+                <Badge bg="dd.status.success.bg" color="dd.status.success.text" border="1px solid" borderColor="dd.border" px={2} py={0.5} borderRadius="badge" fontSize="9px" fontWeight="bold">
                   {status.label}
                 </Badge>
               );
             } else if (status.color === 'red') {
               statusBadge = (
-                <Badge bg="rgba(239, 68, 68, 0.12)" color="#EF4444" border="1px solid" borderColor="rgba(239, 68, 68, 0.2)" px={2} py={0.5} borderRadius="md" fontSize="9px" fontWeight="bold">
+                <Badge bg="dd.status.danger.bg" color="dd.status.danger.text" border="1px solid" borderColor="dd.border" px={2} py={0.5} borderRadius="badge" fontSize="9px" fontWeight="bold">
                   {status.label}
                 </Badge>
               );
@@ -113,29 +113,29 @@ export function ExamHistory() {
               <Box
                 key={session.id}
                 p={4}
-                bg={{ base: '#ffffff', _dark: '#242424' }}
-                borderRadius="md"
+                bg="dd.surface"
+                borderRadius="card"
                 border="1px solid"
-                borderColor={{ base: '#dde1ea', _dark: '#3D3D3D' }}
-                boxShadow="0 1px 4px rgba(0,0,0,0.05)"
-                transition="all 0.15s ease"
+                borderColor="dd.border"
+                boxShadow={{ base: 'card-light', _dark: 'card-dark' }}
+                transition="all 150ms ease"
                 _hover={{
-                  borderColor: '#9C55E8',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                  borderColor: 'dd.brand',
+                  boxShadow: { base: 'card-light', _dark: 'card-dark' },
                 }}
               >
                 <Flex justify="space-between" align="start" gap={4} direction={{ base: 'column', md: 'row' }}>
                   <Stack gap={2} flex={1}>
                     <Flex align="center" gap={3}>
-                      <Badge bg="rgba(45, 155, 240, 0.15)" color="#2D9BF0" border="1px solid" borderColor="rgba(45, 155, 240, 0.25)" px={2.5} py={0.5} borderRadius="md" textTransform="uppercase" fontWeight="bold" fontSize="10px">
+                      <Badge bg="dd.status.info.bg" color="dd.status.info.text" border="1px solid" borderColor="dd.border" px={2.5} py={0.5} borderRadius="badge" textTransform="uppercase" fontWeight="bold" fontSize="10px">
                         {session.exam.subject.name}
                       </Badge>
                       {statusBadge}
                     </Flex>
-                    <Heading size="sm" fontWeight="bold" color={{ base: '#1F2328', _dark: '#E0E0E0' }} lineClamp={1}>
+                    <Heading size="sm" fontWeight="bold" color="dd.text" lineClamp={1}>
                       {session.exam.title}
                     </Heading>
-                    <Stack gap={0.5} fontSize="11px" color={{ base: '#57606A', _dark: '#8A8A8A' }} fontWeight="medium">
+                    <Stack gap={0.5} fontSize="11px" color="dd.text.muted" fontWeight="medium">
                       <HStack gap={1.5}>
                         <Text>{t('finishedAt')} {new Date(session.endTime).toLocaleString('id-ID')}</Text>
                       </HStack>
@@ -147,16 +147,16 @@ export function ExamHistory() {
                   <Flex direction="column" align="center" gap={2} minW="100px" alignSelf={{ base: 'stretch', md: 'center' }}>
                     {session.score !== null && session.score !== undefined ? (
                       <>
-                        <Flex align="center" gap={1} color={status.color === 'red' ? '#EF4444' : '#1ABE71'}>
+                        <Flex align="center" gap={1} color={status.color === 'red' ? 'dd.status.danger.text' : 'dd.status.success.text'}>
                           <Award size={16} />
                           <Text fontSize="18px" fontWeight="extrabold">
                             {Math.round(session.score)}
                           </Text>
                         </Flex>
-                        <Text fontSize="10px" color={{ base: '#57606A', _dark: '#8A8A8A' }} fontWeight="medium">{t('points')}</Text>
+                        <Text fontSize="10px" color="dd.text.muted" fontWeight="medium">{t('points')}</Text>
                       </>
                     ) : (
-                      <Text fontSize="11px" color={{ base: '#57606A', _dark: '#8A8A8A' }} fontStyle="italic" fontWeight="medium">
+                      <Text fontSize="11px" color="dd.text.muted" fontStyle="italic" fontWeight="medium">
                         {session.exam && (session.exam as any).showScore === false ? 'Dirahasiakan' : t('notGraded')}
                       </Text>
                     )}
@@ -169,11 +169,11 @@ export function ExamHistory() {
                         borderRadius="md" 
                         fontSize="11px" 
                         fontWeight="bold" 
-                        bg={{ base: '#FFFFFF', _dark: '#2D2D2D' }}
-                        color={{ base: '#1F2328', _dark: '#E0E0E0' }} 
+                        bg="dd.surface.alt"
+                        color="dd.text" 
                         border="1px solid"
-                        borderColor={{ base: '#E1E4E8', _dark: '#3D3D3D' }} 
-                        _hover={{ bg: { base: '#F9FAFC', _dark: '#3D3D3D' }, borderColor: '#9C55E8' }}
+                        borderColor="dd.border" 
+                        _hover={{ bg: 'dd.surface.alt', borderColor: 'dd.brand' }}
                         height="28px"
                         cursor="pointer"
                       >

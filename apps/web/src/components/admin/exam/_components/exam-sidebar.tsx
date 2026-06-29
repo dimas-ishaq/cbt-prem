@@ -28,10 +28,10 @@ export function ExamSidebar({ questions, currentIndex, answers, flaggedQuestions
       w="360px"
       p={4}
       bg="dd.surface"
-      borderRadius="md"
+      borderRadius="card"
       border="1px solid"
       borderColor="dd.border"
-      boxShadow="0 1px 4px rgba(0,0,0,0.05)"
+      boxShadow={{ base: 'card-light', _dark: 'card-dark' }}
       h="fit-content"
       position={{ lg: 'sticky' }}
       top={{ lg: 6 }}
@@ -42,15 +42,15 @@ export function ExamSidebar({ questions, currentIndex, answers, flaggedQuestions
       </Text>
 
       <Grid templateColumns="repeat(3, 1fr)" gap={2.5} mb={5}>
-        <Box p={3} borderRadius="md" bg="dd.canvas" border="1px solid" borderColor="dd.border" borderTop="3px solid" borderTopColor="dd.status.success.solid">
+        <Box p={3} borderRadius="badge" bg="dd.surface.alt" border="1px solid" borderColor="dd.border" borderTop="3px solid" borderTopColor="dd.status.success.solid">
           <Text fontSize="11px" color="dd.text.muted" fontWeight="semibold">Dijawab</Text>
           <Text fontSize="20px" fontWeight="bold" color="dd.status.success.text" mt={1}>{answeredCount}</Text>
         </Box>
-        <Box p={3} borderRadius="md" bg="dd.canvas" border="1px solid" borderColor="dd.border" borderTop="3px solid" borderTopColor="dd.text.muted">
+        <Box p={3} borderRadius="badge" bg="dd.surface.alt" border="1px solid" borderColor="dd.border" borderTop="3px solid" borderTopColor="dd.text.muted">
           <Text fontSize="11px" color="dd.text.muted" fontWeight="semibold">Belum</Text>
           <Text fontSize="20px" fontWeight="bold" color="dd.text" mt={1}>{unansweredCount}</Text>
         </Box>
-        <Box p={3} borderRadius="md" bg="dd.canvas" border="1px solid" borderColor="dd.border" borderTop="3px solid" borderTopColor="dd.status.warning.solid">
+        <Box p={3} borderRadius="badge" bg="dd.surface.alt" border="1px solid" borderColor="dd.border" borderTop="3px solid" borderTopColor="dd.status.warning.solid">
           <Text fontSize="11px" color="dd.text.muted" fontWeight="semibold">Ragu-ragu</Text>
           <Text fontSize="20px" fontWeight="bold" color="dd.status.warning.text" mt={1}>{flaggedCount}</Text>
         </Box>
@@ -58,7 +58,7 @@ export function ExamSidebar({ questions, currentIndex, answers, flaggedQuestions
 
       <Flex align="center" justify="space-between" mb={4}>
         <Text fontSize="13px" color="dd.text.muted">Soal aktif</Text>
-        <Badge bg="dd.brand.subtle" color="dd.brand" border="1px solid" borderColor="dd.brand" px={3} py={0.5} borderRadius="md" fontSize="11px" fontWeight="bold">
+        <Badge bg="dd.brand.subtle" color="dd.brand" border="1px solid" borderColor="dd.brand" px={3} py={0.5} borderRadius="badge" fontSize="11px" fontWeight="bold">
           {currentIndex + 1} / {totalQuestions}
         </Badge>
       </Flex>

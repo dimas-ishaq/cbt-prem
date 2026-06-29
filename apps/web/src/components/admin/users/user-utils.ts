@@ -17,11 +17,11 @@ export const ROLE_BADGE: Record<UserRole, { label: string; color: string; bg: st
 };
 
 export const AVATAR_COLORS: Record<UserRole, string> = {
-  SUPER_ADMIN: '#774AA4',
-  GURU: '#2D9BF0',
-  SISWA: '#1ABE71',
-  ADMIN_SEKOLAH: '#F5A623',
-  PENGAWAS: '#9C55E8',
+  SUPER_ADMIN: 'var(--chakra-colors-brand-solid)',
+  GURU: 'var(--chakra-colors-info-500)',
+  SISWA: 'var(--chakra-colors-status-success-solid)',
+  ADMIN_SEKOLAH: 'var(--chakra-colors-status-warning-solid)',
+  PENGAWAS: 'var(--chakra-colors-accent-gold)',
 };
 
 export const TABS: { key: ActiveTab; label: string; icon: LucideIcon }[] = [

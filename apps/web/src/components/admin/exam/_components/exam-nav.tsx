@@ -51,11 +51,11 @@ export function ExamNav({ questions, currentIndex, onSelect, answeredQuestions, 
             borderColor={borderColor}
             w="44px"
             h="44px"
-            borderRadius="md"
+            borderRadius="badge"
             fontSize="13px"
             fontWeight="bold"
             cursor="pointer"
-            boxShadow={isCurrent ? '0 0 0 1px var(--chakra-colors-dd-brand)' : 'none'}
+            boxShadow={isCurrent ? '0 0 0 1px var(--chakra-colors-dd-brand)' : 'none' }
             _hover={{
               bg: hoverBg,
               transform: 'translateY(-1px)',

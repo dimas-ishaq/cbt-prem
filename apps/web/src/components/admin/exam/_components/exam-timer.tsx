@@ -76,7 +76,7 @@ export function ExamTimer({ startTime, duration, overrideEndTime, onTimeUp }: Pr
       gap={2}
       px={4}
       py={1.5}
-      borderRadius="md"
+      borderRadius="badge"
       fontFamily="Courier New, Courier, monospace"
       fontWeight="bold"
       fontSize="14px"
@@ -85,7 +85,7 @@ export function ExamTimer({ startTime, duration, overrideEndTime, onTimeUp }: Pr
       color={textColor}
       borderColor={borderColor}
       bg={bgColor}
-      boxShadow="0 1px 4px rgba(0,0,0,0.05)"
+      boxShadow={{ base: 'card-light', _dark: 'card-dark' }}
       transition="all 0.15s ease"
     >
       <Timer size={14} />

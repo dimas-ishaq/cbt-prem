@@ -125,32 +125,32 @@ const config = defineConfig({
         // ── Canvas / Background ───────────────────────────────
         'bg.canvas': {
           value: {
-            base: '#f0f4f8',     // cool slate-blue canvas (light)
-            _dark: '#06090f',    // near-black deep navy (dark)
+            base: '#f0f4f8',
+            _dark: '#1B1B1B',
           },
         },
         'bg.surface': {
           value: {
             base: '#ffffff',
-            _dark: '#0d1526',    // dark navy surface
+            _dark: '#242424',
           },
         },
         'bg.elevated': {
           value: {
             base: '#f8fafc',
-            _dark: '#111d35',    // elevated panel
+            _dark: '#2D2D2D',
           },
         },
         'bg.subtle': {
           value: {
             base: '#f1f5f9',
-            _dark: '#162036',
+            _dark: '#1B1B1B',
           },
         },
         'bg.muted': {
           value: {
             base: '#e8eef5',
-            _dark: '#1a2844',
+            _dark: '#2D2D2D',
           },
         },
 

@@ -19,7 +19,7 @@ import {
   Badge,
   Spinner,
 } from '@chakra-ui/react';
-import { BookOpen, LogOut, Clock, Hash, Award, Users, History } from 'lucide-react';
+import { BookOpen, LogOut, Clock, Hash, Award, Users, History, Calendar } from 'lucide-react';
 import { ColorModeToggle } from '@/components/ui/color-mode-toggle';
 import { Breadcrumb } from '@/components/ui/breadcrumb';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -29,7 +29,7 @@ import { assetUrl } from '@/lib/env';
 const getAssetUrl = assetUrl;
 
 export default function DashboardPage() {
-  const { user, logout } = useAuthStore();
+  const { user, logout, hasHydrated } = useAuthStore();
   const router = useRouter();
   const queryClient = useQueryClient();
   const photoInputRef = useRef<HTMLInputElement>(null);
@@ -71,6 +71,19 @@ export default function DashboardPage() {
       })
     : 'Memuat...';
 
+  const { data: exams } = useQuery({
+    queryKey: ['exams'],
+    queryFn: async () => {
+      const response = await api.get('/exams');
+      return response.data;
+    },
+  });
+
+  const upcomingExams = (exams || [])
+    .filter((exam: any) => new Date(exam.startTime).toDateString() > new Date().toDateString())
+    .sort((a: any, b: any) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
+    .slice(0, 3);
+
   const uploadPhotoMutation = useMutation({
     mutationFn: async (file: File) => {
       const fd = new FormData();
@@ -101,10 +114,21 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
-    if (!user) {
+    if (hasHydrated && !user) {
       router.push('/login');
     }
-  }, [user, router]);
+  }, [hasHydrated, user, router]);
+
+  if (!hasHydrated) {
+    return (
+      <Flex minH="100vh" align="center" justify="center" bg="dd.canvas">
+        <Stack align="center" gap={3}>
+          <Spinner size="lg" color="dd.brand" />
+          <Text color="dd.text.muted" fontSize="sm">Memuat sesi...</Text>
+        </Stack>
+      </Flex>
+    );
+  }
 
   if (!user) return null;
 
@@ -120,7 +144,7 @@ export default function DashboardPage() {
         top={0}
         zIndex={10}
         style={{ backdropFilter: 'blur(10px)' }}
-        boxShadow="0 1px 4px rgba(0,0,0,0.04)"
+        boxShadow={{ base: 'card-light', _dark: 'card-dark' }}
       >
         <Container maxW="7xl" px={{ base: 4, sm: 6, lg: 8 }} py={3}>
           <Flex justify="space-between" align="center">
@@ -133,7 +157,7 @@ export default function DashboardPage() {
                 h={8}
                 borderRadius="md"
                 overflow="hidden"
-                bg={settings?.logoUrl ? 'white' : 'transparent'}
+                bg={settings?.logoUrl ? 'dd.surface' : 'transparent'}
                 backgroundImage={
                   settings?.logoUrl
                     ? undefined
@@ -149,7 +173,7 @@ export default function DashboardPage() {
                     objectFit="contain"
                   />
                 ) : (
-                  <BookOpen size={14} color="white" />
+                  <BookOpen size={14} color="var(--chakra-colors-dd-brand)" />
                 )}
               </Flex>
               <Box>
@@ -228,7 +252,7 @@ export default function DashboardPage() {
                 variant="ghost"
                 color="dd.icon.danger"
                 borderRadius="sm"
-                _hover={{ bg: { base: 'rgba(239, 68, 68, 0.08)', _dark: 'rgba(239, 68, 68, 0.15)' } }}
+                _hover={{ bg: 'dd.status.danger.bg' }}
                 onClick={() => {
                   logout();
                   router.push('/login');
@@ -270,7 +294,7 @@ export default function DashboardPage() {
             w="140px"
             h="140px"
             borderRadius="full"
-            bg="rgba(156, 85, 232, 0.08)"
+            bg="dd.brand.subtle"
             style={{ filter: 'blur(30px)', pointerEvents: 'none' }}
           />
 
@@ -391,6 +415,36 @@ export default function DashboardPage() {
                 </HStack>
               </VStack>
             </Flex>
+          )}
+        </Box>
+
+        {/* ── Upcoming Exams ────────────────────────────────── */}
+        <Box mb={5} p={5} borderRadius="md" border="1px solid" borderColor="dd.border" bg="dd.surface" boxShadow={{ base: 'card-light', _dark: 'card-dark' }}>
+          <HStack justify="space-between" align="center" mb={4} flexWrap="wrap" gap={2}>
+            <HStack gap={2}><Calendar size={16} color="dd.brand" /><Heading size="sm" fontWeight="bold" color="dd.text">Ujian Akan Datang</Heading></HStack>
+            <Text fontSize="11px" color="dd.text.muted">Tampil jadwal ujian mendatang</Text>
+          </HStack>
+          {upcomingExams.length > 0 ? (
+            <Stack gap={3}>
+              {upcomingExams.map((exam: any) => {
+                const start = new Date(exam.startTime).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
+                const end = new Date(exam.endTime).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
+                return (
+                  <Flex key={exam.id} justify="space-between" align={{ base: 'stretch', md: 'center' }} gap={3} direction={{ base: 'column', md: 'row' }} p={4} borderRadius="md" bg="dd.surface.alt" border="1px solid" borderColor="dd.border">
+                    <Box>
+                      <Text fontWeight="bold" color="dd.text">{exam.title}</Text>
+                      <Text fontSize="12px" color="dd.text.muted">{exam.subject?.name}</Text>
+                    </Box>
+                    <Stack gap={0.5} fontSize="11px" color="dd.text.muted" textAlign={{ base: 'left', md: 'right' }}>
+                      <Text>Mulai: {start}</Text>
+                      <Text>Selesai: {end}</Text>
+                    </Stack>
+                  </Flex>
+                );
+              })}
+            </Stack>
+          ) : (
+            <Text color="dd.text.muted" fontSize="12px">Belum ada ujian yang dijadwalkan.</Text>
           )}
         </Box>
 
