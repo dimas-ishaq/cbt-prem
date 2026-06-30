@@ -1,4 +1,4 @@
-import { Box, Button, Flex, Heading, Text } from '@chakra-ui/react';
+import { Badge, Box, Button, Flex, Heading, HStack, Text } from '@chakra-ui/react';
 import { LogOut } from 'lucide-react';
 import { ExamTimer } from './exam-timer';
 import { ColorModeToggle } from '@/components/ui/color-mode-toggle';
@@ -13,9 +13,14 @@ interface ExamHeaderProps {
   onTimeUp: () => void;
   onFinish: () => void;
   disableFinish?: boolean;
+  studentInfo?: {
+    nis?: string | null;
+    majorName?: string | null;
+    rombelName?: string | null;
+  };
 }
 
-export function ExamHeader({ title, subjectName, startTime, duration, overrideEndTime, serverTime, onTimeUp, onFinish, disableFinish }: ExamHeaderProps) {
+export function ExamHeader({ title, subjectName, startTime, duration, overrideEndTime, serverTime, onTimeUp, onFinish, disableFinish, studentInfo }: ExamHeaderProps) {
   return (
     <Flex
       as="header"
@@ -37,6 +42,13 @@ export function ExamHeader({ title, subjectName, startTime, duration, overrideEn
         <Text fontSize={{ base: '11px', md: '12px' }} color="dd.text.muted" mt={0.5} lineClamp={1}>
           {subjectName}
         </Text>
+        {studentInfo && (
+          <HStack gap={2} mt={3} justify={{ base: 'center', md: 'flex-start' }} wrap="wrap">
+            {studentInfo.nis && <Badge colorPalette="blue" variant="subtle">NIS {studentInfo.nis}</Badge>}
+            {studentInfo.majorName && <Badge colorPalette="purple" variant="subtle">Jurusan {studentInfo.majorName}</Badge>}
+            {studentInfo.rombelName && <Badge colorPalette="green" variant="subtle">Rombel {studentInfo.rombelName}</Badge>}
+          </HStack>
+        )}
       </Box>
 
       <Box display="flex" justifyContent="center" alignItems="center" gap={2}>

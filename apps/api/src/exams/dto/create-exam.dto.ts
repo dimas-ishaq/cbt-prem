@@ -66,6 +66,10 @@ export class CreateExamDto {
   @IsOptional()
   forceFullscreen?: boolean;
 
+  @IsBoolean()
+  @IsOptional()
+  autoLockEnabled?: boolean;
+
   @IsInt()
   @IsOptional()
   maxViolations?: number;

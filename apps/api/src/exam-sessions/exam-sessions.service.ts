@@ -686,8 +686,10 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
       });
 
       const maxViolations = session.exam.maxViolations;
+      const autoLockEnabled = session.exam.autoLockEnabled;
       const didLock =
         maxViolations > 0 &&
+        autoLockEnabled !== false &&
         session.violationCount >= maxViolations &&
         session.status === SessionStatus.IN_PROGRESS;
 

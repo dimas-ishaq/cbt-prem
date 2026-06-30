@@ -221,6 +221,7 @@ model Exam {
   requireSeb        Boolean     @default(false)
   blockKeyCopyPaste Boolean     @default(false)
   forceFullscreen   Boolean     @default(false)
+  autoLockEnabled   Boolean     @default(true)
   maxViolations     Int         @default(0)
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt

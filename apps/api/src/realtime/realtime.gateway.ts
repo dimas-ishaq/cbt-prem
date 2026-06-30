@@ -206,7 +206,7 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
             expiresAt: result.lockTokenExpiresAt,
           });
           // Emit to student: NO token
-          this.sendToUser(client.data.user.sub, 'session_locked', { reason: 'auto_lock' });
+          this.sendToUser(client.data.user.sub, 'session_locked', { examId: data.examId, reason: 'auto_lock' });
         }
       }
     }

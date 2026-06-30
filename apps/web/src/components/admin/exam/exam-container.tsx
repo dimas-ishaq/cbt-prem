@@ -84,6 +84,12 @@ export function ExamContainer({ examId }: Props) {
     retry: false,
   });
 
+  const { data: studentProfile } = useQuery({
+    queryKey: ['student-profile', user?.id],
+    queryFn: async () => (await api.get('/students/profile/me')).data,
+    enabled: !!token && user?.role === 'SISWA',
+  });
+
   const {
     sessionId,
     sessionStartTime,
@@ -439,7 +445,7 @@ export function ExamContainer({ examId }: Props) {
 
   return (
     <Box minH="100dvh" bg="dd.canvas">
-      <ExamHeader title={exam.title} subjectName={exam.subject?.name} startTime={timerStartTime} duration={exam.duration} overrideEndTime={timerEndTime} serverTime={timerServerTime} onTimeUp={finishExam} onFinish={handleManualFinishTrigger} disableFinish={unansweredCount > 0} />
+      <ExamHeader title={exam.title} subjectName={exam.subject?.name} startTime={timerStartTime} duration={exam.duration} overrideEndTime={timerEndTime} serverTime={timerServerTime} onTimeUp={finishExam} onFinish={handleManualFinishTrigger} disableFinish={unansweredCount > 0} studentInfo={studentProfile ? { nis: studentProfile.nis, majorName: studentProfile.major?.name, rombelName: studentProfile.rombel?.name } : undefined} />
       <Box flex={1} px={{ base: 3, md: 6 }} py={{ base: 3, md: 6 }}>
         <ExamWorkspace
           currentQuestion={currentQuestion}
