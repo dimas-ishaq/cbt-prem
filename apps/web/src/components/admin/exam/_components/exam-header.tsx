@@ -21,17 +21,19 @@ export function ExamHeader({ title, subjectName, startTime, duration, overrideEn
       bg="dd.surface"
       borderBottom="1px solid"
       borderColor="dd.border"
-      px={6}
-      py={4}
+      px={{ base: 3, md: 6 }}
+      py={{ base: 3, md: 4 }}
       justify="space-between"
-      align="center"
+      align={{ base: 'flex-start', md: 'center' }}
+      gap={2}
+      flexWrap="wrap"
       fontFamily="body"
     >
-      <Box>
-        <Heading size="md" color="dd.text" fontWeight="700">
+      <Box flex="1" minW="0">
+        <Heading size="md" color="dd.text" fontWeight="700" fontSize={{ base: '16px', md: 'md' }} noOfLines={1}>
           {title}
         </Heading>
-        <Text fontSize="12px" color="dd.text.muted" mt={0.5}>
+        <Text fontSize={{ base: '11px', md: '12px' }} color="dd.text.muted" mt={0.5} noOfLines={1}>
           {subjectName}
         </Text>
       </Box>
@@ -42,17 +44,21 @@ export function ExamHeader({ title, subjectName, startTime, duration, overrideEn
         onClick={onFinish}
         disabled={disableFinish}
         borderRadius="card"
-        fontSize="13px"
+        fontSize={{ base: '12px', md: '13px' }}
         fontWeight="bold"
-        px={4}
+        px={{ base: 3, md: 4 }}
         height="36px"
+        whiteSpace="nowrap"
+        flexShrink={0}
         _hover={disableFinish ? {} : { bg: 'dd.status.danger.solid' }}
         _active={disableFinish ? {} : { bg: 'dd.status.danger.solid' }}
         cursor={disableFinish ? 'not-allowed' : 'pointer'}
         opacity={disableFinish ? 0.6 : 1}
         transition="all 0.15s ease"
       >
-        <LogOut size={14} style={{ marginRight: 6 }} /> Selesai Ujian
+        <LogOut size={14} style={{ marginRight: 4 }} />
+        <Box display={{ base: 'none', md: 'inline' }}>Selesai Ujian</Box>
+        <Box display={{ base: 'inline', md: 'none' }}>Selesai</Box>
       </Button>
     </Flex>
   );

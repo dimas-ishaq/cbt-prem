@@ -12,7 +12,7 @@ interface Props {
 
 export function ExamNav({ questions, currentIndex, onSelect, answeredQuestions, flaggedQuestions }: Props) {
   return (
-    <SimpleGrid columns={5} gap={2.5}>
+    <SimpleGrid columns={{ base: 5, sm: 5 }} gap={{ base: 1.5, md: 2.5 }}>
       {questions.map((eq, idx) => {
         const questionId = eq.question.id;
         const isAnswered = answeredQuestions.includes(questionId);
@@ -49,8 +49,8 @@ export function ExamNav({ questions, currentIndex, onSelect, answeredQuestions, 
             color={color}
             border="1px solid"
             borderColor={borderColor}
-            w="44px"
-            h="44px"
+            w={{ base: '100%', sm: '44px' }}
+            h={{ base: '36px', sm: '44px' }}
             borderRadius="badge"
             fontSize="13px"
             fontWeight="bold"

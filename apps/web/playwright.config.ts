@@ -1,4 +1,4 @@
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
   testDir: './e2e',
@@ -8,27 +8,31 @@ export default defineConfig({
   projects: [
     {
       name: 'setup-student',
-      testMatch: /auth\.setup\.ts/,
+      testMatch: /setup\/student\.setup\.ts/,
     },
     {
       name: 'setup-admin',
-      testMatch: /auth\.admin\.setup\.ts/,
+      testMatch: /setup\/admin\.setup\.ts/,
+    },
+    {
+      name: 'setup-superadmin',
+      testMatch: /setup\/superadmin\.setup\.ts/,
+    },
+    {
+      name: 'auth',
+      testMatch: /auth\/login\.spec\.ts/,
     },
     {
       name: 'student-dashboard',
       dependencies: ['setup-student'],
-      testMatch: /student-dashboard\.spec\.ts/,
+      testMatch: /student\/dashboard\.spec\.ts/,
       use: { storageState: 'playwright/.auth/user.json' },
     },
     {
-      name: 'admin-exam',
+      name: 'admin-exam-create',
       dependencies: ['setup-admin'],
-      testMatch: /admin-exam-create\.spec\.ts/,
+      testMatch: /admin\/exam-create\.spec\.ts/,
       use: { storageState: 'playwright/.auth/admin.json' },
-    },
-    {
-      name: 'login',
-      testMatch: /login(\-flow)?\.spec\.ts/,
     },
   ],
   use: {

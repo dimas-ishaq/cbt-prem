@@ -25,8 +25,8 @@ export function ExamSidebar({ questions, currentIndex, answers, flaggedQuestions
 
   return (
     <Box
-      w="360px"
-      p={4}
+      w={{ base: 'full', lg: '360px' }}
+      p={{ base: 3, md: 4 }}
       bg="dd.surface"
       borderRadius="card"
       border="1px solid"
@@ -36,23 +36,24 @@ export function ExamSidebar({ questions, currentIndex, answers, flaggedQuestions
       position={{ lg: 'sticky' }}
       top={{ lg: 6 }}
       fontFamily="Inter, -apple-system, BlinkMacSystemFont, sans-serif"
+      minW={0}
     >
       <Text fontSize="11px" fontWeight="bold" color="dd.text.muted" textTransform="uppercase" letterSpacing="0.12em" mb={3}>
         Navigasi Soal
       </Text>
 
-      <Grid templateColumns="repeat(3, 1fr)" gap={2.5} mb={5}>
-        <Box p={3} borderRadius="badge" bg="dd.surface.alt" border="1px solid" borderColor="dd.border" borderTop="3px solid" borderTopColor="dd.status.success.solid">
+      <Grid templateColumns="repeat(3, 1fr)" gap={{ base: 2, md: 2.5 }} mb={5}>
+        <Box p={{ base: 2, md: 3 }} borderRadius="badge" bg="dd.surface.alt" border="1px solid" borderColor="dd.border" borderTop="3px solid" borderTopColor="dd.status.success.solid">
           <Text fontSize="11px" color="dd.text.muted" fontWeight="semibold">Dijawab</Text>
-          <Text fontSize="20px" fontWeight="bold" color="dd.status.success.text" mt={1}>{answeredCount}</Text>
+          <Text fontSize={{ base: '18px', md: '20px' }} fontWeight="bold" color="dd.status.success.text" mt={1}>{answeredCount}</Text>
         </Box>
-        <Box p={3} borderRadius="badge" bg="dd.surface.alt" border="1px solid" borderColor="dd.border" borderTop="3px solid" borderTopColor="dd.text.muted">
+        <Box p={{ base: 2, md: 3 }} borderRadius="badge" bg="dd.surface.alt" border="1px solid" borderColor="dd.border" borderTop="3px solid" borderTopColor="dd.text.muted">
           <Text fontSize="11px" color="dd.text.muted" fontWeight="semibold">Belum</Text>
-          <Text fontSize="20px" fontWeight="bold" color="dd.text" mt={1}>{unansweredCount}</Text>
+          <Text fontSize={{ base: '18px', md: '20px' }} fontWeight="bold" color="dd.text" mt={1}>{unansweredCount}</Text>
         </Box>
-        <Box p={3} borderRadius="badge" bg="dd.surface.alt" border="1px solid" borderColor="dd.border" borderTop="3px solid" borderTopColor="dd.status.warning.solid">
+        <Box p={{ base: 2, md: 3 }} borderRadius="badge" bg="dd.surface.alt" border="1px solid" borderColor="dd.border" borderTop="3px solid" borderTopColor="dd.status.warning.solid">
           <Text fontSize="11px" color="dd.text.muted" fontWeight="semibold">Ragu-ragu</Text>
-          <Text fontSize="20px" fontWeight="bold" color="dd.status.warning.text" mt={1}>{flaggedCount}</Text>
+          <Text fontSize={{ base: '18px', md: '20px' }} fontWeight="bold" color="dd.status.warning.text" mt={1}>{flaggedCount}</Text>
         </Box>
       </Grid>
 

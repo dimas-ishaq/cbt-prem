@@ -2,7 +2,7 @@
 
 import { AdminSidebar } from '@/components/admin/sidebar';
 import { useAuthStore } from '@/store/auth.store';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Box, Flex, Heading, Text, IconButton, Spinner, Stack, useBreakpointValue } from '@chakra-ui/react';
@@ -21,6 +21,7 @@ export default function AdminLayout({
 }) {
   const { user, hasHydrated } = useAuthStore();
   const router = useRouter();
+  const pathname = usePathname();
   const isDesktop = useBreakpointValue({ base: false, lg: true }) ?? false;
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -234,9 +235,11 @@ export default function AdminLayout({
           </Flex>
         </Box>
         <Box p={{ base: 4, md: 6, lg: 8 }} flex={1}>
-          <Box mb={{ base: 4, md: 5, lg: 6 }}>
-            <Breadcrumb />
-          </Box>
+          {pathname !== '/admin' && (
+            <Box mb={{ base: 4, md: 5, lg: 6 }}>
+              <Breadcrumb />
+            </Box>
+          )}
           {children}
         </Box>
       </Box>

@@ -39,8 +39,8 @@ export function ExamWorkspace({ currentQuestion, currentQuestionIndex, answers, 
   const isLastQuestion = currentQuestionIndex === questions.length - 1;
 
   return (
-    <Box display="grid" gridTemplateColumns={{ base: '1fr', lg: 'minmax(0, 1fr) 360px' }} gap={5} fontFamily="body">
-      <Box>
+    <Box display="flex" flexDir={{ base: 'column', lg: 'row' }} gap={{ base: 4, lg: 5 }} fontFamily="body">
+      <Box flex={1} minW={0}>
         {currentQuestion && (
           <>
             <QuestionCard
@@ -60,9 +60,9 @@ export function ExamWorkspace({ currentQuestion, currentQuestionIndex, answers, 
                 border="1px solid"
                 borderColor="dd.border"
                 borderRadius="card"
-                px={5}
-                height="38px"
-                fontSize="13px"
+                px={{ base: 3, md: 5 }}
+                height={{ base: '36px', md: '38px' }}
+                fontSize={{ base: '12px', md: '13px' }}
                 fontWeight="bold"
                 _hover={isFirstQuestion ? {} : { bg: 'dd.canvas' }}
                 cursor={isFirstQuestion ? 'not-allowed' : 'pointer'}
@@ -79,9 +79,9 @@ export function ExamWorkspace({ currentQuestion, currentQuestionIndex, answers, 
                   border="1px solid"
                   borderColor="dd.brand"
                   borderRadius="card"
-                  px={5}
-                  height="38px"
-                  fontSize="13px"
+                  px={{ base: 4, md: 5 }}
+                  height={{ base: '36px', md: '38px' }}
+                  fontSize={{ base: '12px', md: '13px' }}
                   fontWeight="bold"
                   _hover={{ bg: 'dd.brand.hover' }}
                   cursor="pointer"
@@ -97,9 +97,9 @@ export function ExamWorkspace({ currentQuestion, currentQuestionIndex, answers, 
                   border="1px solid"
                   borderColor={disableFinish ? 'dd.border' : 'dd.status.danger.solid' }
                   borderRadius="card"
-                  px={5}
-                  height="38px"
-                  fontSize="13px"
+                  px={{ base: 4, md: 5 }}
+                  height={{ base: '36px', md: '38px' }}
+                  fontSize={{ base: '12px', md: '13px' }}
                   fontWeight="bold"
                   disabled={disableFinish}
                   _hover={disableFinish ? {} : { bg: 'dd.status.danger.solid' }}
@@ -107,7 +107,8 @@ export function ExamWorkspace({ currentQuestion, currentQuestionIndex, answers, 
                   opacity={disableFinish ? 0.5 : 1}
                   transition="all 0.15s ease"
                 >
-                  Selesaikan Ujian
+                  <Box display={{ base: 'none', md: 'inline' }}>Selesaikan Ujian</Box>
+                  <Box display={{ base: 'inline', md: 'none' }}>Selesai</Box>
                 </Button>
               )}
             </Flex>

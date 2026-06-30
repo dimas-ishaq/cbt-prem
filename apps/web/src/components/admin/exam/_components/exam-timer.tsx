@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Timer } from 'lucide-react';
-import { Flex, Text } from '@chakra-ui/react';
+import { Box, Flex, Text } from '@chakra-ui/react';
 
 interface Props {
   startTime: string;
@@ -93,13 +93,13 @@ export function ExamTimer({ startTime, duration, overrideEndTime, onTimeUp, serv
   return (
     <Flex
       align="center"
-      gap={2}
-      px={4}
-      py={1.5}
+      gap={1.5}
+      px={{ base: 2.5, md: 4 }}
+      py={{ base: 1, md: 1.5 }}
       borderRadius="badge"
       fontFamily="Courier New, Courier, monospace"
       fontWeight="bold"
-      fontSize="14px"
+      fontSize={{ base: '12px', md: '14px' }}
       border="1px solid"
       className={isCritical ? 'animate-pulse' : ''}
       color={textColor}
@@ -107,8 +107,9 @@ export function ExamTimer({ startTime, duration, overrideEndTime, onTimeUp, serv
       bg={bgColor}
       boxShadow={{ base: 'card-light', _dark: 'card-dark' }}
       transition="all 0.15s ease"
+      flexShrink={0}
     >
-      <Timer size={14} />
+      <Box as={Timer} boxSize={{ base: '12px', md: '14px' }} />
       <Text>
         {format(hours)}:{format(minutes)}:{format(seconds)}
       </Text>

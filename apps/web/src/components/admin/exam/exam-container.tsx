@@ -372,7 +372,7 @@ export function ExamContainer({ examId }: Props) {
   if (sessionId && exam?.forceFullscreen && !isFullscreen) {
     return (
       <Flex position="fixed" inset={0} zIndex={99999} bg="dd.canvas" align="center" justify="center" p={6} textAlign="center" fontFamily="Inter, -apple-system, BlinkMacSystemFont, sans-serif">
-        <Box maxW="md" bg="dd.surface" borderRadius="md" p={8} border="1px solid" borderColor="dd.border" boxShadow="0 1px 4px rgba(0,0,0,0.05)">
+        <Box maxW="md" bg="dd.surface" borderRadius="md" p={{ base: 5, md: 8 }} border="1px solid" borderColor="dd.border" boxShadow="0 1px 4px rgba(0,0,0,0.05)">
           <Flex w={16} h={16} bg="dd.brand.subtle" borderRadius="full" align="center" justify="center" mx="auto" mb={6} border="2px solid" borderColor="dd.brand">
             <Maximize color="dd.brand" className="animate-pulse" size={32} />
           </Flex>
@@ -420,9 +420,9 @@ export function ExamContainer({ examId }: Props) {
   }
 
   return (
-    <Box minH="screen" bg="dd.canvas">
+    <Box minH="100dvh" bg="dd.canvas">
       <ExamHeader title={exam.title} subjectName={exam.subject?.name} startTime={timerStartTime} duration={exam.duration} overrideEndTime={timerEndTime} serverTime={timerServerTime} onTimeUp={finishExam} onFinish={handleManualFinishTrigger} disableFinish={unansweredCount > 0} />
-      <Box flex={1} p={6}>
+      <Box flex={1} px={{ base: 3, md: 6 }} py={{ base: 3, md: 6 }}>
         <ExamWorkspace
           currentQuestion={currentQuestion}
           currentQuestionIndex={currentQuestionIndex}

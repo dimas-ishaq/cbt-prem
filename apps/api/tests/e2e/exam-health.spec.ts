@@ -1,8 +1,7 @@
-import { playwright, expect } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
-page.goto('http://localhost:3000/health');
-
-it('should return 200 OK for health endpoint', async () => {
-  const response = await page.textContent();
-  expect(response).toBe('ok');
+test('health endpoint ok', async ({ request }) => {
+  const response = await request.get('http://localhost:3000/health');
+  expect(response.status()).toBe(200);
+  await expect(response.text()).resolves.toContain('ok');
 });

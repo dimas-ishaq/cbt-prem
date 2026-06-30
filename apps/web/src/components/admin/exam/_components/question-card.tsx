@@ -125,7 +125,7 @@ export function QuestionCard({ question, index, onAnswer, selectedAnswer, isFlag
                     as="label"
                     display="flex"
                     alignItems="center"
-                    p={3.5}
+                    p={{ base: 3, md: 3.5 }}
                     border="1px solid"
                     borderRadius="badge"
                     cursor={isDisabled ? 'not-allowed' : 'pointer'}
@@ -188,7 +188,7 @@ export function QuestionCard({ question, index, onAnswer, selectedAnswer, isFlag
                   as="label"
                   display="flex"
                   alignItems="center"
-                  p={3.5}
+                  p={{ base: 3, md: 3.5 }}
                   border="1px solid"
                   borderRadius="md"
                   cursor={isDisabled ? 'not-allowed' : 'pointer'}
@@ -238,17 +238,17 @@ export function QuestionCard({ question, index, onAnswer, selectedAnswer, isFlag
           <Stack gap={3}>
             <Textarea
               w="full"
-              h={56}
-              p={4}
+              minH={{ base: 32, md: 56 }}
+              p={{ base: 3, md: 4 }}
               bg="dd.canvas"
               border="1px solid"
               borderColor="dd.border"
               borderRadius="md"
               outline="none"
-              resize="none"
+              resize="vertical"
               color="dd.text"
               lineHeight="1.4"
-              fontSize="13px"
+              fontSize={{ base: '12px', md: '13px' }}
               fontWeight="medium"
               _focus={{ borderColor: 'dd.brand', boxShadow: 'dd.focus.ring' }}
               placeholder="Tuliskan lembar jawaban esai Anda di sini secara lengkap..."
@@ -258,7 +258,7 @@ export function QuestionCard({ question, index, onAnswer, selectedAnswer, isFlag
               onBlur={() => !isDisabled && onAnswer(essayText)}
             />
             <Flex justify="space-between" align="center" fontSize="11px" color="dd.text.muted" fontWeight="semibold" px={1}>
-              <Text>Jawaban disimpan otomatis saat Anda beralih nomor atau mengklik area luar.</Text>
+              <Text display={{ base: 'none', md: 'block' }}>Jawaban disimpan otomatis saat Anda beralih nomor atau mengklik area luar.</Text>
               <Text>{essayText.length} karakter</Text>
             </Flex>
           </Stack>
@@ -272,20 +272,21 @@ export function QuestionCard({ question, index, onAnswer, selectedAnswer, isFlag
   return (
     <Box
       bg="dd.surface"
-      p={6}
+      p={{ base: 4, md: 6 }}
       borderRadius="card"
       boxShadow={{ base: 'card-light', _dark: 'card-dark' }}
       border="1px solid"
       borderColor="dd.border"
       position="relative"
       fontFamily="Inter, -apple-system, BlinkMacSystemFont, sans-serif"
+      minW={0}
     >
       {/* Question Header Status */}
       <Flex justify="space-between" align="center" mb={5}>
         <Badge bg="dd.brand.subtle" color="dd.brand" border="1px solid" borderColor="dd.brand" px={3} py={1} borderRadius="badge" fontWeight="bold" fontSize="11px" textTransform="uppercase" letterSpacing="wider">
           Soal No. {index + 1}
         </Badge>
-        <Flex align="center" gap={3}>
+        <Flex align="center" gap={{ base: 2, md: 3 }} flexWrap="wrap" justify="flex-end">
           <Badge bg="dd.surface.alt" color="dd.text.muted" border="1px solid" borderColor="dd.border" px={2.5} py={1} borderRadius="badge" fontSize="10px" fontWeight="bold" textTransform="uppercase" letterSpacing="wider">
             {question.type.replace('_', ' ')}
           </Badge>
@@ -314,8 +315,8 @@ export function QuestionCard({ question, index, onAnswer, selectedAnswer, isFlag
       {/* Question Content */}
       <Box mb={6}>
         {renderMedia()}
-        <Text 
-          fontSize="14px"
+        <Text
+          fontSize={{ base: '13px', md: '14px' }}
           color="dd.text"
           fontWeight="semibold"
           lineHeight="1.4"

@@ -21,13 +21,20 @@ GUI menampilkan browser langsung dengan
 
 ## Spec yang Ada
 
-- `login.spec.ts` – login smoke
-- `login-flow.spec.ts` – login siswa / guru / superadmin
-- `student-dashboard.spec.ts` – smoke test dashboard siswa
+- `auth/login.spec.ts` – login smoke
+- `auth/logout.spec.ts` – logout smoke
+- `auth/rbac.spec.ts` – block akses admin untuk siswa
+- `student/dashboard.spec.ts` – smoke test dashboard siswa
+- `admin/exam-create.spec.ts` – create ujian
 
-Dua spec sudah mock API minimal dan tetap pada status Anda:
-- mendeteksi UI (header, badge, tombol)
-- cek status respons
+Setup state:
+- `setup/student.setup.ts`
+- `setup/admin.setup.ts`
+- `setup/superadmin.setup.ts`
+
+Catatan:
+- selector utama masih pakai `#login-*` dan text selector sementara
+- target berikutnya: tambah `data-testid` untuk flow kritis
 
 ## Manual Mode Tips
 
