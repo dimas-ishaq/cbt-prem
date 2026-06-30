@@ -9,7 +9,6 @@ test('Exam list render + filter status', async ({ page }) => {
   const count = await rows.count();
   expect(count).toBeGreaterThanOrEqual(0);
 
-  // filter by status dropdown
   const statusSelect = page.locator('[role="combobox"]').first();
   if (await statusSelect.isVisible()) {
     await statusSelect.click();
@@ -25,5 +24,21 @@ test('Exam search', async ({ page }) => {
   if (await searchInput.isVisible()) {
     await searchInput.fill('test');
     await page.waitForTimeout(300);
+  }
+});
+
+test('Delete exam from list', async ({ page }) => {
+  await page.goto('/admin/exams');
+  // find a delete button / trash icon
+  const deleteBtn = page.locator('button[aria-label="Hapus"]').or(page.locator('[data-testid="delete-exam"]')).or(page.locator('svg:has(~ text), button:has(svg[lucide="trash"])')).first();
+  if (await deleteBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
+    await deleteBtn.click();
+    const confirmBtn = page.locator('button:has-text("Ya")').or(page.locator('button:has-text("Hapus")')).first();
+    if (await confirmBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await confirmBtn.click();
+      await page.waitForTimeout(1000);
+      // expect success toast
+      await expect(page.locator('text=Berhasil').or(page.locator('text=sukses')).first()).toBeVisible({ timeout: 5000 });
+    }
   }
 });
