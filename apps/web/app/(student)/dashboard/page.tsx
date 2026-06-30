@@ -367,21 +367,18 @@ export default function DashboardPage() {
                 <HStack gap={2} mt={2} flexWrap="wrap">
                   <HStack gap={1.5} bg="dd.surface.subtle" px={3} py={1} borderRadius="md" border="1px solid" borderColor="dd.border">
                     <Hash size={11} color="dd.icon.info" />
-                    <Text fontWeight="bold" color="dd.text.muted" fontSize="10px">NIS:</Text>
                     <Badge bg="dd.status.info.bg" color="dd.icon.info" border="1px solid" borderColor="dd.status.info.text" px={1.5} py={0.2} borderRadius="md" fontSize="9px" fontWeight="bold">
                       {profile?.nis ?? '-'}
                     </Badge>
                   </HStack>
                   <HStack gap={1.5} bg="dd.surface.subtle" px={3} py={1} borderRadius="md" border="1px solid" borderColor="dd.border">
                     <Award size={11} color="dd.brand" />
-                    <Text fontWeight="bold" color="dd.text.muted" fontSize="10px">JURUSAN:</Text>
                     <Badge bg="dd.brand.subtle" color="dd.brand" border="1px solid" borderColor="dd.brand" px={1.5} py={0.2} borderRadius="md" fontSize="9px" fontWeight="bold">
                       {profile?.major?.name ?? 'Belum Ditentukan'}
                     </Badge>
                   </HStack>
                   <HStack gap={1.5} bg="dd.surface.subtle" px={3} py={1} borderRadius="md" border="1px solid" borderColor="dd.border">
                     <Users size={11} color="dd.icon.success" />
-                    <Text fontWeight="bold" color="dd.text.muted" fontSize="10px">ROMBEL:</Text>
                     <Badge bg="dd.status.success.bg" color="dd.icon.success" border="1px solid" borderColor="dd.status.success.text" px={1.5} py={0.2} borderRadius="md" fontSize="9px" fontWeight="bold">
                       {profile?.rombel?.name ?? 'Belum Ditentukan'}
                     </Badge>
