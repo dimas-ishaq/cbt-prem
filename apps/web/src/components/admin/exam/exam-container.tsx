@@ -289,7 +289,7 @@ export function ExamContainer({ examId }: Props) {
     }
   }, [currentQuestionIndex, socket, sessionId, examId, exam]);
 
-  useExamRealtime({ socket, examId, sessionId, playSuccess, setIsLocked, finishExam, setSessionEndTime, setTimeAddedMinutes, setShowTimeAddedDialog });
+  useExamRealtime({ socket, examId, sessionId, userId: user?.id, playSuccess, setIsLocked, finishExam, setSessionEndTime, setTimeAddedMinutes, setShowTimeAddedDialog });
   useExamViolation({ enabled: true, exam, examId, socket, sessionId, playViolation, finishExam, setViolationCount, setViolationMessage, setShowViolationModal });
 
   const isTokenRequired = !!exam?.token;
