@@ -16,11 +16,6 @@ const fadeUp = keyframes`
   100% { transform: translateY(0); opacity: 1; }
 `;
 
-const shimmer = keyframes`
-  0% { background-position: -200% center; }
-  100% { background-position: 200% center; }
-`;
-
 const float = keyframes`
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-8px); }
@@ -74,8 +69,12 @@ export function ExamCompletion({ subjectName, examTitle }: ExamCompletionProps) 
         w="full"
         maxW="lg"
         textAlign="center"
+        px={{ base: 1, md: 0 }}
         css={{ animation: `${fadeUp} 0.6s ease-out` }}
       >
+        <Box mb={{ base: 4, md: 0 }}>
+
+        </Box>
         {/* Animated check icon */}
         <Flex
           w={20}
@@ -91,7 +90,7 @@ export function ExamCompletion({ subjectName, examTitle }: ExamCompletionProps) 
           boxShadow="0 0 40px rgba(26, 190, 113, 0.1)"
           css={{ animation: `${scaleIn} 0.7s cubic-bezier(0.34, 1.56, 0.64, 1), ${float} 3s ease-in-out 1s infinite` }}
         >
-          <CheckCircle size={40} color="var(--chakra-colors-dd-status-success-solid)" strokeWidth={2.5} />
+          <CheckCircle size={40} color="white" strokeWidth={2.5} />
         </Flex>
 
         {/* Sparkle accent */}
@@ -101,17 +100,17 @@ export function ExamCompletion({ subjectName, examTitle }: ExamCompletionProps) 
           mb={3}
           css={{ animation: `${fadeUp} 0.6s ease-out 0.2s both` }}
         >
-          <Sparkles size={14} color="var(--chakra-colors-dd-status-warning-text)" />
+          <Sparkles size={14} color="dd.status.warning.text" />
           <Text
             fontSize="11px"
             fontWeight="bold"
             textTransform="uppercase"
             letterSpacing="0.2em"
-            color="var(--chakra-colors-dd-status-warning-text)"
+            color="dd.status.warning.text"
           >
             Ujian Selesai
           </Text>
-          <Sparkles size={14} color="var(--chakra-colors-dd-status-warning-text)" />
+          <Sparkles size={14} color="dd.status.warning.text" />
         </Flex>
 
         {/* Main heading */}
@@ -154,7 +153,7 @@ export function ExamCompletion({ subjectName, examTitle }: ExamCompletionProps) 
             <Text
               fontSize="13px"
               fontWeight="bold"
-              color="var(--chakra-colors-dd-status-success-text)"
+              color="dd.status.success.text"
             >
               📚 {subjectName}{examTitle ? ` — ${examTitle}` : ''}
             </Text>

@@ -42,7 +42,7 @@ export function ExamSidebar({ questions, currentIndex, answers, flaggedQuestions
         Navigasi Soal
       </Text>
 
-      <Grid templateColumns="repeat(3, 1fr)" gap={{ base: 2, md: 2.5 }} mb={5}>
+      <Grid templateColumns={{ base: '1fr', sm: 'repeat(3, 1fr)' }} gap={{ base: 2, md: 2.5 }} mb={5}>
         <Box p={{ base: 2, md: 3 }} borderRadius="badge" bg="dd.surface.alt" border="1px solid" borderColor="dd.border" borderTop="3px solid" borderTopColor="dd.status.success.solid">
           <Text fontSize="11px" color="dd.text.muted" fontWeight="semibold">Dijawab</Text>
           <Text fontSize={{ base: '18px', md: '20px' }} fontWeight="bold" color="dd.status.success.text" mt={1}>{answeredCount}</Text>

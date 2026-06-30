@@ -1,6 +1,7 @@
 import { Box, Button, Flex, Heading, Text } from '@chakra-ui/react';
 import { LogOut } from 'lucide-react';
 import { ExamTimer } from './exam-timer';
+import { ColorModeToggle } from '@/components/ui/color-mode-toggle';
 
 interface ExamHeaderProps {
   title: string;
@@ -24,12 +25,12 @@ export function ExamHeader({ title, subjectName, startTime, duration, overrideEn
       px={{ base: 3, md: 6 }}
       py={{ base: 3, md: 4 }}
       justify="space-between"
-      align={{ base: 'flex-start', md: 'center' }}
-      gap={2}
-      flexWrap="wrap"
+      align={{ base: 'center', md: 'center' }}
+      gap={3}
+      flexDir={{ base: 'column', md: 'row' }}
       fontFamily="body"
     >
-      <Box flex="1" minW="0">
+      <Box flex={{ md: 1 }} minW={0} textAlign={{ base: 'center', md: 'left' }}>
         <Heading size="md" color="dd.text" fontWeight="700" fontSize={{ base: '16px', md: 'md' }} noOfLines={1}>
           {title}
         </Heading>
@@ -37,7 +38,12 @@ export function ExamHeader({ title, subjectName, startTime, duration, overrideEn
           {subjectName}
         </Text>
       </Box>
-      <ExamTimer startTime={startTime} duration={duration} overrideEndTime={overrideEndTime} onTimeUp={onTimeUp} serverTime={serverTime} />
+
+      <Box display="flex" justifyContent="center" alignItems="center" gap={2}>
+        <ExamTimer startTime={startTime} duration={duration} overrideEndTime={overrideEndTime} onTimeUp={onTimeUp} serverTime={serverTime} />
+        <ColorModeToggle size="sm" />
+      </Box>
+
       <Button
         bg={disableFinish ? 'dd.surface.alt' : 'dd.status.danger.solid'}
         color={disableFinish ? 'dd.text.muted' : 'white'}
@@ -50,6 +56,8 @@ export function ExamHeader({ title, subjectName, startTime, duration, overrideEn
         height="36px"
         whiteSpace="nowrap"
         flexShrink={0}
+        w={{ base: 'auto', md: 'auto' }}
+        alignSelf="center"
         _hover={disableFinish ? {} : { bg: 'dd.status.danger.solid' }}
         _active={disableFinish ? {} : { bg: 'dd.status.danger.solid' }}
         cursor={disableFinish ? 'not-allowed' : 'pointer'}
