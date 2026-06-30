@@ -187,6 +187,7 @@ export function LoginForm() {
                 <Input
                   {...register('username')}
                   id="login-username"
+                  data-testid="login-username"
                   autoComplete="username"
                   placeholder="Masukkan username Anda"
                   onFocus={() => setFocused('username')}
@@ -252,6 +253,7 @@ export function LoginForm() {
                 <Input
                   {...register('password')}
                   id="login-password"
+                  data-testid="login-password"
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
                   placeholder="Masukkan password Anda"
@@ -307,6 +309,7 @@ export function LoginForm() {
             {/* Submit */}
             <Button
               id="login-submit"
+              data-testid="login-submit"
               type="submit"
               disabled={isLoading}
               w="full"

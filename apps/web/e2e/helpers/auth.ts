@@ -16,10 +16,10 @@ export const creds = {
 };
 
 export async function login(page: Page, username: string, password: string) {
-  await page.goto('/login', { waitUntil: 'domcontentloaded' });
-  await page.fill('#login-username', username);
-  await page.fill('#login-password', password);
-  await page.click('#login-submit');
+  await page.goto('/login', { waitUntil: 'networkidle' });
+  await page.getByTestId('login-username').fill(username);
+  await page.getByTestId('login-password').fill(password);
+  await page.getByTestId('login-submit').click();
 }
 
 export async function expectRedirect(page: Page, url: RegExp) {
