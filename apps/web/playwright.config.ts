@@ -46,6 +46,10 @@ export default defineConfig({
       testMatch: /admin\/exam-create\.spec\.ts/,
       use: { storageState: 'playwright/.auth/admin.json' },
     },
+    {
+      name: 'api-contract',
+      testMatch: /api\/api-contract\.spec\.ts/,
+    },
   ],
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000',
