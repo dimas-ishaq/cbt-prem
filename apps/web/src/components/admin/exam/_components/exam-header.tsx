@@ -31,10 +31,10 @@ export function ExamHeader({ title, subjectName, startTime, duration, overrideEn
       fontFamily="body"
     >
       <Box flex={{ md: 1 }} minW={0} textAlign={{ base: 'center', md: 'left' }}>
-        <Heading size="md" color="dd.text" fontWeight="700" fontSize={{ base: '16px', md: 'md' }} noOfLines={1}>
+        <Heading size="md" color="dd.text" fontWeight="700" fontSize={{ base: '16px', md: 'md' }} lineClamp={1}>
           {title}
         </Heading>
-        <Text fontSize={{ base: '11px', md: '12px' }} color="dd.text.muted" mt={0.5} noOfLines={1}>
+        <Text fontSize={{ base: '11px', md: '12px' }} color="dd.text.muted" mt={0.5} lineClamp={1}>
           {subjectName}
         </Text>
       </Box>

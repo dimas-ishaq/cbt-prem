@@ -1,5 +1,5 @@
 import { test as setup, expect } from '@playwright/test';
-import { login, creds } from '../helpers/auth';
+import { expectRedirect, login, creds } from '../helpers/auth';
 
 const authFile = 'playwright/.auth/superadmin.json';
 

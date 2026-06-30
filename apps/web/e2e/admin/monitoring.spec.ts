@@ -6,7 +6,7 @@ test('Monitoring page render + filter siswa', async ({ page }) => {
   await page.goto('/admin/monitoring');
   await expect(page.locator('text=Monitoring').or(page.locator('text=Pemantauan')).first()).toBeVisible();
 
-  const monitoringLink = page.locator('a[href*="/admin/monitoring/"]').not('[href$="/monitoring"]').not('[href$="/monitoring/"]').first();
+  const monitoringLink = page.locator('a[href*="/admin/monitoring/"]').filter({ hasNot: page.locator('[href$="/monitoring"], [href$="/monitoring/"]') }).first();
   if (await monitoringLink.isVisible()) {
     const href = await monitoringLink.getAttribute('href');
     if (href) {

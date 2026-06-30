@@ -23,6 +23,46 @@ import { NotificationPriority, NotificationType } from '../notifications/dto/cre
 export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(ExamSessionsService.name);
   private autoSubmitTimer: NodeJS.Timeout | null = null;
+  private readonly unlockAttempts = new Map<string, { count: number; resetAt: number; blockedUntil?: number }>();
+  private readonly unlockAttemptWindowMs = 60_000;
+  private readonly unlockAttemptBlockMs = 30_000;
+  private readonly unlockAttemptLimit = 5;
+
+  private clearUnlockAttemptLimit(sessionId: string) {
+    this.unlockAttempts.delete(sessionId);
+  }
+
+  private enforceUnlockAttemptLimit(sessionId: string) {
+    const now = Date.now();
+    const state = this.unlockAttempts.get(sessionId);
+
+    if (!state || now >= state.resetAt) {
+      const nextState = { count: 0, resetAt: now + this.unlockAttemptWindowMs };
+      this.unlockAttempts.set(sessionId, nextState);
+      return;
+    }
+
+    if (state.blockedUntil && now < state.blockedUntil) {
+      throw new BadRequestException('Terlalu banyak percobaan. Coba lagi beberapa saat.');
+    }
+
+    state.count += 1;
+    if (state.count > this.unlockAttemptLimit) {
+      state.count = 0;
+      state.resetAt = now + this.unlockAttemptWindowMs;
+      state.blockedUntil = now + this.unlockAttemptBlockMs;
+      this.unlockAttempts.set(sessionId, state);
+      throw new BadRequestException('Terlalu banyak percobaan. Coba lagi beberapa saat.');
+    }
+
+    this.unlockAttempts.set(sessionId, state);
+  }
+
+  private readonly TOKEN_EXPIRY_MINUTES = 5;
+
+  private generateTokenHex(): string {
+    return randomBytes(3).toString('hex').toUpperCase();
+  }
 
   constructor(
     private prisma: PrismaService,
@@ -637,82 +677,69 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
 
   // ─── Auto-Lock & Token Methods ──────────────────────────────────────────────
 
-  private readonly TOKEN_EXPIRY_MINUTES = 5;
-
-  private generateTokenHex(): string {
-    return randomBytes(3).toString('hex').toUpperCase();
-  }
-
   async recordViolation(sessionId: string) {
-    // Increment violationCount on ExamSession
-    const session = await this.prisma.examSession.update({
-      where: { id: sessionId },
-      data: { violationCount: { increment: 1 } },
-      include: { exam: true },
+    return this.prisma.$transaction(async (tx) => {
+      const session = await tx.examSession.update({
+        where: { id: sessionId },
+        data: { violationCount: { increment: 1 } },
+        include: { exam: true },
+      });
+
+      const maxViolations = session.exam.maxViolations;
+      const didLock =
+        maxViolations > 0 &&
+        session.violationCount >= maxViolations &&
+        session.status === SessionStatus.IN_PROGRESS;
+
+      if (!didLock) {
+        return { locked: false };
+      }
+
+      const tokenState = await tx.lockTokenState.findUnique({
+        where: { id: 'global' },
+      });
+
+      const now = new Date();
+      let token: string;
+      let expiresAt: Date;
+
+      if (tokenState && tokenState.token && tokenState.tokenExpiresAt && tokenState.tokenExpiresAt > now) {
+        token = tokenState.token;
+        expiresAt = tokenState.tokenExpiresAt;
+      } else {
+        token = this.generateTokenHex();
+        expiresAt = new Date(now.getTime() + this.TOKEN_EXPIRY_MINUTES * 60 * 1000);
+
+        await tx.lockTokenState.upsert({
+          where: { id: 'global' },
+          create: { id: 'global', token, tokenExpiresAt: expiresAt },
+          update: { token, tokenExpiresAt: expiresAt },
+        });
+      }
+
+      await tx.examSession.update({
+        where: { id: sessionId },
+        data: {
+          status: SessionStatus.LOCKED,
+          lockedCount: { increment: 1 },
+        },
+      });
+
+      return {
+        locked: true,
+        lockToken: token,
+        lockTokenExpiresAt: expiresAt,
+      };
     });
-
-    if (!session) {
-      throw new NotFoundException('Session not found');
-    }
-
-    const maxViolations = session.exam.maxViolations;
-    const didLock =
-      maxViolations > 0 &&
-      session.violationCount >= maxViolations &&
-      session.status === SessionStatus.IN_PROGRESS;
-
-    if (!didLock) {
-      return { locked: false };
-    }
-
-    // Auto-lock
-    const lockState = await this.lockSession(sessionId);
-    return {
-      locked: true,
-      lockToken: lockState.lockToken,
-      lockTokenExpiresAt: lockState.lockTokenExpiresAt,
-    };
   }
 
   async lockSession(sessionId: string) {
-    // Load global lock token
-    let tokenState = await this.prisma.lockTokenState.findUnique({
-      where: { id: 'global' },
-    });
-
-    const now = new Date();
-    let token: string;
-    let expiresAt: Date;
-
-    if (tokenState && tokenState.token && tokenState.tokenExpiresAt && tokenState.tokenExpiresAt > now) {
-      // Reuse existing valid token
-      token = tokenState.token;
-      expiresAt = tokenState.tokenExpiresAt;
-    } else {
-      // Generate new token
-      token = this.generateTokenHex();
-      expiresAt = new Date(now.getTime() + this.TOKEN_EXPIRY_MINUTES * 60 * 1000);
-
-      tokenState = await this.prisma.lockTokenState.upsert({
-        where: { id: 'global' },
-        create: { id: 'global', token, tokenExpiresAt: expiresAt },
-        update: { token, tokenExpiresAt: expiresAt },
-      });
-    }
-
-    // Lock the session
-    await this.prisma.examSession.update({
-      where: { id: sessionId },
-      data: {
-        status: SessionStatus.LOCKED,
-        lockedCount: { increment: 1 },
-      },
-    });
-
-    return { lockToken: token, lockTokenExpiresAt: expiresAt };
+    return this.recordViolation(sessionId);
   }
 
   async unlockWithToken(sessionId: string, token: string) {
+    this.enforceUnlockAttemptLimit(sessionId);
+
     const tokenState = await this.prisma.lockTokenState.findUnique({
       where: { id: 'global' },
     });
@@ -722,10 +749,12 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
     });
 
     if (!session) {
+      this.clearUnlockAttemptLimit(sessionId);
       throw new NotFoundException('Session not found');
     }
 
     if (session.status !== SessionStatus.LOCKED) {
+      this.clearUnlockAttemptLimit(sessionId);
       throw new BadRequestException('Sesi tidak dalam status terkunci');
     }
 
@@ -741,7 +770,6 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
       throw new BadRequestException('Token kedaluwarsa, minta token baru ke proktor');
     }
 
-    // Unlock: reset violation count, set IN_PROGRESS. Do NOT clear global token.
     await this.prisma.examSession.update({
       where: { id: sessionId },
       data: {
@@ -750,31 +778,31 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
       },
     });
 
+    this.clearUnlockAttemptLimit(sessionId);
+
     return { unlocked: true };
   }
 
   async generateLockToken() {
     const now = new Date();
-    let tokenState = await this.prisma.lockTokenState.findUnique({
+    const tokenState = await this.prisma.lockTokenState.findUnique({
       where: { id: 'global' },
     });
 
     if (tokenState && tokenState.token && tokenState.tokenExpiresAt && tokenState.tokenExpiresAt > now) {
-      // Token masih valid, return existing
       return { lockToken: tokenState.token, lockTokenExpiresAt: tokenState.tokenExpiresAt };
     }
 
-    // Generate new token
     const token = this.generateTokenHex();
     const expiresAt = new Date(now.getTime() + this.TOKEN_EXPIRY_MINUTES * 60 * 1000);
 
-    tokenState = await this.prisma.lockTokenState.upsert({
+    const saved = await this.prisma.lockTokenState.upsert({
       where: { id: 'global' },
       create: { id: 'global', token, tokenExpiresAt: expiresAt },
       update: { token, tokenExpiresAt: expiresAt },
     });
 
-    return { lockToken: tokenState.token, lockTokenExpiresAt: tokenState.tokenExpiresAt };
+    return { lockToken: saved.token, lockTokenExpiresAt: saved.tokenExpiresAt };
   }
 
   async getLockInfo() {
@@ -790,6 +818,10 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
       lockTokenExpiresAt: tokenState.lockTokenExpiresAt ?? null,
       lockedSessions,
     };
+  }
+
+  async refreshUnlockRateLimit(sessionId: string) {
+    this.clearUnlockAttemptLimit(sessionId);
   }
 
   isSebAllowed(
