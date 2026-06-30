@@ -16,7 +16,7 @@ import {
   Spinner,
 } from '@chakra-ui/react';
 import { Calendar, Clock } from 'lucide-react';
-import { classifyExam, getAvailabilityLabel, getUpcomingExams } from '@/lib/exam-utils';
+import { classifyExam, getAvailabilityLabel } from '@/lib/exam-utils';
 
 interface Exam {
   id: string;
@@ -60,7 +60,6 @@ export function ExamList() {
   }
 
   const now = new Date();
-  const upcomingExams = getUpcomingExams(exams || [], now);
   const activeExams = (exams || []).filter((exam) => {
     const status = classifyExam(exam, now);
     return status === 'active' || status === 'ended' || status === 'completed' || status === 'locked';
@@ -71,34 +70,6 @@ export function ExamList() {
 
   return (
     <Stack gap={6} fontFamily="body">
-      {upcomingExams.length > 0 && (
-        <Box bg="dd.surface" border="1px solid" borderColor="dd.border" borderRadius="card" p={5} boxShadow={{ base: 'card-light', _dark: 'card-dark' }}>
-          <Stack gap={1.5} mb={4}>
-            <Heading size="sm" fontWeight="bold" color="dd.text">Ujian Akan Datang</Heading>
-            <Text color={textMuted} fontSize="12px">Jadwal ujian berikut belum bisa dikerjakan.</Text>
-          </Stack>
-          <Stack gap={3}>
-            {upcomingExams.map((exam) => {
-              const startTime = new Date(exam.startTime);
-              const endTime = new Date(exam.endTime);
-              return (
-                <Flex key={exam.id} justify="space-between" align={{ base: 'stretch', md: 'center' }} gap={3} direction={{ base: 'column', md: 'row' }} p={4} borderRadius="md" bg="dd.surface.alt" border="1px solid" borderColor="dd.border">
-                  <Box>
-                    <Heading size="xs" color="dd.text" fontWeight="bold">{exam.title}</Heading>
-                    <Text fontSize="12px" color={textMuted}>{exam.subject?.name || '-'}</Text>
-                  </Box>
-                  <Stack gap={0.5} fontSize="11px" color={textMuted} textAlign={{ base: 'left', md: 'right' }}>
-                    <HStack gap={1.5}><Calendar size={12} color="var(--chakra-colors-dd-brand)" /><Text>Mulai: {startTime.toLocaleString('id-ID')}</Text></HStack>
-                    <HStack gap={1.5}><Clock size={12} color="var(--chakra-colors-dd-brand)" /><Text>Selesai: {endTime.toLocaleString('id-ID')}</Text></HStack>
-                    <HStack gap={1.5}><Text fontSize="11px" color={textMuted}>Guru: {getTeacherName(exam)}</Text></HStack>
-                  </Stack>
-                </Flex>
-              );
-            })}
-          </Stack>
-        </Box>
-      )}
-
       <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} gap={5} fontFamily="body">
         {activeExams.map((exam) => {
           const now = new Date();

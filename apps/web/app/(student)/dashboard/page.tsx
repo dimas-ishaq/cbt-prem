@@ -35,7 +35,7 @@ export default function DashboardPage() {
   const queryClient = useQueryClient();
   const photoInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
-  const [activeTab, setActiveTab] = useState<'upcoming' | 'exams' | 'history'>('upcoming');
+  const [activeTab, setActiveTab] = useState<'upcoming' | 'exams' | 'history'>('exams');
 
   const { data: settings } = useQuery({
     queryKey: ['settings'],
@@ -365,57 +365,36 @@ export default function DashboardPage() {
                 </Box>
 
                 <HStack gap={2} mt={2} flexWrap="wrap">
-                  <HStack gap={1.5} bg="dd.surface.subtle" px={3} py={1} borderRadius="md" border="1px solid" borderColor="dd.border">
-                    <Hash size={11} color="dd.icon.info" />
-                    <Badge bg="dd.status.info.bg" color="dd.icon.info" border="1px solid" borderColor="dd.status.info.text" px={1.5} py={0.2} borderRadius="md" fontSize="9px" fontWeight="bold">
-                      {profile?.nis ?? '-'}
-                    </Badge>
-                  </HStack>
-                  <HStack gap={1.5} bg="dd.surface.subtle" px={3} py={1} borderRadius="md" border="1px solid" borderColor="dd.border">
-                    <Award size={11} color="dd.brand" />
-                    <Badge bg="dd.brand.subtle" color="dd.brand" border="1px solid" borderColor="dd.brand" px={1.5} py={0.2} borderRadius="md" fontSize="9px" fontWeight="bold">
-                      {profile?.major?.name ?? 'Belum Ditentukan'}
-                    </Badge>
-                  </HStack>
-                  <HStack gap={1.5} bg="dd.surface.subtle" px={3} py={1} borderRadius="md" border="1px solid" borderColor="dd.border">
-                    <Users size={11} color="dd.icon.success" />
-                    <Badge bg="dd.status.success.bg" color="dd.icon.success" border="1px solid" borderColor="dd.status.success.text" px={1.5} py={0.2} borderRadius="md" fontSize="9px" fontWeight="bold">
-                      {profile?.rombel?.name ?? 'Belum Ditentukan'}
-                    </Badge>
-                  </HStack>
+                  <Badge
+                    bg="dd.status.info.subtle" color="dd.status.info.text"
+                    px={2.5} py={1} borderRadius="full"
+                    fontSize="11px" fontWeight="semibold"
+                    display="inline-flex" alignItems="center" gap={1.5}
+                  >
+                    <Hash size={12} />
+                    NIS: {profile?.nis ?? '-'}
+                  </Badge>
+                  <Badge
+                    bg="dd.brand.subtle" color="dd.brand"
+                    px={2.5} py={1} borderRadius="full"
+                    fontSize="11px" fontWeight="semibold"
+                    display="inline-flex" alignItems="center" gap={1.5}
+                  >
+                    <Award size={12} />
+                    {profile?.major?.name ?? 'Jurusan'}
+                  </Badge>
+                  <Badge
+                    bg="dd.status.success.subtle" color="dd.status.success.text"
+                    px={2.5} py={1} borderRadius="full"
+                    fontSize="11px" fontWeight="semibold"
+                    display="inline-flex" alignItems="center" gap={1.5}
+                  >
+                    <Users size={12} />
+                    {profile?.rombel?.name ?? 'Rombel'}
+                  </Badge>
                 </HStack>
               </VStack>
             </Flex>
-          )}
-        </Box>
-
-        {/* ── Upcoming Exams ────────────────────────────────── */}
-        <Box mb={5} p={5} borderRadius="md" border="1px solid" borderColor="dd.border" bg="dd.surface" boxShadow={{ base: 'card-light', _dark: 'card-dark' }}>
-          <HStack justify="space-between" align="center" mb={4} flexWrap="wrap" gap={2}>
-            <HStack gap={2}><Calendar size={16} color="dd.brand" /><Heading size="sm" fontWeight="bold" color="dd.text">Ujian Akan Datang</Heading></HStack>
-            <Text fontSize="11px" color="dd.text.muted">Tampil jadwal ujian mendatang</Text>
-          </HStack>
-          {upcomingExams.length > 0 ? (
-            <Stack gap={3}>
-              {upcomingExams.map((exam: any) => {
-                const start = new Date(exam.startTime).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
-                const end = new Date(exam.endTime).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
-                return (
-                  <Flex key={exam.id} justify="space-between" align={{ base: 'stretch', md: 'center' }} gap={3} direction={{ base: 'column', md: 'row' }} p={4} borderRadius="md" bg="dd.surface.alt" border="1px solid" borderColor="dd.border">
-                    <Box>
-                      <Text fontWeight="bold" color="dd.text">{exam.title}</Text>
-                      <Text fontSize="12px" color="dd.text.muted">{exam.subject?.name}</Text>
-                    </Box>
-                    <Stack gap={0.5} fontSize="11px" color="dd.text.muted" textAlign={{ base: 'left', md: 'right' }}>
-                      <Text>Mulai: {start}</Text>
-                      <Text>Selesai: {end}</Text>
-                    </Stack>
-                  </Flex>
-                );
-              })}
-            </Stack>
-          ) : (
-            <Text color="dd.text.muted" fontSize="12px">Belum ada ujian yang dijadwalkan.</Text>
           )}
         </Box>
 
