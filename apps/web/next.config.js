@@ -11,7 +11,7 @@ const nextConfig = {
     };
     return config;
   },
-  allowedDevOrigins: ['192.168.1.7'],
+
   turbopack: {
     resolveAlias: {
       html2canvas: 'html2canvas-pro',

@@ -27,9 +27,14 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { AuditModule } from './audit/audit.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { join } from 'path';
+
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: [join(process.cwd(), 'apps/api/.env'), join(process.cwd(), '.env')],
+    }),
     ScheduleModule.forRoot(),
     MulterModule.registerAsync({
       useFactory: () => ({
