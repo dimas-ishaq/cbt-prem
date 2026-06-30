@@ -95,8 +95,10 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
   };
 
   const unlockStudent = (studentId: string) => {
-    if (socket) {
-      socket.emit('unlock_student', { examId: id, studentId });
+    if (socket && lockToken) {
+      socket.emit('unlock_student', { examId: id, studentId, token: lockToken });
+    } else {
+      toast.error({ title: 'Token tidak tersedia', description: 'Refresh token terlebih dahulu.' });
     }
   };
 
@@ -117,6 +119,8 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
   const [violationFilter, setViolationFilter] = useState<string>('ALL');
   const [progressFilter, setProgressFilter] = useState<string>('ALL');
   const [prevCount, setPrevCount] = useState(0);
+  const [lockToken, setLockToken] = useState<string | null>(null);
+  const [lockTokenExpiresAt, setLockTokenExpiresAt] = useState<string | null>(null);
 
   const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
   const [nowTick, setNowTick] = useState(Date.now());
@@ -148,6 +152,19 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
     const minutes = Math.floor((remaining % 3600) / 60);
     const seconds = remaining % 60;
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  const formatTokenCountdown = (expiresAt?: string | null) => {
+    if (!expiresAt) return '--:--';
+    const remaining = Math.max(0, Math.floor((new Date(expiresAt).getTime() - nowTick) / 1000));
+    const minutes = Math.floor(remaining / 60);
+    const seconds = remaining % 60;
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  const handleRefreshToken = () => {
+    if (!socket) return;
+    socket.emit('refresh_lock_token', { examId: id });
   };
 
   const isEndingSoon = (endTime?: string) => {
@@ -270,6 +287,7 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
     const onConnect = () => {
       setConnection('connected');
       socket.emit('join_proctor', { examId: id });
+      socket.emit('request_lock_info', { examId: id });
     };
     const onDisconnect = () => setConnection('disconnected');
 
@@ -391,6 +409,33 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
           return { ...prev, [d.studentId]: { ...s, endTime: nextEndTime || s.endTime } };
         });
         void syncSessions();
+      },
+      session_auto_locked: (d) => {
+        if (d?.examId !== id) return;
+        toast.error({
+          title: 'Siswa Terkunci Otomatis',
+          description: `${d.studentName || d.username || 'Siswa'} mencapai batas pelanggaran.`,
+        });
+        playViolation();
+        if (d?.token) {
+          setLockToken(d.token);
+          setLockTokenExpiresAt(d.expiresAt || null);
+        }
+        void syncSessions();
+      },
+      lock_token_refreshed: (d) => {
+        if (d?.examId !== id) return;
+        setLockToken(d.token || null);
+        setLockTokenExpiresAt(d.expiresAt || null);
+        toast.success({
+          title: 'Token Diperbarui',
+          description: 'Token buka kunci berhasil di-refresh.',
+        });
+      },
+      lock_info_update: (d) => {
+        if (d?.examId !== id) return;
+        setLockToken(d.lockToken || null);
+        setLockTokenExpiresAt(d.lockTokenExpiresAt || null);
       },
     };
 
@@ -765,6 +810,66 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
           </Text>
         </Box>
       </SimpleGrid>
+
+      {/* ─── GLOBAL LOCK TOKEN BANNER ─── */}
+      <Box
+        bg="bg.surface"
+        borderRadius="card"
+        border="1px solid"
+        borderColor="border.default"
+        borderLeftWidth="4px"
+        borderLeftColor={lockToken ? 'status.warning.text' : 'text.muted'}
+        p={4}
+        shadow="card-dark"
+      >
+        <Flex justify="space-between" align="center" gap={4} wrap="wrap">
+          <Flex align="center" gap={3}>
+            <Box
+              w={10} h={10}
+              borderRadius="lg"
+              bg={lockToken ? 'status.warning.bg' : 'bg.subtle'}
+              border="1px solid"
+              borderColor={lockToken ? 'status.warning.text' : 'border.default'}
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" color={lockToken ? 'var(--chakra-colors-status-warning-text)' : 'var(--chakra-colors-text-muted)'}>
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+            </Box>
+            <Box>
+              <Text fontSize="xs" fontWeight="semibold" color="text.muted" textTransform="uppercase" letterSpacing="0.08em">
+                TOKEN BUKA KUNCI {lockToken ? 'AKTIF' : '— TIDAK DIPERLUKAN'}
+              </Text>
+              <Text fontSize="2xl" fontWeight="black" fontFamily="mono" letterSpacing="0.15em" color={lockToken ? 'text.primary' : 'text.muted'}>
+                {lockToken ?? '—'}
+              </Text>
+            </Box>
+          </Flex>
+          <Flex align="center" gap={4} wrap="wrap">
+            {lockTokenExpiresAt && (
+              <Box textAlign="right">
+                <Text fontSize="xs" color="text.muted">Berlaku</Text>
+                <Text fontSize="sm" fontWeight="bold" fontFamily="mono" color="text.primary">
+                  {formatTokenCountdown(lockTokenExpiresAt)}
+                </Text>
+              </Box>
+            )}
+            <Button
+              size="sm"
+              variant="outline"
+              borderRadius="lg"
+              fontWeight="bold"
+              onClick={handleRefreshToken}
+              cursor="pointer"
+            >
+              <RefreshCw size={14} style={{ marginRight: 6 }} />
+              Refresh Token
+            </Button>
+          </Flex>
+        </Flex>
+      </Box>
 
       {/* ─── BODY ─── */}
       <SimpleGrid columns={{ base: 1, lg: 3 }} gap={6}>

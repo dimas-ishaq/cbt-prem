@@ -27,7 +27,7 @@ export class AuthController {
     const user = await this.authService.validateUser(body.username, body.password);
     if (!user) {
       await this.auditService.write({ action: 'LOGIN_FAILED', resource: 'Auth', ip, userAgent });
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Kredensial tidak valid');
     }
     const result = await this.authService.login(user);
     await this.auditService.write({ userId: user.id, action: 'LOGIN_SUCCESS', resource: 'Auth', ip, userAgent });

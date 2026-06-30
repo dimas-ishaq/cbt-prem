@@ -193,6 +193,21 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
             { type: 'ROLE' as any, id: 'SUPER_ADMIN' },
           ],
         }, client.data.user.sub);
+
+        // ─── Auto-lock check ────────────────────────────────────────────
+        const result = await this.examSessionsService.recordViolation(session.id);
+        if (result.locked) {
+          // Emit to proctor room: WITH token
+          this.server.to(`proctor_${data.examId}`).emit('session_auto_locked', {
+            examId: data.examId,
+            studentId: client.data.user.sub,
+            studentName: student.user.fullName,
+            token: result.lockToken,
+            expiresAt: result.lockTokenExpiresAt,
+          });
+          // Emit to student: NO token
+          this.sendToUser(client.data.user.sub, 'session_locked', { reason: 'auto_lock' });
+        }
       }
     }
 
@@ -219,29 +234,103 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     });
     if (!student) return;
 
-    await this.prisma.examSession.update({
+    const session = await this.prisma.examSession.findUnique({
       where: {
         examId_studentId: {
           examId: data.examId,
           studentId: student.id,
         },
       },
-      data: {
-        status: SessionStatus.LOCKED,
-      },
     });
+    if (!session) return;
 
-    this.sendToUser(data.studentId, 'session_locked', { examId: data.examId });
+    const lockState = await this.examSessionsService.lockSession(session.id);
+
+    this.sendToUser(data.studentId, 'session_locked', { examId: data.examId, tokenExpiresAt: lockState.lockTokenExpiresAt });
 
     this.server.to(`proctor_${data.examId}`).emit('student_locked', {
       studentId: data.studentId,
+      token: lockState.lockToken,
+      expiresAt: lockState.lockTokenExpiresAt,
     });
+  }
+
+  @SubscribeMessage('refresh_lock_token')
+  async handleRefreshLockToken(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { examId: string },
+  ) {
+    if (client.data.user.role !== 'GURU' && client.data.user.role !== 'SUPER_ADMIN') {
+      return;
+    }
+
+    const lockState = await this.examSessionsService.generateLockToken();
+
+    this.server.to(`proctor_${data.examId}`).emit('lock_token_refreshed', {
+      examId: data.examId,
+      token: lockState.lockToken,
+      expiresAt: lockState.lockTokenExpiresAt,
+    });
+
+    return lockState;
+  }
+
+  @SubscribeMessage('student_request_unlock')
+  async handleStudentRequestUnlock(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { examId: string, token: string },
+  ) {
+    const student = await this.prisma.student.findUnique({
+      where: { userId: client.data.user.sub },
+    });
+    if (!student) return;
+
+    const session = await this.prisma.examSession.findUnique({
+      where: {
+        examId_studentId: {
+          examId: data.examId,
+          studentId: student.id,
+        },
+      },
+    });
+    if (!session) return;
+
+    try {
+      await this.examSessionsService.unlockWithToken(session.id, data.token);
+      this.sendToUser(client.data.user.sub, 'session_unlocked', { examId: data.examId });
+      this.server.to(`proctor_${data.examId}`).emit('student_unlocked', {
+        studentId: client.data.user.sub,
+      });
+    } catch (error) {
+      this.sendToUser(client.data.user.sub, 'unlock_rejected', {
+        examId: data.examId,
+        message: error instanceof Error ? error.message : 'Token invalid',
+      });
+    }
+  }
+
+  @SubscribeMessage('request_lock_info')
+  async handleRequestLockInfo(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { examId: string },
+  ) {
+    if (client.data.user.role !== 'GURU' && client.data.user.role !== 'SUPER_ADMIN') {
+      return;
+    }
+
+    const lockInfo = await this.examSessionsService.getLockInfo();
+    this.server.to(`proctor_${data.examId}`).emit('lock_info_update', {
+      examId: data.examId,
+      ...lockInfo,
+    });
+
+    return lockInfo;
   }
 
   @SubscribeMessage('unlock_student')
   async handleUnlockStudent(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { examId: string, studentId: string },
+    @MessageBody() data: { examId: string, studentId: string, token: string },
   ) {
     if (client.data.user.role !== 'GURU' && client.data.user.role !== 'SUPER_ADMIN') {
       return;
@@ -252,17 +341,17 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     });
     if (!student) return;
 
-    await this.prisma.examSession.update({
+    const session = await this.prisma.examSession.findUnique({
       where: {
         examId_studentId: {
           examId: data.examId,
           studentId: student.id,
         },
       },
-      data: {
-        status: SessionStatus.IN_PROGRESS,
-      },
     });
+    if (!session) return;
+
+    await this.examSessionsService.unlockWithToken(session.id, data.token);
 
     this.sendToUser(data.studentId, 'session_unlocked', { examId: data.examId });
 

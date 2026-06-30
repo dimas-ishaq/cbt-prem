@@ -65,6 +65,8 @@ export function ExamContainer({ examId }: Props) {
   const [checkedTerms, setCheckedTerms] = useState<Record<number, boolean>>({ 0: false, 1: false, 2: false });
   const [tokenInput, setTokenInput] = useState('');
   const [tokenError, setTokenError] = useState('');
+  const [unlockError, setUnlockError] = useState('');
+  const [isUnlocking, setIsUnlocking] = useState(false);
 
   const { data: serverTime } = useQuery({
     queryKey: ['server-time'],
@@ -289,8 +291,8 @@ export function ExamContainer({ examId }: Props) {
     }
   }, [currentQuestionIndex, socket, sessionId, examId, exam]);
 
-  useExamRealtime({ socket, examId, sessionId, userId: user?.id, playSuccess, setIsLocked, finishExam, setSessionEndTime, setTimeAddedMinutes, setShowTimeAddedDialog });
-  useExamViolation({ enabled: true, exam, examId, socket, sessionId, playViolation, finishExam, setViolationCount, setViolationMessage, setShowViolationModal });
+  useExamRealtime({ socket, examId, sessionId, userId: user?.id, playSuccess, setIsLocked, finishExam, setSessionEndTime, setTimeAddedMinutes, setShowTimeAddedDialog, setUnlockError });
+  useExamViolation({ enabled: true, exam, examId, socket, sessionId, playViolation, setViolationCount, setViolationMessage, setShowViolationModal });
 
   const isTokenRequired = !!exam?.token;
   const allTermsChecked = REQUIRED_TERM_IDS.every((id) => checkedTerms[id]);
@@ -345,6 +347,16 @@ export function ExamContainer({ examId }: Props) {
     }
   };
 
+  const handleUnlock = (token: string) => {
+    setUnlockError('');
+    setIsUnlocking(true);
+    try {
+      socket?.emit('student_request_unlock', { examId, token });
+    } finally {
+      setIsUnlocking(false);
+    }
+  };
+
   if (isLoadingExam) {
     return (
       <Flex minH="100dvh" bg="dd.canvas" align="center" justify="center" fontFamily="Inter, -apple-system, BlinkMacSystemFont, sans-serif">
@@ -366,7 +378,13 @@ export function ExamContainer({ examId }: Props) {
 
   if (!exam) return <ExamNotFound status="not-found" />;
   if (isCompleted) return <ExamCompletion subjectName={exam?.subject?.name} examTitle={exam?.title} />;
-  if (isLocked) return <ExamLockedOverlay />;
+  if (isLocked) return (
+    <ExamLockedOverlay
+      onSubmitToken={handleUnlock}
+      isSubmitting={isUnlocking}
+      error={unlockError}
+    />
+  );
 
   // Enforce fullscreen if active session and forceFullscreen is enabled
   if (sessionId && exam?.forceFullscreen && !isFullscreen) {

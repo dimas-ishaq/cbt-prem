@@ -243,23 +243,34 @@ model ExamQuestion {
   @@unique([examId, questionId])
 }
 
-model ExamSession {
-  id            String        @id @default(uuid())
-  examId        String
-  exam          Exam          @relation(fields: [examId], references: [id])
-  studentId     String
-  student       Student       @relation(fields: [studentId], references: [id])
-  startTime     DateTime?
-  endTime       DateTime?
-  status        SessionStatus @default(NOT_STARTED)
-  score         Float?
-  ipAddress     String?
-  userAgent     String?
-  lastActiveAt  DateTime?
+model LockTokenState {
+  id              String    @id @default("global")
+  token           String?
+  tokenExpiresAt  DateTime?
+  updatedAt       DateTime  @updatedAt
 
-  answers       Answer[]
-  violations    Violation[]
-  
+  @@map("lock_token_state")
+}
+
+model ExamSession {
+  id              String        @id @default(uuid())
+  examId          String
+  exam            Exam          @relation(fields: [examId], references: [id])
+  studentId       String
+  student         Student       @relation(fields: [studentId], references: [id])
+  startTime       DateTime?
+  endTime         DateTime?
+  status          SessionStatus @default(NOT_STARTED)
+  score           Float?
+  ipAddress       String?
+  userAgent       String?
+  lastActiveAt    DateTime?
+  lockedCount     Int           @default(0)
+  violationCount  Int           @default(0)
+
+  answers         Answer[]
+  violations      Violation[]
+
   @@unique([examId, studentId])
 }
 

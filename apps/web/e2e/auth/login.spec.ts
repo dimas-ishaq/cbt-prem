@@ -22,6 +22,6 @@ test.describe('Auth Login Smoke', () => {
 
   test('login salah tampil error', async ({ page }) => {
     await login(page, creds.student.username, 'wrong-password');
-    await expect(page.getByText(/login gagal|periksa kembali/i)).toBeVisible();
+    await expect(page.getByText(/kredensial tidak valid/i)).toBeVisible({ timeout: 15000 });
   });
 });

@@ -67,9 +67,9 @@ export default function DashboardPage() {
 
   const formattedServerTime = serverTime
     ? new Date(serverTime).toLocaleString('id-ID', {
-        dateStyle: 'medium',
-        timeStyle: 'medium',
-      })
+      dateStyle: 'medium',
+      timeStyle: 'medium',
+    })
     : 'Memuat...';
 
   const { data: exams } = useQuery({
@@ -209,41 +209,6 @@ export default function DashboardPage() {
               </HStack>
 
               {/* User badge */}
-              <Flex
-                align="center"
-                gap={2}
-                px={2.5}
-                py={1}
-                borderRadius="sm"
-                border="1px solid"
-                borderColor="dd.border"
-                bg="dd.surface"
-                display={{ base: 'none', sm: 'flex' }}
-              >
-                <Flex
-                  w={5}
-                  h={5}
-                  borderRadius="sm"
-                  align="center"
-                  justify="center"
-                  bg="dd.brand.gradient"
-                >
-                  <Text
-                    fontSize="10px"
-                    color="white"
-                    fontWeight="black"
-                  >
-                    {user.fullName?.charAt(0)?.toUpperCase()}
-                  </Text>
-                </Flex>
-                <Text
-                  fontSize="11px"
-                  fontWeight="semibold"
-                  color="dd.text"
-                >
-                  {user.fullName}
-                </Text>
-              </Flex>
               <ColorModeToggle size="md" />
               <Button
                 size="sm"

@@ -14,7 +14,7 @@ type SocketLike = {
   emit: (event: string, payload?: unknown) => void;
 };
 
-export function useExamViolation({ enabled, exam, examId, socket, sessionId, playViolation, finishExam, setViolationCount, setViolationMessage, setShowViolationModal }: {
+export function useExamViolation({ enabled, exam, examId, socket, sessionId, playViolation, setViolationCount, setViolationMessage, setShowViolationModal }: {
   enabled: boolean;
   exam: ExamFlags;
   examId: string;
@@ -38,17 +38,11 @@ export function useExamViolation({ enabled, exam, examId, socket, sessionId, pla
       playViolation();
       setViolationCount(prev => {
         const nextCount = prev + 1;
-        const maxViolations = exam?.maxViolations ?? 0;
-        if (maxViolations > 0 && nextCount >= maxViolations) {
-          setViolationMessage(description + ' Anda telah melebihi batas maksimum pelanggaran. Ujian Anda dikumpulkan otomatis.');
-          setShowViolationModal(true);
-          setTimeout(() => finishExam(), 3000);
-        } else {
-          setViolationMessage(description);
-          setShowViolationModal(true);
-        }
+        setViolationMessage(description);
+        setShowViolationModal(true);
         return nextCount;
       });
+
       lastViolationTime = now;
     };
     const handleVisibilityChange = () => { if (document.visibilityState === 'hidden') reportViolation('TAB_SWITCH', 'Terdeteksi berpindah tab atau meminimalkan browser.'); };
@@ -78,7 +72,7 @@ export function useExamViolation({ enabled, exam, examId, socket, sessionId, pla
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
     };
-  }, [enabled, exam, examId, finishExam, playViolation, sessionId, setShowViolationModal, setViolationCount, setViolationMessage, socket]);
+  }, [enabled, exam, examId, playViolation, sessionId, setShowViolationModal, setViolationCount, setViolationMessage, socket]);
 }
 
 

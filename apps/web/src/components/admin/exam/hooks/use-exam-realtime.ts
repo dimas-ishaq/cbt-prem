@@ -18,10 +18,15 @@ type TimeAddedEvent = SessionEvent & {
   addedMinutes?: number;
 };
 
+type UnlockRejectedEvent = SessionEvent & {
+  message?: string;
+};
+
 const isSessionEvent = (data: unknown): data is SessionEvent => !!data && typeof data === 'object' && 'examId' in data;
 const isTimeAddedEvent = (data: unknown): data is TimeAddedEvent => isSessionEvent(data);
+const isUnlockRejectedEvent = (data: unknown): data is UnlockRejectedEvent => isSessionEvent(data) && 'message' in data;
 
-export function useExamRealtime({ socket, examId, sessionId, userId, playSuccess, setIsLocked, finishExam, setSessionEndTime, setTimeAddedMinutes, setShowTimeAddedDialog }: {
+export function useExamRealtime({ socket, examId, sessionId, userId, playSuccess, setIsLocked, finishExam, setSessionEndTime, setTimeAddedMinutes, setShowTimeAddedDialog, setUnlockError }: {
   socket: SocketLike | null;
   examId: string;
   sessionId: string | null;
@@ -32,6 +37,7 @@ export function useExamRealtime({ socket, examId, sessionId, userId, playSuccess
   setSessionEndTime: (v: string) => void;
   setTimeAddedMinutes: (v: number) => void;
   setShowTimeAddedDialog: (v: boolean) => void;
+  setUnlockError?: (v: string) => void;
 }) {
   // Guard: cegah playSuccess false positive dari broadcast berlebih
   const lastPlayedRef = useRef(0);
@@ -39,7 +45,7 @@ export function useExamRealtime({ socket, examId, sessionId, userId, playSuccess
   useEffect(() => {
     if (!socket || !sessionId) return;
     const onSessionLocked = (data: unknown) => { if (isSessionEvent(data) && data.examId === examId) setIsLocked(true); };
-    const onSessionUnlocked = (data: unknown) => { if (isSessionEvent(data) && data.examId === examId) setIsLocked(false); };
+    const onSessionUnlocked = (data: unknown) => { if (isSessionEvent(data) && data.examId === examId) { setIsLocked(false); setUnlockError?.(''); } };
     const onSessionSubmitted = (data: unknown) => { if (isSessionEvent(data) && data.examId === examId) finishExam(); };
     const onTimeAdded = async (data: unknown) => {
       if (!isTimeAddedEvent(data) || data.examId !== examId) return;
@@ -71,12 +77,28 @@ export function useExamRealtime({ socket, examId, sessionId, userId, playSuccess
         }
       }
     };
+    // Tambah auto-lock listener
+    const onAutoLocked = (data: unknown) => {
+      if (isSessionEvent(data) && data.examId === examId) {
+        setIsLocked(true);
+        // Bisa juga set token info di sini jika perlu
+        console.log('Auto-locked for exam', examId, data);
+      }
+    };
+    // Tambah unlock reject listener
+    const onUnlockRejected = (data: unknown) => {
+      if (isUnlockRejectedEvent(data) && data.examId === examId && setUnlockError) {
+        setUnlockError(data.message ?? 'Token invalid');
+      }
+    };
     const onReconnect = () => socket.emit('join_exam', { examId });
     socket.on('session_locked', onSessionLocked);
     socket.on('session_unlocked', onSessionUnlocked);
     socket.on('session_submitted', onSessionSubmitted);
     socket.on('time_added', onTimeAdded);
     socket.on('student_time_added', onTimeAdded);
+    socket.on('session_auto_locked', onAutoLocked);
+    socket.on('unlock_rejected', onUnlockRejected);
     socket.on('connect', onReconnect);
     socket.emit('join_exam', { examId });
     return () => {
@@ -85,8 +107,10 @@ export function useExamRealtime({ socket, examId, sessionId, userId, playSuccess
       socket.off('session_submitted', onSessionSubmitted);
       socket.off('time_added', onTimeAdded);
       socket.off('student_time_added', onTimeAdded);
+      socket.off('session_auto_locked', onAutoLocked);
+      socket.off('unlock_rejected', onUnlockRejected);
       socket.off('connect', onReconnect);
     };
-  }, [socket, sessionId, examId, finishExam, playSuccess, setIsLocked, setSessionEndTime, setShowTimeAddedDialog, setTimeAddedMinutes]);
+  }, [socket, sessionId, examId, finishExam, playSuccess, setIsLocked, setSessionEndTime, setShowTimeAddedDialog, setTimeAddedMinutes, setUnlockError]);
 }
 

@@ -20,13 +20,25 @@ export default defineConfig({
     },
     {
       name: 'auth',
-      testMatch: /auth\/login\.spec\.ts/,
+      testMatch: /auth\/(login|logout|rbac)\.spec\.ts/,
     },
     {
       name: 'student-dashboard',
       dependencies: ['setup-student'],
       testMatch: /student\/dashboard\.spec\.ts/,
       use: { storageState: 'playwright/.auth/user.json' },
+    },
+    {
+      name: 'student-exam-session',
+      dependencies: ['setup-student'],
+      testMatch: /student\/exam-session\.spec\.ts/,
+      use: { storageState: 'playwright/.auth/user.json' },
+    },
+    {
+      name: 'admin-utilities',
+      dependencies: ['setup-admin'],
+      testMatch: /admin\/(exam-create|exam-list|exam-edit|monitoring|results|reports|settings|notifications|logs|master-data|users|roles|question-bank|exam-groups|profile|sounds|exam-cards|essay-grading|analytics|monitoring-history|monitoring-upcoming|results-sessions)\.spec\.ts/,
+      use: { storageState: 'playwright/.auth/admin.json' },
     },
     {
       name: 'admin-exam-create',

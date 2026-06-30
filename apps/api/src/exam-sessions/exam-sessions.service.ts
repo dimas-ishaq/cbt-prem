@@ -10,6 +10,7 @@ import {
   forwardRef,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { randomBytes } from 'node:crypto';
 import { StartSessionDto } from './dto/start-session.dto';
 import { SubmitAnswerDto } from './dto/submit-answer.dto';
 import { GradeAnswerDto } from './dto/grade-answer.dto';
@@ -632,6 +633,163 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
         },
       },
     });
+  }
+
+  // ─── Auto-Lock & Token Methods ──────────────────────────────────────────────
+
+  private readonly TOKEN_EXPIRY_MINUTES = 5;
+
+  private generateTokenHex(): string {
+    return randomBytes(3).toString('hex').toUpperCase();
+  }
+
+  async recordViolation(sessionId: string) {
+    // Increment violationCount on ExamSession
+    const session = await this.prisma.examSession.update({
+      where: { id: sessionId },
+      data: { violationCount: { increment: 1 } },
+      include: { exam: true },
+    });
+
+    if (!session) {
+      throw new NotFoundException('Session not found');
+    }
+
+    const maxViolations = session.exam.maxViolations;
+    const didLock =
+      maxViolations > 0 &&
+      session.violationCount >= maxViolations &&
+      session.status === SessionStatus.IN_PROGRESS;
+
+    if (!didLock) {
+      return { locked: false };
+    }
+
+    // Auto-lock
+    const lockState = await this.lockSession(sessionId);
+    return {
+      locked: true,
+      lockToken: lockState.lockToken,
+      lockTokenExpiresAt: lockState.lockTokenExpiresAt,
+    };
+  }
+
+  async lockSession(sessionId: string) {
+    // Load global lock token
+    let tokenState = await this.prisma.lockTokenState.findUnique({
+      where: { id: 'global' },
+    });
+
+    const now = new Date();
+    let token: string;
+    let expiresAt: Date;
+
+    if (tokenState && tokenState.token && tokenState.tokenExpiresAt && tokenState.tokenExpiresAt > now) {
+      // Reuse existing valid token
+      token = tokenState.token;
+      expiresAt = tokenState.tokenExpiresAt;
+    } else {
+      // Generate new token
+      token = this.generateTokenHex();
+      expiresAt = new Date(now.getTime() + this.TOKEN_EXPIRY_MINUTES * 60 * 1000);
+
+      tokenState = await this.prisma.lockTokenState.upsert({
+        where: { id: 'global' },
+        create: { id: 'global', token, tokenExpiresAt: expiresAt },
+        update: { token, tokenExpiresAt: expiresAt },
+      });
+    }
+
+    // Lock the session
+    await this.prisma.examSession.update({
+      where: { id: sessionId },
+      data: {
+        status: SessionStatus.LOCKED,
+        lockedCount: { increment: 1 },
+      },
+    });
+
+    return { lockToken: token, lockTokenExpiresAt: expiresAt };
+  }
+
+  async unlockWithToken(sessionId: string, token: string) {
+    const tokenState = await this.prisma.lockTokenState.findUnique({
+      where: { id: 'global' },
+    });
+
+    const session = await this.prisma.examSession.findUnique({
+      where: { id: sessionId },
+    });
+
+    if (!session) {
+      throw new NotFoundException('Session not found');
+    }
+
+    if (session.status !== SessionStatus.LOCKED) {
+      throw new BadRequestException('Sesi tidak dalam status terkunci');
+    }
+
+    if (!tokenState || !tokenState.token) {
+      throw new BadRequestException('Token tidak tersedia, minta token baru ke proktor');
+    }
+
+    if (tokenState.token !== token.toUpperCase()) {
+      throw new BadRequestException('Token salah');
+    }
+
+    if (!tokenState.tokenExpiresAt || tokenState.tokenExpiresAt < new Date()) {
+      throw new BadRequestException('Token kedaluwarsa, minta token baru ke proktor');
+    }
+
+    // Unlock: reset violation count, set IN_PROGRESS. Do NOT clear global token.
+    await this.prisma.examSession.update({
+      where: { id: sessionId },
+      data: {
+        status: SessionStatus.IN_PROGRESS,
+        violationCount: 0,
+      },
+    });
+
+    return { unlocked: true };
+  }
+
+  async generateLockToken() {
+    const now = new Date();
+    let tokenState = await this.prisma.lockTokenState.findUnique({
+      where: { id: 'global' },
+    });
+
+    if (tokenState && tokenState.token && tokenState.tokenExpiresAt && tokenState.tokenExpiresAt > now) {
+      // Token masih valid, return existing
+      return { lockToken: tokenState.token, lockTokenExpiresAt: tokenState.tokenExpiresAt };
+    }
+
+    // Generate new token
+    const token = this.generateTokenHex();
+    const expiresAt = new Date(now.getTime() + this.TOKEN_EXPIRY_MINUTES * 60 * 1000);
+
+    tokenState = await this.prisma.lockTokenState.upsert({
+      where: { id: 'global' },
+      create: { id: 'global', token, tokenExpiresAt: expiresAt },
+      update: { token, tokenExpiresAt: expiresAt },
+    });
+
+    return { lockToken: tokenState.token, lockTokenExpiresAt: tokenState.tokenExpiresAt };
+  }
+
+  async getLockInfo() {
+    const tokenState = await this.generateLockToken();
+
+    const lockedSessions = await this.prisma.examSession.findMany({
+      where: { status: SessionStatus.LOCKED },
+      select: { id: true, studentId: true, lockedCount: true, violationCount: true },
+    });
+
+    return {
+      lockToken: tokenState.lockToken ?? null,
+      lockTokenExpiresAt: tokenState.lockTokenExpiresAt ?? null,
+      lockedSessions,
+    };
   }
 
   isSebAllowed(

@@ -297,6 +297,7 @@ export function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onMobile
             </Link>
             <Button
               onClick={handleLogout}
+              data-testid="logout-button"
               variant="ghost"
               w="full"
               justifyContent={collapsed ? 'center' : 'start'}

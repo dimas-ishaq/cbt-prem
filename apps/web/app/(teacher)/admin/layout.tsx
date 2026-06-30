@@ -144,7 +144,13 @@ export default function AdminLayout({
     );
   }
 
-  if (!user || user.role === 'SISWA') return null;
+  if (!user || user.role === 'SISWA') {
+    return (
+      <Flex minH="100vh" align="center" justify="center" bg="bg.canvas">
+        <Spinner size="xl" color="brand.solid" />
+      </Flex>
+    );
+  }
 
   const handleSidebarToggle = () => {
     if (isDesktop) {

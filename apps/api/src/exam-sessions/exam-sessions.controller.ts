@@ -4,6 +4,7 @@ import { ExamSessionsService } from './exam-sessions.service';
 import { StartSessionDto } from './dto/start-session.dto';
 import { SubmitAnswerDto } from './dto/submit-answer.dto';
 import { GradeAnswerDto } from './dto/grade-answer.dto';
+import { UnlockSessionDto } from './dto/unlock-session.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -45,6 +46,30 @@ export class ExamSessionsController {
   @Roles(Role.SISWA)
   async finish(@Param('id') id: string) {
     return this.examSessionsService.finishSession(id);
+  }
+
+  @Post('unlock')
+  @Roles(Role.SISWA)
+  async unlock(@Body() dto: UnlockSessionDto) {
+    return this.examSessionsService.unlockWithToken(dto.sessionId, dto.token);
+  }
+
+  @Get(':id/lock-info')
+  @Roles(Role.GURU, Role.SUPER_ADMIN)
+  async getLockInfo(@Param('id') id: string) {
+    return this.examSessionsService.getLockInfo();
+  }
+
+  @Post(':id/refresh-lock-token')
+  @Roles(Role.GURU, Role.SUPER_ADMIN)
+  async refreshLockToken(@Param('id') id: string) {
+    return this.examSessionsService.generateLockToken();
+  }
+
+  @Post('exam/:examId/refresh-lock-token')
+  @Roles(Role.GURU, Role.SUPER_ADMIN)
+  async refreshGlobalLockToken(@Param('examId') examId: string) {
+    return this.examSessionsService.generateLockToken();
   }
 
   @Patch('answers/:answerId/grade')
