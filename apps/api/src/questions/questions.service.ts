@@ -3,13 +3,25 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateQuestionDto } from './dto/create-question.dto';
 import { UpdateQuestionDto } from './dto/update-question.dto';
 import { QuestionType } from '@prisma/client';
+import sanitizeHtmlLib from 'sanitize-html';
 
 function normalizeHtml(value?: string) {
   return (value || '').replace(/<p>(?:<br\s*\/?>|\s*)<\/p>/gi, '').trim();
 }
 
 function sanitizeHtml(value: string) {
-  return value.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/on\w+="[^"]*"/gi, '');
+  return sanitizeHtmlLib(value, {
+    allowedTags: sanitizeHtmlLib.defaults.allowedTags.concat(['img', 'figure', 'figcaption', 'u', 'span', 'sub', 'sup']),
+    allowedAttributes: {
+      ...sanitizeHtmlLib.defaults.allowedAttributes,
+      img: ['src', 'alt', 'width', 'height', 'class'],
+      a: ['href', 'target', 'rel', 'class'],
+      '*': ['class', 'style'],
+    },
+    allowedSchemes: ['http', 'https', 'mailto'],
+    allowedSchemesByTag: { img: ['http', 'https', 'data'] },
+    disallowedTagsMode: 'discard',
+  });
 }
 
 function isNonEmptyHtml(value?: string) {

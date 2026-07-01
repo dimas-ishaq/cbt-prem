@@ -1,5 +1,5 @@
 import { Controller, Post, Put, Body, UnauthorizedException, UseGuards, Get, Request, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
-import { ThrottlerGuard } from '@nestjs/throttler';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { AuditService } from '../audit/audit.service';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -21,6 +21,7 @@ export class AuthController {
 
   @Post('login')
   @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async login(@Body() body: any, @Request() req: any) {
     const ip = req.ip || req.connection?.remoteAddress;
     const userAgent = req.headers?.['user-agent'];

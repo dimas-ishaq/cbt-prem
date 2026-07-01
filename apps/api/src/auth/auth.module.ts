@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { ThrottlerModule } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { UsersModule } from '../users/users.module';
@@ -23,12 +22,6 @@ import { AuditModule } from '../audit/audit.module';
       }),
       inject: [ConfigService],
     }),
-    ThrottlerModule.forRoot([
-      {
-        ttl: Number(process.env.THROTTLE_TTL ?? 60000),
-        limit: Number(process.env.THROTTLE_LIMIT ?? 5),
-      },
-    ]),
   ],
   providers: [AuthService, JwtStrategy],
   controllers: [AuthController],

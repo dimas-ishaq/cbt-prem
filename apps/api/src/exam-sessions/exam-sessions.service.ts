@@ -176,6 +176,34 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
       });
     }
 
+    // Enforce maxAttempts limit
+    if (exam.maxAttempts !== undefined && exam.maxAttempts > 0) {
+      const completedSessions = await this.prisma.examSession.count({
+        where: {
+          examId: dto.examId,
+          studentId: student.id,
+          status: { in: [SessionStatus.SUBMITTED, SessionStatus.FINISHED] },
+        },
+      });
+
+      if (completedSessions >= exam.maxAttempts) {
+        throw new BadRequestException(`You have reached the maximum attempts (${exam.maxAttempts}) for this exam`);
+      }
+    }
+
+    const attendance = await this.prisma.examAttendance.findUnique({
+      where: {
+        examId_studentId: {
+          examId: dto.examId,
+          studentId: student.id,
+        },
+      },
+    });
+
+    if (!attendance) {
+      throw new ForbiddenException('Student must check in before starting exam');
+    }
+
     // Create new session
     // endTime for the session = start time + exam duration (minutes)
     // This ensures each student gets the full duration from when THEY started,
@@ -256,10 +284,21 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
             questionId: dto.questionId,
           },
         },
+        include: { question: { include: { options: true } } },
       });
 
       if (!examQuestion) {
         throw new BadRequestException('Question does not belong to this exam');
+      }
+
+      // Validate selectedOptionId belongs to question
+      if (dto.selectedOptionId) {
+        const optionExists = examQuestion.question.options.some(
+          (opt) => opt.id === dto.selectedOptionId,
+        );
+        if (!optionExists) {
+          throw new BadRequestException('Selected option does not belong to this question');
+        }
       }
 
       // Save or update answer

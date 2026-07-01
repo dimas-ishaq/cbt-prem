@@ -3,7 +3,11 @@ import { Injectable } from '@nestjs/common';
 import * as crypto from 'crypto';
 
 const ALGORITHM = 'aes-256-cbc';
-const ENCRYPTION_KEY = (process.env.ENCRYPTION_KEY || 'cbt-enterprise-secret-key-32bytes!').substring(0, 32).padEnd(32, '0'); // Ensures exactly 32 bytes
+const rawEncryptionKey = process.env.ENCRYPTION_KEY;
+if (!rawEncryptionKey) {
+  throw new Error('ENCRYPTION_KEY is required');
+}
+const ENCRYPTION_KEY = rawEncryptionKey.substring(0, 32).padEnd(32, '0'); // Ensures exactly 32 bytes
 const IV_LENGTH = 16;
 
 export function encrypt(text: string): string {

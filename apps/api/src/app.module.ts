@@ -1,6 +1,10 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { MulterModule } from '@nestjs/platform-express';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
+import { join } from 'path';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
@@ -27,8 +31,6 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { AuditModule } from './audit/audit.module';
 import { ExamAttendanceModule } from './exam-attendance/exam-attendance.module';
-import { ScheduleModule } from '@nestjs/schedule';
-import { join } from 'path';
 
 @Module({
   imports: [
@@ -37,6 +39,12 @@ import { join } from 'path';
       envFilePath: [join(process.cwd(), 'apps/api/.env'), join(process.cwd(), '.env')],
     }),
     ScheduleModule.forRoot(),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 60,
+      },
+    ]),
     MulterModule.registerAsync({
       useFactory: () => ({
         dest: 'uploads/tmp',
@@ -73,6 +81,9 @@ import { join } from 'path';
     ExamAttendanceModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+  ],
 })
 export class AppModule {}

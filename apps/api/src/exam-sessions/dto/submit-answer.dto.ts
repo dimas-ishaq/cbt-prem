@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsUUID } from 'class-validator';
+import { IsString, IsOptional, IsUUID, MaxLength } from 'class-validator';
 
 export class SubmitAnswerDto {
   @IsUUID()
@@ -10,6 +10,7 @@ export class SubmitAnswerDto {
 
   @IsString()
   @IsOptional()
+  @MaxLength(10000)
   essayAnswer?: string;
 
   @IsString()

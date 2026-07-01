@@ -4,7 +4,9 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { json, urlencoded } from 'express';
+import helmet from 'helmet';
 
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { WinstonLogger } from './common/logger/logger.service';
 
 async function bootstrap() {
@@ -15,14 +17,16 @@ async function bootstrap() {
   const logger = app.get(WinstonLogger);
   app.useLogger(logger);
   
+  app.use(helmet());
   app.use(json({ limit: '10mb' }));
   app.use(urlencoded({ limit: '10mb', extended: true }));
-  
+
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,
     transform: true,
   }));
-  
+  app.useGlobalFilters(new HttpExceptionFilter());
+
   const corsOrigins = (process.env.CORS_ORIGIN ?? process.env.CORS_ORIGINS ?? '')
     .split(',')
     .map((origin) => origin.trim().replace(/^["']|["']$/g, ''))

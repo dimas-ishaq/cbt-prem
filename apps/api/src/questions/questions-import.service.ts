@@ -5,6 +5,7 @@ import { QuestionType, Difficulty } from '@prisma/client';
 import { join } from 'path';
 import { promises as fs } from 'fs';
 import { randomUUID } from 'crypto';
+import sanitizeHtmlLib from 'sanitize-html';
 
 function isNonEmptyHtml(value?: string) {
   return (value || '').replace(/<[^>]*>/g, '').trim() !== '';
@@ -27,7 +28,18 @@ function assertQuestionValid(type: QuestionType, content: string, options: { con
 }
 
 function sanitizeHtml(value: string) {
-  return value.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/on\w+="[^"]*"/gi, '');
+  return sanitizeHtmlLib(value, {
+    allowedTags: sanitizeHtmlLib.defaults.allowedTags.concat(['img', 'figure', 'figcaption', 'u', 'span', 'sub', 'sup']),
+    allowedAttributes: {
+      ...sanitizeHtmlLib.defaults.allowedAttributes,
+      img: ['src', 'alt', 'width', 'height', 'class'],
+      a: ['href', 'target', 'rel', 'class'],
+      '*': ['class', 'style'],
+    },
+    allowedSchemes: ['http', 'https', 'mailto'],
+    allowedSchemesByTag: { img: ['http', 'https', 'data'] },
+    disallowedTagsMode: 'discard',
+  });
 }
 
 interface ParsedOption {

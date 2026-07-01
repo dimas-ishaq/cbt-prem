@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateExamDto } from './dto/create-exam.dto';
 
@@ -6,6 +6,23 @@ import { CreateExamDto } from './dto/create-exam.dto';
 
 export class ExamsService {
   constructor(private prisma: PrismaService) {}
+
+  private async assertExamOwnedByTeacher(examId: string, teacherId: string) {
+    const exam = await this.prisma.exam.findUnique({
+      where: { id: examId },
+      select: { id: true, teacherId: true },
+    });
+
+    if (!exam) {
+      throw new NotFoundException('Exam not found');
+    }
+
+    if (exam.teacherId !== teacherId) {
+      throw new ForbiddenException('You do not own this exam');
+    }
+
+    return exam;
+  }
 
   async create(dto: CreateExamDto, teacherId: string) {
     const { questionIds, rombelIds, majorIds, ...examData } = dto;
@@ -212,9 +229,21 @@ export class ExamsService {
     return exam;
   }
 
-  async update(id: string, data: any) {
+  async update(id: string, data: any, teacherId?: string) {
+    if (teacherId) {
+      await this.assertExamOwnedByTeacher(id, teacherId);
+    }
+
     const { questionIds, rombelIds, majorIds, startDate, startTimeField, endDate, endTimeField, ...examData } = data;
-    const updateData: any = { ...examData, ...(typeof data.requireSeb === 'boolean' && { requireSeb: data.requireSeb }), ...(typeof data.blockKeyCopyPaste === 'boolean' && { blockKeyCopyPaste: data.blockKeyCopyPaste }), ...(typeof data.forceFullscreen === 'boolean' && { forceFullscreen: data.forceFullscreen }), ...(typeof data.randomizeSoal === 'boolean' && { randomizeSoal: data.randomizeSoal }), ...(typeof data.randomizeOpsi === 'boolean' && { randomizeOpsi: data.randomizeOpsi }), ...(typeof data.showScore === 'boolean' && { showScore: data.showScore }) };
+    const updateData: any = {
+      ...examData,
+      ...(typeof data.requireSeb === 'boolean' && { requireSeb: data.requireSeb }),
+      ...(typeof data.blockKeyCopyPaste === 'boolean' && { blockKeyCopyPaste: data.blockKeyCopyPaste }),
+      ...(typeof data.forceFullscreen === 'boolean' && { forceFullscreen: data.forceFullscreen }),
+      ...(typeof data.randomizeSoal === 'boolean' && { randomizeSoal: data.randomizeSoal }),
+      ...(typeof data.randomizeOpsi === 'boolean' && { randomizeOpsi: data.randomizeOpsi }),
+      ...(typeof data.showScore === 'boolean' && { showScore: data.showScore }),
+    };
 
     // Konversi empty string ke null untuk relasi opsional
     if (!updateData.examGroupId) delete updateData.examGroupId;
@@ -227,63 +256,135 @@ export class ExamsService {
 
     if (data.startTime) updateData.startTime = new Date(data.startTime);
     if (data.endTime) updateData.endTime = new Date(data.endTime);
-
-    if (questionIds && questionIds.length > 0) {
-      // Hapus soal lama lalu buat ulang
-      await this.prisma.examQuestion.deleteMany({
-        where: { examId: id },
-      });
-      updateData.examQuestions = {
-        create: questionIds.map((qId: string, index: number) => ({
-          questionId: qId,
-          order: index,
-        })),
-      };
-    }
-
-    if (Array.isArray(rombelIds)) {
-      await this.prisma.examTargetRombel.deleteMany({
-        where: { examId: id },
-      });
-      if (rombelIds.length > 0) {
-        updateData.targetRombels = {
-          create: rombelIds.map((rombelId: string) => ({
-            rombelId,
-          })),
-        };
-      }
-    }
-
-    if (Array.isArray(majorIds)) {
-      await this.prisma.examTargetMajor.deleteMany({
-        where: { examId: id },
-      });
-      if (majorIds.length > 0) {
-        updateData.targetMajors = {
-          create: majorIds.map((majorId: string) => ({
-            majorId,
-          })),
-        };
-      }
-    }
-
     updateData.status = updateData.status ?? 'DRAFT';
-    return this.prisma.exam.update({
-      where: { id },
-      data: updateData,
-      include: {
-        subject: true,
-        examGroup: true,
-        examQuestions: {
-          include: { question: { include: { options: true } } },
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.exam.update({
+        where: { id },
+        data: updateData,
+      });
+
+      if (Array.isArray(questionIds)) {
+        const currentQuestions = await tx.examQuestion.findMany({
+          where: { examId: id },
+          select: { questionId: true, order: true },
+        });
+        const currentQuestionIds = new Set(currentQuestions.map((item) => item.questionId));
+        const nextQuestionIds = new Set(questionIds);
+        const removedQuestionIds = currentQuestions
+          .map((item) => item.questionId)
+          .filter((questionId) => !nextQuestionIds.has(questionId));
+
+        if (removedQuestionIds.length > 0) {
+          await tx.examQuestion.deleteMany({
+            where: {
+              examId: id,
+              questionId: { in: removedQuestionIds },
+            },
+          });
+        }
+
+        for (const [order, questionId] of questionIds.entries()) {
+          if (currentQuestionIds.has(questionId)) {
+            await tx.examQuestion.update({
+              where: {
+                examId_questionId: {
+                  examId: id,
+                  questionId,
+                },
+              },
+              data: { order },
+            });
+          } else {
+            await tx.examQuestion.create({
+              data: {
+                examId: id,
+                questionId,
+                order,
+              },
+            });
+          }
+        }
+      }
+
+      if (Array.isArray(rombelIds)) {
+        const currentRombels = await tx.examTargetRombel.findMany({
+          where: { examId: id },
+          select: { rombelId: true },
+        });
+        const currentRombelIds = new Set(currentRombels.map((item) => item.rombelId));
+        const nextRombelIds = new Set(rombelIds);
+        const removedRombelIds = currentRombels
+          .map((item) => item.rombelId)
+          .filter((rombelId) => !nextRombelIds.has(rombelId));
+
+        if (removedRombelIds.length > 0) {
+          await tx.examTargetRombel.deleteMany({
+            where: {
+              examId: id,
+              rombelId: { in: removedRombelIds },
+            },
+          });
+        }
+
+        for (const rombelId of rombelIds) {
+          if (!currentRombelIds.has(rombelId)) {
+            await tx.examTargetRombel.create({
+              data: { examId: id, rombelId },
+            });
+          }
+        }
+      }
+
+      if (Array.isArray(majorIds)) {
+        const currentMajors = await tx.examTargetMajor.findMany({
+          where: { examId: id },
+          select: { majorId: true },
+        });
+        const currentMajorIds = new Set(currentMajors.map((item) => item.majorId));
+        const nextMajorIds = new Set(majorIds);
+        const removedMajorIds = currentMajors
+          .map((item) => item.majorId)
+          .filter((majorId) => !nextMajorIds.has(majorId));
+
+        if (removedMajorIds.length > 0) {
+          await tx.examTargetMajor.deleteMany({
+            where: {
+              examId: id,
+              majorId: { in: removedMajorIds },
+            },
+          });
+        }
+
+        for (const majorId of majorIds) {
+          if (!currentMajorIds.has(majorId)) {
+            await tx.examTargetMajor.create({
+              data: { examId: id, majorId },
+            });
+          }
+        }
+      }
+
+      return tx.exam.findUnique({
+        where: { id },
+        include: {
+          subject: true,
+          examGroup: true,
+          examQuestions: {
+            include: { question: { include: { options: true } } },
+          },
+          targetRombels: true,
+          targetMajors: true,
         },
-        targetRombels: true,
-        targetMajors: true,
-      },
+      });
     });
   }
 
-  async remove(id: string) {
+  async remove(id: string, teacherId?: string) {
+    if (teacherId) {
+      await this.assertExamOwnedByTeacher(id, teacherId);
+    }
+
     return this.prisma.$transaction(async (tx) => {
       await tx.answer.deleteMany({
         where: {
