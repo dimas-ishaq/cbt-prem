@@ -3,7 +3,6 @@
 import React from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Box, Flex, Text, Separator } from '@chakra-ui/react';
-
 import { GraduationCap } from 'lucide-react';
 
 export interface StudentCardData {
@@ -12,7 +11,6 @@ export interface StudentCardData {
   user: {
     fullName: string;
     username: string;
-    plainPassword?: string | null;
   };
   rombel?: {
     name: string;
@@ -37,8 +35,12 @@ export const ExamCardTemplate: React.FC<ExamCardTemplateProps> = ({
   headmasterNip,
   cardDate,
 }) => {
-  // Verification URL or generic info for QR Code
-  const qrValue = `${window.location.origin}/login?username=${student.user.username}`;
+  // ponytail: QR payload simple JSON; add signed token later if spoof appears.
+  const qrValue = JSON.stringify({
+    studentId: student.id,
+    nis: student.nis,
+    rombelName: student.rombel?.name ?? null,
+  });
 
   return (
     <Box
@@ -57,9 +59,7 @@ export const ExamCardTemplate: React.FC<ExamCardTemplateProps> = ({
       pageBreakInside="avoid"
       style={{ breakInside: 'avoid' }}
     >
-      {/* Header */}
       <Flex align="center" gap={3} mb={2} justifyContent="center" alignItems="center">
-        {/* Placeholder Logo Sekolah */}
         <Flex
           w={10}
           h={10}
@@ -85,9 +85,7 @@ export const ExamCardTemplate: React.FC<ExamCardTemplateProps> = ({
 
       <Separator borderColor="border.strong" mb={3} />
 
-      {/* Main Content Info */}
       <Flex gap={2} mb={3}>
-        {/* Profile Info */}
         <Box flex={1}>
           <Flex direction="column" gap={1.5}>
             <Flex>
@@ -120,7 +118,6 @@ export const ExamCardTemplate: React.FC<ExamCardTemplateProps> = ({
             </Flex>
           </Flex>
 
-          {/* Credentials Block */}
           <Box
             mt={3}
             p={2}
@@ -129,18 +126,12 @@ export const ExamCardTemplate: React.FC<ExamCardTemplateProps> = ({
             borderColor="border.strong"
             borderRadius="md"
           >
-            <Flex justify="space-between" mb={1}>
-              <Text fontSize="9px" fontWeight="bold" color="text.secondary">USERNAME:</Text>
-              <Text fontSize="9.5px" fontWeight="bold" fontFamily="mono">{student.user.username}</Text>
-            </Flex>
-            <Flex justify="space-between">
-              <Text fontSize="9px" fontWeight="bold" color="text.secondary">PASSWORD:</Text>
-              <Text fontSize="9.5px" fontWeight="bold" fontFamily="mono">{student.user.plainPassword || '******'}</Text>
-            </Flex>
+            <Text fontSize="9px" color="text.secondary" lineHeight="1.4">
+              QR dipakai untuk check-in hadir ujian oleh guru/pengawas.
+            </Text>
           </Box>
         </Box>
 
-        {/* QR Code Block */}
         <Flex
           direction="column"
           align="center"
@@ -158,15 +149,14 @@ export const ExamCardTemplate: React.FC<ExamCardTemplateProps> = ({
         </Flex>
       </Flex>
 
-      {/* Signature Section */}
       <Flex justify="space-between" align="flex-end" mt={2} pt={1}>
         <Box fontSize="7.5px" color="text.muted">
-          * Simpan kartu ini untuk login ujian.
+          * Simpan kartu ini untuk check-in hadir.
         </Box>
         <Box textAlign="center" w="110px" minH="50px">
           <Text fontSize="8px" mb={1}>{cardDate || 'Mengetahui,'}</Text>
           <Text fontSize="8px" fontWeight="bold">Kepala Sekolah</Text>
-          <Box h="16px" /> {/* Signature space */}
+          <Box h="16px" />
           <Text fontSize="8px" fontWeight="bold" textDecoration="underline" lineHeight="1.25" pb="8px">
             {headmasterName || '--------------------'}
           </Text>

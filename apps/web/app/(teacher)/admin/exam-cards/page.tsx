@@ -470,7 +470,7 @@ export default function ExamCardsPage() {
           )}
 
           {/* Hidden PDF Render Target (Specifically formatted for html2pdf.js A4 layout) */}
-          <Box style={{ display: 'none' }}>
+          <Box position="fixed" left="-10000px" top="0" visibility="hidden" pointerEvents="none" aria-hidden="true">
             <Box id="printable-exam-cards-container" style={{ width: '100%', color: 'black', background: 'white' }}>
               {studentPages.map((pageChunk, pageIndex) => (
                 <Box
