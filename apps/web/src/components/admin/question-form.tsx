@@ -84,7 +84,6 @@ export function QuestionForm({ onSubmit, onCancel, isSubmitting, initialData }: 
     setUploading(true);
     try {
       const compressed = await compressImage(file, { maxWidth: 1280, maxHeight: 720, quality: 0.8, maxSizeMB: 2 });
-      await createThumbnail(compressed, 200);
       const formData = new FormData();
       formData.append('file', compressed);
       const api = (await import('@/lib/api')).default;
@@ -127,11 +126,34 @@ export function QuestionForm({ onSubmit, onCancel, isSubmitting, initialData }: 
     setType(newType);
     if (newType === 'BENAR_SALAH') setOptions([{ content: 'Benar', isCorrect: true }, { content: 'Salah', isCorrect: false }]);
     else if (newType === 'ESSAY') setOptions([]);
-    else if (options.length === 0 || (options.length === 2 && options[0]?.content === 'Benar')) setOptions([{ content: '', isCorrect: true }, { content: '', isCorrect: false }]);
+    else if (options.length < 2 || options.every((opt) => opt.content === 'Benar' || opt.content === 'Salah')) setOptions([{ content: '', isCorrect: true }, { content: '', isCorrect: false }]);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const plainContent = content.replace(/<[^>]*>/g, '').trim();
+    if (!plainContent) {
+      toast.error('Soal tidak boleh kosong');
+      return;
+    }
+    if (type === 'ESSAY' && options.length > 0) {
+      toast.error('Soal essay tidak boleh punya opsi jawaban');
+      return;
+    }
+    if (type !== 'ESSAY' && options.length < 2) {
+      toast.error('Minimal 2 opsi jawaban');
+      return;
+    }
+    if (type === 'PILIHAN_GANDA' || type === 'BENAR_SALAH') {
+      if (options.filter((opt) => opt.isCorrect).length !== 1) {
+        toast.error('Harus ada tepat 1 jawaban benar');
+        return;
+      }
+    }
+    if (type === 'MULTIPLE_RESPONSE' && options.filter((opt) => opt.isCorrect).length < 1) {
+      toast.error('Minimal 1 jawaban benar');
+      return;
+    }
     onSubmit({ content, type, difficulty, points, mediaUrl: mediaUrl || undefined, mediaType: mediaUrl ? mediaType : undefined, options: type === 'ESSAY' ? [] : options });
   };
 
@@ -203,7 +225,7 @@ export function QuestionForm({ onSubmit, onCancel, isSubmitting, initialData }: 
             </Box>
             <Box>
               <Text fontSize="sm" fontWeight="medium" color="text.secondary" mb={1}>{t('pointsLabel')}</Text>
-              <Input type="number" value={points} onChange={(e) => setPoints(parseInt(e.target.value) || 0)} min={1} borderRadius="md" borderColor="input.border" bg="input.bg" _focus={{ borderColor: 'input.focus.border' }} />
+              <Input type="number" value={points} onChange={(e) => setPoints(Math.max(1, parseInt(e.target.value) || 1))} min={1} borderRadius="md" borderColor="input.border" bg="input.bg" _focus={{ borderColor: 'input.focus.border' }} />
             </Box>
           </SimpleGrid>
         </Stack>

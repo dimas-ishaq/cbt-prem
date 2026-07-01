@@ -1,10 +1,34 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as mammoth from 'mammoth';
 import { QuestionType, Difficulty } from '@prisma/client';
 import { join } from 'path';
 import { promises as fs } from 'fs';
 import { randomUUID } from 'crypto';
+
+function isNonEmptyHtml(value?: string) {
+  return (value || '').replace(/<[^>]*>/g, '').trim() !== '';
+}
+
+function assertQuestionValid(type: QuestionType, content: string, options: { content: string; isCorrect: boolean }[]) {
+  if (!isNonEmptyHtml(content)) throw new Error('Question content cannot be empty');
+  if (type === QuestionType.ESSAY) {
+    if (options.length > 0) throw new Error('Essay question cannot have options');
+    return;
+  }
+  if (options.length < 2) throw new Error('Question must have at least 2 options');
+  const correctCount = options.filter((o) => o.isCorrect).length;
+  if (type === QuestionType.PILIHAN_GANDA || type === QuestionType.BENAR_SALAH) {
+    if (correctCount !== 1) throw new Error('Question must have exactly 1 correct answer');
+  }
+  if (type === QuestionType.MULTIPLE_RESPONSE) {
+    if (correctCount < 1) throw new Error('Question must have at least 1 correct answer');
+  }
+}
+
+function sanitizeHtml(value: string) {
+  return value.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/on\w+="[^"]*"/gi, '');
+}
 
 interface ParsedOption {
   content: string;
@@ -47,13 +71,25 @@ export class QuestionsImportService {
   // ─── Public API ────────────────────────────────────────────────────────────
 
   /** Parse only — no DB write. Returns preview of what will be imported. */
-  async previewFromDocx(file: Express.Multer.File): Promise<ImportPreviewResult> {
+  async previewFromDocx(bankId: string, userId: string, file: Express.Multer.File): Promise<ImportPreviewResult> {
+    if (!bankId) throw new BadRequestException('Bank ID is required');
+    const teacher = await this.prisma.teacher.findUnique({ where: { userId } });
+    if (!teacher) throw new ForbiddenException('Only teachers or administrators can manage questions');
+    const bank = await this.prisma.questionBank.findUnique({ where: { id: bankId } });
+    if (!bank) throw new NotFoundException('Question bank not found');
+    if (bank.teacherId !== teacher.id) throw new ForbiddenException('You do not own this question bank');
     const html = await this.convertDocxToHtml(file.buffer);
     return this.parseQuestions(html);
   }
 
   /** Full import: parse then save to DB inside a transaction. */
-  async importFromDocx(bankId: string, file: Express.Multer.File) {
+  async importFromDocx(bankId: string, userId: string, file: Express.Multer.File) {
+    // Verify bank exists and user owns it
+    const teacher = await this.prisma.teacher.findUnique({ where: { userId } });
+    if (!teacher) throw new ForbiddenException('Only teachers or administrators can manage questions');
+    const bank = await this.prisma.questionBank.findUnique({ where: { id: bankId } });
+    if (!bank) throw new NotFoundException('Question bank not found');
+    if (bank.teacherId !== teacher.id) throw new ForbiddenException('You do not own this question bank');
     const html = await this.convertDocxToHtml(file.buffer);
     const { success: questions, warnings } = this.parseQuestions(html);
 
@@ -68,10 +104,11 @@ export class QuestionsImportService {
     const created = await this.prisma.$transaction(async (tx) => {
       const results: any[] = [];
       for (const q of questions) {
+        assertQuestionValid(q.type, q.content, q.options);
         const created = await tx.question.create({
           data: {
             questionBankId: bankId,
-            content: q.content,
+            content: sanitizeHtml(q.content),
             type: q.type,
             difficulty: q.difficulty,
             points: q.points,
@@ -80,7 +117,7 @@ export class QuestionsImportService {
               q.options.length > 0
                 ? {
                     create: q.options.map((o) => ({
-                      content: o.content,
+                      content: sanitizeHtml(o.content),
                       isCorrect: o.isCorrect,
                       order: o.order,
                     })),

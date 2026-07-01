@@ -222,7 +222,7 @@ export default function QuestionBankDetailPage({ params }: { params: Promise<{ i
   });
 
   const deleteBankMutation = useMutation({
-    mutationFn: async () => api.delete(`/questions/bank/${id}`),
+    mutationFn: async () => api.delete(`/question-banks/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['question-banks'] });
       toast.success('Bank soal berhasil dihapus');

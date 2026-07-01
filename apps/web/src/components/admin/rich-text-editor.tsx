@@ -179,13 +179,24 @@ export function RichTextEditor({ value, onChange, placeholder, className, compac
     if (!editor) return;
     const previousUrl = editor.getAttributes('link').href;
     const url = window.prompt('Masukkan URL:', previousUrl);
-    
+
     if (url === null) {
       return;
     }
 
     if (url === '') {
       editor.chain().focus().extendMarkRange('link').unsetLink().run();
+      return;
+    }
+
+    try {
+      const parsed = new URL(url);
+      if (!['http:', 'https:', 'mailto:'].includes(parsed.protocol)) {
+        toast.error('Hanya URL http, https, atau mailto yang diizinkan');
+        return;
+      }
+    } catch {
+      toast.error('Format URL tidak valid');
       return;
     }
 

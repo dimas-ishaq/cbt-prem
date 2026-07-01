@@ -30,6 +30,8 @@ import { promises as fs } from 'fs';
 import { randomUUID } from 'crypto';
 import type { Request } from 'express';
 
+type RequestWithUser = Request & { user: { userId: string } };
+
 function sanitizeFilename(name: string): string {
   return name.replace(/[^a-zA-Z0-9_.-]/g, '_').replace(/\.{2,}/g, '');
 }
@@ -55,8 +57,8 @@ export class QuestionsController {
 
   @Post()
   @Roles(Role.GURU, Role.SUPER_ADMIN)
-  create(@Body() dto: CreateQuestionDto) {
-    return this.questionsService.create(dto);
+  create(@Body() dto: CreateQuestionDto, @Req() req: RequestWithUser) {
+    return this.questionsService.create(dto, req.user.userId);
   }
 
   @Get('media')
@@ -77,8 +79,8 @@ export class QuestionsController {
 
   @Post('upload')
   @Roles(Role.GURU, Role.SUPER_ADMIN)
-  @UseInterceptors(FileInterceptor('file'))
-  async uploadMedia(@UploadedFile() file: Express.Multer.File, @Req() req: Request) {
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 5 * 1024 * 1024 } }))
+  async uploadMedia(@UploadedFile() file: Express.Multer.File, @Req() req: RequestWithUser) {
     if (!file) {
       throw new BadRequestException('No file uploaded');
     }
@@ -116,7 +118,7 @@ export class QuestionsController {
 
   @Post('preview-pdf')
   @Roles(Role.GURU, Role.SUPER_ADMIN)
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 20 * 1024 * 1024 } }))
   async uploadPreviewPdf(@UploadedFile() file: Express.Multer.File) {
     if (!file) {
       throw new BadRequestException('No file uploaded');
@@ -144,45 +146,53 @@ export class QuestionsController {
 
   @Post('import/:bankId/preview')
   @Roles(Role.GURU, Role.SUPER_ADMIN)
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 20 * 1024 * 1024 } }))
   async previewImport(
     @Param('bankId') bankId: string,
     @UploadedFile() file: Express.Multer.File,
+    @Req() req: RequestWithUser,
   ) {
     if (!file) {
       throw new BadRequestException('No file uploaded');
     }
-    return this.importService.previewFromDocx(file);
+    if (file.mimetype !== 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+      throw new BadRequestException('Only DOCX files are allowed');
+    }
+    return this.importService.previewFromDocx(bankId, req.user.userId, file);
   }
 
   @Post('import/:bankId')
   @Roles(Role.GURU, Role.SUPER_ADMIN)
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 20 * 1024 * 1024 } }))
   async doImport(
     @Param('bankId') bankId: string,
     @UploadedFile() file: Express.Multer.File,
+    @Req() req: RequestWithUser,
   ) {
     if (!file) {
       throw new BadRequestException('No file uploaded');
     }
-    return this.importService.importFromDocx(bankId, file);
+    if (file.mimetype !== 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+      throw new BadRequestException('Only DOCX files are allowed');
+    }
+    return this.importService.importFromDocx(bankId, req.user.userId, file);
   }
 
   @Patch(':id')
   @Roles(Role.GURU, Role.SUPER_ADMIN)
-  update(@Param('id') id: string, @Body() dto: UpdateQuestionDto) {
-    return this.questionsService.update(id, dto);
+  update(@Param('id') id: string, @Body() dto: UpdateQuestionDto, @Req() req: RequestWithUser) {
+    return this.questionsService.update(id, dto, req.user.userId);
   }
 
   @Delete(':id')
   @Roles(Role.GURU, Role.SUPER_ADMIN)
-  remove(@Param('id') id: string) {
-    return this.questionsService.remove(id);
+  remove(@Param('id') id: string, @Req() req: RequestWithUser) {
+    return this.questionsService.remove(id, req.user.userId);
   }
 
   @Delete('bank/:id')
   @Roles(Role.GURU, Role.SUPER_ADMIN)
-  async deleteBank(@Param('id') id: string) {
-    return this.questionsService.removeBank(id);
+  async deleteBank(@Param('id') id: string, @Req() req: RequestWithUser) {
+    return this.questionsService.removeBank(id, req.user.userId);
   }
 }
