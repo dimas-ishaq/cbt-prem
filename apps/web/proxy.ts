@@ -34,7 +34,7 @@ function roleAllowed(pathname: string, role?: string) {
   return true;
 }
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const token = req.cookies.get('auth_access_token')?.value;
   const payload = token ? decodeJwtPayload(token) : null;
