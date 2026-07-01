@@ -25,8 +25,8 @@ import { AuditModule } from '../audit/audit.module';
     }),
     ThrottlerModule.forRoot([
       {
-        ttl: 60000,
-        limit: 5,
+        ttl: Number(process.env.THROTTLE_TTL ?? 60000),
+        limit: Number(process.env.THROTTLE_LIMIT ?? 5),
       },
     ]),
   ],

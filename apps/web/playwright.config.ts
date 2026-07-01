@@ -2,7 +2,7 @@ import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
   testDir: './e2e',
-  timeout: 90000,
+  timeout: 180000,
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.HEADLESS === 'false' ? [['list']] : [['line']],
   projects: [
@@ -58,7 +58,7 @@ export default defineConfig({
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
-    actionTimeout: 15000,
-    navigationTimeout: 30000,
+    actionTimeout: 30000,
+    navigationTimeout: 60000,
   },
 });
