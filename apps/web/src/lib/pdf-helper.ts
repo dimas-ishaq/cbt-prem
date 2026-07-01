@@ -13,12 +13,16 @@ export async function generatePdfFromHtml(element: HTMLElement, options: PdfOpti
   const filename = options.filename || 'document.pdf';
   const scale = options.scale || 2;
 
+  await document.fonts?.ready;
+  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+
   // Render element to canvas using html2canvas-pro
   const canvas = await html2canvas(element, {
     scale,
     useCORS: true,
     backgroundColor: '#ffffff',
     logging: false,
+    imageTimeout: 10000,
   });
 
   // Page dimensions configuration (A4 format)

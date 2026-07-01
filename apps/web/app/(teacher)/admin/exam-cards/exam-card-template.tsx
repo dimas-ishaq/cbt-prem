@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { QRCodeSVG } from 'qrcode.react';
 import { Box, Flex, Text, Separator } from '@chakra-ui/react';
 import { GraduationCap } from 'lucide-react';
@@ -26,6 +27,7 @@ interface ExamCardTemplateProps {
   headmasterName: string;
   headmasterNip: string;
   cardDate: string;
+  schoolLogoUrl?: string;
 }
 
 export const ExamCardTemplate: React.FC<ExamCardTemplateProps> = ({
@@ -34,8 +36,9 @@ export const ExamCardTemplate: React.FC<ExamCardTemplateProps> = ({
   headmasterName,
   headmasterNip,
   cardDate,
+  schoolLogoUrl,
 }) => {
-  // ponytail: QR payload simple JSON; add signed token later if spoof appears.
+  // ponytail: must match parsePayload in exam-attendance.service.ts. Add signed token later if spoof appears.
   const qrValue = JSON.stringify({
     studentId: student.id,
     nis: student.nis,
@@ -63,15 +66,20 @@ export const ExamCardTemplate: React.FC<ExamCardTemplateProps> = ({
         <Flex
           w={10}
           h={10}
-          bg="brand.subtle"
+          bg="white"
           border="1px solid"
           borderColor="border.brand"
           align="center"
           justify="center"
           borderRadius="md"
           color="brand.text"
+          overflow="hidden"
         >
-          <GraduationCap size={20} />
+          {schoolLogoUrl ? (
+            <Image src={schoolLogoUrl} alt="Logo sekolah" width={40} height={40} style={{ objectFit: 'contain' }} />
+          ) : (
+            <GraduationCap size={20} />
+          )}
         </Flex>
         <Box flex={1} textAlign="center" justifyContent="center">
           <Text fontWeight="extrabold" fontSize="18px" textTransform="uppercase" letterSpacing="wide" color="text.primary">

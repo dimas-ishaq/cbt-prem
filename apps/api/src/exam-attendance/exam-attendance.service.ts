@@ -8,7 +8,8 @@ export class ExamAttendanceService {
 
   private parsePayload(qrPayload: string) {
     try {
-      return JSON.parse(qrPayload) as { studentId?: string; rombelId?: string; nis?: string };
+      // ponytail: payload shape must match exam-card-template.tsx QR generation
+      return JSON.parse(qrPayload) as { studentId?: string; nis?: string; rombelName?: string };
     } catch {
       throw new BadRequestException('QR payload tidak valid');
     }

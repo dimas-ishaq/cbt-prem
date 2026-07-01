@@ -76,6 +76,12 @@ export default function ExamCardsPage() {
     },
   });
 
+  const { data: publicSettings } = useQuery<{ logoUrl?: string; appName?: string }>({
+    queryKey: ['settings/public'],
+    queryFn: async () => (await api.get('/settings/public')).data,
+    staleTime: 1000 * 60 * 5,
+  });
+
   const { data: rombels = [], isLoading: isLoadingRombels } = useQuery<any[]>({
     queryKey: ['rombels-list-exam-cards'],
     queryFn: async () => {
@@ -461,6 +467,7 @@ export default function ExamCardsPage() {
                         headmasterName={headmasterName}
                         headmasterNip={headmasterNip}
                         cardDate={cardDate}
+                        schoolLogoUrl={publicSettings?.logoUrl || '/images/logo.png'}
                       />
                     ))}
                   </Grid>
@@ -469,9 +476,9 @@ export default function ExamCardsPage() {
             </Stack>
           )}
 
-          {/* Hidden PDF Render Target (Specifically formatted for html2pdf.js A4 layout) */}
-          <Box position="fixed" left="-10000px" top="0" visibility="hidden" pointerEvents="none" aria-hidden="true">
-            <Box id="printable-exam-cards-container" style={{ width: '100%', color: 'black', background: 'white' }}>
+          {/* Hidden PDF Render Target — off-screen, NOT visibility:hidden or opacity:0, so html2canvas can render */}
+          <Box position="absolute" top="0" left="-9999px" width="210mm" style={{ color: 'black', background: 'white' }}>
+            <Box id="printable-exam-cards-container">
               {studentPages.map((pageChunk, pageIndex) => (
                 <Box
                   key={pageIndex}
@@ -496,6 +503,7 @@ export default function ExamCardsPage() {
                         headmasterName={headmasterName}
                         headmasterNip={headmasterNip}
                         cardDate={cardDate}
+                        schoolLogoUrl={publicSettings?.logoUrl || '/images/logo.png'}
                       />
                     ))}
                   </Grid>

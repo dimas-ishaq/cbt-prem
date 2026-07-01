@@ -241,7 +241,7 @@ export default function ExamAttendancePage() {
               <Input
                 value={qrPayload}
                 onChange={(e) => setQrPayload(e.target.value)}
-                placeholder='{"studentId":"...","rombelId":"...","nis":"..."}'
+                placeholder="Tempel hasil scan QR di sini, atau ketik kode siswa"
                 borderRadius="lg"
               />
               <HStack gap={2}>
