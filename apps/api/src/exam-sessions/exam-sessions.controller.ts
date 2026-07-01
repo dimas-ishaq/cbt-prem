@@ -1,4 +1,5 @@
 import { Controller, Post, Body, Param, Get, UseGuards, Request, Patch, Res, Delete, Headers, Query } from '@nestjs/common';
+import { PaginationDto } from '../common/dto/pagination.dto';
 import * as express from 'express';
 import { ExamSessionsService } from './exam-sessions.service';
 import { StartSessionDto } from './dto/start-session.dto';
@@ -89,8 +90,15 @@ export class ExamSessionsController {
 
   @Get('exam/:examId')
   @Roles(Role.GURU, Role.SUPER_ADMIN)
-  async getExamSessions(@Param('examId') examId: string) {
-    return this.examSessionsService.getExamSessions(examId);
+  async getExamSessions(
+    @Param('examId') examId: string,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+    @Query('search') search?: string,
+    @Query('status') status?: string,
+    @Query('rombelId') rombelId?: string,
+  ) {
+    return this.examSessionsService.getExamSessions(examId, page, limit, search, status, rombelId);
   }
 
   @Get('exam/:examId/essay-answers')

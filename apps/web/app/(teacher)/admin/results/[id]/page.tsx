@@ -27,7 +27,21 @@ export default function ExamResultsPage({ params }: { params: Promise<{ id: stri
   const [pageSize, setPageSize] = useState(10);
 
   const { data: exam } = useQuery<any>({ queryKey: ['exam', id], queryFn: async () => (await api.get(`/exams/${id}`)).data });
-  const { data: sessions, isLoading, refetch, isRefetching } = useQuery<ExamSession[]>({ queryKey: ['exam-sessions', id], queryFn: async () => { const r = await api.get(`/exam-sessions/exam/${id}`); return Array.isArray(r.data) ? r.data : r.data?.data || []; } });
+  const { data: sessions, isLoading, refetch, isRefetching } = useQuery<any>({
+    queryKey: ['exam-sessions', id, currentPage, pageSize, searchQuery, filterStatus, filterRombelId],
+    queryFn: async () => {
+      const response = await api.get(`/exam-sessions/exam/${id}`, {
+        params: {
+          page: currentPage,
+          limit: pageSize,
+          search: searchQuery || undefined,
+          status: filterStatus,
+          rombelId: filterRombelId,
+        },
+      });
+      return response.data;
+    },
+  });
   const bulkResetMutation = useMutation({ mutationFn: async (ids: string[]) => api.post('/exam-sessions/bulk-reset', { ids }), onSuccess: () => { qc.invalidateQueries({ queryKey: ['exam-sessions', id] }); setSelectedSessionIds([]); setIsBulkResetModalOpen(false); setResetConfirmationInput(''); toast.success('Pengerjaan ujian siswa yang dipilih berhasil direset'); }, onError: (err: any) => toast.error(err.response?.data?.message || 'Gagal mereset pengerjaan ujian') });
   const singleResetMutation = useMutation({ mutationFn: async (sessionId: string) => api.delete(`/exam-sessions/${sessionId}/reset`), onSuccess: () => { qc.invalidateQueries({ queryKey: ['exam-sessions', id] }); setIsSingleResetModalOpen(false); setTargetSingleResetSession(null); setSingleResetConfirmationInput(''); toast.success('Pengerjaan ujian siswa berhasil direset'); }, onError: (err: any) => toast.error(err.response?.data?.message || 'Gagal mereset pengerjaan ujian') });
 
@@ -37,14 +51,10 @@ export default function ExamResultsPage({ params }: { params: Promise<{ id: stri
   const statusCollection = useMemo(() => createListCollection({ items: [{ label: 'Semua Status', value: 'ALL' }, { label: 'Sedang Mengerjakan', value: 'IN_PROGRESS' }, { label: 'Terkunci', value: 'LOCKED' }, { label: 'Selesai', value: 'SUBMITTED' }] }), []);
 
   const filteredSessions = useMemo(() => {
-    let list = Array.isArray(sessions) ? sessions : [];
-    if (filterRombelId) list = list.filter((s) => s.student?.rombelId === filterRombelId);
-    if (filterStatus !== 'ALL') list = list.filter((s) => s.status === filterStatus);
-    const q = searchQuery.trim().toLowerCase();
-    if (q.length >= 3) list = list.filter((s) => s.student?.user?.fullName?.toLowerCase().includes(q) || s.student?.user?.username?.toLowerCase().includes(q));
-    return list;
-  }, [sessions, filterRombelId, filterStatus, searchQuery]);
-  const paginatedSessions = useMemo(() => filteredSessions.slice((currentPage - 1) * pageSize, (currentPage - 1) * pageSize + pageSize), [filteredSessions, currentPage, pageSize]);
+    const payload = sessions?.data ?? sessions ?? [];
+    return Array.isArray(payload) ? payload : [];
+  }, [sessions]);
+  const paginatedSessions = filteredSessions;
 
   const exportMutation = useMutation({ mutationFn: async () => { const response = await api.get(`/exam-sessions/exam/${id}/export`, { responseType: 'blob' }); const url = window.URL.createObjectURL(new Blob([response.data])); const link = document.createElement('a'); link.href = url; link.setAttribute('download', `results-${exam?.title || id}.xlsx`); document.body.appendChild(link); link.click(); link.remove(); } });
 
@@ -90,7 +100,13 @@ export default function ExamResultsPage({ params }: { params: Promise<{ id: stri
           <Table.Header bg="bg.subtle"><Table.Row><Table.ColumnHeader w="40px" px={4} py={4}><Checkbox.Root checked={filteredSessions.length > 0 && selectedSessionIds.length === filteredSessions.length} onCheckedChange={(d) => setSelectedSessionIds(d.checked === true ? filteredSessions.map((s) => s.id) : [])}><Checkbox.HiddenInput /><Checkbox.Control /></Checkbox.Root></Table.ColumnHeader><Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="text.secondary">Siswa</Table.ColumnHeader><Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="text.secondary">Rombel</Table.ColumnHeader><Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="text.secondary">Durasi Pengerjaan</Table.ColumnHeader><Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="text.secondary">Status</Table.ColumnHeader><Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="text.secondary">Nilai Akhir</Table.ColumnHeader><Table.ColumnHeader px={6} py={4} fontWeight="semibold" color="text.secondary" textAlign="right">Aksi</Table.ColumnHeader></Table.Row></Table.Header>
           <Table.Body color="text.primary">{paginatedSessions.map((session) => { const diff = session.endTime ? Math.round((new Date(session.endTime).getTime() - new Date(session.startTime).getTime()) / 60000) : '-'; return (<Table.Row key={session.id} _hover={{ bg: 'bg.elevated' }}><Table.Cell px={4} py={4}><Checkbox.Root checked={selectedSessionIds.includes(session.id)} onCheckedChange={(d) => setSelectedSessionIds((prev) => d.checked === true ? [...prev, session.id] : prev.filter((id) => id !== session.id))}><Checkbox.HiddenInput /><Checkbox.Control /></Checkbox.Root></Table.Cell><Table.Cell px={6} py={4}><HStack gap={3}><Flex w={8} h={8} borderRadius="full" bg="brand.subtle" align="center" justify="center" color="brand.text"><User size={16} /></Flex><Box><Text fontWeight="bold" color="text.primary" fontSize="sm">{session.student.user.fullName}</Text><Text fontSize="3xs" color="text.muted" fontWeight="medium">@{session.student.user.username}</Text></Box></HStack></Table.Cell><Table.Cell px={6} py={4} fontSize="sm"><Text fontWeight="semibold" color="text.secondary">{session.student.rombel?.name || '-'}</Text></Table.Cell><Table.Cell px={6} py={4} fontSize="sm"><HStack gap={1}><Clock size={14} /><Text fontWeight="medium">{diff} menit</Text></HStack></Table.Cell><Table.Cell px={6} py={4}><Badge bg={session.status === 'FINISHED' || session.status === 'SUBMITTED' ? 'status.success.bg' : session.status === 'ONGOING' || session.status === 'IN_PROGRESS' ? 'info.50' : 'bg.subtle'} color={session.status === 'FINISHED' || session.status === 'SUBMITTED' ? 'status.success.text' : session.status === 'ONGOING' || session.status === 'IN_PROGRESS' ? 'info.600' : 'text.secondary'} px={2.5} py={1} borderRadius="badge" fontSize="3xs" fontWeight="bold" textTransform="uppercase">{session.status}</Badge></Table.Cell><Table.Cell px={6} py={4}><HStack gap={1}><Award size={16} /><Text fontWeight="bold">{session.score ?? '--'}</Text></HStack></Table.Cell><Table.Cell px={6} py={4} textAlign="right"><HStack gap={2} justify="end"><Link href={`/admin/results/sessions/${session.id}`}><Button as="span" variant="ghost" size="sm" color="brand.text" borderRadius="lg" fontWeight="bold" fontSize="xs"><FileText size={16} /><Text>Detail & Nilai</Text></Button></Link><Button size="sm" variant="ghost" color="status.danger.text" borderRadius="lg" fontWeight="bold" fontSize="xs" loading={singleResetMutation.isPending && singleResetMutation.variables === session.id} onClick={() => { setTargetSingleResetSession({ id: session.id, fullName: session.student.user.fullName }); setSingleResetConfirmationInput(''); setIsSingleResetModalOpen(true); }}><RotateCcw size={14} /><Text>Reset</Text></Button></HStack></Table.Cell></Table.Row>); })}</Table.Body>
         </Table.Root>
-        <TablePagination currentPage={currentPage} totalCount={filteredSessions.length} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
+          <TablePagination currentPage={currentPage} totalCount={sessions?.total ?? filteredSessions.length} pageSize={pageSize} onPageChange={setCurrentPage} onPageSizeChange={setPageSize} />
+          {sessions?.total !== undefined && (
+            <Flex px={6} py={3} justify="space-between" color="text.secondary" fontSize="xs" fontWeight="medium">
+              <Text>Menampilkan {paginatedSessions.length} dari {sessions.total} sesi</Text>
+              <Text>Page {currentPage}</Text>
+            </Flex>
+          )}
       </Box>
 
       <Dialog.Root open={isBulkResetModalOpen} onOpenChange={(d: any) => setIsBulkResetModalOpen(d.open)} size="md"><Portal><Dialog.Backdrop /><Dialog.Positioner><Dialog.Content borderRadius="card" overflow="hidden" bg="bg.surface"><Dialog.Header bg="bg.subtle" py={4} borderBottom="1px solid" borderColor="border.default"><Dialog.Title fontSize="md" fontWeight="bold" color="status.danger.text" display="flex" alignItems="center" gap={2}><RotateCcw size={18} /> Reset Massal Pengerjaan Ujian</Dialog.Title></Dialog.Header><Dialog.Body p={6}><Stack gap={4}><Text fontSize="sm" color="text.secondary" lineHeight="relaxed">Apakah Anda yakin ingin me-reset pengerjaan ujian untuk <strong>{selectedSessionIds.length}</strong> siswa terpilih? Semua jawaban, nilai, dan riwayat pelanggaran proctoring akan dihapus permanen.</Text><Box><Text fontSize="xs" fontWeight="bold" color="text.secondary" mb={2} textTransform="uppercase" letterSpacing="wider">Ketik "reset" untuk mengonfirmasi:</Text><Input value={resetConfirmationInput} onChange={(e) => setResetConfirmationInput(e.target.value)} placeholder="Ketik 'reset'" borderRadius="lg" borderColor="input.border" bg="input.bg" _focus={{ borderColor: 'input.focus.border' }} /></Box></Stack></Dialog.Body><Dialog.Footer p={6} borderTop="1px solid" borderColor="border.default"><Flex gap={3} width="full"><Dialog.ActionTrigger asChild><Button type="button" variant="outline" borderRadius="lg" flex={1}>Batal</Button></Dialog.ActionTrigger><Button onClick={() => { if (resetConfirmationInput.toLowerCase() === 'reset') bulkResetMutation.mutate(selectedSessionIds); }} disabled={resetConfirmationInput.toLowerCase() !== 'reset' || bulkResetMutation.isPending} flex={1} bg="status.danger.text" color="text.inverted" borderRadius="lg" loading={bulkResetMutation.isPending}>Reset Sekarang ({selectedSessionIds.length})</Button></Flex></Dialog.Footer><Dialog.CloseTrigger /></Dialog.Content></Dialog.Positioner></Portal></Dialog.Root>

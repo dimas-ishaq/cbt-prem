@@ -14,6 +14,15 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+function setAuthCookie(token: string | null) {
+  if (typeof document === 'undefined') return;
+  if (!token) {
+    document.cookie = 'auth_access_token=; Path=/; Max-Age=0; SameSite=Lax';
+    return;
+  }
+  document.cookie = `auth_access_token=${encodeURIComponent(token)}; Path=/; SameSite=Lax`;
+}
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -29,6 +38,7 @@ api.interceptors.response.use(
             refresh_token: refreshToken,
           });
           const { access_token } = res.data;
+          setAuthCookie(access_token);
           useAuthStore.getState().setAuth(
             useAuthStore.getState().user!,
             access_token,
@@ -36,6 +46,7 @@ api.interceptors.response.use(
           );
           return api(originalRequest);
         } catch (e) {
+          setAuthCookie(null);
           useAuthStore.getState().logout();
         }
       } else {

@@ -102,6 +102,7 @@ export function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onMobile
   });
 
   const handleLogout = () => {
+    document.cookie = 'auth_access_token=; Path=/; Max-Age=0; SameSite=Lax';
     logout();
     router.push('/login');
   };

@@ -384,11 +384,13 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
         });
       }
 
+      const now = new Date();
       const updatedSession = await tx.examSession.update({
         where: { id: sessionId },
         data: {
           status: SessionStatus.SUBMITTED,
-          endTime: new Date(),
+          endTime: now,
+          submittedAt: now,
           score: totalScore,
         },
       });
@@ -500,28 +502,65 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
     return this.gradeAnswer(answerId, dto);
   }
 
-  async getExamSessions(examId: string) {
-    return this.prisma.examSession.findMany({
-      where: { examId },
-      include: {
-        student: {
-          include: {
-            user: true,
-            rombel: true,
+  async getExamSessions(examId: string, page?: number, limit?: number, search?: string, status?: string, rombelId?: string) {
+    const q = search?.trim();
+    const where: any = { examId };
+
+    if (status && status !== 'ALL') {
+      where.status = status;
+    }
+
+    if (rombelId && rombelId !== 'ALL') {
+      where.student = { rombelId };
+    }
+
+    if (q) {
+      where.student = {
+        ...(where.student ?? {}),
+        user: {
+          OR: [
+            { fullName: { contains: q, mode: 'insensitive' } },
+            { username: { contains: q, mode: 'insensitive' } },
+          ],
+        },
+      };
+    }
+
+    const take = limit && limit > 0 ? limit : undefined;
+    const skip = page && take ? (page - 1) * take : undefined;
+
+    const [total, data] = await this.prisma.$transaction([
+      this.prisma.examSession.count({ where }),
+      this.prisma.examSession.findMany({
+        where,
+        include: {
+          student: {
+            include: {
+              user: true,
+              rombel: true,
+            },
+          },
+          answers: {
+            select: { questionId: true }, // lightweight — need questionId to track uniqueness
+          },
+          violations: {
+            select: { id: true, type: true, description: true, timestamp: true },
+            orderBy: { timestamp: 'desc' },
           },
         },
-        answers: {
-          select: { questionId: true }, // lightweight — need questionId to track uniqueness
+        orderBy: {
+          startTime: 'desc',
         },
-        violations: {
-          select: { id: true, type: true, description: true, timestamp: true },
-          orderBy: { timestamp: 'desc' },
-        },
-      },
-      orderBy: {
-        startTime: 'desc',
-      },
-    });
+        ...(skip !== undefined ? { skip } : {}),
+        ...(take !== undefined ? { take } : {}),
+      }),
+    ]);
+
+    if (page && take) {
+      return { data, total, page, limit: take };
+    }
+
+    return data;
   }
 
   async getSession(sessionId: string) {
@@ -594,6 +633,7 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
 
     return {
       ...session,
+      submittedAt: session.submittedAt ?? session.endTime ?? null,
       score: session.exam.showScore ? session.score : null,
     };
   }
@@ -633,6 +673,7 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
 
     return history.map(session => ({
       ...session,
+      submittedAt: session.submittedAt ?? session.endTime ?? null,
       score: session.exam.showScore ? session.score : null,
     }));
   }
@@ -692,7 +733,8 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
 
     if (!exam) throw new NotFoundException('Exam not found');
 
-    const sessions = await this.getExamSessions(examId);
+    const raw = await this.getExamSessions(examId);
+    const sessions = Array.isArray(raw) ? raw : raw.data;
 
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Results');

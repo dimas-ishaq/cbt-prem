@@ -269,6 +269,7 @@ model ExamSession {
   ipAddress       String?
   userAgent       String?
   lastActiveAt    DateTime?
+  submittedAt     DateTime?
   lockedCount     Int           @default(0)
   violationCount  Int           @default(0)
 

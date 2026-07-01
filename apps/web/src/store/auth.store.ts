@@ -20,6 +20,15 @@ interface AuthState {
   logout: () => void;
 }
 
+function setAuthCookie(token: string | null) {
+  if (typeof document === 'undefined') return;
+  if (!token) {
+    document.cookie = 'auth_access_token=; Path=/; Max-Age=0; SameSite=Lax';
+    return;
+  }
+  document.cookie = `auth_access_token=${encodeURIComponent(token)}; Path=/; SameSite=Lax`;
+}
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
@@ -28,12 +37,18 @@ export const useAuthStore = create<AuthState>()(
       refresh_token: null,
       hasHydrated: false,
       setHydrated: (hydrated) => set({ hasHydrated: hydrated }),
-      setAuth: (user, access_token, refresh_token) => set({ user, access_token, refresh_token, hasHydrated: true }),
+      setAuth: (user, access_token, refresh_token) => {
+        setAuthCookie(access_token);
+        set({ user, access_token, refresh_token, hasHydrated: true });
+      },
       updateUser: (updatedFields) =>
         set((state) => ({
           user: state.user ? { ...state.user, ...updatedFields } : null,
         })),
-      logout: () => set({ user: null, access_token: null, refresh_token: null, hasHydrated: true }),
+      logout: () => {
+        setAuthCookie(null);
+        set({ user: null, access_token: null, refresh_token: null, hasHydrated: true });
+      },
     }),
     {
       name: 'auth-storage',

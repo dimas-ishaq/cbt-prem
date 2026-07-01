@@ -1,9 +1,11 @@
-import { Injectable, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateQuestionDto } from './dto/create-question.dto';
 import { UpdateQuestionDto } from './dto/update-question.dto';
 import { QuestionType } from '@prisma/client';
 import sanitizeHtmlLib from 'sanitize-html';
+import { join } from 'path';
+import { promises as fs } from 'fs';
 
 function normalizeHtml(value?: string) {
   return (value || '').replace(/<p>(?:<br\s*\/?>|\s*)<\/p>/gi, '').trim();
@@ -63,8 +65,32 @@ async function assertQuestionOwnedByTeacher(prisma: PrismaService, questionId: s
   return question;
 }
 
+/** Extract /uploads/... file paths from HTML content. */
+function extractFilePaths(html: string): string[] {
+  const srcRegex = /src="(\/uploads\/[^"]+)"/g;
+  const paths: string[] = [];
+  let match;
+  while ((match = srcRegex.exec(html)) !== null) {
+    paths.push(match[1]);
+  }
+  return paths;
+}
+
+/** Remove uploaded files from disk (best-effort). */
+async function unlinkUploadedFiles(...filePaths: string[]) {
+  for (const relPath of filePaths) {
+    try {
+      const fullPath = join(process.cwd(), relPath);
+      await fs.unlink(fullPath);
+    } catch {
+      // file may not exist — ignore
+    }
+  }
+}
+
 @Injectable()
 export class QuestionsService {
+  private readonly logger = new Logger(QuestionsService.name);
   constructor(private prisma: PrismaService) {}
 
   async create(dto: CreateQuestionDto, userId: string) {
@@ -115,12 +141,48 @@ export class QuestionsService {
   }
 
   async remove(id: string, userId: string) {
-    await assertQuestionOwnedByTeacher(this.prisma, id, userId);
-    return this.prisma.question.delete({ where: { id } });
+    const question = await assertQuestionOwnedByTeacher(this.prisma, id, userId);
+
+    // Collect file paths to clean up
+    const filesToDelete: string[] = [];
+    if (question.mediaUrl) filesToDelete.push(question.mediaUrl);
+    if (question.content) filesToDelete.push(...extractFilePaths(question.content));
+    for (const opt of question.options ?? []) {
+      if (opt.content) filesToDelete.push(...extractFilePaths(opt.content));
+    }
+
+    const result = await this.prisma.question.delete({ where: { id } });
+    if (filesToDelete.length > 0) {
+      await unlinkUploadedFiles(...filesToDelete).catch((err) =>
+        this.logger.warn(`Failed to cleanup files for question ${id}: ${err.message}`),
+      );
+    }
+    return result;
   }
 
   async removeBank(id: string, userId: string) {
-    await assertBankOwnedByTeacher(this.prisma, id, userId);
-    return this.prisma.questionBank.delete({ where: { id } });
+    const bank = await assertBankOwnedByTeacher(this.prisma, id, userId);
+
+    // Collect all question files in this bank
+    const questions = await this.prisma.question.findMany({
+      where: { questionBankId: id },
+      include: { options: true },
+    });
+    const filesToDelete: string[] = [];
+    for (const q of questions) {
+      if (q.mediaUrl) filesToDelete.push(q.mediaUrl);
+      if (q.content) filesToDelete.push(...extractFilePaths(q.content));
+      for (const opt of q.options ?? []) {
+        if (opt.content) filesToDelete.push(...extractFilePaths(opt.content));
+      }
+    }
+
+    const result = await this.prisma.questionBank.delete({ where: { id } });
+    if (filesToDelete.length > 0) {
+      await unlinkUploadedFiles(...filesToDelete).catch((err) =>
+        this.logger.warn(`Failed to cleanup files for bank ${id}: ${err.message}`),
+      );
+    }
+    return result;
   }
 }

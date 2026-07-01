@@ -12,6 +12,7 @@ interface ExamSession {
   id: string;
   startTime: string;
   endTime: string;
+  submittedAt?: string | null;
   score: number | null;
   status: string;
   exam: { title: string; subject: { name: string }; showScore?: boolean };
@@ -24,7 +25,7 @@ function formatDuration(start: string | null | undefined, end: string | null | u
   const endDate = new Date(end);
   if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return '-';
   const diffMs = endDate.getTime() - startDate.getTime();
-  const mins = Math.floor(diffMs / 60000);
+  const mins = Math.max(0, Math.floor(diffMs / 60000));
   const hrs = Math.floor(mins / 60);
   const remainingMins = mins % 60;
   if (hrs > 0) return t('hoursMinutes', { hours: hrs, minutes: remainingMins });
@@ -142,15 +143,18 @@ export function ExamHistory() {
                     </Heading>
                     <Stack gap={0.5} fontSize="11px" color="dd.text.muted" fontWeight="medium">
                       <HStack gap={1.5}>
-                        <Text>{t('finishedAt')} {session.endTime ? new Date(session.endTime).toLocaleString('id-ID') : '-'}</Text>
+                        <Text>{t('finishedAt')} {session.submittedAt ? new Date(session.submittedAt).toLocaleString('id-ID') : (session.endTime ? new Date(session.endTime).toLocaleString('id-ID') : '-')}</Text>
                       </HStack>
                       <HStack gap={1.5}>
                         <Text>{t('duration')} {duration}</Text>
                       </HStack>
-                      {answerCount > 0 && (
+                      <HStack gap={1.5}>
+                        <CheckCircle2 size={11} />
+                        <Text>{answerCount} jawaban</Text>
+                      </HStack>
+                      {session.submittedAt && (
                         <HStack gap={1.5}>
-                          <CheckCircle2 size={11} />
-                          <Text>{answerCount} jawaban</Text>
+                          <Text>Submitted {new Date(session.submittedAt).toLocaleString('id-ID')}</Text>
                         </HStack>
                       )}
                     </Stack>

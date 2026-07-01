@@ -51,6 +51,7 @@ export function LoginForm() {
     try {
       const response = await api.post('/auth/login', data);
       const { user, access_token, refresh_token } = response.data;
+      document.cookie = `auth_access_token=${encodeURIComponent(access_token)}; Path=/; SameSite=Lax`;
       setAuth(user, access_token, refresh_token);
       if (user.role === 'SISWA') {
         router.push('/dashboard');
