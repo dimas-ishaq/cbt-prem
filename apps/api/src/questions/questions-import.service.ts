@@ -85,23 +85,36 @@ export class QuestionsImportService {
   /** Parse only — no DB write. Returns preview of what will be imported. */
   async previewFromDocx(bankId: string, userId: string, file: Express.Multer.File): Promise<ImportPreviewResult> {
     if (!bankId) throw new BadRequestException('Bank ID is required');
-    const teacher = await this.prisma.teacher.findUnique({ where: { userId } });
-    if (!teacher) throw new ForbiddenException('Only teachers or administrators can manage questions');
-    const bank = await this.prisma.questionBank.findUnique({ where: { id: bankId } });
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new ForbiddenException('Only teachers or administrators can manage questions');
+    const isAdmin = user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_SEKOLAH';
+    const teacher = isAdmin ? null : await this.prisma.teacher.findUnique({ where: { userId } });
+    if (!isAdmin && !teacher) throw new ForbiddenException('Only teachers or administrators can manage questions');
+    const bank = await this.prisma.questionBank.findUnique({
+      where: { id: bankId },
+      include: { subject: { include: { teachers: { select: { id: true } } } } },
+    });
     if (!bank) throw new NotFoundException('Question bank not found');
-    if (bank.teacherId !== teacher.id) throw new ForbiddenException('You do not own this question bank');
+    if (!isAdmin && !teacher) throw new ForbiddenException('Only teachers or administrators can manage questions');
+    if (!isAdmin && !new Set([bank.teacherId, ...bank.subject.teachers.map((t) => t.id)]).has(teacher.id)) throw new ForbiddenException('You do not own this question bank');
     const html = await this.convertDocxToHtml(file.buffer);
     return this.parseQuestions(html);
   }
 
   /** Full import: parse then save to DB inside a transaction. */
   async importFromDocx(bankId: string, userId: string, file: Express.Multer.File) {
-    // Verify bank exists and user owns it
-    const teacher = await this.prisma.teacher.findUnique({ where: { userId } });
-    if (!teacher) throw new ForbiddenException('Only teachers or administrators can manage questions');
-    const bank = await this.prisma.questionBank.findUnique({ where: { id: bankId } });
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new ForbiddenException('Only teachers or administrators can manage questions');
+    const isAdmin = user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_SEKOLAH';
+    const teacher = isAdmin ? null : await this.prisma.teacher.findUnique({ where: { userId } });
+    if (!isAdmin && !teacher) throw new ForbiddenException('Only teachers or administrators can manage questions');
+    const bank = await this.prisma.questionBank.findUnique({
+      where: { id: bankId },
+      include: { subject: { include: { teachers: { select: { id: true } } } } },
+    });
     if (!bank) throw new NotFoundException('Question bank not found');
-    if (bank.teacherId !== teacher.id) throw new ForbiddenException('You do not own this question bank');
+    if (!isAdmin && !teacher) throw new ForbiddenException('Only teachers or administrators can manage questions');
+    if (!isAdmin && !new Set([bank.teacherId, ...bank.subject.teachers.map((t) => t.id)]).has(teacher.id)) throw new ForbiddenException('You do not own this question bank');
     const html = await this.convertDocxToHtml(file.buffer);
     const { success: questions, warnings } = this.parseQuestions(html);
 

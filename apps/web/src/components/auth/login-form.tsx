@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/auth.store';
 import { Lock, User, Eye, EyeOff, BookOpen, AlertCircle, ArrowRight, ShieldCheck } from 'lucide-react';
+import Image from 'next/image';
 import {
   Box,
   Button,
@@ -29,7 +30,7 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
-export function LoginForm() {
+export function LoginForm({ logoUrl }: { logoUrl?: string }) {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -97,12 +98,16 @@ export function LoginForm() {
             h={14}
             borderRadius="2xl"
             mb={1}
-            style={{
+            overflow="hidden"
+            bg={logoUrl ? 'white' : 'transparent'}
+            style={logoUrl ? {
+              boxShadow: '0 8px 24px rgba(79,70,229,0.18)',
+            } : {
               background: 'linear-gradient(135deg, #4f46e5 0%, #2563eb 100%)',
               boxShadow: '0 8px 24px rgba(79,70,229,0.40)',
             }}
           >
-            <BookOpen size={26} color="white" />
+            {logoUrl ? <Image src={logoUrl} alt="Logo sekolah" width={56} height={56} style={{ objectFit: 'contain' }} /> : <BookOpen size={26} color="white" />}
           </Flex>
 
           <Heading

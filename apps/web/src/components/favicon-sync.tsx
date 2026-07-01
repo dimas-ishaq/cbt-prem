@@ -12,13 +12,19 @@ export function FaviconSync() {
 
   useEffect(() => {
     const href = data?.faviconUrl || '/favicon.ico';
-    let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
-    if (!link) {
-      link = document.createElement('link');
-      link.rel = 'icon';
-      document.head.appendChild(link);
-    }
-    link.href = href;
+    const cacheBusted = `${href}${href.includes('?') ? '&' : '?'}v=${Date.now()}`;
+    const ensureLink = (rel: string) => {
+      let link = document.querySelector<HTMLLinkElement>(`link[rel="${rel}"]`);
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = rel;
+        document.head.appendChild(link);
+      }
+      link.href = cacheBusted;
+    };
+    ensureLink('icon');
+    ensureLink('shortcut icon');
+    ensureLink('apple-touch-icon');
   }, [data?.faviconUrl]);
 
   return null;

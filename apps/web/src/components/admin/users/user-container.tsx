@@ -37,7 +37,7 @@ export function UserContainer() {
   const [modalMode, setModalMode] = useState<'create' | 'edit' | 'reset-password' | null>(null);
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [form, setForm] = useState<UserFormData>({
-    username: '', email: '', password: '', fullName: '', role: 'SISWA', rombelId: '', nis: '',
+    username: '', email: '', password: '', fullName: '', role: 'SISWA', rombelId: '', nis: '', nip: '',
   });
   const [newPassword, setNewPassword] = useState('');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -167,7 +167,7 @@ export function UserContainer() {
 
   const openCreateModal = () => {
     setModalMode('create');
-    setForm({ username: '', email: '', password: '', fullName: '', role: 'SISWA', rombelId: '', nis: '' });
+    setForm({ username: '', email: '', password: '', fullName: '', role: 'SISWA', rombelId: '', nis: '', nip: '' });
     setSelectedUser(null);
   };
 
@@ -182,6 +182,7 @@ export function UserContainer() {
       role: u.role,
       rombelId: u.student?.rombel?.id || '',
       nis: u.student?.nis || '',
+      nip: u.teacher?.nip || '',
     });
   };
 
@@ -196,7 +197,7 @@ export function UserContainer() {
     if (modalMode === 'create') {
       createMutation.mutate(form);
     } else if (modalMode === 'edit' && selectedUser) {
-      updateMutation.mutate({ id: selectedUser.id, data: { fullName: form.fullName, email: form.email } });
+      updateMutation.mutate({ id: selectedUser.id, data: { fullName: form.fullName, email: form.email, nip: form.nip } });
     }
   };
 

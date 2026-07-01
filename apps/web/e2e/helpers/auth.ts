@@ -28,7 +28,8 @@ export async function expectRedirect(page: Page, url: RegExp) {
 }
 
 export async function loginViaApi(page: Page, c: { username: string; password: string }) {
-  const url = 'http://localhost:3001/api/auth/login';
+  const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000';
+  const url = new URL('/api/auth/login', baseURL).toString();
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

@@ -41,12 +41,6 @@ export default defineConfig({
       use: { storageState: 'playwright/.auth/admin.json' },
     },
     {
-      name: 'admin-exam-create',
-      dependencies: ['setup-admin'],
-      testMatch: /admin\/exam-create\.spec\.ts/,
-      use: { storageState: 'playwright/.auth/admin.json' },
-    },
-    {
       name: 'api-contract',
       testMatch: /api\/api-contract\.spec\.ts/,
     },

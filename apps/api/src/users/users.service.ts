@@ -105,8 +105,8 @@ export class UsersService {
                 },
               },
             }
-          : role === Role.GURU
-            ? { teacher: { create: { nip: null } } }
+          : role === Role.GURU || role === Role.ADMIN_SEKOLAH || role === Role.PENGAWAS || role === Role.SUPER_ADMIN
+            ? { teacher: { create: { nip: (dto as any).nip || null } } }
             : {}),
       },
       select: {
@@ -159,6 +159,17 @@ export class UsersService {
               student: {
                 update: {
                   rombel: { connect: { id: dto.rombelId } },
+                },
+              },
+            }
+          : {}),
+        ...(user.role !== Role.SISWA && dto.nip !== undefined
+          ? {
+              teacher: {
+                upsert: {
+                  where: { userId: id },
+                  update: { nip: dto.nip || null },
+                  create: { nip: dto.nip || null },
                 },
               },
             }

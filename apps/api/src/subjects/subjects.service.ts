@@ -216,7 +216,23 @@ export class SubjectsService {
   }
 
   async remove(id: string) {
-    await this.findOne(id);
+    const subject = await this.prisma.subject.findUnique({
+      where: { id },
+      include: { _count: { select: { questionBanks: true, exams: true, teachers: true } } },
+    });
+    if (!subject) throw new NotFoundException('Mata pelajaran tidak ditemukan');
+
+    const { questionBanks, exams, teachers } = subject._count;
+    if (questionBanks > 0 || exams > 0 || teachers > 0) {
+      const parts: string[] = [];
+      if (exams > 0) parts.push(`${exams} ujian`);
+      if (questionBanks > 0) parts.push(`${questionBanks} bank soal`);
+      if (teachers > 0) parts.push(`${teachers} guru`);
+      throw new BadRequestException(
+        `Tidak dapat menghapus mapel ini. Hapus dulu ${parts.join(', ')} yang terhubung.`
+      );
+    }
+
     await this.prisma.subject.delete({ where: { id } });
     return { success: true, message: 'Mata pelajaran berhasil dihapus' };
   }

@@ -30,4 +30,5 @@ export interface UserFormData {
   role: UserRole;
   rombelId: string;
   nis: string;
+  nip: string;
 }

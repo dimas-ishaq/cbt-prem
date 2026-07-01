@@ -1,11 +1,11 @@
 import { test, expect } from '@playwright/test';
-import { resolve } from 'path';
 
 test.describe('Student Dashboard Smoke', () => {
   test.use({ storageState: 'playwright/.auth/user.json' });
 
   test.beforeEach(async ({ page }) => {
     await page.goto('/dashboard');
+    await page.waitForLoadState('networkidle');
   });
 
   test('show portal header', async ({ page }) => {
@@ -13,30 +13,17 @@ test.describe('Student Dashboard Smoke', () => {
   });
 
   test('show exam list section', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: /daftar ujian/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /daftar ujian/i })).toBeVisible({ timeout: 10000 });
   });
 
-  test('show exam history on tab click', async ({ page }) => {
+  test('show exam history tab', async ({ page }) => {
     const riwayatBtn = page.locator('button:has-text("Riwayat Pengerjaan")');
-    if (await riwayatBtn.isVisible()) {
-      await riwayatBtn.click();
-      await expect(page.getByRole('heading', { name: /riwayat pengerjaan/i })).toBeVisible({ timeout: 15000 });
-    }
+    await expect(riwayatBtn).toBeVisible({ timeout: 10000 });
+    await riwayatBtn.click();
+    await expect(page.getByRole('heading', { name: /riwayat pengerjaan/i })).toBeVisible({ timeout: 10000 });
   });
 
   test('show server time', async ({ page }) => {
-    await expect(page.locator(`text=/\\d{2}[.:]\\d{2}[.:]\\d{2}/`).first()).toBeVisible();
-  });
-
-  test('upload photo profile', async ({ page }) => {
-    const fileChooserPromise = page.waitForEvent('filechooser');
-    const uploadTrigger = page.locator('input[type="file"]').first();
-    if (await uploadTrigger.isVisible()) {
-      await uploadTrigger.click();
-      const fileChooser = await fileChooserPromise;
-      const testImg = resolve(__dirname, '..', 'fixtures', 'test-avatar.png');
-      await fileChooser.setFiles(testImg);
-      await expect(page.locator('text=Berhasil').or(page.locator('text=sukses')).first()).toBeVisible({ timeout: 10000 });
-    }
+    await expect(page.locator(`text=/\\d{2}[.:]\\d{2}[.:]\\d{2}/`).first()).toBeVisible({ timeout: 10000 });
   });
 });

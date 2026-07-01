@@ -45,7 +45,7 @@ export function useRombelQueries(
           grade: modalFilterGrade || undefined,
         },
       });
-      return response.data;
+      return Array.isArray(response.data) ? response.data : response.data?.data || [];
     },
     enabled: isManageOpen,
   });

@@ -76,24 +76,16 @@ export class ExamsController {
   @Patch(':id')
   @Roles(Role.GURU, Role.SUPER_ADMIN)
   async update(@Param('id') id: string, @Body() dto: UpdateExamDto, @Request() req) {
-    const teacher = await this.examsService['prisma'].teacher.findUnique({
-      where: { userId: req.user.userId },
-    });
-    if (!teacher && req.user.role !== Role.SUPER_ADMIN) {
-      throw new UnauthorizedException('Not a teacher');
-    }
-    return this.examsService.update(id, dto, req.user.role === Role.SUPER_ADMIN ? undefined : teacher?.id);
+    const isSiswa = req.user.role === Role.SISWA;
+    if (isSiswa) throw new UnauthorizedException();
+    return this.examsService.update(id, dto, req.user.userId);
   }
 
   @Delete(':id')
   @Roles(Role.GURU, Role.SUPER_ADMIN)
   async remove(@Param('id') id: string, @Request() req) {
-    const teacher = await this.examsService['prisma'].teacher.findUnique({
-      where: { userId: req.user.userId },
-    });
-    if (!teacher && req.user.role !== Role.SUPER_ADMIN) {
-      throw new UnauthorizedException('Not a teacher');
-    }
-    return this.examsService.remove(id, req.user.role === Role.SUPER_ADMIN ? undefined : teacher?.id);
+    const isSiswa = req.user.role === Role.SISWA;
+    if (isSiswa) throw new UnauthorizedException();
+    return this.examsService.remove(id, req.user.userId);
   }
 }

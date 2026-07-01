@@ -1,13 +1,14 @@
 'use client';
 
 import { createContext, useContext, useState, ReactNode } from 'react';
-import { Box, Flex, Text, Button, Heading } from '@chakra-ui/react';
+import { Box, Flex, Text, Button, Heading, Input } from '@chakra-ui/react';
 
 interface ConfirmOptions {
   title: string;
   description?: string;
   confirmText?: string;
   cancelText?: string;
+  confirmationKeyword?: string;
 }
 
 interface ConfirmationContextType {
@@ -28,9 +29,11 @@ export const ConfirmationProvider = ({ children }: { children: ReactNode }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [options, setOptions] = useState<ConfirmOptions>({ title: '' });
   const [resolver, setResolver] = useState<(value: boolean) => void>();
+  const [keyword, setKeyword] = useState('');
 
   const confirmDialog = (opts: ConfirmOptions): Promise<boolean> => {
     setOptions(opts);
+    setKeyword('');
     setIsOpen(true);
     return new Promise((resolve) => {
       setResolver(() => resolve);
@@ -38,6 +41,9 @@ export const ConfirmationProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const handleConfirm = () => {
+    if (options.confirmationKeyword && keyword.trim().toLowerCase() !== options.confirmationKeyword.toLowerCase()) {
+      return;
+    }
     setIsOpen(false);
     if (resolver) resolver(true);
   };
@@ -73,6 +79,21 @@ export const ConfirmationProvider = ({ children }: { children: ReactNode }) => {
               <Text color="text.secondary">
                 {options.description || 'Apakah Anda yakin?'}
               </Text>
+              {((options.confirmText || '').toLowerCase() === 'hapus' || (options.title || '').toLowerCase().includes('hapus')) && (
+                <Text mt={3} color="status.danger.text" fontSize="sm" fontWeight="medium">
+                  Peringatan: aksi ini bisa hapus data terkait dan tidak bisa dibatalkan.
+                </Text>
+              )}
+              {options.confirmationKeyword && (
+                <Input
+                  mt={4}
+                  value={keyword}
+                  onChange={(e) => setKeyword(e.target.value)}
+                  placeholder={`Ketik ${options.confirmationKeyword} untuk lanjut`}
+                  autoComplete="off"
+                  borderRadius="lg"
+                />
+              )}
             </Box>
             <Flex px={6} py={4} bg="bg.elevated" justify="flex-end" gap={3}>
               <Button onClick={handleCancel} variant="outline" color="text.primary" bg="bg.surface" borderRadius="lg" borderColor="border.default" cursor="pointer">

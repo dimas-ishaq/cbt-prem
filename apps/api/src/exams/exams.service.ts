@@ -7,17 +7,23 @@ import { CreateExamDto } from './dto/create-exam.dto';
 export class ExamsService {
   constructor(private prisma: PrismaService) {}
 
-  private async assertExamOwnedByTeacher(examId: string, teacherId: string) {
+  private async assertExamAccess(examId: string, userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new ForbiddenException('Exam access denied');
     const exam = await this.prisma.exam.findUnique({
       where: { id: examId },
-      select: { id: true, teacherId: true },
+      include: { subject: { include: { teachers: { select: { id: true } } } } },
     });
 
     if (!exam) {
       throw new NotFoundException('Exam not found');
     }
 
-    if (exam.teacherId !== teacherId) {
+    if (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_SEKOLAH') return exam;
+    const teacher = await this.prisma.teacher.findUnique({ where: { userId } });
+    if (!teacher) throw new ForbiddenException('Exam access denied');
+    const allowedTeacherIds = new Set([exam.teacherId, ...exam.subject.teachers.map((t) => t.id)]);
+    if (!allowedTeacherIds.has(teacher.id)) {
       throw new ForbiddenException('You do not own this exam');
     }
 
@@ -229,9 +235,9 @@ export class ExamsService {
     return exam;
   }
 
-  async update(id: string, data: any, teacherId?: string) {
-    if (teacherId) {
-      await this.assertExamOwnedByTeacher(id, teacherId);
+  async update(id: string, data: any, userId?: string) {
+    if (userId) {
+      await this.assertExamAccess(id, userId);
     }
 
     const { questionIds, rombelIds, majorIds, startDate, startTimeField, endDate, endTimeField, ...examData } = data;
@@ -380,9 +386,9 @@ export class ExamsService {
     });
   }
 
-  async remove(id: string, teacherId?: string) {
-    if (teacherId) {
-      await this.assertExamOwnedByTeacher(id, teacherId);
+  async remove(id: string, userId?: string) {
+    if (userId) {
+      await this.assertExamAccess(id, userId);
     }
 
     return this.prisma.$transaction(async (tx) => {

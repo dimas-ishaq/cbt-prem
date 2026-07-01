@@ -10,4 +10,9 @@ export class CreateQuestionBankDto {
   @IsString()
   @IsOptional()
   category?: string;
+
+  @IsUUID()
+  @IsOptional()
+  teacherId?: string;
 }
+

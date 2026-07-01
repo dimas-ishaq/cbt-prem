@@ -46,7 +46,7 @@ export function useUsers(onSaved: () => void) {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: { fullName: string; email: string } }) => api.put(`/users/${id}`, data),
+    mutationFn: ({ id, data }: { id: string; data: { fullName: string; email: string; nip?: string } }) => api.put(`/users/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users-all'] });
       onSaved();

@@ -387,7 +387,7 @@ export default function LoginPage() {
         </Box>
 
         <Box position="relative" zIndex={1} w="full" maxW="440px">
-          <LoginForm />
+          <LoginForm logoUrl={settings?.logoUrl} />
         </Box>
       </Flex>
     </Flex>

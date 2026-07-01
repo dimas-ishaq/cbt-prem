@@ -47,21 +47,35 @@ function validateQuestionPayload(type: QuestionType, content: string, options: {
   }
 }
 
-async function assertBankOwnedByTeacher(prisma: PrismaService, bankId: string, userId: string) {
+async function canManageQuestions(prisma: PrismaService, userId: string) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw new ForbiddenException('Only teachers or administrators can manage questions');
+  if (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_SEKOLAH') return { admin: true } as const;
   const teacher = await prisma.teacher.findUnique({ where: { userId } });
-  if (!teacher) throw new ForbiddenException('Only teachers or administrators can manage questions');
-  const bank = await prisma.questionBank.findUnique({ where: { id: bankId } });
+  if (!teacher) throw new ForbiddenException('Only teachers can manage questions');
+  return { admin: false, teacher } as const;
+}
+
+async function assertBankAccess(prisma: PrismaService, bankId: string, userId: string) {
+  const access = await canManageQuestions(prisma, userId);
+  const bank = await prisma.questionBank.findUnique({
+    where: { id: bankId },
+    include: { subject: { include: { teachers: { select: { id: true } } } } },
+  });
   if (!bank) throw new NotFoundException('Question bank not found');
-  if (bank.teacherId !== teacher.id) throw new ForbiddenException('You do not own this question bank');
+  if (access.admin) return bank;
+  const allowedTeacherIds = new Set([bank.teacherId, ...bank.subject.teachers.map((t) => t.id)]);
+  if (!allowedTeacherIds.has(access.teacher.id)) throw new ForbiddenException('You do not own this question bank');
   return bank;
 }
 
 async function assertQuestionOwnedByTeacher(prisma: PrismaService, questionId: string, userId: string) {
-  const teacher = await prisma.teacher.findUnique({ where: { userId } });
-  if (!teacher) throw new ForbiddenException('Only teachers or administrators can manage questions');
-  const question = await prisma.question.findUnique({ where: { id: questionId }, include: { questionBank: true, options: true } });
+  const access = await canManageQuestions(prisma, userId);
+  const question = await prisma.question.findUnique({ where: { id: questionId }, include: { questionBank: { include: { subject: { include: { teachers: { select: { id: true } } } } } }, options: true } });
   if (!question) throw new NotFoundException('Question not found');
-  if (question.questionBank.teacherId !== teacher.id) throw new ForbiddenException('You do not own this question');
+  if (access.admin) return question;
+  const allowedTeacherIds = new Set([question.questionBank.teacherId, ...question.questionBank.subject.teachers.map((t) => t.id)]);
+  if (!allowedTeacherIds.has(access.teacher.id)) throw new ForbiddenException('You do not own this question');
   return question;
 }
 
@@ -95,7 +109,7 @@ export class QuestionsService {
 
   async create(dto: CreateQuestionDto, userId: string) {
     const { options = [], content, questionBankId, type, ...questionData } = dto as any;
-    await assertBankOwnedByTeacher(this.prisma, questionBankId, userId);
+    await assertBankAccess(this.prisma, questionBankId, userId);
     validateQuestionPayload(type, content, options);
     return this.prisma.question.create({
       data: {
@@ -161,7 +175,7 @@ export class QuestionsService {
   }
 
   async removeBank(id: string, userId: string) {
-    const bank = await assertBankOwnedByTeacher(this.prisma, id, userId);
+    const bank = await assertBankAccess(this.prisma, id, userId);
 
     // Collect all question files in this bank
     const questions = await this.prisma.question.findMany({

@@ -12,4 +12,8 @@ export class UpdateUserDto {
   @IsString()
   @IsOptional()
   rombelId?: string;
+
+  @IsString()
+  @IsOptional()
+  nip?: string;
 }

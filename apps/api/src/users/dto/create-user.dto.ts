@@ -22,4 +22,8 @@ export class CreateUserDto {
   @IsString()
   @IsOptional()
   rombelId?: string;
+
+  @IsString()
+  @IsOptional()
+  nip?: string;
 }

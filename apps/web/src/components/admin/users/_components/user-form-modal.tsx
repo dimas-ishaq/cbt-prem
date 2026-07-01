@@ -135,7 +135,7 @@ export function UserFormModal({ mode, selectedUser, form, rombelOptions, isLoadi
               </Box>
             )}
 
-            {form.role === 'SISWA' && (
+            {form.role === 'SISWA' ? (
               <Flex gap={3}>
                 <Box flex={1}>
                   <Text fontSize="sm" fontWeight="medium" color="text.primary" mb={1}>NIS (Opsional)</Text>
@@ -170,6 +170,19 @@ export function UserFormModal({ mode, selectedUser, form, rombelOptions, isLoadi
                   </Select.Root>
                 </Box>
               </Flex>
+            ) : (
+              <Box>
+                <Text fontSize="sm" fontWeight="medium" color="text.primary" mb={1}>NIP (Opsional)</Text>
+                <Input
+                  value={form.nip}
+                  onChange={(e) => onChangeForm({ ...form, nip: e.target.value })}
+                  placeholder="cth. 1987654321"
+                  borderRadius="input"
+                  borderColor="border.default"
+                  bg="input.bg"
+                  _focus={{ borderColor: 'input.focus.border', boxShadow: '0 0 0 1px var(--chakra-colors-input-focus-border)' }}
+                />
+              </Box>
             )}
 
             <Separator />

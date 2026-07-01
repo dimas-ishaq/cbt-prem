@@ -12,17 +12,17 @@ test('Guru membuat ujian baru', async ({ page }) => {
   const eventBtn = page.locator('button:has-text("-- Pilih Event")');
   if (await eventBtn.isVisible()) {
     await eventBtn.click();
-    await page.waitForTimeout(500);
     const eventOptions = page.locator('div[role="option"]');
-    if (await eventOptions.count() > 0) await eventOptions.first().click();
+    await expect(eventOptions.first()).toBeVisible({ timeout: 3000 });
+    await eventOptions.first().click();
   }
 
   const subjectBtn = page.locator('button:has-text("Pilih Mata Pelajaran")');
   if (await subjectBtn.isVisible()) {
     await subjectBtn.click();
-    await page.waitForTimeout(500);
     const subjectOptions = page.locator('div[role="option"]');
-    if (await subjectOptions.count() > 0) await subjectOptions.first().click();
+    await expect(subjectOptions.first()).toBeVisible({ timeout: 3000 });
+    await subjectOptions.first().click();
   }
 
   await page.getByRole('textbox', { name: 'mm/dd/yyyy' }).first().fill('2026-06-28');
@@ -38,9 +38,7 @@ test('Guru membuat ujian baru', async ({ page }) => {
   const selects = page.locator('select');
   const selectCount = await selects.count();
   if (selectCount >= 1) await selects.nth(0).selectOption({ index: 1 });
-  await page.waitForTimeout(300);
   if (selectCount >= 2) await selects.nth(1).selectOption({ index: 1 });
-  await page.waitForTimeout(300);
 
   const rombelCheckbox = page.locator('.chakra-checkbox').first();
   if (await rombelCheckbox.isVisible()) await rombelCheckbox.click();
@@ -48,34 +46,28 @@ test('Guru membuat ujian baru', async ({ page }) => {
   const bankBtn = page.locator('button:has-text("Pilih Bank Soal")');
   if (await bankBtn.isVisible()) {
     await bankBtn.click();
-    await page.waitForTimeout(500);
     const bankOptions = page.locator('div[role="option"]');
-    if (await bankOptions.count() > 0) await bankOptions.first().click();
-    await page.waitForTimeout(500);
+    await expect(bankOptions.first()).toBeVisible({ timeout: 3000 });
+    await bankOptions.first().click();
   }
 
   const selectAllBtn = page.locator('button:has-text("Pilih Semua")');
   if (await selectAllBtn.isVisible()) await selectAllBtn.click();
 
   const submitBtn = page.locator('button:has-text("Simpan & Buat Ujian")');
-  if (await submitBtn.isVisible()) {
-    await submitBtn.click();
-    await page.waitForURL(/\/admin\/exams/, { timeout: 20000 });
-    await expect(page).toHaveURL(/\/admin\/exams/);
-  }
+  await expect(submitBtn).toBeVisible();
+  await submitBtn.click();
+  await page.waitForURL(/\/admin\/exams/, { timeout: 20000 });
+  await expect(page).toHaveURL(/\/admin\/exams/);
 });
 
 test('validasi field wajib form create', async ({ page }) => {
   await page.goto('/admin/exams/create');
-  // submit empty form
   const submitBtn = page.locator('button:has-text("Simpan & Buat Ujian")');
-  if (await submitBtn.isVisible()) {
-    await submitBtn.click();
-    await page.waitForTimeout(500);
-    // expect error messages
-    const errorText = page.locator('text=/wajib diisi|harus diisi|tidak boleh kosong/i');
-    await expect(errorText.first()).toBeVisible({ timeout: 3000 });
-  }
+  await expect(submitBtn).toBeVisible();
+  await submitBtn.click();
+  const errorText = page.locator('text=/wajib diisi|harus diisi|tidak boleh kosong/i');
+  await expect(errorText.first()).toBeVisible({ timeout: 3000 });
 });
 
 test('token generate di form create', async ({ page }) => {
@@ -85,7 +77,6 @@ test('token generate di form create', async ({ page }) => {
     const generateBtn = page.locator('button:has-text("Generate")').or(page.locator('[data-testid="generate-token"]'));
     if (await generateBtn.isVisible()) {
       await generateBtn.click();
-      await page.waitForTimeout(500);
       const tokenVal = await tokenInput.inputValue();
       expect(tokenVal.length).toBeGreaterThan(0);
     }
@@ -96,13 +87,9 @@ test('SEB config toggle', async ({ page }) => {
   await page.goto('/admin/exams/create');
   const sebToggle = page.locator('[role="switch"]').or(page.locator('.chakra-switch')).first();
   if (await sebToggle.isVisible()) {
-    const initialChecked = await sebToggle.isChecked().catch(() => false);
     await sebToggle.click();
-    await page.waitForTimeout(300);
-    // SEB config section should appear/disappear
     const sebConfig = page.locator('text=/SEB|Safe Exam Browser|Kunci Browser/i').first();
     if (await sebConfig.isVisible({ timeout: 2000 }).catch(() => false)) {
-      // fill SEB exit key
       const exitKeyInput = page.locator('input[placeholder*="Exit"]').or(page.locator('[data-testid="seb-exit-key"]'));
       if (await exitKeyInput.isVisible()) {
         await exitKeyInput.fill('ctrl+q');
