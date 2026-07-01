@@ -28,15 +28,15 @@ export async function expectRedirect(page: Page, url: RegExp) {
 }
 
 export async function loginViaApi(page: Page, c: { username: string; password: string }) {
-  const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-  const res = await require('node-fetch')(`${baseURL}/auth/login`, {
+  const url = 'http://localhost:3001/api/auth/login';
+  const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(c),
+    body: JSON.stringify({ username: c.username, password: c.password }),
   });
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`login API fail: ${res.status} ${text}`);
+    throw new Error(`login API fail (${res.status}): ${text}`);
   }
   const { user, access_token, refresh_token } = await res.json();
   await page.goto('/login');
