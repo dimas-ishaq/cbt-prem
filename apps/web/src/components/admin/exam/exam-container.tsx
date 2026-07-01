@@ -38,6 +38,7 @@ export function ExamContainer({ examId }: Props) {
   const token = useAuthStore((s) => s.access_token);
 
   const [isCompleted, setIsCompleted] = useState(false);
+  const [completionResult, setCompletionResult] = useState<{ sessionId: string; score: number | null; showScore: boolean } | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -182,8 +183,10 @@ export function ExamContainer({ examId }: Props) {
         }
       }
 
+      let updatedSession: any = null;
       try {
-        await api.post(`/exam-sessions/${sessionId}/finish`, { reason });
+        const res = await api.post(`/exam-sessions/${sessionId}/finish`, { reason });
+        updatedSession = res.data;
       } catch (err) {
         const classified = classifyExamMutationError(err);
         if (classified.kind === 'already-completed') {
@@ -203,6 +206,15 @@ export function ExamContainer({ examId }: Props) {
         console.error('Failed to clear local storage on finish:', e);
       }
       setIsCompleted(true);
+      // save session id and score for result display in ExamCompletion
+      // Use exam data already loaded in component for showScore
+      if (sessionId) {
+        setCompletionResult({
+          sessionId,
+          score: updatedSession?.score ?? null,
+          showScore: exam?.showScore ?? true,
+        });
+      }
     } finally {
       isFinishingRef.current = false;
       finishReasonRef.current = null;
@@ -383,7 +395,20 @@ export function ExamContainer({ examId }: Props) {
   }
 
   if (!exam) return <ExamNotFound status="not-found" />;
-  if (isCompleted) return <ExamCompletion subjectName={exam?.subject?.name} examTitle={exam?.title} />;
+  if (isCompleted && completionResult) {
+    const finishScore = completionResult.showScore ? completionResult.score : null;
+    return (
+      <ExamCompletion
+        subjectName={exam?.subject?.name}
+        examTitle={exam?.title}
+        sessionId={completionResult.sessionId}
+        score={finishScore}
+      />
+    );
+  }
+  if (isCompleted) {
+    return <ExamCompletion subjectName={exam?.subject?.name} examTitle={exam?.title} />;
+  }
   if (isLocked) return (
     <ExamLockedOverlay
       onSubmitToken={handleUnlock}

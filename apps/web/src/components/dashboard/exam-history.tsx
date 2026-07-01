@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { Box, Flex, Badge, Text, Heading, Stack, HStack, Button, Spinner } from '@chakra-ui/react';
-import { History, RotateCcw, Award } from 'lucide-react';
+import { History, RotateCcw, Award, CheckCircle2, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 
@@ -14,13 +14,15 @@ interface ExamSession {
   endTime: string;
   score: number | null;
   status: string;
-  timeSpent?: number;
-  exam: { title: string; subject: { name: string } };
+  exam: { title: string; subject: { name: string }; showScore?: boolean };
+  _count?: { answers: number };
 }
 
-function formatDuration(start: string, end: string, t: (key: string, opts?: any) => string) {
+function formatDuration(start: string | null | undefined, end: string | null | undefined, t: (key: string, opts?: any) => string) {
+  if (!start || !end) return '-';
   const startDate = new Date(start);
   const endDate = new Date(end);
+  if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return '-';
   const diffMs = endDate.getTime() - startDate.getTime();
   const mins = Math.floor(diffMs / 60000);
   const hrs = Math.floor(mins / 60);
@@ -110,6 +112,8 @@ export function ExamHistory() {
               );
             }
 
+            const answerCount = session._count?.answers ?? 0;
+
             return (
               <Box
                 key={session.id}
@@ -138,14 +142,20 @@ export function ExamHistory() {
                     </Heading>
                     <Stack gap={0.5} fontSize="11px" color="dd.text.muted" fontWeight="medium">
                       <HStack gap={1.5}>
-                        <Text>{t('finishedAt')} {new Date(session.endTime).toLocaleString('id-ID')}</Text>
+                        <Text>{t('finishedAt')} {session.endTime ? new Date(session.endTime).toLocaleString('id-ID') : '-'}</Text>
                       </HStack>
                       <HStack gap={1.5}>
                         <Text>{t('duration')} {duration}</Text>
                       </HStack>
+                      {answerCount > 0 && (
+                        <HStack gap={1.5}>
+                          <CheckCircle2 size={11} />
+                          <Text>{answerCount} jawaban</Text>
+                        </HStack>
+                      )}
                     </Stack>
                   </Stack>
-                  <Flex direction="column" align="center" gap={2} minW="100px" alignSelf={{ base: 'stretch', md: 'center' }}>
+                  <Flex direction="column" align="center" gap={2} minW="120px" alignSelf={{ base: 'stretch', md: 'center' }}>
                     {session.score !== null && session.score !== undefined ? (
                       <>
                         <Flex align="center" gap={1} color={status.color === 'red' ? 'dd.status.danger.text' : 'dd.status.success.text'}>
@@ -158,22 +168,22 @@ export function ExamHistory() {
                       </>
                     ) : (
                       <Text fontSize="11px" color="dd.text.muted" fontStyle="italic" fontWeight="medium">
-                        {session.exam && (session.exam as any).showScore === false ? 'Dirahasiakan' : t('notGraded')}
+                        {t('notGraded')}
                       </Text>
                     )}
-                    <Link href={`/exams/${(session.exam as any).id}`} style={{ width: '100%' }}>
-                      <Button 
-                        size="xs" 
-                        variant="ghost" 
-                        w="full" 
-                        mt={1} 
-                        borderRadius="md" 
-                        fontSize="11px" 
-                        fontWeight="bold" 
+                    <Link href={`/exams/results/${session.id}`} style={{ width: '100%' }}>
+                      <Button
+                        size="xs"
+                        variant="ghost"
+                        w="full"
+                        mt={1}
+                        borderRadius="md"
+                        fontSize="11px"
+                        fontWeight="bold"
                         bg="dd.surface.alt"
-                        color="dd.text" 
+                        color="dd.text"
                         border="1px solid"
-                        borderColor="dd.border" 
+                        borderColor="dd.border"
                         _hover={{ bg: 'dd.surface.alt', borderColor: 'dd.brand' }}
                         height="28px"
                         cursor="pointer"

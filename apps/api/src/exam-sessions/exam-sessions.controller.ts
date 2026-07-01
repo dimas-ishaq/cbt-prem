@@ -127,8 +127,15 @@ export class ExamSessionsController {
   }
 
   @Get(':id')
+  @Roles(Role.GURU, Role.SUPER_ADMIN)
   async getSession(@Param('id') id: string) {
     return this.examSessionsService.getSession(id);
+  }
+
+  @Get('me/:id')
+  @Roles(Role.SISWA)
+  async getMySession(@Param('id') id: string, @Request() req) {
+    return this.examSessionsService.getMySession(id, req.user.userId);
   }
 
   @Delete(':id/reset')

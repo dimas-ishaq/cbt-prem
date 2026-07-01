@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, Button, Flex, Heading, Text } from '@chakra-ui/react';
+import { Box, Button, Flex, Heading, Stack, Text } from '@chakra-ui/react';
 import { CheckCircle, Sparkles, ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { keyframes } from '@emotion/react';
@@ -24,9 +24,11 @@ const float = keyframes`
 interface ExamCompletionProps {
   subjectName?: string;
   examTitle?: string;
+  sessionId?: string;
+  score?: number | null;
 }
 
-export function ExamCompletion({ subjectName, examTitle }: ExamCompletionProps) {
+export function ExamCompletion({ subjectName, examTitle, sessionId, score }: ExamCompletionProps) {
   const router = useRouter();
 
   return (
@@ -160,6 +162,27 @@ export function ExamCompletion({ subjectName, examTitle }: ExamCompletionProps) 
           </Box>
         )}
 
+        {/* Score card (only visible if score is available) */}
+        {score !== null && score !== undefined && (
+          <Box
+            p={5}
+            mb={4}
+            borderRadius="card"
+            bg="dd.surface"
+            border="1px solid"
+            borderColor="dd.border"
+            boxShadow={{ base: 'card-light', _dark: 'card-dark' }}
+            css={{ animation: `${fadeUp} 0.6s ease-out 0.6s both` }}
+          >
+            <Text fontSize="11px" color="dd.text.muted" fontWeight="bold" textTransform="uppercase" letterSpacing="wider" mb={1}>
+              Nilai Kamu
+            </Text>
+            <Text fontSize="36px" fontWeight="extrabold" color="dd.status.success.text" lineHeight="1">
+              {Math.round(score)}
+            </Text>
+          </Box>
+        )}
+
         {/* Motivational card */}
         <Box
           p={5}
@@ -174,32 +197,55 @@ export function ExamCompletion({ subjectName, examTitle }: ExamCompletionProps) 
           <Text fontSize="13px" color="dd.text" lineHeight="1.4">
             Jawabanmu sudah berhasil tersimpan dengan aman. Tetap semangat dan percaya pada hasil usahamu! 💪
           </Text>
-          <Text fontSize="12px" color="dd.text.muted" mt={3}>
-            Hasil ujian akan diumumkan oleh guru mata pelajaran.
-          </Text>
+          {score === null || score === undefined ? (
+            <Text fontSize="12px" color="dd.text.muted" mt={3}>
+              Hasil ujian akan diumumkan oleh guru mata pelajaran.
+            </Text>
+          ) : null}
         </Box>
 
-        {/* CTA Button */}
-        <Button
-          size="lg"
-          px={6}
-          height="40px"
-          borderRadius="md"
-          fontWeight="bold"
-          fontSize="13px"
-          bg="dd.status.success.solid"
-          color="white"
-          _hover={{
-            bg: 'dd.status.success.solid',
-            transform: 'translateY(-1px)',
-            boxShadow: '0 4px 12px rgba(26, 190, 113, 0.2)',
-          }}
-          transition="all 0.15s ease"
-          onClick={() => router.push('/dashboard')}
-          css={{ animation: `${fadeUp} 0.6s ease-out 0.7s both` }}
-        >
-          Kembali ke Dashboard <ArrowRight size={14} style={{ marginLeft: 6 }} />
-        </Button>
+        {/* CTA Buttons */}
+        <Stack gap={2} css={{ animation: `${fadeUp} 0.6s ease-out 0.7s both` }}>
+          {sessionId && score !== null && score !== undefined && (
+            <Button
+              size="lg"
+              px={6}
+              height="40px"
+              borderRadius="md"
+              fontWeight="bold"
+              fontSize="13px"
+              bg="dd.brand"
+              color="white"
+              _hover={{
+                bg: 'dd.brand.hover',
+                transform: 'translateY(-1px)',
+              }}
+              transition="all 0.15s ease"
+              onClick={() => router.push(`/exams/results/${sessionId}`)}
+            >
+              Lihat Hasil Ujian <ArrowRight size={14} style={{ marginLeft: 6 }} />
+            </Button>
+          )}
+          <Button
+            size="lg"
+            px={6}
+            height="40px"
+            borderRadius="md"
+            fontWeight="bold"
+            fontSize="13px"
+            bg="dd.status.success.solid"
+            color="white"
+            _hover={{
+              bg: 'dd.status.success.solid',
+              transform: 'translateY(-1px)',
+              boxShadow: '0 4px 12px rgba(26, 190, 113, 0.2)',
+            }}
+            transition="all 0.15s ease"
+            onClick={() => router.push('/dashboard')}
+          >
+            Kembali ke Dashboard <ArrowRight size={14} style={{ marginLeft: 6 }} />
+          </Button>
+        </Stack>
       </Box>
     </Flex>
   );

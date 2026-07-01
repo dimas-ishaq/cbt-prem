@@ -512,6 +512,53 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
     });
   }
 
+  async getMySession(sessionId: string, userId: string) {
+    const student = await this.prisma.student.findUnique({
+      where: { userId },
+    });
+
+    if (!student) {
+      throw new NotFoundException('Student not found');
+    }
+
+    const session = await this.prisma.examSession.findFirst({
+      where: {
+        id: sessionId,
+        studentId: student.id,
+      },
+      include: {
+        exam: {
+          include: {
+            subject: true,
+          },
+        },
+        student: {
+          include: {
+            user: true,
+          },
+        },
+        answers: {
+          include: {
+            question: {
+              include: {
+                options: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!session) {
+      throw new NotFoundException('Session not found');
+    }
+
+    return {
+      ...session,
+      score: session.exam.showScore ? session.score : null,
+    };
+  }
+
   async getMyHistory(userId: string) {
     const student = await this.prisma.student.findUnique({
       where: { userId },
