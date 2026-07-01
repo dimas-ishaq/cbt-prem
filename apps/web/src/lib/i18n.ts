@@ -23,6 +23,7 @@ const resources = {
       logout: 'Keluar',
       cancelBtn: 'Batal',
       examCards: 'Kartu Ujian',
+      examAttendance: 'Daftar Hadir',
       reports: 'Laporan',
       loadingSubjects: 'Memuat data mata pelajaran...',
       subjectsTitle: 'Mata Pelajaran',

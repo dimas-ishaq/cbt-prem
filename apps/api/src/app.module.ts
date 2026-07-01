@@ -26,6 +26,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { AuditModule } from './audit/audit.module';
+import { ExamAttendanceModule } from './exam-attendance/exam-attendance.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { join } from 'path';
 
@@ -69,6 +70,7 @@ import { join } from 'path';
     DashboardModule,
     AuditModule,
     UploadsModule,
+    ExamAttendanceModule,
   ],
   controllers: [AppController],
   providers: [AppService],

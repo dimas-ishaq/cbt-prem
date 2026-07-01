@@ -87,6 +87,7 @@ model User {
   notificationRecipients NotificationRecipient[]
   notificationPreferences NotificationPreference[]
   notificationsCreated Notification[]
+  checkedInAttendances ExamAttendance[]
   roles         UserRole[]
 }
 
@@ -125,8 +126,9 @@ model Student {
   rombel    Rombel?  @relation(fields: [rombelId], references: [id], onDelete: SetNull)
   majorId   String?
   major     Major?   @relation(fields: [majorId], references: [id], onDelete: SetNull)
-  
+
   examSessions ExamSession[]
+  attendances  ExamAttendance[]
 }
 
 model Subject {
@@ -230,6 +232,7 @@ model Exam {
   examSessions  ExamSession[]
   targetRombels ExamTargetRombel[]
   targetMajors  ExamTargetMajor[]
+  attendances   ExamAttendance[]
 }
 
 model ExamQuestion {
@@ -320,6 +323,29 @@ model Violation {
   type          String         // TAB_SWITCH, DEVTOOLS, etc
   description   String?
   timestamp     DateTime       @default(now())
+}
+
+enum AttendanceStatus {
+  PRESENT
+  LATE
+  ABSENT
+}
+
+model ExamAttendance {
+  id           String           @id @default(uuid())
+  examId       String
+  exam         Exam             @relation(fields: [examId], references: [id], onDelete: Cascade)
+  studentId    String
+  student      Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  checkedInAt  DateTime         @default(now())
+  checkedInBy  String?
+  checkedInByUser User?         @relation(fields: [checkedInBy], references: [id], onDelete: SetNull)
+  status       AttendanceStatus @default(PRESENT)
+  qrPayload    String?
+
+  @@unique([examId, studentId])
+  @@index([examId])
+  @@index([studentId])
 }
 
 model Notification {

@@ -19,6 +19,7 @@ import {
   PanelLeftOpen,
   Bell,
   X,
+  QrCode,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/auth.store';
 import {
@@ -53,6 +54,7 @@ const menuGroups = [
       { name: 'Rombongan Belajar', href: '/admin/rombels', icon: Users, key: 'rombels' },
       { name: 'Pengguna', href: '/admin/users', icon: Users, key: 'users' },
       { name: 'Kartu Ujian', href: '/admin/exam-cards', icon: FileText, key: 'examCards' },
+      { name: 'Daftar Hadir', href: '/admin/exam-attendance', icon: QrCode, key: 'examAttendance' },
     ],
   },
   {
@@ -121,6 +123,9 @@ export function AdminSidebar({ collapsed, onToggleCollapse, mobileOpen, onMobile
           item.href === '/admin/reports'
         ) {
           return user?.role === 'SUPER_ADMIN';
+        }
+        if (item.href === '/admin/exam-attendance') {
+          return ['SUPER_ADMIN', 'ADMIN_SEKOLAH', 'GURU', 'PENGAWAS'].includes(user?.role || '');
         }
         return true;
       });
