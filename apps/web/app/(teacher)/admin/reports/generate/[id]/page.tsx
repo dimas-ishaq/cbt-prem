@@ -15,13 +15,15 @@ interface ReportItem {
   generateUrl: string;
 }
 
+const API_BASE = (api.defaults.baseURL ?? '').replace(/\/+$/, '');
+
 export default function ReportGeneratePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
 
   const { data, isLoading } = useQuery<ReportItem>({
     queryKey: ['report-item', id],
     queryFn: async () => {
-      const res = await api.get('/reports/recommendations');
+      const res = await api.get('/reports');
       const all = res.data;
       const segments = all.exam ?? [];
       const fallback = all.student ?? all.monitoring ?? all.operational ?? all.premium ?? [];
@@ -49,7 +51,7 @@ export default function ReportGeneratePage({ params }: { params: Promise<{ id: s
       <Text color="text.secondary" mb={6}>{data.description}</Text>
       <Box p={4} bg="brand.subtle" color="brand.text" mb={6} borderRadius="xl" fontSize="sm" border="1px solid" borderColor="border.default"><HStack gap={2}><Filter size={14} /><Text>{data.criteria}</Text></HStack></Box>
       <Stack gap={3} direction="row">
-        <a href={data.generateUrl} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}><Button bg="status.success.bg" color="status.success.text" borderRadius="xl" cursor="pointer" _hover={{ bg: 'status.success.text', color: 'text.primary' }}><Download size={14} /> Unduh Laporan</Button></a>
+        <a href={`${API_BASE}${data.generateUrl.startsWith('/') ? '' : '/'}${data.generateUrl}`} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}><Button bg="status.success.bg" color="status.success.text" borderRadius="xl" cursor="pointer" _hover={{ bg: 'status.success.text', color: 'text.primary' }}><Download size={14} /> Unduh Laporan</Button></a>
         <Link href="/admin/reports" style={{ textDecoration: 'none' }}><Button variant="outline" bg="bg.subtle" color="text.primary" borderColor="border.default" borderRadius="xl" cursor="pointer"><ArrowLeft size={14} /> Kembali</Button></Link>
       </Stack>
     </Box>
