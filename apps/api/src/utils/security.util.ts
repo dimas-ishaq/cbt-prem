@@ -35,8 +35,8 @@ export function decrypt(text: string): string {
 @Injectable()
 export class SecurityUtil {
   private rateLimitMap = new Map<string, { hits: number; lastReset: number }>();
-  private readonly MAX_HITS = 10;
-  private readonly WINDOW_MS = 30 * 1000; // 30 seconds
+  private readonly MAX_HITS = parseInt(process.env.UPLOAD_RATE_LIMIT || '10', 10);
+  private readonly WINDOW_MS = parseInt(process.env.UPLOAD_RATE_WINDOW_MS || '30000', 10);
 
   checkRateLimit(ip: string): boolean {
     const now = Date.now();

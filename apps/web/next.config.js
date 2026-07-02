@@ -20,11 +20,10 @@ const nextConfig = {
 
   async rewrites() {
     const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-    const apiOrigin = apiBase.replace(/\/api$/, '');
     return [
       {
         source: '/uploads/:path*',
-        destination: `${apiOrigin}/uploads/:path*`,
+        destination: `${apiBase}/uploads/:path*`,
       },
     ];
   },

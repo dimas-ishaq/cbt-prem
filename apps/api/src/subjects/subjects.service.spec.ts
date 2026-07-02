@@ -50,7 +50,7 @@ describe('SubjectsService', () => {
   });
 
   it('remove delete subject', async () => {
-    prisma.subject.findUnique.mockResolvedValue({ id: 's1' });
+    prisma.subject.findUnique.mockResolvedValue({ id: 's1', _count: { questionBanks: 0, exams: 0, teachers: 0 } });
     prisma.subject.delete.mockResolvedValue({ id: 's1' });
     const mod = await Test.createTestingModule({
       providers: [SubjectsService, { provide: PrismaService, useValue: prisma }],

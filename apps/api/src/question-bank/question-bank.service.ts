@@ -3,6 +3,29 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateQuestionBankDto } from './dto/create-question-bank.dto';
 import { UpdateQuestionBankDto } from './dto/update-question-bank.dto';
 import { Role } from '@prisma/client';
+import { join } from 'path';
+import { promises as fs } from 'fs';
+
+function extractFilePaths(html: string): string[] {
+  const srcRegex = /src="(\/uploads\/[^"]+)"/g;
+  const paths: string[] = [];
+  let match;
+  while ((match = srcRegex.exec(html)) !== null) {
+    paths.push(match[1]);
+  }
+  return paths;
+}
+
+async function unlinkUploadedFiles(...filePaths: string[]) {
+  for (const relPath of filePaths) {
+    try {
+      const fullPath = join(process.cwd(), relPath);
+      await fs.unlink(fullPath);
+    } catch {
+      // ignore
+    }
+  }
+}
 
 @Injectable()
 export class QuestionBankService {
@@ -52,7 +75,11 @@ export class QuestionBankService {
       include: { 
         subject: true, 
         questions: {
-          include: { options: true }
+          include: { options: true },
+          orderBy: [
+            { order: 'asc' },
+            { createdAt: 'asc' },
+          ],
         }
       },
     });
@@ -94,15 +121,50 @@ export class QuestionBankService {
     if (!bank) {
       throw new NotFoundException('Question bank not found');
     }
-    if (user.role === Role.SUPER_ADMIN || user.role === Role.ADMIN_SEKOLAH) {
-      return this.prisma.questionBank.delete({ where: { id } });
+    if (user.role !== Role.SUPER_ADMIN && user.role !== Role.ADMIN_SEKOLAH) {
+      const teacher = await this.prisma.teacher.findUnique({ where: { userId } });
+      if (!teacher) throw new ForbiddenException('Only teachers can manage question banks');
+      const allowedTeacherIds = new Set([bank.teacherId, ...bank.subject.teachers.map((t) => t.id)]);
+      if (!allowedTeacherIds.has(teacher.id)) {
+        throw new ForbiddenException('You do not own this question bank');
+      }
     }
-    const teacher = await this.prisma.teacher.findUnique({ where: { userId } });
-    if (!teacher) throw new ForbiddenException('Only teachers can manage question banks');
-    const allowedTeacherIds = new Set([bank.teacherId, ...bank.subject.teachers.map((t) => t.id)]);
-    if (!allowedTeacherIds.has(teacher.id)) {
-      throw new ForbiddenException('You do not own this question bank');
+
+    // Collect all question files in this bank to delete from disk
+    const questions = await this.prisma.question.findMany({
+      where: { questionBankId: id },
+      include: { options: true },
+    });
+    const filesToDelete: string[] = [];
+    for (const q of questions) {
+      if (q.mediaUrl) filesToDelete.push(q.mediaUrl);
+      if (q.content) filesToDelete.push(...extractFilePaths(q.content));
+      for (const opt of q.options ?? []) {
+        if (opt.content) filesToDelete.push(...extractFilePaths(opt.content));
+      }
     }
-    return this.prisma.questionBank.delete({ where: { id } });
+
+    // Delete related options, exam questions, answers, and questions in transaction first
+    const result = await this.prisma.$transaction(async (tx) => {
+      await tx.questionOption.deleteMany({
+        where: { question: { questionBankId: id } },
+      });
+      await tx.examQuestion.deleteMany({
+        where: { question: { questionBankId: id } },
+      });
+      await tx.answer.deleteMany({
+        where: { question: { questionBankId: id } },
+      });
+      await tx.question.deleteMany({
+        where: { questionBankId: id },
+      });
+      return tx.questionBank.delete({ where: { id } });
+    });
+
+    if (filesToDelete.length > 0) {
+      await unlinkUploadedFiles(...filesToDelete).catch(() => {});
+    }
+
+    return result;
   }
 }

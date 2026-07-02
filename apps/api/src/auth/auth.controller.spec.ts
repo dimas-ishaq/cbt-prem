@@ -54,7 +54,7 @@ describe('AuthController', () => {
 
   it('should reject login with wrong credentials', async () => {
     authServiceMock.validateUser.mockResolvedValue(null);
-    await expect(controller.login({ username: 'demo', password: 'wrong' }, { ip: '127.0.0.1', headers: {} } as any)).rejects.toThrow('Invalid credentials');
+    await expect(controller.login({ username: 'demo', password: 'wrong' }, { ip: '127.0.0.1', headers: {} } as any)).rejects.toThrow('Kredensial tidak valid');
   });
 
   it('should refresh token', async () => {

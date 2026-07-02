@@ -104,7 +104,7 @@ export class QuestionsController {
       throw new BadRequestException('File size must be less than 5MB');
     }
 
-    const uploadDir = join(process.cwd(), 'uploads', 'questions');
+    const uploadDir = join(process.cwd(), 'uploads', 'questions', 'images');
     await fs.mkdir(uploadDir, { recursive: true });
 
     const safeName = sanitizeFilename(file.originalname);
@@ -113,7 +113,7 @@ export class QuestionsController {
 
     await fs.writeFile(filePath, file.buffer);
 
-    return { url: `/uploads/questions/${filename}` };
+    return { url: `/uploads/questions/images/${filename}` };
   }
 
   @Post('preview-pdf')
@@ -188,6 +188,19 @@ export class QuestionsController {
   @Roles(Role.GURU, Role.SUPER_ADMIN)
   remove(@Param('id') id: string, @Req() req: RequestWithUser) {
     return this.questionsService.remove(id, req.user.userId);
+  }
+
+  @Patch('bank/:bankId/reorder')
+  @Roles(Role.GURU, Role.SUPER_ADMIN)
+  reorder(
+    @Param('bankId') bankId: string,
+    @Body('questionIds') questionIds: string[],
+    @Req() req: RequestWithUser,
+  ) {
+    if (!Array.isArray(questionIds)) {
+      throw new BadRequestException('questionIds must be an array of strings');
+    }
+    return this.questionsService.reorder(bankId, questionIds, req.user.userId);
   }
 
   @Delete('bank/:id')

@@ -41,8 +41,8 @@ import { ExamAttendanceModule } from './exam-attendance/exam-attendance.module';
     ScheduleModule.forRoot(),
     ThrottlerModule.forRoot([
       {
-        ttl: 60000,
-        limit: 60,
+        ttl: parseInt(process.env.THROTTLE_TTL || '60000', 10),
+        limit: parseInt(process.env.THROTTLE_LIMIT || '60', 10),
       },
     ]),
     MulterModule.registerAsync({

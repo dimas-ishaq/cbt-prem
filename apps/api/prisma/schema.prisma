@@ -169,6 +169,7 @@ model Question {
   tags           String[]
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
+  order          Int          @default(0)
 
   options        QuestionOption[]
   examQuestions  ExamQuestion[]

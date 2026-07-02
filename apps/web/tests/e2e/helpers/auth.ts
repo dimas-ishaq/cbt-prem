@@ -1,8 +1,8 @@
 export const API_URL = process.env.API_URL || 'http://localhost:3001/api';
 
-import { expect } from '@playwright/test';
+import { expect, Page } from '@playwright/test';
 
-export async function loginViaApi(page, { username, password }, baseURL) {
+export async function loginViaApi(page: Page, { username, password }: any, baseURL?: string) {
   const response = await page.request.post(`${API_URL}/auth/login`, {
     data: {
       username,

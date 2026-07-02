@@ -3,11 +3,14 @@ import { QuestionBankService } from './question-bank.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 describe('QuestionBankService', () => {
-  const prisma = { 
+  const prisma = {
     questionBank: { create: jest.fn(), findMany: jest.fn(), count: jest.fn(), findUnique: jest.fn(), update: jest.fn(), delete: jest.fn() },
     teacher: { findUnique: jest.fn(), findFirst: jest.fn() },
     user: { findUnique: jest.fn() }
   } as any;
+
+  prisma.user.findUnique.mockResolvedValue({ role: 'GURU' });
+  prisma.teacher.findUnique.mockResolvedValue({ id: 't1' });
 
   it('create attaches teacherId', async () => {
     prisma.teacher.findUnique.mockResolvedValue({ id: 't1' });

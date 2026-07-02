@@ -127,6 +127,10 @@ export class QuestionsService {
     return this.prisma.question.findMany({
       where: { questionBankId: bankId },
       include: { options: true },
+      orderBy: [
+        { order: 'asc' },
+        { createdAt: 'asc' },
+      ],
     });
   }
 
@@ -191,12 +195,39 @@ export class QuestionsService {
       }
     }
 
-    const result = await this.prisma.questionBank.delete({ where: { id } });
+    const result = await this.prisma.$transaction(async (tx) => {
+      await tx.questionOption.deleteMany({
+        where: { question: { questionBankId: id } },
+      });
+      await tx.examQuestion.deleteMany({
+        where: { question: { questionBankId: id } },
+      });
+      await tx.answer.deleteMany({
+        where: { question: { questionBankId: id } },
+      });
+      await tx.question.deleteMany({
+        where: { questionBankId: id },
+      });
+      return tx.questionBank.delete({ where: { id } });
+    });
+
     if (filesToDelete.length > 0) {
       await unlinkUploadedFiles(...filesToDelete).catch((err) =>
         this.logger.warn(`Failed to cleanup files for bank ${id}: ${err.message}`),
       );
     }
     return result;
+  }
+
+  async reorder(bankId: string, questionIds: string[], userId: string) {
+    await assertBankAccess(this.prisma, bankId, userId);
+    return this.prisma.$transaction(
+      questionIds.map((id, index) =>
+        this.prisma.question.update({
+          where: { id, questionBankId: bankId },
+          data: { order: index },
+        }),
+      ),
+    );
   }
 }

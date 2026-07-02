@@ -2,12 +2,19 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
-import { Plus, Trash2, Edit2, ChevronLeft, HelpCircle, FileDown, Download, Eye, AlertTriangle, CheckCircle2, X, FileQuestion, BookOpen, Image as ImageIcon, Layers } from 'lucide-react';
-import { useState, use, useRef, useMemo } from 'react';
+import { Plus, Trash2, Edit2, ChevronLeft, HelpCircle, FileDown, Download, Eye, AlertTriangle, CheckCircle2, X, FileQuestion, BookOpen, Image as ImageIcon, Layers, GripVertical } from 'lucide-react';
+import { useState, use, useRef, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { QuestionForm } from '@/components/admin/question-form';
+import { draggable, dropTargetForElements, monitorForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter';
+
+function combine(...cleanups: (() => void)[]) {
+  return () => {
+    cleanups.forEach((cleanup) => cleanup());
+  };
+}
 import {
   Box,
   Flex,
@@ -88,6 +95,139 @@ const typeLabel: Record<string, string> = {
   MULTIPLE_RESPONSE: 'Jawaban Ganda',
   ESSAY: 'Essay',
 };
+
+interface DraggableQuestionCardProps {
+  question: Question;
+  idx: number;
+  editingQuestionId: string | null;
+  setEditingQuestionId: (id: string | null) => void;
+  difficultyColor: Record<string, { bg: string; color: string }>;
+  typeLabel: Record<string, string>;
+  confirmDialog: any;
+  deleteQuestionMutation: any;
+  editQuestionMutation: any;
+  t: (key: string) => string;
+}
+
+function DraggableQuestionCard({
+  question,
+  idx,
+  editingQuestionId,
+  setEditingQuestionId,
+  difficultyColor,
+  typeLabel,
+  confirmDialog,
+  deleteQuestionMutation,
+  editQuestionMutation,
+  t,
+}: DraggableQuestionCardProps) {
+  const ref = useRef<HTMLDivElement>(null);
+  const dragHandleRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isOver, setIsOver] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    return combine(
+      draggable({
+        element: el,
+        dragHandle: dragHandleRef.current || undefined,
+        getInitialData: () => ({ id: question.id, index: idx }),
+        onDragStart: () => setIsDragging(true),
+        onDrop: () => setIsDragging(false),
+      }),
+      dropTargetForElements({
+        element: el,
+        getData: () => ({ id: question.id, index: idx }),
+        onDragEnter: () => setIsOver(true),
+        onDragLeave: () => setIsOver(false),
+        onDrop: () => setIsOver(false),
+      })
+    );
+  }, [question.id, idx]);
+
+  const dc = difficultyColor[question.difficulty] ?? { bg: 'status.warning.bg', color: 'status.warning.text' };
+
+  if (editingQuestionId === question.id) {
+    return (
+      <Box key={question.id} bg="bg.surface" borderRadius="lg" borderWidth="1px" borderColor="border.default" p={6} shadow="card-dark">
+        <Heading size="md" fontWeight="bold" mb={6} color="text.primary">{t('editQuestionTitle')}</Heading>
+        <QuestionForm initialData={question} onSubmit={(data) => editQuestionMutation.mutate({ questionId: question.id, data })} onCancel={() => setEditingQuestionId(null)} isSubmitting={editQuestionMutation.isPending} />
+      </Box>
+    );
+  }
+
+  return (
+    <Box
+      ref={ref}
+      key={question.id}
+      bg="bg.surface"
+      borderRadius="lg"
+      borderWidth="1px"
+      borderColor={isOver ? 'brand.solid' : 'border.default'}
+      borderStyle={isDragging ? 'dashed' : 'solid'}
+      opacity={isDragging ? 0.4 : 1}
+      overflow="hidden"
+      shadow={isOver ? 'elevated' : 'card-dark'}
+      _hover={{ shadow: 'elevated', borderColor: isOver ? 'brand.solid' : 'brand.muted' }}
+      transition="all 0.15s"
+      position="relative"
+    >
+      <Box p={4}>
+        <Flex justify="space-between" align="flex-start" mb={3}>
+          <HStack gap={2}>
+            <Box
+              ref={dragHandleRef}
+              cursor="grab"
+              _active={{ cursor: 'grabbing' }}
+              color="text.muted"
+              p={1}
+              borderRadius="sm"
+              _hover={{ bg: 'bg.subtle', color: 'text.primary' }}
+            >
+              <GripVertical size={16} />
+            </Box>
+            <Flex w={7} h={7} align="center" justify="center" borderRadius="sm" bg="brand.subtle" color="brand.text" fontWeight="bold" fontSize="xs">
+              {idx + 1}
+            </Flex>
+            <Badge fontSize="11px" fontWeight="semibold" px={2} py={0.5} bg="bg.subtle" color="text.secondary" borderRadius="sm">
+              {typeLabel[question.type] ?? question.type}
+            </Badge>
+            <Badge fontSize="11px" fontWeight="semibold" px={2} py={0.5} bg={dc.bg} color={dc.color} borderRadius="sm">
+              {question.difficulty}
+            </Badge>
+            <Badge fontSize="11px" fontWeight="semibold" px={2} py={0.5} bg="bg.subtle" color="text.secondary" borderRadius="sm">
+              {question.points} poin
+            </Badge>
+          </HStack>
+          <HStack gap={1}>
+            <IconButton variant="ghost" color="text.secondary" _hover={{ bg: 'bg.subtle' }} size="xs" borderRadius="sm" aria-label={t('editQuestionTitle')} onClick={() => setEditingQuestionId(question.id)} cursor="pointer"><Edit2 size={14} /></IconButton>
+            <IconButton variant="ghost" color="status.danger.text" _hover={{ bg: 'status.danger.bg' }} size="xs" borderRadius="sm" aria-label={t('deleteQuestionTitle')} onClick={async () => { const confirmed = await confirmDialog({ title: t('deleteQuestionTitle'), description: t('deleteQuestionDesc'), confirmText: t('deleteBtn') }); if (confirmed) deleteQuestionMutation.mutate(question.id); }} cursor="pointer"><Trash2 size={14} /></IconButton>
+          </HStack>
+        </Flex>
+        <Box color="text.primary" fontSize="sm" mb={3} dangerouslySetInnerHTML={{ __html: question.content }} />
+        {question.type !== 'ESSAY' && (
+          <SimpleGrid columns={{ base: 1, md: 2 }} gap={2}>
+            {question.options.map((option, optIdx) => (
+              <Flex key={option.id} p={2.5} borderWidth="1px" borderColor={option.isCorrect ? 'status.success.text' : 'border.default'} bg={option.isCorrect ? 'status.success.bg' : 'bg.surface'} borderRadius="md" align="center" gap={2}>
+                <Flex w={5} h={5} align="center" justify="center" borderRadius="sm" fontSize="10px" fontWeight="bold" bg={option.isCorrect ? 'status.success.text' : 'bg.subtle'} color={option.isCorrect ? 'text.inverted' : 'text.secondary'}>{String.fromCharCode(65 + optIdx)}</Flex>
+                <Text fontSize="sm" dangerouslySetInnerHTML={{ __html: option.content }} />
+              </Flex>
+            ))}
+          </SimpleGrid>
+        )}
+      </Box>
+      {question.mediaUrl && (
+        <Flex px={4} py={2} bg="bg.subtle" borderTopWidth="1px" borderColor="border.default" align="center" gap={2}>
+          <ImageIcon size={12} color="var(--chakra-colors-text-muted)" />
+          <Text fontSize="11px" color="text.muted">Ada media</Text>
+        </Flex>
+      )}
+    </Box>
+  );
+}
 
 export default function QuestionBankDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -232,6 +372,65 @@ export default function QuestionBankDetailPage({ params }: { params: Promise<{ i
       toast.error(error.response?.data?.message || 'Gagal menghapus bank soal');
     },
   });
+
+  const reorderQuestionsMutation = useMutation({
+    mutationFn: (questionIds: string[]) =>
+      api.patch(`/questions/bank/${id}/reorder`, { questionIds }),
+    onMutate: async (newQuestionIds) => {
+      await queryClient.cancelQueries({ queryKey: ['question-bank', id] });
+      const previousBank = queryClient.getQueryData<QuestionBank>(['question-bank', id]);
+      if (previousBank) {
+        const reorderedQuestions = [...previousBank.questions].sort((a, b) => {
+          return newQuestionIds.indexOf(a.id) - newQuestionIds.indexOf(b.id);
+        });
+        queryClient.setQueryData(['question-bank', id], {
+          ...previousBank,
+          questions: reorderedQuestions,
+        });
+      }
+      return { previousBank };
+    },
+    onError: (err, newQuestionIds, context) => {
+      if (context?.previousBank) {
+        queryClient.setQueryData(['question-bank', id], context.previousBank);
+      }
+      toast.error('Gagal memperbarui urutan soal');
+    },
+    onSuccess: () => {
+      toast.success('Urutan soal berhasil diperbarui');
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['question-bank', id] });
+    },
+  });
+
+  const moveQuestion = (fromIndex: number, toIndex: number) => {
+    if (!bank) return;
+    const questions = [...bank.questions];
+    const [moved] = questions.splice(fromIndex, 1);
+    if (moved) {
+      questions.splice(toIndex, 0, moved);
+      const reorderedIds = questions.map((q) => q.id);
+      reorderQuestionsMutation.mutate(reorderedIds);
+    }
+  };
+
+  useEffect(() => {
+    if (!bank) return;
+    return monitorForElements({
+      onDrop({ source, location }) {
+        const destination = location.current.dropTargets[0];
+        if (!destination) return;
+
+        const sourceIndex = source.data.index as number;
+        const destinationIndex = destination.data.index as number;
+
+        if (sourceIndex === destinationIndex) return;
+
+        moveQuestion(sourceIndex, destinationIndex);
+      },
+    });
+  }, [bank?.questions]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -464,52 +663,21 @@ export default function QuestionBankDetailPage({ params }: { params: Promise<{ i
           </Box>
         ) : (
           <Stack gap={4}>
-            {bank.questions.map((question, idx) => {
-              const dc = difficultyColor[question.difficulty] ?? { bg: 'status.warning.bg', color: 'status.warning.text' };
-              if (editingQuestionId === question.id) {
-                return (
-                  <Box key={question.id} bg="bg.surface" borderRadius="lg" borderWidth="1px" borderColor="border.default" p={6} shadow="card-dark">
-                    <Heading size="md" fontWeight="bold" mb={6} color="text.primary">{t('editQuestionTitle')}</Heading>
-                    <QuestionForm initialData={question} onSubmit={(data) => editQuestionMutation.mutate({ questionId: question.id, data })} onCancel={() => setEditingQuestionId(null)} isSubmitting={editQuestionMutation.isPending} />
-                  </Box>
-                );
-              }
-              return (
-                <Box key={question.id} bg="bg.surface" borderRadius="lg" borderWidth="1px" borderColor="border.default" overflow="hidden" shadow="card-dark" _hover={{ shadow: 'elevated', borderColor: 'brand.muted' }} transition="all 0.15s">
-                  <Box p={4}>
-                    <Flex justify="space-between" align="flex-start" mb={3}>
-                      <HStack gap={2}>
-                        <Flex w={7} h={7} align="center" justify="center" borderRadius="sm" bg="brand.subtle" color="brand.text" fontWeight="bold" fontSize="xs">{idx + 1}</Flex>
-                        <Badge fontSize="11px" fontWeight="semibold" px={2} py={0.5} bg="bg.subtle" color="text.secondary" borderRadius="sm">{typeLabel[question.type] ?? question.type}</Badge>
-                        <Badge fontSize="11px" fontWeight="semibold" px={2} py={0.5} bg={dc.bg} color={dc.color} borderRadius="sm">{question.difficulty}</Badge>
-                        <Badge fontSize="11px" fontWeight="semibold" px={2} py={0.5} bg="bg.subtle" color="text.secondary" borderRadius="sm">{question.points} poin</Badge>
-                      </HStack>
-                      <HStack gap={1}>
-                        <IconButton variant="ghost" color="text.secondary" _hover={{ bg: 'bg.subtle' }} size="xs" borderRadius="sm" aria-label={t('editQuestionTitle')} onClick={() => setEditingQuestionId(question.id)} cursor="pointer"><Edit2 size={14} /></IconButton>
-                        <IconButton variant="ghost" color="status.danger.text" _hover={{ bg: 'status.danger.bg' }} size="xs" borderRadius="sm" aria-label={t('deleteQuestionTitle')} onClick={async () => { const confirmed = await confirmDialog({ title: t('deleteQuestionTitle'), description: t('deleteQuestionDesc'), confirmText: t('deleteBtn') }); if (confirmed) deleteQuestionMutation.mutate(question.id); }} cursor="pointer"><Trash2 size={14} /></IconButton>
-                      </HStack>
-                    </Flex>
-                    <Box color="text.primary" fontSize="sm" mb={3} dangerouslySetInnerHTML={{ __html: question.content }} />
-                    {question.type !== 'ESSAY' && (
-                      <SimpleGrid columns={{ base: 1, md: 2 }} gap={2}>
-                        {question.options.map((option, optIdx) => (
-                          <Flex key={option.id} p={2.5} borderWidth="1px" borderColor={option.isCorrect ? 'status.success.text' : 'border.default'} bg={option.isCorrect ? 'status.success.bg' : 'bg.surface'} borderRadius="md" align="center" gap={2}>
-                            <Flex w={5} h={5} align="center" justify="center" borderRadius="sm" fontSize="10px" fontWeight="bold" bg={option.isCorrect ? 'status.success.text' : 'bg.subtle'} color={option.isCorrect ? 'text.inverted' : 'text.secondary'}>{String.fromCharCode(65 + optIdx)}</Flex>
-                            <Text fontSize="sm" dangerouslySetInnerHTML={{ __html: option.content }} />
-                          </Flex>
-                        ))}
-                      </SimpleGrid>
-                    )}
-                  </Box>
-                  {question.mediaUrl && (
-                    <Flex px={4} py={2} bg="bg.subtle" borderTopWidth="1px" borderColor="border.default" align="center" gap={2}>
-                      <ImageIcon size={12} color="var(--chakra-colors-text-muted)" />
-                      <Text fontSize="11px" color="text.muted">Ada media</Text>
-                    </Flex>
-                  )}
-                </Box>
-              );
-            })}
+            {bank.questions.map((question, idx) => (
+              <DraggableQuestionCard
+                key={question.id}
+                question={question}
+                idx={idx}
+                editingQuestionId={editingQuestionId}
+                setEditingQuestionId={setEditingQuestionId}
+                difficultyColor={difficultyColor}
+                typeLabel={typeLabel}
+                confirmDialog={confirmDialog}
+                deleteQuestionMutation={deleteQuestionMutation}
+                editQuestionMutation={editQuestionMutation}
+                t={t}
+              />
+            ))}
 
             {/* Empty state */}
             {bank.questions.length === 0 && !importPreview && (

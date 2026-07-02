@@ -20,6 +20,6 @@ describe('QuestionsController', () => {
       { provide: SecurityUtil, useValue: security },
     ] }).compile();
     const controller = mod.get(QuestionsController);
-    await expect(controller.create({} as any)).resolves.toEqual({ id: 'q1' });
+    await expect(controller.create({} as any, { user: { userId: 'u1' } } as any)).resolves.toEqual({ id: 'q1' });
   });
 });
