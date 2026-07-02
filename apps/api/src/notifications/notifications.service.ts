@@ -1,5 +1,6 @@
 import { Injectable, ForbiddenException, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
+import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateNotificationDto, NotificationTargetType, NotificationType } from './dto/create-notification.dto';
 import { Role } from '@prisma/client';
@@ -276,6 +277,46 @@ export class NotificationsService implements OnModuleInit {
     });
 
     return { success: true };
+  }
+
+  async getNotificationRetentionSettings() {
+    const setting = await this.prisma.setting.findUnique({
+      where: { key: 'notificationRetentionDays' },
+    });
+
+    return {
+      notificationRetentionDays: setting ? parseInt(setting.value, 10) : 0,
+    };
+  }
+
+  async updateNotificationRetentionSettings(dto: { notificationRetentionDays: number }) {
+    return this.prisma.setting.upsert({
+      where: { key: 'notificationRetentionDays' },
+      update: { value: String(dto.notificationRetentionDays) },
+      create: { key: 'notificationRetentionDays', value: String(dto.notificationRetentionDays) },
+    });
+  }
+
+  @Cron('0 0 * * *')
+  async handleNotificationCleanup() {
+    try {
+      const settings = await this.getNotificationRetentionSettings();
+      const days = settings.notificationRetentionDays;
+      if (!days || days <= 0) return;
+
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - days);
+
+      const result = await (this.prisma as any).notification.deleteMany({
+        where: {
+          createdAt: { lt: cutoff },
+        },
+      });
+
+      console.log(`[Notification Cleanup] Automated cleanup deleted ${result.count} notifications older than ${days} days.`);
+    } catch (error) {
+      console.error('[Notification Cleanup] Automated cleanup failed:', error);
+    }
   }
 
   private async resolveUserIdsByTarget(target: { type: NotificationTargetType; id: string }): Promise<string[]> {

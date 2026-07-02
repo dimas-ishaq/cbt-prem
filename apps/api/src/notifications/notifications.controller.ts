@@ -45,4 +45,18 @@ export class NotificationsController {
   async markRead(@Param('id') id: string, @Request() req) {
     return this.notificationsService.markRead(id, req.user.userId);
   }
+
+  @Get('settings')
+  @Roles(Role.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Ambil pengaturan retensi notifikasi' })
+  async getRetentionSettings() {
+    return this.notificationsService.getNotificationRetentionSettings();
+  }
+
+  @Post('settings')
+  @Roles(Role.SUPER_ADMIN)
+  @ApiOperation({ summary: 'Update pengaturan retensi notifikasi' })
+  async updateRetentionSettings(@Body() dto: { notificationRetentionDays: number }) {
+    return this.notificationsService.updateNotificationRetentionSettings(dto);
+  }
 }
