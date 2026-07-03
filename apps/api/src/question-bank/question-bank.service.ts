@@ -54,7 +54,9 @@ export class QuestionBankService {
     const teacher = await this.getTeacherOrThrow(userId);
     const targetTeacherId = teacher ? teacher.id : dto.teacherId;
     if (!targetTeacherId) {
-      throw new BadRequestException('teacherId wajib diisi untuk administrator');
+      throw new BadRequestException(
+        'teacherId wajib diisi untuk administrator',
+      );
     }
     return this.prisma.questionBank.create({
       data: {
@@ -147,7 +149,9 @@ export class QuestionBankService {
         where: { userId },
       });
       if (!teacher)
-        throw new ForbiddenException('Hanya guru yang bisa mengelola bank soal');
+        throw new ForbiddenException(
+          'Hanya guru yang bisa mengelola bank soal',
+        );
       const allowedTeacherIds = new Set([
         bank.teacherId,
         ...bank.subject.teachers.map((t) => t.id),

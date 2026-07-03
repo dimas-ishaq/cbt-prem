@@ -21,8 +21,7 @@ function assertQuestionValid(
   content: string,
   options: { content: string; isCorrect: boolean }[],
 ) {
-  if (!isNonEmptyHtml(content))
-    throw new Error('Isi soal tidak boleh kosong');
+  if (!isNonEmptyHtml(content)) throw new Error('Isi soal tidak boleh kosong');
   if (type === QuestionType.ESSAY) {
     if (options.length > 0)
       throw new Error('Soal essay tidak boleh punya opsi jawaban');

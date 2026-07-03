@@ -397,7 +397,9 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
         session.status !== SessionStatus.IN_PROGRESS &&
         session.status !== SessionStatus.LOCKED
       ) {
-        throw new BadRequestException('Sesi tidak sedang berjalan atau terkunci');
+        throw new BadRequestException(
+          'Sesi tidak sedang berjalan atau terkunci',
+        );
       }
 
       let totalScore = 0;
@@ -882,7 +884,9 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
 
   async bulkResetSessions(sessionIds: string[]) {
     if (!Array.isArray(sessionIds) || sessionIds.length === 0) {
-      throw new BadRequestException('ID sesi harus berupa array yang tidak kosong');
+      throw new BadRequestException(
+        'ID sesi harus berupa array yang tidak kosong',
+      );
     }
 
     return this.prisma.examSession.deleteMany({
