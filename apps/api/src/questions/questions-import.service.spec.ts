@@ -26,13 +26,13 @@ describe('QuestionsImportService', () => {
 
   it('parseQuestions handles plain doc', async () => {
     const service = await makeService();
-    const result = service.parseQuestions('<p>no markers</p>');
+    const result = service['parseQuestions']('<p>no markers</p>');
     expect(result.totalWarnings).toBeGreaterThanOrEqual(1);
   });
 
   it('parseQuestions returns warning for invalid doc', async () => {
     const service = await makeService();
-    const result = service.parseQuestions('<p>hello</p>');
+    const result = service['parseQuestions']('<p>hello</p>');
     expect(result.totalWarnings).toBeGreaterThanOrEqual(1);
   });
 
@@ -48,7 +48,7 @@ describe('QuestionsImportService', () => {
       <p>EQ</p>
       <p>END MULTIPLE CHOICE</p>
     `;
-    const result = service.parseQuestions(html);
+    const result = service['parseQuestions'](html);
     expect(result.success).toHaveLength(1);
     expect(result.success[0].options).toHaveLength(2);
     expect(result.success[0].options.some((o: any) => o.isCorrect)).toBe(true);
@@ -64,7 +64,7 @@ describe('QuestionsImportService', () => {
       <p>EQ</p>
       <p>END ESSAY</p>
     `;
-    const result = service.parseQuestions(html);
+    const result = service['parseQuestions'](html);
     expect(result.success).toHaveLength(1);
     expect(result.success[0].options).toHaveLength(0);
   });
@@ -77,7 +77,7 @@ describe('QuestionsImportService', () => {
       <p>SQ</p><p>Q2?</p><p>A. 3</p><p>B. 4</p><p>JAWABAN: B</p><p>EQ</p>
       <p>END MULTIPLE CHOICE</p>
     `;
-    const result = service.parseQuestions(html);
+    const result = service['parseQuestions'](html);
     expect(result.success).toHaveLength(2);
     expect(result.success[0].options[0].isCorrect).toBe(true);
     expect(result.success[1].options[1].isCorrect).toBe(true);
@@ -90,7 +90,7 @@ describe('QuestionsImportService', () => {
       <p>SQ</p><p>Q1?</p><p>A. 1</p><p>B. 2</p><p>EQ</p>
       <p>END MULTIPLE CHOICE</p>
     `;
-    const result = service.parseQuestions(html);
+    const result = service['parseQuestions'](html);
     expect(result.success).toHaveLength(0);
     expect(result.totalWarnings).toBeGreaterThan(0);
   });
@@ -104,7 +104,7 @@ describe('QuestionsImportService', () => {
       teacherId: 't1',
       subject: { teachers: [] },
     });
-    service.convertDocxToHtml = jest.fn().mockResolvedValue(`
+    service['convertDocxToHtml'] = jest.fn().mockResolvedValue(`
       <p>MULTIPLE CHOICE</p>
       <p>SQ</p><p>What is 2 + 2?</p><p>A. 3</p><p>B. 4</p><p>JAWABAN: B</p><p>EQ</p>
       <p>END MULTIPLE CHOICE</p>
