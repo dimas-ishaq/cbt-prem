@@ -1,52 +1,84 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # Dependencies
-node_modules
+node_modules/
 .pnp
 .pnp.js
 
-# Local env files
+# Local env files (Secrets)
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
-
-# Testing
-coverage
-
-# Turbo
-.turbo
-
-# Vercel
-.vercel
+.env.*.local
 
 # Build Outputs
 .next/
 out/
-build
-dist
-
-# Runtime / generated
-uploads/
-tmp/
+build/
+dist/
 *.tsbuildinfo
 
-# Per-app runtime
+# Turbo & Vercel
+.turbo/
+.vercel/
+
+# Runtime / Generated / Uploads
+uploads/
+tmp/
 apps/api/uploads/*
+!apps/api/uploads/.gitkeep
 apps/api/logs/
 apps/web/e2e-results/
+
+# Testing & Reports
+coverage/
 playwright-report/
 test-results/
+blob-report/
+playwright/.cache/
 
-# Audit docs (local only)
-reports.md
+# Documentation
+docs/
+*.md
+!README.md
+llms.txt
 
-# Debug
+# IDEs and Editors
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# Claude / Agent tools
+.claude/
+.system_generated/
+
+# Logs & Debug
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 
-# Misc
+# OS specific files
 .DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Databases (Local SQLite fallbacks)
+*.db
+*.db-journal
+*.sqlite
+*.sqlite-journal
+
+# Secrets / Certificates
 *.pem
+*.key
