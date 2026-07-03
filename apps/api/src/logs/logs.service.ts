@@ -108,10 +108,10 @@ export class LogsService {
       }
 
       console.log(
-        `[Log Cleanup] Automated cleanup deleted ${deletedCount} files older than ${days} days.`,
+        `[Autoclean log: membersihkan ${days} days.`,
       );
     } catch (error) {
-      console.error('[Log Cleanup] Automated cleanup failed:', error);
+      console.error('[Log Cleanup] Membersihkan gagal:', error);
     }
   }
 }

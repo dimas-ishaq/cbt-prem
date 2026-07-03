@@ -355,10 +355,10 @@ export class NotificationsService implements OnModuleInit {
       });
 
       console.log(
-        `[Notification Cleanup] Automated cleanup deleted ${result.count} notifications older than ${days} days.`,
+        `[Autoclean notifikasi: membersihkan ${result.count} notifications older than ${days} days.`,
       );
     } catch (error) {
-      console.error('[Notification Cleanup] Automated cleanup failed:', error);
+      console.error('[Notification Cleanup] Membersihkan gagal:', error);
     }
   }
 

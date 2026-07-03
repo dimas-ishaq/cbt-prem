@@ -362,7 +362,7 @@ export class RealtimeGateway
     } catch (error) {
       this.sendToUser(client.data.user.sub, 'unlock_rejected', {
         examId: data.examId,
-        message: error instanceof Error ? error.message : 'Token invalid',
+        message: error instanceof Error ? error.message : 'Token tidak valid',
       });
     }
   }
@@ -480,7 +480,7 @@ export class RealtimeGateway
       client.data.user.role !== 'GURU' &&
       client.data.user.role !== 'SUPER_ADMIN'
     ) {
-      console.warn('[realtime:add_student_time] rejected: unauthorized role', {
+      console.warn('[realtime:add_student_time] ditolak: role tidak berwenang', {
         role: client.data.user.role,
         examId: data.examId,
         studentId: data.studentId,
@@ -492,7 +492,7 @@ export class RealtimeGateway
       where: { userId: data.studentId },
     });
     if (!student) {
-      console.warn('[realtime:add_student_time] student not found', {
+      console.warn('[realtime:add_student_time] siswa tidak ditemukan', {
         examId: data.examId,
         studentId: data.studentId,
       });

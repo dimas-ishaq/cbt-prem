@@ -48,6 +48,7 @@ export default function ExamAttendancePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [scannerReady, setScannerReady] = useState(false);
+  const [scannerError, setScannerError] = useState<string | null>(null);
   const scannerRef = useRef<any>(null);
   const isScanningRef = useRef(false);
 
@@ -60,7 +61,7 @@ export default function ExamAttendancePage() {
   const { data: examsData, isLoading: examsLoading, refetch: refetchExams } = useQuery({
     queryKey: ['exam-attendance-exams'],
     queryFn: async () => {
-      const res = await api.get('/exams?take=200');
+      const res = await api.get('/exams');
       return Array.isArray(res.data) ? res.data : res.data?.data || [];
     },
   });
@@ -144,6 +145,7 @@ export default function ExamAttendancePage() {
 
     const startScanner = async () => {
       try {
+        setScannerError(null);
         const { Html5Qrcode } = await import('html5-qrcode');
         if (!mounted) return;
 
@@ -171,7 +173,9 @@ export default function ExamAttendancePage() {
         if (mounted) setScannerReady(true);
       } catch (error: any) {
         console.error(error);
-        toast.error('Kamera tidak bisa dibuka');
+        const message = 'Kamera tidak bisa dibuka';
+        setScannerError(message);
+        toast.error(message);
         setIsScannerOpen(false);
         setScannerReady(false);
       }
