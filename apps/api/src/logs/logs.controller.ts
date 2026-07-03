@@ -6,7 +6,7 @@ import { LogsService } from './logs.service';
 
 @Controller('logs')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('SUPER_ADMIN')
+@Roles(Role.SUPER_ADMIN)
 export class LogsController {
   constructor(private readonly logsService: LogsService) {}
 

@@ -45,7 +45,11 @@ export class AuthService {
       });
       const user = await this.usersService.findById(payload.sub);
       if (!user) throw new UnauthorizedException();
-      
+
+      if ((payload.authVersion ?? 0) !== user.authVersion) {
+        throw new UnauthorizedException('Token stale — re-login required');
+      }
+
       const newPayload = { username: user.username, sub: user.id, role: user.role, authVersion: user.authVersion ?? 0 };
       return {
         access_token: this.jwtService.sign(newPayload),

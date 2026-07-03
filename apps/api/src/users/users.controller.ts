@@ -28,6 +28,16 @@ import type { Response } from 'express';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  /** GET /users/export — CSV export */
+  @Get('export')
+  @Roles(Role.GURU, Role.SUPER_ADMIN)
+  async export(@Res() res: Response) {
+    const csv = await this.usersService.exportAllUsers();
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="users_export.csv"');
+    return res.status(200).send(csv);
+  }
+
   /** GET /users?role=GURU — list all users (super admin only) */
   @Get()
   @Roles(Role.SUPER_ADMIN)
@@ -85,16 +95,6 @@ export class UsersController {
   @Roles(Role.SUPER_ADMIN)
   remove(@Param('id') id: string) {
     return this.usersService.deleteUser(id);
-  }
-
-  /** GET /users/export — CSV export */
-  @Get('export')
-  @Roles(Role.GURU, Role.SUPER_ADMIN)
-  async export(@Res() res: Response) {
-    const csv = await this.usersService.exportAllUsers();
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', 'attachment; filename="users_export.csv"');
-    return res.status(200).send(csv);
   }
 
   /** POST /users/import — CSV import */

@@ -174,7 +174,7 @@ export class UsersService {
               },
             }
           : {}),
-        authVersion: { increment: 1 },
+        ...(dto.fullName || dto.email || dto.rombelId || dto.nip !== undefined ? {} : {}),
       },
       select: {
         id: true,
