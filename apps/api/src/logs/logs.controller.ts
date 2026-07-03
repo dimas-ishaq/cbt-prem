@@ -2,6 +2,7 @@ import { Controller, Get, Post, Delete, Query, Param, Body, UseGuards } from '@n
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '@prisma/client';
 import { LogsService } from './logs.service';
 
 @Controller('logs')

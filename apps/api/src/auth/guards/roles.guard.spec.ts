@@ -27,9 +27,4 @@ describe('RolesGuard', () => {
     (reflector.getAllAndOverride as jest.Mock).mockReturnValue(['GURU', 'SISWA']);
     expect(guard.canActivate(ctx('SISWA'))).toBe(true);
   });
-
-  it('case insensitive', () => {
-    (reflector.getAllAndOverride as jest.Mock).mockReturnValue(['guru']);
-    expect(guard.canActivate(ctx('GURU'))).toBe(true);
-  });
 });

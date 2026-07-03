@@ -174,7 +174,6 @@ export class UsersService {
               },
             }
           : {}),
-        ...(dto.fullName || dto.email || dto.rombelId || dto.nip !== undefined ? {} : {}),
       },
       select: {
         id: true,
