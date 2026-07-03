@@ -30,7 +30,9 @@ describe('ReportsController', () => {
 
   it('getRecommendations delegates', async () => {
     const { controller, service } = await setup();
-    await expect(controller.getRecommendations()).resolves.toEqual({ exam: [] });
+    await expect(controller.getRecommendations()).resolves.toEqual({
+      exam: [],
+    });
     expect(service.getAllReports).toHaveBeenCalledTimes(1);
   });
 

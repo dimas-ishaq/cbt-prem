@@ -29,7 +29,9 @@ describe('ReportsService', () => {
     prisma.violation.count.mockResolvedValue(1);
     prisma.auditLog.count.mockResolvedValue(3);
 
-    const mod = await Test.createTestingModule({ providers: [ReportsService, { provide: PrismaService, useValue: prisma }] }).compile();
+    const mod = await Test.createTestingModule({
+      providers: [ReportsService, { provide: PrismaService, useValue: prisma }],
+    }).compile();
     const service = mod.get(ReportsService);
 
     const res = await service.getAllReports();
@@ -48,19 +50,33 @@ describe('ReportsService', () => {
           nis: '123',
           rombelId: 'r1',
           majorId: 'm1',
-          user: { id: 'u1', fullName: 'Siswa A', username: 'siswa1', email: 'siswa1@test.com', isActive: true },
+          user: {
+            id: 'u1',
+            fullName: 'Siswa A',
+            username: 'siswa1',
+            email: 'siswa1@test.com',
+            isActive: true,
+          },
           rombel: { id: 'r1', name: 'X-A', major: { id: 'm1', name: 'IPA' } },
           major: { id: 'm1', name: 'IPA' },
         },
       ]);
 
-      const mod = await Test.createTestingModule({ providers: [ReportsService, { provide: PrismaService, useValue: prisma }] }).compile();
+      const mod = await Test.createTestingModule({
+        providers: [
+          ReportsService,
+          { provide: PrismaService, useValue: prisma },
+        ],
+      }).compile();
       const service = mod.get(ReportsService);
       const res = mockRes();
 
       await service.exportStudentMasterToExcel(res);
       expect(prisma.student.findMany).toHaveBeenCalled();
-      expect(res.setHeader).toHaveBeenCalledWith('Content-Type', expect.stringContaining('spreadsheetml'));
+      expect(res.setHeader).toHaveBeenCalledWith(
+        'Content-Type',
+        expect.stringContaining('spreadsheetml'),
+      );
       expect(res.end).toHaveBeenCalled();
     });
   });
@@ -69,7 +85,12 @@ describe('ReportsService', () => {
     it('writes empty workbook when no submitted sessions', async () => {
       prisma.examSession.count.mockResolvedValue(0);
 
-      const mod = await Test.createTestingModule({ providers: [ReportsService, { provide: PrismaService, useValue: prisma }] }).compile();
+      const mod = await Test.createTestingModule({
+        providers: [
+          ReportsService,
+          { provide: PrismaService, useValue: prisma },
+        ],
+      }).compile();
       const service = mod.get(ReportsService);
       const res = mockRes();
 
@@ -95,14 +116,25 @@ describe('ReportsService', () => {
           student: {
             id: 's1',
             nis: '123',
-            user: { id: 'u1', fullName: 'Siswa A', username: 'siswa1', email: 'a@a.com', isActive: true },
+            user: {
+              id: 'u1',
+              fullName: 'Siswa A',
+              username: 'siswa1',
+              email: 'a@a.com',
+              isActive: true,
+            },
             rombel: { id: 'r1', name: 'X-A', major: { id: 'm1', name: 'IPA' } },
             major: { id: 'm1', name: 'IPA' },
           },
         },
       ]);
 
-      const mod = await Test.createTestingModule({ providers: [ReportsService, { provide: PrismaService, useValue: prisma }] }).compile();
+      const mod = await Test.createTestingModule({
+        providers: [
+          ReportsService,
+          { provide: PrismaService, useValue: prisma },
+        ],
+      }).compile();
       const service = mod.get(ReportsService);
       const res = mockRes();
 
@@ -117,7 +149,12 @@ describe('ReportsService', () => {
     it('writes empty workbook when no violations', async () => {
       prisma.violation.findMany.mockResolvedValue([]);
 
-      const mod = await Test.createTestingModule({ providers: [ReportsService, { provide: PrismaService, useValue: prisma }] }).compile();
+      const mod = await Test.createTestingModule({
+        providers: [
+          ReportsService,
+          { provide: PrismaService, useValue: prisma },
+        ],
+      }).compile();
       const service = mod.get(ReportsService);
       const res = mockRes();
 
@@ -152,7 +189,12 @@ describe('ReportsService', () => {
         },
       ]);
 
-      const mod = await Test.createTestingModule({ providers: [ReportsService, { provide: PrismaService, useValue: prisma }] }).compile();
+      const mod = await Test.createTestingModule({
+        providers: [
+          ReportsService,
+          { provide: PrismaService, useValue: prisma },
+        ],
+      }).compile();
       const service = mod.get(ReportsService);
       const res = mockRes();
 
@@ -168,7 +210,12 @@ describe('ReportsService', () => {
       prisma.auditLog.findMany.mockResolvedValue([]);
       prisma.roleAuditLog.findMany.mockResolvedValue([]);
 
-      const mod = await Test.createTestingModule({ providers: [ReportsService, { provide: PrismaService, useValue: prisma }] }).compile();
+      const mod = await Test.createTestingModule({
+        providers: [
+          ReportsService,
+          { provide: PrismaService, useValue: prisma },
+        ],
+      }).compile();
       const service = mod.get(ReportsService);
       const res = mockRes();
 
@@ -203,7 +250,12 @@ describe('ReportsService', () => {
         },
       ]);
 
-      const mod = await Test.createTestingModule({ providers: [ReportsService, { provide: PrismaService, useValue: prisma }] }).compile();
+      const mod = await Test.createTestingModule({
+        providers: [
+          ReportsService,
+          { provide: PrismaService, useValue: prisma },
+        ],
+      }).compile();
       const service = mod.get(ReportsService);
       const res = mockRes();
 
@@ -217,7 +269,12 @@ describe('ReportsService', () => {
 
   describe('stub exports', () => {
     it('exportSubscriptionToExcel returns empty workbook', async () => {
-      const mod = await Test.createTestingModule({ providers: [ReportsService, { provide: PrismaService, useValue: prisma }] }).compile();
+      const mod = await Test.createTestingModule({
+        providers: [
+          ReportsService,
+          { provide: PrismaService, useValue: prisma },
+        ],
+      }).compile();
       const service = mod.get(ReportsService);
       const res = mockRes();
 
@@ -227,7 +284,12 @@ describe('ReportsService', () => {
     });
 
     it('exportRevenueToExcel returns empty workbook', async () => {
-      const mod = await Test.createTestingModule({ providers: [ReportsService, { provide: PrismaService, useValue: prisma }] }).compile();
+      const mod = await Test.createTestingModule({
+        providers: [
+          ReportsService,
+          { provide: PrismaService, useValue: prisma },
+        ],
+      }).compile();
       const service = mod.get(ReportsService);
       const res = mockRes();
 

@@ -20,19 +20,32 @@ describe('MajorsService', () => {
   it('create uppercases code', async () => {
     prisma.major.findFirst.mockResolvedValue(null);
     prisma.major.create.mockResolvedValue({ id: 'm1' });
-    const mod = await Test.createTestingModule({ providers: [MajorsService, { provide: PrismaService, useValue: prisma }] }).compile();
+    const mod = await Test.createTestingModule({
+      providers: [MajorsService, { provide: PrismaService, useValue: prisma }],
+    }).compile();
     const service = mod.get(MajorsService);
 
-    await expect(service.create({ name: 'IPA', code: 'ipa' } as any)).resolves.toEqual({ id: 'm1' });
-    expect(prisma.major.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ code: 'IPA' }) }));
+    await expect(
+      service.create({ name: 'IPA', code: 'ipa' } as any),
+    ).resolves.toEqual({ id: 'm1' });
+    expect(prisma.major.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ code: 'IPA' }),
+      }),
+    );
   });
 
   it('remove delete major', async () => {
     prisma.major.findUnique.mockResolvedValue({ id: 'm1' });
     prisma.major.delete.mockResolvedValue({ id: 'm1' });
-    const mod = await Test.createTestingModule({ providers: [MajorsService, { provide: PrismaService, useValue: prisma }] }).compile();
+    const mod = await Test.createTestingModule({
+      providers: [MajorsService, { provide: PrismaService, useValue: prisma }],
+    }).compile();
     const service = mod.get(MajorsService);
 
-    await expect(service.remove('m1')).resolves.toEqual({ success: true, message: 'Jurusan berhasil dihapus' });
+    await expect(service.remove('m1')).resolves.toEqual({
+      success: true,
+      message: 'Jurusan berhasil dihapus',
+    });
   });
 });

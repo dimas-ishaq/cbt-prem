@@ -10,7 +10,12 @@ import {
 import { Server, Socket } from 'socket.io';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
-import { Logger, Inject, forwardRef, OnModuleInit as NestOnModuleInit } from '@nestjs/common';
+import {
+  Logger,
+  Inject,
+  forwardRef,
+  OnModuleInit as NestOnModuleInit,
+} from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import { appendFileSync, mkdirSync } from 'fs';
 import path from 'path';
@@ -18,21 +23,34 @@ import path from 'path';
 import { SessionStatus } from '@prisma/client';
 import { ExamSessionsService } from '../exam-sessions/exam-sessions.service';
 import { NotificationsService } from '../notifications/notifications.service';
-import { NotificationType, NotificationPriority } from '../notifications/dto/create-notification.dto';
+import {
+  NotificationType,
+  NotificationPriority,
+} from '../notifications/dto/create-notification.dto';
 
 @WebSocketGateway({
   cors: {
-    origin: (process.env.CORS_ORIGINS ?? process.env.CORS_ORIGIN)?.split(',') || ['http://localhost:3000'],
+    origin: (process.env.CORS_ORIGINS ?? process.env.CORS_ORIGIN)?.split(
+      ',',
+    ) || ['http://localhost:3000'],
     methods: ['GET', 'POST'],
     credentials: true,
   },
 })
-export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect, NestOnModuleInit {
+export class RealtimeGateway
+  implements OnGatewayConnection, OnGatewayDisconnect, NestOnModuleInit
+{
   @WebSocketServer()
   server: Server;
 
   private readonly logger = new Logger('RealtimeGateway');
-  private readonly auditLogPath = path.join(process.cwd(), 'apps', 'api', 'logs', 'log.txt');
+  private readonly auditLogPath = path.join(
+    process.cwd(),
+    'apps',
+    'api',
+    'logs',
+    'log.txt',
+  );
 
   private writeAuditLog(message: string, meta: Record<string, any> = {}) {
     try {
@@ -43,7 +61,7 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
         'utf8',
       );
     } catch (error) {
-      this.logger.error(`Failed to write audit log: ${message}`, error as any);
+      this.logger.error(`Failed to write audit log: ${message}`, error);
     }
   }
 
@@ -57,8 +75,12 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
   ) {}
 
   onModuleInit() {
-    this.examSessionsService = this.moduleRef.get(ExamSessionsService, { strict: false });
-    this.notificationsService = this.moduleRef.get(NotificationsService, { strict: false });
+    this.examSessionsService = this.moduleRef.get(ExamSessionsService, {
+      strict: false,
+    });
+    this.notificationsService = this.moduleRef.get(NotificationsService, {
+      strict: false,
+    });
   }
 
   sendToUser(userId: string, event: string, payload: any) {
@@ -70,10 +92,12 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
       const token = client.handshake.auth.token;
       const payload = this.jwtService.verify(token);
       client.data.user = payload;
-      
+
       // Join a room based on their role/ID for targeted notifications
       client.join(`user_${payload.sub}`);
-      this.logger.log(`Client connected: ${client.id}, User: ${payload.username} (${payload.role})`);
+      this.logger.log(
+        `Client connected: ${client.id}, User: ${payload.username} (${payload.role})`,
+      );
     } catch (e) {
       this.logger.warn(`Connection handshake rejected for client ${client.id}`);
       client.disconnect();
@@ -82,7 +106,9 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
 
   handleDisconnect(client: Socket) {
     if (client.data.user) {
-      this.logger.log(`Client disconnected: ${client.id}, User: ${client.data.user.username}`);
+      this.logger.log(
+        `Client disconnected: ${client.id}, User: ${client.data.user.username}`,
+      );
       // Find which exams they were in and notify proctors
       // This is a bit simplified, in a large app you'd track active sessions
       this.server.emit('student_offline', {
@@ -101,7 +127,9 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     @MessageBody() data: { examId: string },
   ) {
     client.join(`exam_${data.examId}`);
-    this.logger.log(`Student ${client.data.user.username} joined exam room ${data.examId}`);
+    this.logger.log(
+      `Student ${client.data.user.username} joined exam room ${data.examId}`,
+    );
     // Notify proctors that a student joined
     this.server.to(`proctor_${data.examId}`).emit('student_joined', {
       userId: client.data.user.sub,
@@ -113,9 +141,11 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
   @SubscribeMessage('answer_changed')
   async handleAnswerChanged(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { examId: string, questionId: string, answer: any },
+    @MessageBody() data: { examId: string; questionId: string; answer: any },
   ) {
-    this.logger.log(`Student ${client.data.user.username} updated answer in exam ${data.examId} for question ${data.questionId}`);
+    this.logger.log(
+      `Student ${client.data.user.username} updated answer in exam ${data.examId} for question ${data.questionId}`,
+    );
     // Broadcast to proctors for real-time monitoring
     this.server.to(`proctor_${data.examId}`).emit('student_answer_update', {
       studentId: client.data.user.sub,
@@ -127,9 +157,11 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
   @SubscribeMessage('question_changed')
   async handleQuestionChanged(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { examId: string, questionIndex: number },
+    @MessageBody() data: { examId: string; questionIndex: number },
   ) {
-    this.logger.debug(`Student ${client.data.user.username} navigated to question index ${data.questionIndex} in exam ${data.examId}`);
+    this.logger.debug(
+      `Student ${client.data.user.username} navigated to question index ${data.questionIndex} in exam ${data.examId}`,
+    );
     this.server.to(`proctor_${data.examId}`).emit('student_question_update', {
       studentId: client.data.user.sub,
       questionIndex: data.questionIndex,
@@ -141,18 +173,25 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { examId: string },
   ) {
-    if (client.data.user.role === 'GURU' || client.data.user.role === 'SUPER_ADMIN') {
+    if (
+      client.data.user.role === 'GURU' ||
+      client.data.user.role === 'SUPER_ADMIN'
+    ) {
       client.join(`proctor_${data.examId}`);
-      this.logger.log(`Proctor ${client.data.user.username} joined monitoring room proctor_${data.examId}`);
+      this.logger.log(
+        `Proctor ${client.data.user.username} joined monitoring room proctor_${data.examId}`,
+      );
     }
   }
 
   @SubscribeMessage('violation_detected')
   async handleViolation(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { examId: string, type: string, description: string },
+    @MessageBody() data: { examId: string; type: string; description: string },
   ) {
-    this.logger.warn(`Violation detected for ${client.data.user.username} in exam ${data.examId}: [${data.type}] - ${data.description}`);
+    this.logger.warn(
+      `Violation detected for ${client.data.user.username} in exam ${data.examId}: [${data.type}] - ${data.description}`,
+    );
     // Save to database
     const student = await this.prisma.student.findUnique({
       where: { userId: client.data.user.sub },
@@ -181,21 +220,26 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
         });
 
         // Trigger notification
-        await this.notificationsService.create({
-          type: NotificationType.VIOLATION_DETECTED,
-          priority: NotificationPriority.HIGH,
-          title: 'Pelanggaran Terdeteksi',
-          message: `Siswa ${student.user.fullName} terdeteksi melakukan pelanggaran: ${data.description} pada ujian ${session.exam.title}`,
-          referenceId: session.id,
-          referenceType: 'exam_session',
-          targets: [
-            { type: 'ROLE' as any, id: 'GURU' },
-            { type: 'ROLE' as any, id: 'SUPER_ADMIN' },
-          ],
-        }, client.data.user.sub);
+        await this.notificationsService.create(
+          {
+            type: NotificationType.VIOLATION_DETECTED,
+            priority: NotificationPriority.HIGH,
+            title: 'Pelanggaran Terdeteksi',
+            message: `Siswa ${student.user.fullName} terdeteksi melakukan pelanggaran: ${data.description} pada ujian ${session.exam.title}`,
+            referenceId: session.id,
+            referenceType: 'exam_session',
+            targets: [
+              { type: 'ROLE' as any, id: 'GURU' },
+              { type: 'ROLE' as any, id: 'SUPER_ADMIN' },
+            ],
+          },
+          client.data.user.sub,
+        );
 
         // ─── Auto-lock check ────────────────────────────────────────────
-        const result = await this.examSessionsService.recordViolation(session.id);
+        const result = await this.examSessionsService.recordViolation(
+          session.id,
+        );
         if (result.locked) {
           // Emit to proctor room: WITH token
           this.server.to(`proctor_${data.examId}`).emit('session_auto_locked', {
@@ -206,7 +250,10 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
             expiresAt: result.lockTokenExpiresAt,
           });
           // Emit to student: NO token
-          this.sendToUser(client.data.user.sub, 'session_locked', { examId: data.examId, reason: 'auto_lock' });
+          this.sendToUser(client.data.user.sub, 'session_locked', {
+            examId: data.examId,
+            reason: 'auto_lock',
+          });
         }
       }
     }
@@ -223,9 +270,12 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
   @SubscribeMessage('lock_student')
   async handleLockStudent(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { examId: string, studentId: string },
+    @MessageBody() data: { examId: string; studentId: string },
   ) {
-    if (client.data.user.role !== 'GURU' && client.data.user.role !== 'SUPER_ADMIN') {
+    if (
+      client.data.user.role !== 'GURU' &&
+      client.data.user.role !== 'SUPER_ADMIN'
+    ) {
       return;
     }
 
@@ -246,7 +296,10 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
 
     const lockState = await this.examSessionsService.lockSession(session.id);
 
-    this.sendToUser(data.studentId, 'session_locked', { examId: data.examId, tokenExpiresAt: lockState.lockTokenExpiresAt });
+    this.sendToUser(data.studentId, 'session_locked', {
+      examId: data.examId,
+      tokenExpiresAt: lockState.lockTokenExpiresAt,
+    });
 
     this.server.to(`proctor_${data.examId}`).emit('student_locked', {
       studentId: data.studentId,
@@ -260,7 +313,10 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { examId: string },
   ) {
-    if (client.data.user.role !== 'GURU' && client.data.user.role !== 'SUPER_ADMIN') {
+    if (
+      client.data.user.role !== 'GURU' &&
+      client.data.user.role !== 'SUPER_ADMIN'
+    ) {
       return;
     }
 
@@ -278,7 +334,7 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
   @SubscribeMessage('student_request_unlock')
   async handleStudentRequestUnlock(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { examId: string, token: string },
+    @MessageBody() data: { examId: string; token: string },
   ) {
     const student = await this.prisma.student.findUnique({
       where: { userId: client.data.user.sub },
@@ -297,7 +353,9 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
 
     try {
       await this.examSessionsService.unlockWithToken(session.id, data.token);
-      this.sendToUser(client.data.user.sub, 'session_unlocked', { examId: data.examId });
+      this.sendToUser(client.data.user.sub, 'session_unlocked', {
+        examId: data.examId,
+      });
       this.server.to(`proctor_${data.examId}`).emit('student_unlocked', {
         studentId: client.data.user.sub,
       });
@@ -314,7 +372,10 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { examId: string },
   ) {
-    if (client.data.user.role !== 'GURU' && client.data.user.role !== 'SUPER_ADMIN') {
+    if (
+      client.data.user.role !== 'GURU' &&
+      client.data.user.role !== 'SUPER_ADMIN'
+    ) {
       return;
     }
 
@@ -330,9 +391,12 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
   @SubscribeMessage('unlock_student')
   async handleUnlockStudent(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { examId: string, studentId: string, token: string },
+    @MessageBody() data: { examId: string; studentId: string; token: string },
   ) {
-    if (client.data.user.role !== 'GURU' && client.data.user.role !== 'SUPER_ADMIN') {
+    if (
+      client.data.user.role !== 'GURU' &&
+      client.data.user.role !== 'SUPER_ADMIN'
+    ) {
       return;
     }
 
@@ -353,7 +417,9 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
 
     await this.examSessionsService.unlockWithToken(session.id, data.token);
 
-    this.sendToUser(data.studentId, 'session_unlocked', { examId: data.examId });
+    this.sendToUser(data.studentId, 'session_unlocked', {
+      examId: data.examId,
+    });
 
     this.server.to(`proctor_${data.examId}`).emit('student_unlocked', {
       studentId: data.studentId,
@@ -363,9 +429,12 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
   @SubscribeMessage('force_submit_student')
   async handleForceSubmitStudent(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { examId: string, studentId: string },
+    @MessageBody() data: { examId: string; studentId: string },
   ) {
-    if (client.data.user.role !== 'GURU' && client.data.user.role !== 'SUPER_ADMIN') {
+    if (
+      client.data.user.role !== 'GURU' &&
+      client.data.user.role !== 'SUPER_ADMIN'
+    ) {
       return;
     }
 
@@ -386,7 +455,9 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
 
     await this.examSessionsService.finishSession(session.id);
 
-    this.sendToUser(data.studentId, 'session_submitted', { examId: data.examId });
+    this.sendToUser(data.studentId, 'session_submitted', {
+      examId: data.examId,
+    });
 
     this.server.to(`proctor_${data.examId}`).emit('student_submitted', {
       studentId: data.studentId,
@@ -396,7 +467,7 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
   @SubscribeMessage('add_student_time')
   async handleAddStudentTime(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { examId: string, studentId: string, minutes: number },
+    @MessageBody() data: { examId: string; studentId: string; minutes: number },
   ) {
     console.info('[realtime:add_student_time] received', {
       examId: data.examId,
@@ -405,7 +476,10 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
       role: client.data.user.role,
     });
 
-    if (client.data.user.role !== 'GURU' && client.data.user.role !== 'SUPER_ADMIN') {
+    if (
+      client.data.user.role !== 'GURU' &&
+      client.data.user.role !== 'SUPER_ADMIN'
+    ) {
       console.warn('[realtime:add_student_time] rejected: unauthorized role', {
         role: client.data.user.role,
         examId: data.examId,
@@ -442,8 +516,12 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
       return;
     }
 
-    const currentEndTime = session.endTime ? new Date(session.endTime) : new Date();
-    const newEndTime = new Date(currentEndTime.getTime() + data.minutes * 60 * 1000);
+    const currentEndTime = session.endTime
+      ? new Date(session.endTime)
+      : new Date();
+    const newEndTime = new Date(
+      currentEndTime.getTime() + data.minutes * 60 * 1000,
+    );
     const newEndTimeIso = newEndTime.toISOString();
 
     await this.prisma.examSession.update({
@@ -471,8 +549,12 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
       newEndTime: newEndTimeIso,
       sessionId: updatedSession?.id || session.id,
       status: updatedSession?.status || session.status,
-      endTime: updatedSession?.endTime ? new Date(updatedSession.endTime).toISOString() : newEndTimeIso,
-      lastActiveAt: updatedSession?.lastActiveAt ? new Date(updatedSession.lastActiveAt).toISOString() : undefined,
+      endTime: updatedSession?.endTime
+        ? new Date(updatedSession.endTime).toISOString()
+        : newEndTimeIso,
+      lastActiveAt: updatedSession?.lastActiveAt
+        ? new Date(updatedSession.lastActiveAt).toISOString()
+        : undefined,
     };
 
     this.writeAuditLog('[realtime:add_student_time] updated', {
@@ -493,16 +575,24 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
 
     // Notify the exam room so the active student client can also consume the event
     this.server.to(`exam_${data.examId}`).emit('student_time_added', payload);
-    console.info('[realtime:add_student_time] emitted student_time_added to exam room', {
-      examId: data.examId,
-      studentId: data.studentId,
-    });
+    console.info(
+      '[realtime:add_student_time] emitted student_time_added to exam room',
+      {
+        examId: data.examId,
+        studentId: data.studentId,
+      },
+    );
 
     // Notify the proctor room
-    this.server.to(`proctor_${data.examId}`).emit('student_time_added', payload);
-    console.info('[realtime:add_student_time] emitted student_time_added to proctor room', {
-      examId: data.examId,
-      studentId: data.studentId,
-    });
+    this.server
+      .to(`proctor_${data.examId}`)
+      .emit('student_time_added', payload);
+    console.info(
+      '[realtime:add_student_time] emitted student_time_added to proctor room',
+      {
+        examId: data.examId,
+        studentId: data.studentId,
+      },
+    );
   }
 }

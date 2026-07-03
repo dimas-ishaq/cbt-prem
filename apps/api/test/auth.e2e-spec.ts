@@ -14,10 +14,14 @@ describe('Auth (e2e)', () => {
   const teacherId = 'cc000000-0000-4000-8000-000000000003';
 
   beforeAll(async () => {
-    const mod = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    const mod = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
     app = mod.createNestApplication();
     app.setGlobalPrefix('api');
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+    app.useGlobalPipes(
+      new ValidationPipe({ whitelist: true, transform: true }),
+    );
     await app.init();
     prisma = mod.get(PrismaService);
 
@@ -26,12 +30,34 @@ describe('Auth (e2e)', () => {
     await prisma.user.deleteMany({ where: { id: userId } });
 
     const pw = await bcrypt.hash('password123', 10);
-    await prisma.user.create({ data: { id: userId, username: 'auth-siswa@e2e.test', email: 'auth-siswa@e2e.test', password: pw, fullName: 'Auth Siswa', role: 'SISWA' } });
-    await prisma.user.create({ data: { id: teacherUid, username: 'auth-guru@e2e.test', email: 'auth-guru@e2e.test', password: pw, fullName: 'Auth Guru', role: 'GURU' } });
-    await prisma.teacher.create({ data: { id: teacherId, userId: teacherUid } });
+    await prisma.user.create({
+      data: {
+        id: userId,
+        username: 'auth-siswa@e2e.test',
+        email: 'auth-siswa@e2e.test',
+        password: pw,
+        fullName: 'Auth Siswa',
+        role: 'SISWA',
+      },
+    });
+    await prisma.user.create({
+      data: {
+        id: teacherUid,
+        username: 'auth-guru@e2e.test',
+        email: 'auth-guru@e2e.test',
+        password: pw,
+        fullName: 'Auth Guru',
+        role: 'GURU',
+      },
+    });
+    await prisma.teacher.create({
+      data: { id: teacherId, userId: teacherUid },
+    });
   }, 30000);
 
-  afterAll(async () => { await app.close(); });
+  afterAll(async () => {
+    await app.close();
+  });
 
   it('login reject unknown user', async () => {
     await request(app.getHttpServer())

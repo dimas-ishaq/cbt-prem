@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Body, Param, Delete, UseGuards, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Delete,
+  UseGuards,
+  Query,
+} from '@nestjs/common';
 import { TeachersService } from './teachers.service';
 import { CreateTeacherDto } from './dto/create-teacher.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
@@ -20,8 +29,15 @@ export class TeachersController {
 
   @Get()
   @Roles(Role.SUPER_ADMIN, Role.ADMIN_SEKOLAH)
-  findAll(@Query() pagination: PaginationDto, @Query('search') search?: string) {
-    return this.teachersService.findAll(search, pagination.skip, pagination.take);
+  findAll(
+    @Query() pagination: PaginationDto,
+    @Query('search') search?: string,
+  ) {
+    return this.teachersService.findAll(
+      search,
+      pagination.skip,
+      pagination.take,
+    );
   }
 
   @Delete(':id')

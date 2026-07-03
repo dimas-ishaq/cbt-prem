@@ -1,4 +1,11 @@
-import { Controller, Get, Param, Res, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Res,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { join, normalize, relative } from 'path';
 import * as fs from 'fs';
 import type { Response } from 'express';
@@ -18,7 +25,10 @@ export class UploadsController {
   }
 
   @Get('questions/images/:filename')
-  async getQuestionImage(@Param('filename') filename: string, @Res() res: Response) {
+  async getQuestionImage(
+    @Param('filename') filename: string,
+    @Res() res: Response,
+  ) {
     const baseDir = join(process.cwd(), 'uploads', 'questions', 'images');
     const safeName = filename.replace(/[^a-zA-Z0-9_.-]/g, '_');
     const filePath = normalize(join(baseDir, safeName));

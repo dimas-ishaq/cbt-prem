@@ -1,4 +1,15 @@
-import { IsString, IsOptional, IsUUID, IsDateString, IsInt, IsBoolean, IsEnum, IsArray, IsNotEmpty, ArrayMinSize } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsUUID,
+  IsDateString,
+  IsInt,
+  IsBoolean,
+  IsEnum,
+  IsArray,
+  IsNotEmpty,
+  ArrayMinSize,
+} from 'class-validator';
 import { ExamStatus } from '@prisma/client';
 
 export class CreateExamDto {

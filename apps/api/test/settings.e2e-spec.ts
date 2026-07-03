@@ -1,5 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication, CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import {
+  INestApplication,
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+} from '@nestjs/common';
 import request from 'supertest';
 import { SettingsController } from '../src/settings/settings.controller';
 import { SettingsService } from '../src/settings/settings.service';
@@ -50,7 +55,9 @@ describe('SettingsController (e2e)', () => {
       redisEnabled: 'true',
     });
 
-    const res = await request(app.getHttpServer()).get('/settings/public').expect(200);
+    const res = await request(app.getHttpServer())
+      .get('/settings/public')
+      .expect(200);
     expect(res.body).toEqual({ appName: 'CBT' });
   });
 
@@ -63,6 +70,8 @@ describe('SettingsController (e2e)', () => {
       .expect(201);
 
     expect(res.body).toEqual({ success: true });
-    expect(settingsServiceMock.updateMany).toHaveBeenCalledWith({ appName: 'New CBT' });
+    expect(settingsServiceMock.updateMany).toHaveBeenCalledWith({
+      appName: 'New CBT',
+    });
   });
 });

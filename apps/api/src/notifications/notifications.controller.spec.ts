@@ -21,7 +21,9 @@ describe('NotificationsController', () => {
     }).compile();
 
     const controller = mod.get(NotificationsController);
-    await expect(controller.create({} as any, { user: { userId: 'u1' } } as any)).resolves.toEqual({ id: 'n1' });
+    await expect(
+      controller.create({} as any, { user: { userId: 'u1' } } as any),
+    ).resolves.toEqual({ id: 'n1' });
     expect(service.create).toHaveBeenCalledWith({}, 'u1');
   });
 
@@ -33,6 +35,8 @@ describe('NotificationsController', () => {
     }).compile();
 
     const controller = mod.get(NotificationsController);
-    await expect(controller.countUnread({ user: { userId: 'u1' } } as any)).resolves.toEqual({ count: 7 });
+    await expect(
+      controller.countUnread({ user: { userId: 'u1' } } as any),
+    ).resolves.toEqual({ count: 7 });
   });
 });

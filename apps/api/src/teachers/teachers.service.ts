@@ -12,23 +12,25 @@ export class TeachersService {
   async create(dto: CreateTeacherDto) {
     const tempPassword = crypto.randomBytes(12).toString('hex');
     const hashedPassword = await bcrypt.hash(tempPassword, 10);
-    return this.prisma.user.create({
-      data: {
-        username: dto.username,
-        email: dto.email,
-        fullName: dto.fullName,
-        password: hashedPassword,
-        role: Role.GURU,
-        teacher: {
-          create: {
-            nip: dto.nip,
+    return this.prisma.user
+      .create({
+        data: {
+          username: dto.username,
+          email: dto.email,
+          fullName: dto.fullName,
+          password: hashedPassword,
+          role: Role.GURU,
+          teacher: {
+            create: {
+              nip: dto.nip,
+            },
           },
         },
-      },
-      include: {
-        teacher: true,
-      },
-    }).then(user => ({ ...user, temporaryPassword: tempPassword }));
+        include: {
+          teacher: true,
+        },
+      })
+      .then((user) => ({ ...user, temporaryPassword: tempPassword }));
   }
 
   async findAll(search?: string, skip?: number, take?: number) {

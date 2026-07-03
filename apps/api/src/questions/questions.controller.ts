@@ -50,8 +50,14 @@ export class QuestionsController {
   @Roles(Role.GURU, Role.SUPER_ADMIN)
   async downloadTemplate(@Res() res: Response) {
     const buffer = await this.templateService.generateTemplate();
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-    res.setHeader('Content-Disposition', 'attachment; filename=template-import-soal.docx');
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    );
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename=template-import-soal.docx',
+    );
     return res.send(buffer);
   }
 
@@ -69,8 +75,8 @@ export class QuestionsController {
       await fs.mkdir(dir, { recursive: true });
       const files = await fs.readdir(dir);
       const media = files
-          .filter((f) => /\.(jpe?g|png|gif|webp)$/i.test(f))
-          .map((f) => ({ url: `/uploads/questions/${f}`, name: f }));
+        .filter((f) => /\.(jpe?g|png|gif|webp)$/i.test(f))
+        .map((f) => ({ url: `/uploads/questions/${f}`, name: f }));
       return res.json(media);
     } catch (error) {
       return res.json([]);
@@ -79,29 +85,43 @@ export class QuestionsController {
 
   @Post('upload')
   @Roles(Role.GURU, Role.SUPER_ADMIN)
-  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 5 * 1024 * 1024 } }))
-  async uploadMedia(@UploadedFile() file: Express.Multer.File, @Req() req: RequestWithUser) {
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: 5 * 1024 * 1024 } }),
+  )
+  async uploadMedia(
+    @UploadedFile() file: Express.Multer.File,
+    @Req() req: RequestWithUser,
+  ) {
     if (!file) {
-      throw new BadRequestException('No file uploaded');
+      throw new BadRequestException('Tidak ada file yang diunggah');
     }
 
     const clientIp = req.ip || 'unknown';
     if (!this.securityUtil.checkRateLimit(clientIp)) {
-      throw new BadRequestException('Too many upload requests. Please try again later.');
+      throw new BadRequestException(
+        'Terlalu banyak permintaan unggah. Silakan coba lagi nanti.',
+      );
     }
 
-    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    const allowedMimeTypes = [
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'image/webp',
+    ];
     if (!allowedMimeTypes.includes(file.mimetype)) {
-      throw new BadRequestException('Only JPEG, PNG, GIF, WebP images are allowed');
+      throw new BadRequestException(
+        'Hanya gambar JPEG, PNG, GIF, dan WebP yang diizinkan',
+      );
     }
 
     if (!this.securityUtil.validateMagicBytes(file.buffer)) {
-      throw new BadRequestException('Invalid image file content');
+      throw new BadRequestException('Isi file gambar tidak valid');
     }
 
     const maxSize = 5 * 1024 * 1024; // 5MB
     if (file.size > maxSize) {
-      throw new BadRequestException('File size must be less than 5MB');
+      throw new BadRequestException('Ukuran file harus kurang dari 5MB');
     }
 
     const uploadDir = join(process.cwd(), 'uploads', 'questions', 'images');
@@ -118,20 +138,22 @@ export class QuestionsController {
 
   @Post('preview-pdf')
   @Roles(Role.GURU, Role.SUPER_ADMIN)
-  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 20 * 1024 * 1024 } }))
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: 20 * 1024 * 1024 } }),
+  )
   async uploadPreviewPdf(@UploadedFile() file: Express.Multer.File) {
     if (!file) {
-      throw new BadRequestException('No file uploaded');
+      throw new BadRequestException('Tidak ada file yang diunggah');
     }
 
     const allowedMimeTypes = ['application/pdf', 'application/octet-stream'];
     if (!allowedMimeTypes.includes(file.mimetype)) {
-      throw new BadRequestException('Only PDF files are allowed');
+      throw new BadRequestException('Hanya file PDF yang diizinkan');
     }
 
     const maxSize = 20 * 1024 * 1024; // 20MB
     if (file.size > maxSize) {
-      throw new BadRequestException('PDF size must be less than 20MB');
+      throw new BadRequestException('Ukuran PDF harus kurang dari 20MB');
     }
 
     const uploadDir = join(process.cwd(), 'uploads', 'tmp');
@@ -146,41 +168,55 @@ export class QuestionsController {
 
   @Post('import/:bankId/preview')
   @Roles(Role.GURU, Role.SUPER_ADMIN)
-  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 20 * 1024 * 1024 } }))
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: 20 * 1024 * 1024 } }),
+  )
   async previewImport(
     @Param('bankId') bankId: string,
     @UploadedFile() file: Express.Multer.File,
     @Req() req: RequestWithUser,
   ) {
     if (!file) {
-      throw new BadRequestException('No file uploaded');
+      throw new BadRequestException('Tidak ada file yang diunggah');
     }
-    if (file.mimetype !== 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-      throw new BadRequestException('Only DOCX files are allowed');
+    if (
+      file.mimetype !==
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ) {
+      throw new BadRequestException('Hanya file DOCX yang diizinkan');
     }
     return this.importService.previewFromDocx(bankId, req.user.userId, file);
   }
 
   @Post('import/:bankId')
   @Roles(Role.GURU, Role.SUPER_ADMIN)
-  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 20 * 1024 * 1024 } }))
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: 20 * 1024 * 1024 } }),
+  )
   async doImport(
     @Param('bankId') bankId: string,
     @UploadedFile() file: Express.Multer.File,
     @Req() req: RequestWithUser,
   ) {
     if (!file) {
-      throw new BadRequestException('No file uploaded');
+      throw new BadRequestException('Tidak ada file yang diunggah');
     }
-    if (file.mimetype !== 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-      throw new BadRequestException('Only DOCX files are allowed');
+    if (
+      file.mimetype !==
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ) {
+      throw new BadRequestException('Hanya file DOCX yang diizinkan');
     }
     return this.importService.importFromDocx(bankId, req.user.userId, file);
   }
 
   @Patch(':id')
   @Roles(Role.GURU, Role.SUPER_ADMIN)
-  update(@Param('id') id: string, @Body() dto: UpdateQuestionDto, @Req() req: RequestWithUser) {
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateQuestionDto,
+    @Req() req: RequestWithUser,
+  ) {
     return this.questionsService.update(id, dto, req.user.userId);
   }
 
@@ -198,7 +234,7 @@ export class QuestionsController {
     @Req() req: RequestWithUser,
   ) {
     if (!Array.isArray(questionIds)) {
-      throw new BadRequestException('questionIds must be an array of strings');
+      throw new BadRequestException('questionIds harus berupa array string');
     }
     return this.questionsService.reorder(bankId, questionIds, req.user.userId);
   }

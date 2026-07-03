@@ -13,21 +13,27 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bufferLogs: true,
   });
-  
+
   const logger = app.get(WinstonLogger);
   app.useLogger(logger);
-  
+
   app.use(helmet());
   app.use(json({ limit: '10mb' }));
   app.use(urlencoded({ limit: '10mb', extended: true }));
 
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    transform: true,
-  }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+    }),
+  );
   app.useGlobalFilters(new HttpExceptionFilter());
 
-  const corsOrigins = (process.env.CORS_ORIGIN ?? process.env.CORS_ORIGINS ?? '')
+  const corsOrigins = (
+    process.env.CORS_ORIGIN ??
+    process.env.CORS_ORIGINS ??
+    ''
+  )
     .split(',')
     .map((origin) => origin.trim().replace(/^["']|["']$/g, ''))
     .filter(Boolean);
@@ -39,7 +45,7 @@ async function bootstrap() {
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   });
   app.setGlobalPrefix('api');
-  
+
   await app.listen(process.env.PORT ?? 3001, '0.0.0.0');
 }
 bootstrap();

@@ -29,7 +29,9 @@ export class DashboardService {
         score: true,
       },
     });
-    const avgScore = sessionsWithScore._avg.score ? Math.round(sessionsWithScore._avg.score) : 0;
+    const avgScore = sessionsWithScore._avg.score
+      ? Math.round(sessionsWithScore._avg.score)
+      : 0;
 
     // 5. Recent Exams
     const recentExamsRaw = await this.prisma.exam.findMany({

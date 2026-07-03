@@ -21,6 +21,9 @@ describe('CBT flow (e2e smoke)', () => {
   });
 
   it('health endpoint is alive', async () => {
-    await request(app.getHttpServer()).get('/api/health').expect(200).expect('ok');
+    await request(app.getHttpServer())
+      .get('/api/health')
+      .expect(200)
+      .expect('ok');
   });
 });

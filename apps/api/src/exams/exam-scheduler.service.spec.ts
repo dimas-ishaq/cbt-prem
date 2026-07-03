@@ -10,7 +10,12 @@ describe('ExamSchedulerService', () => {
       .mockResolvedValueOnce({ count: 1 })
       .mockResolvedValueOnce({ count: 0 });
 
-    const mod = await Test.createTestingModule({ providers: [ExamSchedulerService, { provide: PrismaService, useValue: prisma }] }).compile();
+    const mod = await Test.createTestingModule({
+      providers: [
+        ExamSchedulerService,
+        { provide: PrismaService, useValue: prisma },
+      ],
+    }).compile();
     const service = mod.get(ExamSchedulerService);
 
     await service.handleExamStatusUpdates();

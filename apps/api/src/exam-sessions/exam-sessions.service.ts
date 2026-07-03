@@ -17,13 +17,19 @@ import { GradeAnswerDto } from './dto/grade-answer.dto';
 import { SessionStatus, ExamStatus } from '@prisma/client';
 import * as ExcelJS from 'exceljs';
 import { NotificationsService } from '../notifications/notifications.service';
-import { NotificationPriority, NotificationType } from '../notifications/dto/create-notification.dto';
+import {
+  NotificationPriority,
+  NotificationType,
+} from '../notifications/dto/create-notification.dto';
 
 @Injectable()
 export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(ExamSessionsService.name);
   private autoSubmitTimer: NodeJS.Timeout | null = null;
-  private readonly unlockAttempts = new Map<string, { count: number; resetAt: number; blockedUntil?: number }>();
+  private readonly unlockAttempts = new Map<
+    string,
+    { count: number; resetAt: number; blockedUntil?: number }
+  >();
   private readonly unlockAttemptWindowMs = 60_000;
   private readonly unlockAttemptBlockMs = 30_000;
   private readonly unlockAttemptLimit = 5;
@@ -43,7 +49,9 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
     }
 
     if (state.blockedUntil && now < state.blockedUntil) {
-      throw new BadRequestException('Terlalu banyak percobaan. Coba lagi beberapa saat.');
+      throw new BadRequestException(
+        'Terlalu banyak percobaan. Coba lagi beberapa saat.',
+      );
     }
 
     state.count += 1;
@@ -52,7 +60,9 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
       state.resetAt = now + this.unlockAttemptWindowMs;
       state.blockedUntil = now + this.unlockAttemptBlockMs;
       this.unlockAttempts.set(sessionId, state);
-      throw new BadRequestException('Terlalu banyak percobaan. Coba lagi beberapa saat.');
+      throw new BadRequestException(
+        'Terlalu banyak percobaan. Coba lagi beberapa saat.',
+      );
     }
 
     this.unlockAttempts.set(sessionId, state);
@@ -71,11 +81,17 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   onModuleInit() {
-    this.autoSubmitTimer = setInterval(() => {
-      this.autoSubmitExpiredSessions().catch((error) => {
-        this.logger.error(`Auto-submit job failed: ${error.message}`, error.stack);
-      });
-    }, 5 * 60 * 1000);
+    this.autoSubmitTimer = setInterval(
+      () => {
+        this.autoSubmitExpiredSessions().catch((error) => {
+          this.logger.error(
+            `Auto-submit job failed: ${error.message}`,
+            error.stack,
+          );
+        });
+      },
+      5 * 60 * 1000,
+    );
 
     void this.autoSubmitExpiredSessions();
   }
@@ -106,12 +122,20 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
       try {
         await this.finishSession(session.id);
       } catch (error) {
-        this.logger.warn(`Auto-submit skipped for session ${session.id}: ${error.message}`);
+        this.logger.warn(
+          `Auto-submit skipped for session ${session.id}: ${error.message}`,
+        );
       }
     }
   }
 
-  async startSession(dto: StartSessionDto, userId: string, userAgent?: string, sebConfigKey?: string, sebBrowserKey?: string) {
+  async startSession(
+    dto: StartSessionDto,
+    userId: string,
+    userAgent?: string,
+    sebConfigKey?: string,
+    sebBrowserKey?: string,
+  ) {
     // Get student record
     const student = await this.prisma.student.findUnique({
       where: { userId },
@@ -119,12 +143,14 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
     });
 
     if (!student) {
-      throw new ForbiddenException('User is not a student');
+      throw new ForbiddenException('Pengguna bukan siswa');
     }
 
     // Ownership check: student harus terdaftar minimal di satu rombel atau major
     if (!student.rombelId && !student.majorId) {
-      throw new ForbiddenException('Student is not assigned to any class or major');
+      throw new ForbiddenException(
+        'Student is not assigned to any class or major',
+      );
     }
 
     // Get exam record
@@ -133,22 +159,34 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
     });
 
     if (!exam) {
-      throw new NotFoundException('Exam not found');
+      throw new NotFoundException('Ujian tidak ditemukan');
     }
 
-    if (!this.isSebAllowed(exam.requireSeb, userAgent || '', sebConfigKey || '', sebBrowserKey || '', exam.sebConfigKey, exam.sebBrowserKey)) {
-      throw new ForbiddenException('Safe Exam Browser required');
+    if (
+      !this.isSebAllowed(
+        exam.requireSeb,
+        userAgent || '',
+        sebConfigKey || '',
+        sebBrowserKey || '',
+        exam.sebConfigKey,
+        exam.sebBrowserKey,
+      )
+    ) {
+      throw new ForbiddenException('Safe Exam Browser wajib digunakan');
     }
 
     // Validate exam status
-    if (exam.status !== ExamStatus.PUBLISHED && exam.status !== ExamStatus.ONGOING) {
-      throw new BadRequestException('Exam is not available');
+    if (
+      exam.status !== ExamStatus.PUBLISHED &&
+      exam.status !== ExamStatus.ONGOING
+    ) {
+      throw new BadRequestException('Ujian belum tersedia');
     }
 
     // Validate time
     const now = new Date();
     if (now < exam.startTime || now > exam.endTime) {
-      throw new BadRequestException('Exam is outside of scheduled time');
+      throw new BadRequestException('Ujian di luar jadwal');
     }
 
     if (exam.token && dto.token?.trim() !== exam.token.trim()) {
@@ -166,8 +204,11 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
     });
 
     if (existingSession) {
-      if (existingSession.status === SessionStatus.SUBMITTED || existingSession.status === SessionStatus.FINISHED) {
-        throw new BadRequestException('You have already submitted this exam');
+      if (
+        existingSession.status === SessionStatus.SUBMITTED ||
+        existingSession.status === SessionStatus.FINISHED
+      ) {
+        throw new BadRequestException('Anda sudah mengumpulkan ujian ini');
       }
       // Re-fetch with exam included so frontend can read duration
       return this.prisma.examSession.findUnique({
@@ -187,7 +228,9 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
       });
 
       if (completedSessions >= exam.maxAttempts) {
-        throw new BadRequestException(`You have reached the maximum attempts (${exam.maxAttempts}) for this exam`);
+        throw new BadRequestException(
+          `You have reached the maximum attempts (${exam.maxAttempts}) for this exam`,
+        );
       }
     }
 
@@ -201,7 +244,9 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
     });
 
     if (!attendance) {
-      throw new ForbiddenException('Student must check in before starting exam');
+      throw new ForbiddenException(
+        'Student must check in before starting exam',
+      );
     }
 
     // Create new session
@@ -229,7 +274,7 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
     });
 
     if (!student) {
-      throw new ForbiddenException('User is not a student');
+      throw new ForbiddenException('Pengguna bukan siswa');
     }
 
     return this.prisma.examSession.findUnique({
@@ -266,14 +311,14 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
       });
 
       if (!session) {
-        throw new NotFoundException('Session not found');
+        throw new NotFoundException('Sesi tidak ditemukan');
       }
 
       if (session.status !== SessionStatus.IN_PROGRESS) {
         if (session.status === SessionStatus.LOCKED) {
-          throw new BadRequestException('Session is locked by proctor');
+          throw new BadRequestException('Sesi dikunci oleh proktor');
         }
-        throw new BadRequestException('Session is not in progress');
+        throw new BadRequestException('Sesi belum berjalan');
       }
 
       // Validate if question belongs to exam
@@ -288,7 +333,7 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
       });
 
       if (!examQuestion) {
-        throw new BadRequestException('Question does not belong to this exam');
+        throw new BadRequestException('Soal tidak termasuk dalam ujian ini');
       }
 
       // Validate selectedOptionId belongs to question
@@ -297,7 +342,9 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
           (opt) => opt.id === dto.selectedOptionId,
         );
         if (!optionExists) {
-          throw new BadRequestException('Selected option does not belong to this question');
+          throw new BadRequestException(
+            'Selected option does not belong to this question',
+          );
         }
       }
 
@@ -343,11 +390,14 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
       });
 
       if (!session) {
-        throw new NotFoundException('Session not found');
+        throw new NotFoundException('Sesi tidak ditemukan');
       }
 
-      if (session.status !== SessionStatus.IN_PROGRESS && session.status !== SessionStatus.LOCKED) {
-        throw new BadRequestException('Session is not in progress or locked');
+      if (
+        session.status !== SessionStatus.IN_PROGRESS &&
+        session.status !== SessionStatus.LOCKED
+      ) {
+        throw new BadRequestException('Sesi tidak sedang berjalan atau terkunci');
       }
 
       let totalScore = 0;
@@ -355,8 +405,13 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
         let isCorrect = false;
         let score = 0;
 
-        if (answer.question.type === 'PILIHAN_GANDA' || answer.question.type === 'BENAR_SALAH') {
-          const correctOption = answer.question.options.find((opt) => opt.isCorrect);
+        if (
+          answer.question.type === 'PILIHAN_GANDA' ||
+          answer.question.type === 'BENAR_SALAH'
+        ) {
+          const correctOption = answer.question.options.find(
+            (opt) => opt.isCorrect,
+          );
           if (correctOption && correctOption.id === answer.selectedOption) {
             isCorrect = true;
             score = answer.question.points;
@@ -366,8 +421,13 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
             .filter((opt) => opt.isCorrect)
             .map((opt) => opt.id)
             .sort();
-          const selectedOptionIds = answer.selectedOption ? answer.selectedOption.split(',').sort() : [];
-          if (JSON.stringify(correctOptionIds) === JSON.stringify(selectedOptionIds)) {
+          const selectedOptionIds = answer.selectedOption
+            ? answer.selectedOption.split(',').sort()
+            : [];
+          if (
+            JSON.stringify(correctOptionIds) ===
+            JSON.stringify(selectedOptionIds)
+          ) {
             isCorrect = true;
             score = answer.question.points;
           }
@@ -395,18 +455,21 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
         },
       });
 
-      await this.notificationsService.create({
-        type: NotificationType.EXAM_SUBMITTED,
-        priority: NotificationPriority.NORMAL,
-        title: 'Ujian selesai',
-        message: `Siswa ${session.student.user.fullName} menyelesaikan ujian ${session.exam.title}`,
-        referenceId: updatedSession.id,
-        referenceType: 'exam_session',
-        targets: [
-          { type: 'ROLE' as any, id: 'GURU' },
-          { type: 'ROLE' as any, id: 'SUPER_ADMIN' },
-        ],
-      }, session.student.userId);
+      await this.notificationsService.create(
+        {
+          type: NotificationType.EXAM_SUBMITTED,
+          priority: NotificationPriority.NORMAL,
+          title: 'Ujian selesai',
+          message: `Siswa ${session.student.user.fullName} menyelesaikan ujian ${session.exam.title}`,
+          referenceId: updatedSession.id,
+          referenceType: 'exam_session',
+          targets: [
+            { type: 'ROLE' as any, id: 'GURU' },
+            { type: 'ROLE' as any, id: 'SUPER_ADMIN' },
+          ],
+        },
+        session.student.userId,
+      );
 
       return {
         ...updatedSession,
@@ -427,7 +490,7 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
 
     if (dto.score > answerRecord.question.points) {
       throw new BadRequestException(
-        `Skor (${dto.score}) melebihi batas maksimum poin untuk pertanyaan ini (${answerRecord.question.points} poin).`
+        `Skor (${dto.score}) melebihi batas maksimum poin untuk pertanyaan ini (${answerRecord.question.points} poin).`,
       );
     }
 
@@ -448,7 +511,10 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
       where: { examSessionId: answer.examSessionId },
     });
 
-    const totalScore = allAnswers.reduce((sum, ans) => sum + (ans.score || 0), 0);
+    const totalScore = allAnswers.reduce(
+      (sum, ans) => sum + (ans.score || 0),
+      0,
+    );
 
     await this.prisma.examSession.update({
       where: { id: answer.examSessionId },
@@ -502,7 +568,14 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
     return this.gradeAnswer(answerId, dto);
   }
 
-  async getExamSessions(examId: string, page?: number, limit?: number, search?: string, status?: string, rombelId?: string) {
+  async getExamSessions(
+    examId: string,
+    page?: number,
+    limit?: number,
+    search?: string,
+    status?: string,
+    rombelId?: string,
+  ) {
     const q = search?.trim();
     const where: any = { examId };
 
@@ -544,7 +617,12 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
             select: { questionId: true }, // lightweight — need questionId to track uniqueness
           },
           violations: {
-            select: { id: true, type: true, description: true, timestamp: true },
+            select: {
+              id: true,
+              type: true,
+              description: true,
+              timestamp: true,
+            },
             orderBy: { timestamp: 'desc' },
           },
         },
@@ -570,21 +648,21 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
         exam: {
           include: {
             subject: true,
-          }
+          },
         },
         student: {
           include: {
             user: true,
-          }
+          },
         },
         answers: {
           include: {
             question: {
               include: {
                 options: true,
-              }
+              },
             },
-          }
+          },
         },
       },
     });
@@ -596,7 +674,7 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
     });
 
     if (!student) {
-      throw new NotFoundException('Student not found');
+      throw new NotFoundException('Siswa tidak ditemukan');
     }
 
     const session = await this.prisma.examSession.findFirst({
@@ -628,7 +706,7 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
     });
 
     if (!session) {
-      throw new NotFoundException('Session not found');
+      throw new NotFoundException('Sesi tidak ditemukan');
     }
 
     return {
@@ -644,34 +722,38 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
     });
 
     if (!student) {
-      throw new NotFoundException('Student not found');
+      throw new NotFoundException('Siswa tidak ditemukan');
     }
 
     const history = await this.prisma.examSession.findMany({
       where: {
         studentId: student.id,
         status: {
-          in: [SessionStatus.SUBMITTED, SessionStatus.FINISHED, SessionStatus.LOCKED]
-        }
+          in: [
+            SessionStatus.SUBMITTED,
+            SessionStatus.FINISHED,
+            SessionStatus.LOCKED,
+          ],
+        },
       },
       include: {
         exam: {
           include: {
             subject: true,
-          }
+          },
         },
         _count: {
           select: {
             answers: true,
-          }
-        }
+          },
+        },
       },
       orderBy: {
         endTime: 'desc',
       },
     });
 
-    return history.map(session => ({
+    return history.map((session) => ({
       ...session,
       submittedAt: session.submittedAt ?? session.endTime ?? null,
       score: session.exam.showScore ? session.score : null,
@@ -684,7 +766,13 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
 
     return this.prisma.examSession.findMany({
       where: {
-        status: { in: [SessionStatus.SUBMITTED, SessionStatus.FINISHED, SessionStatus.LOCKED] },
+        status: {
+          in: [
+            SessionStatus.SUBMITTED,
+            SessionStatus.FINISHED,
+            SessionStatus.LOCKED,
+          ],
+        },
         exam: {
           startTime: {
             ...(from ? { gte: from } : {}),
@@ -696,7 +784,10 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
         exam: { include: { subject: true } },
         student: { include: { user: true, rombel: true } },
         answers: { select: { id: true } },
-        violations: { select: { id: true, type: true, description: true, timestamp: true }, orderBy: { timestamp: 'desc' } },
+        violations: {
+          select: { id: true, type: true, description: true, timestamp: true },
+          orderBy: { timestamp: 'desc' },
+        },
       },
       orderBy: { endTime: 'desc' },
     });
@@ -712,10 +803,7 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
           ...(from ? { gte: from } : {}),
           ...(to ? { lte: to } : {}),
         },
-        OR: [
-          { status: ExamStatus.PUBLISHED },
-          { status: ExamStatus.ONGOING },
-        ],
+        OR: [{ status: ExamStatus.PUBLISHED }, { status: ExamStatus.ONGOING }],
       },
       include: {
         subject: true,
@@ -731,7 +819,7 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
       include: { subject: true },
     });
 
-    if (!exam) throw new NotFoundException('Exam not found');
+    if (!exam) throw new NotFoundException('Ujian tidak ditemukan');
 
     const raw = await this.getExamSessions(examId);
     const sessions = Array.isArray(raw) ? raw : raw.data;
@@ -759,7 +847,10 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
     sessions.forEach((session, index) => {
       const start = session.startTime ? new Date(session.startTime) : null;
       const end = session.endTime ? new Date(session.endTime) : null;
-      const timeSpent = (start && end) ? Math.round((end.getTime() - start.getTime()) / 60000) : '-';
+      const timeSpent =
+        start && end
+          ? Math.round((end.getTime() - start.getTime()) / 60000)
+          : '-';
 
       worksheet.addRow({
         no: index + 1,
@@ -781,7 +872,7 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
     });
 
     if (!session) {
-      throw new NotFoundException('Session not found');
+      throw new NotFoundException('Sesi tidak ditemukan');
     }
 
     return this.prisma.examSession.delete({
@@ -791,7 +882,7 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
 
   async bulkResetSessions(sessionIds: string[]) {
     if (!Array.isArray(sessionIds) || sessionIds.length === 0) {
-      throw new BadRequestException('Session IDs must be a non-empty array');
+      throw new BadRequestException('ID sesi harus berupa array yang tidak kosong');
     }
 
     return this.prisma.examSession.deleteMany({
@@ -833,12 +924,19 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
       let token: string;
       let expiresAt: Date;
 
-      if (tokenState && tokenState.token && tokenState.tokenExpiresAt && tokenState.tokenExpiresAt > now) {
+      if (
+        tokenState &&
+        tokenState.token &&
+        tokenState.tokenExpiresAt &&
+        tokenState.tokenExpiresAt > now
+      ) {
         token = tokenState.token;
         expiresAt = tokenState.tokenExpiresAt;
       } else {
         token = this.generateTokenHex();
-        expiresAt = new Date(now.getTime() + this.TOKEN_EXPIRY_MINUTES * 60 * 1000);
+        expiresAt = new Date(
+          now.getTime() + this.TOKEN_EXPIRY_MINUTES * 60 * 1000,
+        );
 
         await tx.lockTokenState.upsert({
           where: { id: 'global' },
@@ -880,7 +978,7 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
 
     if (!session) {
       this.clearUnlockAttemptLimit(sessionId);
-      throw new NotFoundException('Session not found');
+      throw new NotFoundException('Sesi tidak ditemukan');
     }
 
     if (session.status !== SessionStatus.LOCKED) {
@@ -889,7 +987,9 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
     }
 
     if (!tokenState || !tokenState.token) {
-      throw new BadRequestException('Token tidak tersedia, minta token baru ke proktor');
+      throw new BadRequestException(
+        'Token tidak tersedia, minta token baru ke proktor',
+      );
     }
 
     if (tokenState.token !== token.toUpperCase()) {
@@ -897,7 +997,9 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
     }
 
     if (!tokenState.tokenExpiresAt || tokenState.tokenExpiresAt < new Date()) {
-      throw new BadRequestException('Token kedaluwarsa, minta token baru ke proktor');
+      throw new BadRequestException(
+        'Token kedaluwarsa, minta token baru ke proktor',
+      );
     }
 
     await this.prisma.examSession.update({
@@ -919,12 +1021,22 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
       where: { id: 'global' },
     });
 
-    if (tokenState && tokenState.token && tokenState.tokenExpiresAt && tokenState.tokenExpiresAt > now) {
-      return { lockToken: tokenState.token, lockTokenExpiresAt: tokenState.tokenExpiresAt };
+    if (
+      tokenState &&
+      tokenState.token &&
+      tokenState.tokenExpiresAt &&
+      tokenState.tokenExpiresAt > now
+    ) {
+      return {
+        lockToken: tokenState.token,
+        lockTokenExpiresAt: tokenState.tokenExpiresAt,
+      };
     }
 
     const token = this.generateTokenHex();
-    const expiresAt = new Date(now.getTime() + this.TOKEN_EXPIRY_MINUTES * 60 * 1000);
+    const expiresAt = new Date(
+      now.getTime() + this.TOKEN_EXPIRY_MINUTES * 60 * 1000,
+    );
 
     const saved = await this.prisma.lockTokenState.upsert({
       where: { id: 'global' },
@@ -940,7 +1052,12 @@ export class ExamSessionsService implements OnModuleInit, OnModuleDestroy {
 
     const lockedSessions = await this.prisma.examSession.findMany({
       where: { status: SessionStatus.LOCKED },
-      select: { id: true, studentId: true, lockedCount: true, violationCount: true },
+      select: {
+        id: true,
+        studentId: true,
+        lockedCount: true,
+        violationCount: true,
+      },
     });
 
     return {

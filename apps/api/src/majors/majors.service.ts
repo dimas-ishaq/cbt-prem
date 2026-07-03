@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateMajorDto } from './dto/create-major.dto';
 import { UpdateMajorDto } from './dto/update-major.dto';
@@ -45,7 +49,9 @@ export class MajorsService {
       },
     });
     if (existing) {
-      throw new BadRequestException('Jurusan dengan Nama atau Kode tersebut sudah terdaftar');
+      throw new BadRequestException(
+        'Jurusan dengan Nama atau Kode tersebut sudah terdaftar',
+      );
     }
 
     return this.prisma.major.create({

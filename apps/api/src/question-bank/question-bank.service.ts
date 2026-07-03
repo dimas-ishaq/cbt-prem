@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateQuestionBankDto } from './dto/create-question-bank.dto';
 import { UpdateQuestionBankDto } from './dto/update-question-bank.dto';
@@ -33,10 +38,15 @@ export class QuestionBankService {
 
   private async getTeacherOrThrow(userId: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new ForbiddenException('Only teachers or administrators can manage question banks');
-    if (user.role === Role.SUPER_ADMIN || user.role === Role.ADMIN_SEKOLAH) return null;
+    if (!user)
+      throw new ForbiddenException(
+        'Hanya guru atau administrator yang bisa mengelola bank soal',
+      );
+    if (user.role === Role.SUPER_ADMIN || user.role === Role.ADMIN_SEKOLAH)
+      return null;
     const teacher = await this.prisma.teacher.findUnique({ where: { userId } });
-    if (!teacher) throw new ForbiddenException('Only teachers can manage question banks');
+    if (!teacher)
+      throw new ForbiddenException('Hanya guru yang bisa mengelola bank soal');
     return teacher;
   }
 
@@ -44,7 +54,7 @@ export class QuestionBankService {
     const teacher = await this.getTeacherOrThrow(userId);
     const targetTeacherId = teacher ? teacher.id : dto.teacherId;
     if (!targetTeacherId) {
-      throw new BadRequestException('teacherId is required for administrators');
+      throw new BadRequestException('teacherId wajib diisi untuk administrator');
     }
     return this.prisma.questionBank.create({
       data: {
@@ -72,37 +82,45 @@ export class QuestionBankService {
   async findOne(id: string) {
     return this.prisma.questionBank.findUnique({
       where: { id },
-      include: { 
-        subject: true, 
+      include: {
+        subject: true,
         questions: {
           include: { options: true },
-          orderBy: [
-            { order: 'asc' },
-            { createdAt: 'asc' },
-          ],
-        }
+          orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+        },
       },
     });
   }
 
   async update(id: string, dto: UpdateQuestionBankDto, userId: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new ForbiddenException('Only teachers or administrators can manage question banks');
+    if (!user)
+      throw new ForbiddenException(
+        'Hanya guru atau administrator yang bisa mengelola bank soal',
+      );
     const bank = await this.prisma.questionBank.findUnique({
       where: { id },
       include: { subject: { include: { teachers: { select: { id: true } } } } },
     });
     if (!bank) {
-      throw new NotFoundException('Question bank not found');
+      throw new NotFoundException('Bank soal tidak ditemukan');
     }
     if (user.role === Role.SUPER_ADMIN || user.role === Role.ADMIN_SEKOLAH) {
-      return this.prisma.questionBank.update({ where: { id }, data: dto, include: { subject: true } });
+      return this.prisma.questionBank.update({
+        where: { id },
+        data: dto,
+        include: { subject: true },
+      });
     }
     const teacher = await this.prisma.teacher.findUnique({ where: { userId } });
-    if (!teacher) throw new ForbiddenException('Only teachers can manage question banks');
-    const allowedTeacherIds = new Set([bank.teacherId, ...bank.subject.teachers.map((t) => t.id)]);
+    if (!teacher)
+      throw new ForbiddenException('Hanya guru yang bisa mengelola bank soal');
+    const allowedTeacherIds = new Set([
+      bank.teacherId,
+      ...bank.subject.teachers.map((t) => t.id),
+    ]);
     if (!allowedTeacherIds.has(teacher.id)) {
-      throw new ForbiddenException('You do not own this question bank');
+      throw new ForbiddenException('Anda tidak memiliki bank soal ini');
     }
     return this.prisma.questionBank.update({
       where: { id },
@@ -113,20 +131,29 @@ export class QuestionBankService {
 
   async remove(id: string, userId: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new ForbiddenException('Only teachers or administrators can manage question banks');
+    if (!user)
+      throw new ForbiddenException(
+        'Hanya guru atau administrator yang bisa mengelola bank soal',
+      );
     const bank = await this.prisma.questionBank.findUnique({
       where: { id },
       include: { subject: { include: { teachers: { select: { id: true } } } } },
     });
     if (!bank) {
-      throw new NotFoundException('Question bank not found');
+      throw new NotFoundException('Bank soal tidak ditemukan');
     }
     if (user.role !== Role.SUPER_ADMIN && user.role !== Role.ADMIN_SEKOLAH) {
-      const teacher = await this.prisma.teacher.findUnique({ where: { userId } });
-      if (!teacher) throw new ForbiddenException('Only teachers can manage question banks');
-      const allowedTeacherIds = new Set([bank.teacherId, ...bank.subject.teachers.map((t) => t.id)]);
+      const teacher = await this.prisma.teacher.findUnique({
+        where: { userId },
+      });
+      if (!teacher)
+        throw new ForbiddenException('Hanya guru yang bisa mengelola bank soal');
+      const allowedTeacherIds = new Set([
+        bank.teacherId,
+        ...bank.subject.teachers.map((t) => t.id),
+      ]);
       if (!allowedTeacherIds.has(teacher.id)) {
-        throw new ForbiddenException('You do not own this question bank');
+        throw new ForbiddenException('Anda tidak memiliki bank soal ini');
       }
     }
 

@@ -23,12 +23,17 @@ describe('RealtimeGateway', () => {
 
   beforeEach(() => {
     gateway = new RealtimeGateway(jwtService, prisma, moduleRef);
-    gateway.server = { to: jest.fn().mockReturnValue({ emit: jest.fn() }), emit: jest.fn() } as any;
+    gateway.server = {
+      to: jest.fn().mockReturnValue({ emit: jest.fn() }),
+      emit: jest.fn(),
+    } as any;
     jest.clearAllMocks();
   });
 
   it('rejects invalid token on connection', async () => {
-    (jwtService.verify as jest.Mock).mockImplementation(() => { throw new Error('bad'); });
+    (jwtService.verify as jest.Mock).mockImplementation(() => {
+      throw new Error('bad');
+    });
 
     await gateway.handleConnection(client);
 
@@ -36,7 +41,11 @@ describe('RealtimeGateway', () => {
   });
 
   it('accepts valid token and joins user room', async () => {
-    (jwtService.verify as jest.Mock).mockReturnValue({ sub: 'u1', username: 'Budi', role: 'SISWA' });
+    (jwtService.verify as jest.Mock).mockReturnValue({
+      sub: 'u1',
+      username: 'Budi',
+      role: 'SISWA',
+    });
 
     await gateway.handleConnection(client);
 

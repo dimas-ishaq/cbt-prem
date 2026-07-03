@@ -34,7 +34,10 @@ export class UsersController {
   async export(@Res() res: Response) {
     const csv = await this.usersService.exportAllUsers();
     res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', 'attachment; filename="users_export.csv"');
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename="users_export.csv"',
+    );
     return res.status(200).send(csv);
   }
 
@@ -73,7 +76,12 @@ export class UsersController {
   @Put(':id')
   @Roles(Role.SUPER_ADMIN)
   update(@Param('id') id: string, @Body() dto: UpdateUserDto, @Request() req) {
-    return this.usersService.updateUser(id, dto, req.user.role, req.user.userId);
+    return this.usersService.updateUser(
+      id,
+      dto,
+      req.user.role,
+      req.user.userId,
+    );
   }
 
   /** PATCH /users/:id/toggle-active — activate / deactivate */

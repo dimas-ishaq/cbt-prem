@@ -5,7 +5,9 @@ import { PrismaService } from '../prisma/prisma.service';
 // Mock encrypt/decrypt
 jest.mock('../utils/security.util', () => ({
   encrypt: jest.fn((v) => `encrypted:${v}`),
-  decrypt: jest.fn((v) => v.startsWith('encrypted:') ? v.replace('encrypted:', '') : v),
+  decrypt: jest.fn((v) =>
+    v.startsWith('encrypted:') ? v.replace('encrypted:', '') : v,
+  ),
 }));
 
 describe('SettingsService', () => {
@@ -55,7 +57,10 @@ describe('SettingsService', () => {
 
   describe('update', () => {
     it('should upsert setting', async () => {
-      mockPrisma.setting.upsert.mockResolvedValue({ key: 'appName', value: 'New' });
+      mockPrisma.setting.upsert.mockResolvedValue({
+        key: 'appName',
+        value: 'New',
+      });
       await service.update('appName', 'New');
       expect(mockPrisma.setting.upsert).toHaveBeenCalledWith({
         where: { key: 'appName' },
@@ -70,7 +75,7 @@ describe('SettingsService', () => {
       expect(mockPrisma.setting.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
           update: { value: 'encrypted:mypass' },
-        })
+        }),
       );
     });
   });

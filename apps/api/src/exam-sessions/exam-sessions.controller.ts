@@ -1,4 +1,17 @@
-import { Controller, Post, Body, Param, Get, UseGuards, Request, Patch, Res, Delete, Headers, Query } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Param,
+  Get,
+  UseGuards,
+  Request,
+  Patch,
+  Res,
+  Delete,
+  Headers,
+  Query,
+} from '@nestjs/common';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import * as express from 'express';
 import { ExamSessionsService } from './exam-sessions.service';
@@ -25,21 +38,27 @@ export class ExamSessionsController {
     @Headers('x-seb-config-key') sebConfigKey: string,
     @Headers('x-seb-browser-key') sebBrowserKey: string,
   ) {
-    return this.examSessionsService.startSession(dto, req.user.userId, userAgent, sebConfigKey, sebBrowserKey);
+    return this.examSessionsService.startSession(
+      dto,
+      req.user.userId,
+      userAgent,
+      sebConfigKey,
+      sebBrowserKey,
+    );
   }
 
   @Get('active/:examId')
   @Roles(Role.SISWA)
   async getActiveSession(@Param('examId') examId: string, @Request() req) {
-    return this.examSessionsService.getActiveSessionByExam(examId, req.user.userId);
+    return this.examSessionsService.getActiveSessionByExam(
+      examId,
+      req.user.userId,
+    );
   }
 
   @Post(':id/submit-answer')
   @Roles(Role.SISWA)
-  async submitAnswer(
-    @Param('id') id: string,
-    @Body() dto: SubmitAnswerDto,
-  ) {
+  async submitAnswer(@Param('id') id: string, @Body() dto: SubmitAnswerDto) {
     return this.examSessionsService.submitAnswer(id, dto);
   }
 
@@ -98,7 +117,14 @@ export class ExamSessionsController {
     @Query('status') status?: string,
     @Query('rombelId') rombelId?: string,
   ) {
-    return this.examSessionsService.getExamSessions(examId, page, limit, search, status, rombelId);
+    return this.examSessionsService.getExamSessions(
+      examId,
+      page,
+      limit,
+      search,
+      status,
+      rombelId,
+    );
   }
 
   @Get('exam/:examId/essay-answers')
@@ -124,9 +150,10 @@ export class ExamSessionsController {
     @Res() res: express.Response,
   ) {
     const buffer = await this.examSessionsService.exportToExcel(examId);
-    
+
     res.set({
-      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Type':
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'Content-Disposition': `attachment; filename="results-${examId}.xlsx"`,
       'Content-Length': (buffer as any).length,
     });
@@ -154,13 +181,19 @@ export class ExamSessionsController {
 
   @Get('monitoring/history')
   @Roles(Role.GURU, Role.SUPER_ADMIN)
-  async getMonitoringHistory(@Query('startDate') startDate?: string, @Query('endDate') endDate?: string) {
+  async getMonitoringHistory(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
     return this.examSessionsService.getMonitoringHistory(startDate, endDate);
   }
 
   @Get('monitoring/upcoming')
   @Roles(Role.GURU, Role.SUPER_ADMIN)
-  async getUpcomingMonitoring(@Query('startDate') startDate?: string, @Query('endDate') endDate?: string) {
+  async getUpcomingMonitoring(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
     return this.examSessionsService.getUpcomingMonitoring(startDate, endDate);
   }
 }

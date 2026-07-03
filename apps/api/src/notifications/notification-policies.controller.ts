@@ -15,7 +15,9 @@ export class NotificationPoliciesController {
 
   @Get()
   @Roles(Role.SUPER_ADMIN)
-  @ApiOperation({ summary: 'Ambil daftar kebijakan notifikasi untuk semua role' })
+  @ApiOperation({
+    summary: 'Ambil daftar kebijakan notifikasi untuk semua role',
+  })
   async getPolicies() {
     return this.notificationsService.getNotificationPolicies();
   }

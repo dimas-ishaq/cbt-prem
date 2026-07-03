@@ -1,4 +1,19 @@
-import { Controller, Get, Post, Body, Param, Patch, Delete, UseGuards, Request, Headers, UnauthorizedException, BadRequestException, Query, Res } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Patch,
+  Delete,
+  UseGuards,
+  Request,
+  Headers,
+  UnauthorizedException,
+  BadRequestException,
+  Query,
+  Res,
+} from '@nestjs/common';
 import type { Response } from 'express';
 import { ExamsService } from './exams.service';
 import { PaginationDto } from '../common/dto/pagination.dto';
@@ -18,17 +33,20 @@ export class ExamsController {
   @Roles(Role.GURU, Role.SUPER_ADMIN)
   async create(@Body() dto: CreateExamDto, @Request() req) {
     let teacher = await this.examsService['prisma'].teacher.findUnique({
-      where: { userId: req.user.userId }
+      where: { userId: req.user.userId },
     });
     if (!teacher) {
       if (req.user.role === Role.SUPER_ADMIN) {
-        const firstTeacher = await this.examsService['prisma'].teacher.findFirst();
+        const firstTeacher =
+          await this.examsService['prisma'].teacher.findFirst();
         if (!firstTeacher) {
-          throw new BadRequestException('No teachers registered in the system. Please add a teacher first.');
+          throw new BadRequestException(
+            'Belum ada guru terdaftar di sistem. Silakan tambahkan guru terlebih dahulu.',
+          );
         }
         teacher = firstTeacher;
       } else {
-        throw new UnauthorizedException('User is not a teacher');
+        throw new UnauthorizedException('Pengguna bukan guru');
       }
     }
     return this.examsService.create(dto, teacher.id);
@@ -46,13 +64,20 @@ export class ExamsController {
     @Headers('x-seb-config-key') sebConfigKey: string,
     @Headers('x-seb-browser-key') sebBrowserKey: string,
     @Headers('user-agent') userAgent: string,
-    @Request() req
+    @Request() req,
   ) {
     const isSiswa = req.user?.role === Role.SISWA;
     if (isSiswa) {
-      const isValidSeb = await this.examsService.validateSeb(id, userAgent, sebConfigKey, sebBrowserKey);
+      const isValidSeb = await this.examsService.validateSeb(
+        id,
+        userAgent,
+        sebConfigKey,
+        sebBrowserKey,
+      );
       if (!isValidSeb) {
-        throw new UnauthorizedException('Safe Exam Browser diperlukan untuk mengerjakan ujian ini.');
+        throw new UnauthorizedException(
+          'Safe Exam Browser diperlukan untuk mengerjakan ujian ini.',
+        );
       }
     }
     return this.examsService.findOne(id, req.user);
@@ -69,13 +94,20 @@ export class ExamsController {
   async downloadPdf(@Param('id') id: string, @Res() res: Response) {
     const pdfBuffer = await this.examsService.generatePdf(id);
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename=hasil-ujian-${id}.pdf`);
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename=hasil-ujian-${id}.pdf`,
+    );
     res.send(pdfBuffer);
   }
 
   @Patch(':id')
   @Roles(Role.GURU, Role.SUPER_ADMIN)
-  async update(@Param('id') id: string, @Body() dto: UpdateExamDto, @Request() req) {
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateExamDto,
+    @Request() req,
+  ) {
     const isSiswa = req.user.role === Role.SISWA;
     if (isSiswa) throw new UnauthorizedException();
     return this.examsService.update(id, dto, req.user.userId);

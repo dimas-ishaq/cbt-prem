@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
@@ -60,8 +64,11 @@ export class RolesService {
   }
 
   async create(dto: CreateRoleDto, actorId: string) {
-    const slug = dto.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-    
+    const slug = dto.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
+
     // Check if exists
     const existing = await this.prisma.customRole.findFirst({
       where: {
@@ -69,7 +76,9 @@ export class RolesService {
       },
     });
     if (existing) {
-      throw new BadRequestException('Role dengan nama tersebut sudah terdaftar');
+      throw new BadRequestException(
+        'Role dengan nama tersebut sudah terdaftar',
+      );
     }
 
     const role = await this.prisma.$transaction(async (tx) => {
@@ -125,11 +134,16 @@ export class RolesService {
     }
 
     if (role.isSystem && dto.name && dto.name !== role.name) {
-      throw new BadRequestException('Nama role bawaan sistem tidak dapat diubah');
+      throw new BadRequestException(
+        'Nama role bawaan sistem tidak dapat diubah',
+      );
     }
 
     const slug = dto.name
-      ? dto.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+      ? dto.name
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)/g, '')
       : role.slug;
 
     if (dto.name && dto.name !== role.name) {
@@ -140,14 +154,17 @@ export class RolesService {
         },
       });
       if (existing) {
-        throw new BadRequestException('Role dengan nama tersebut sudah terdaftar');
+        throw new BadRequestException(
+          'Role dengan nama tersebut sudah terdaftar',
+        );
       }
     }
 
     const updatedRole = await this.prisma.$transaction(async (tx) => {
       const dataToUpdate: any = {};
       if (dto.name) dataToUpdate.name = dto.name;
-      if (dto.description !== undefined) dataToUpdate.description = dto.description;
+      if (dto.description !== undefined)
+        dataToUpdate.description = dto.description;
       if (dto.isActive !== undefined) dataToUpdate.isActive = dto.isActive;
       if (!role.isSystem) {
         dataToUpdate.slug = slug;
@@ -199,14 +216,19 @@ export class RolesService {
   async clone(id: string, name: string, actorId: string) {
     const roleToClone = await this.findOne(id);
 
-    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const slug = name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
     const existing = await this.prisma.customRole.findFirst({
       where: {
         OR: [{ name }, { slug }],
       },
     });
     if (existing) {
-      throw new BadRequestException('Role dengan nama kloning tersebut sudah terdaftar');
+      throw new BadRequestException(
+        'Role dengan nama kloning tersebut sudah terdaftar',
+      );
     }
 
     const cloned = await this.prisma.$transaction(async (tx) => {
@@ -235,7 +257,10 @@ export class RolesService {
           actorId,
           actionType: 'ROLE_CLONE',
           payloadBefore: { sourceRoleId: id, sourceRoleName: roleToClone.name },
-          payloadAfter: { name: newRole.name, permissions: roleToClone.permissionIds },
+          payloadAfter: {
+            name: newRole.name,
+            permissions: roleToClone.permissionIds,
+          },
         },
       });
 

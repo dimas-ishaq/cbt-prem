@@ -133,14 +133,17 @@ export class ExamGroupsService {
     if (!group) throw new NotFoundException('Kelompok ujian tidak ditemukan');
 
     // Build unique set of all students enrolled in any target rombel
-    const studentMap = new Map<string, {
-      studentId: string;
-      userId: string;
-      fullName: string;
-      username: string;
-      rombel: { id: string; name: string } | null;
-      major: { id: string; name: string } | null;
-    }>();
+    const studentMap = new Map<
+      string,
+      {
+        studentId: string;
+        userId: string;
+        fullName: string;
+        username: string;
+        rombel: { id: string; name: string } | null;
+        major: { id: string; name: string } | null;
+      }
+    >();
 
     for (const exam of group.exams) {
       for (const tr of exam.targetRombels) {
@@ -196,7 +199,7 @@ export class ExamGroupsService {
       const allSubmitted = allScores.every((v) => v !== null);
       const average =
         allSubmitted && exams.length > 0
-          ? (allScores as number[]).reduce((a, b) => a + b, 0) / allScores.length
+          ? allScores.reduce((a, b) => a + b, 0) / allScores.length
           : null;
 
       return { ...student, scores, statuses, average };
@@ -226,7 +229,7 @@ export class ExamGroupsService {
       const submitted = ledger.filter(
         (s) => s.statuses[exam.id] === 'SUBMITTED',
       );
-      const scores = submitted.map((s) => s.scores[exam.id] as number);
+      const scores = submitted.map((s) => s.scores[exam.id]);
       const avg =
         scores.length > 0
           ? scores.reduce((a, b) => a + b, 0) / scores.length
@@ -276,7 +279,11 @@ export class ExamGroupsService {
 
     const headerStyle: Partial<ExcelJS.Style> = {
       font: { bold: true, color: { argb: 'FFFFFFFF' } },
-      fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4F46E5' } },
+      fill: {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF4F46E5' },
+      },
       alignment: { horizontal: 'center', vertical: 'middle', wrapText: true },
       border: {
         top: { style: 'thin' },
@@ -313,7 +320,7 @@ export class ExamGroupsService {
     headerRow.height = 44;
     ws.columns.forEach((_, colIdx) => {
       const cell = headerRow.getCell(colIdx + 1);
-      cell.style = headerStyle as ExcelJS.Style;
+      cell.style = headerStyle;
     });
 
     data.ledger.forEach((student, idx) => {
@@ -354,7 +361,11 @@ export class ExamGroupsService {
       { header: 'Username', key: 'username', width: 18 },
       { header: 'Kelas', key: 'rombel', width: 14 },
       { header: 'Jurusan', key: 'major', width: 16 },
-      { header: 'Mapel / Ujian Belum Dikerjakan', key: 'missingSubjects', width: 40 },
+      {
+        header: 'Mapel / Ujian Belum Dikerjakan',
+        key: 'missingSubjects',
+        width: 40,
+      },
       { header: 'Status Sesi', key: 'status', width: 16 },
     ];
 
@@ -362,7 +373,7 @@ export class ExamGroupsService {
     headerRow2.height = 30;
     ws2.columns.forEach((_, colIdx) => {
       const cell = headerRow2.getCell(colIdx + 1);
-      cell.style = headerStyle as ExcelJS.Style;
+      cell.style = headerStyle;
     });
 
     let rowNo = 1;

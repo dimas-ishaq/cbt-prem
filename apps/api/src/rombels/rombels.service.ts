@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateRombelDto } from './dto/create-rombel.dto';
 import { UpdateRombelDto } from './dto/update-rombel.dto';
@@ -13,7 +17,7 @@ export class RombelsService {
     });
 
     if (existing) {
-      throw new ConflictException('Rombel with this name already exists');
+      throw new ConflictException('Rombel dengan nama ini sudah ada');
     }
 
     const majorExists = await this.prisma.major.findUnique({
@@ -21,7 +25,7 @@ export class RombelsService {
     });
 
     if (!majorExists) {
-      throw new NotFoundException('Major not found');
+      throw new NotFoundException('Jurusan tidak ditemukan');
     }
 
     return this.prisma.rombel.create({
@@ -48,22 +52,26 @@ export class RombelsService {
       include: { major: true, students: { include: { user: true } } },
     });
 
-    if (!rombel) throw new NotFoundException('Rombel not found');
+    if (!rombel) throw new NotFoundException('Rombel tidak ditemukan');
     return rombel;
   }
 
   async update(id: string, dto: UpdateRombelDto) {
     const rombel = await this.prisma.rombel.findUnique({ where: { id } });
-    if (!rombel) throw new NotFoundException('Rombel not found');
+    if (!rombel) throw new NotFoundException('Rombel tidak ditemukan');
 
     if (dto.name && dto.name !== rombel.name) {
-      const existing = await this.prisma.rombel.findUnique({ where: { name: dto.name } });
-      if (existing) throw new ConflictException('Rombel name already in use');
+      const existing = await this.prisma.rombel.findUnique({
+        where: { name: dto.name },
+      });
+      if (existing) throw new ConflictException('Nama rombel sudah dipakai');
     }
 
     if (dto.majorId) {
-      const majorExists = await this.prisma.major.findUnique({ where: { id: dto.majorId } });
-      if (!majorExists) throw new NotFoundException('Major not found');
+      const majorExists = await this.prisma.major.findUnique({
+        where: { id: dto.majorId },
+      });
+      if (!majorExists) throw new NotFoundException('Jurusan tidak ditemukan');
     }
 
     return this.prisma.rombel.update({
@@ -75,14 +83,16 @@ export class RombelsService {
 
   async remove(id: string) {
     const rombel = await this.prisma.rombel.findUnique({ where: { id } });
-    if (!rombel) throw new NotFoundException('Rombel not found');
+    if (!rombel) throw new NotFoundException('Rombel tidak ditemukan');
 
     return this.prisma.rombel.delete({ where: { id } });
   }
 
   async updateStudents(rombelId: string, studentIds: string[]) {
-    const rombel = await this.prisma.rombel.findUnique({ where: { id: rombelId } });
-    if (!rombel) throw new NotFoundException('Rombel not found');
+    const rombel = await this.prisma.rombel.findUnique({
+      where: { id: rombelId },
+    });
+    if (!rombel) throw new NotFoundException('Rombel tidak ditemukan');
 
     return this.prisma.$transaction(async (tx) => {
       // Disconnect all students currently in this rombel
@@ -103,7 +113,8 @@ export class RombelsService {
   }
 
   async generateTemplate(): Promise<Buffer> {
-    const csvContent = 'Nama Rombel,Kode Jurusan\n' +
+    const csvContent =
+      'Nama Rombel,Kode Jurusan\n' +
       'X RPL 1,RPL\n' +
       'XI TKJ 2,TKJ\n' +
       'XII AKL 1,AKL\n';
@@ -143,13 +154,19 @@ export class RombelsService {
       }
 
       if (!majorCode) {
-        warnings.push({ row: rowNumber, reason: `Kode Jurusan untuk rombel "${name}" kosong` });
+        warnings.push({
+          row: rowNumber,
+          reason: `Kode Jurusan untuk rombel "${name}" kosong`,
+        });
         continue;
       }
 
       const majorId = majorMap.get(majorCode.toLowerCase());
       if (!majorId) {
-        warnings.push({ row: rowNumber, reason: `Kode Jurusan "${majorCode}" untuk rombel "${name}" tidak ditemukan` });
+        warnings.push({
+          row: rowNumber,
+          reason: `Kode Jurusan "${majorCode}" untuk rombel "${name}" tidak ditemukan`,
+        });
         continue;
       }
 
@@ -168,7 +185,10 @@ export class RombelsService {
         });
         successCount++;
       } catch (err: any) {
-        warnings.push({ row: 0, reason: `Gagal memproses rombel "${item.name}": ${err.message}` });
+        warnings.push({
+          row: 0,
+          reason: `Gagal memproses rombel "${item.name}": ${err.message}`,
+        });
       }
     }
 
@@ -184,7 +204,7 @@ export class RombelsService {
       where: { id: rombelId },
     });
     if (!rombel) {
-      throw new NotFoundException('Rombel not found');
+      throw new NotFoundException('Rombel tidak ditemukan');
     }
 
     return this.prisma.student.findMany({

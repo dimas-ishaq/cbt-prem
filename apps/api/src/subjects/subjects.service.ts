@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateSubjectDto } from './dto/create-subject.dto';
 import { UpdateSubjectDto } from './dto/update-subject.dto';
@@ -44,8 +48,12 @@ export class SubjectsService {
     const [data, total] = await Promise.all([
       this.prisma.subject.findMany({
         include: {
-          teachers: { select: { id: true, user: { select: { fullName: true } } } },
-          _count: { select: { questionBanks: true, exams: true, teachers: true } },
+          teachers: {
+            select: { id: true, user: { select: { fullName: true } } },
+          },
+          _count: {
+            select: { questionBanks: true, exams: true, teachers: true },
+          },
         },
         orderBy: { code: 'asc' },
         ...(skip !== undefined && take !== undefined ? { skip, take } : {}),
@@ -59,10 +67,17 @@ export class SubjectsService {
     const subject = await this.prisma.subject.findUnique({
       where: { id },
       include: {
-        teachers: { select: { id: true, user: { select: { fullName: true, username: true } } } },
+        teachers: {
+          select: {
+            id: true,
+            user: { select: { fullName: true, username: true } },
+          },
+        },
         questionBanks: true,
         exams: true,
-        _count: { select: { questionBanks: true, exams: true, teachers: true } },
+        _count: {
+          select: { questionBanks: true, exams: true, teachers: true },
+        },
       },
     });
 
@@ -76,7 +91,9 @@ export class SubjectsService {
       where: { OR: [{ name: dto.name }, { code }] },
     });
     if (existing) {
-      throw new BadRequestException('Mata pelajaran dengan nama atau kode tersebut sudah terdaftar');
+      throw new BadRequestException(
+        'Mata pelajaran dengan nama atau kode tersebut sudah terdaftar',
+      );
     }
 
     return this.prisma.subject.create({
@@ -84,19 +101,30 @@ export class SubjectsService {
         name: dto.name,
         code,
         description: dto.description,
-        teachers: dto.teacherIds?.length ? { connect: dto.teacherIds.map((id) => ({ id })) } : undefined,
+        teachers: dto.teacherIds?.length
+          ? { connect: dto.teacherIds.map((id) => ({ id })) }
+          : undefined,
       },
       include: {
-        teachers: { select: { id: true, user: { select: { fullName: true } } } },
-        _count: { select: { questionBanks: true, exams: true, teachers: true } },
+        teachers: {
+          select: { id: true, user: { select: { fullName: true } } },
+        },
+        _count: {
+          select: { questionBanks: true, exams: true, teachers: true },
+        },
       },
     });
   }
 
   async importFromCsv(csvContent: string) {
-    const lines = csvContent.replace(/\r/g, '').split('\n').filter((line) => line.trim());
+    const lines = csvContent
+      .replace(/\r/g, '')
+      .split('\n')
+      .filter((line) => line.trim());
     if (lines.length < 2) {
-      throw new BadRequestException('CSV minimal harus memiliki header dan satu baris data');
+      throw new BadRequestException(
+        'CSV minimal harus memiliki header dan satu baris data',
+      );
     }
 
     const header = parseCsvLine(lines[0]).map((h) => h.toLowerCase().trim());
@@ -120,7 +148,10 @@ export class SubjectsService {
       const name = (row.name || '').trim();
       const code = (row.code || '').trim().toUpperCase();
       const description = (row.description || '').trim() || null;
-      const teacherUsernames = (row.teacherusernames || '').split('|').map((v) => v.trim()).filter(Boolean);
+      const teacherUsernames = (row.teacherusernames || '')
+        .split('|')
+        .map((v) => v.trim())
+        .filter(Boolean);
 
       if (!name || !code) {
         errors.push(`Baris ${lineNo}: name dan code wajib diisi`);
@@ -137,11 +168,15 @@ export class SubjectsService {
       if (teacherRecords.length !== teacherUsernames.length) {
         const found = new Set(teacherRecords.map((t) => t.user.username));
         const missingTeachers = teacherUsernames.filter((u) => !found.has(u));
-        errors.push(`Baris ${lineNo}: guru tidak ditemukan: ${missingTeachers.join(', ')}`);
+        errors.push(
+          `Baris ${lineNo}: guru tidak ditemukan: ${missingTeachers.join(', ')}`,
+        );
         continue;
       }
 
-      const existing = await this.prisma.subject.findFirst({ where: { OR: [{ name }, { code }] } });
+      const existing = await this.prisma.subject.findFirst({
+        where: { OR: [{ name }, { code }] },
+      });
       const subject = existing
         ? await this.prisma.subject.update({
             where: { id: existing.id },
@@ -152,7 +187,9 @@ export class SubjectsService {
               teachers: teacherRecords.length
                 ? {
                     set: [],
-                    connect: teacherRecords.map((teacher) => ({ id: teacher.id })),
+                    connect: teacherRecords.map((teacher) => ({
+                      id: teacher.id,
+                    })),
                   }
                 : undefined,
             },
@@ -163,7 +200,11 @@ export class SubjectsService {
               code,
               description,
               teachers: teacherRecords.length
-                ? { connect: teacherRecords.map((teacher) => ({ id: teacher.id })) }
+                ? {
+                    connect: teacherRecords.map((teacher) => ({
+                      id: teacher.id,
+                    })),
+                  }
                 : undefined,
             },
           });
@@ -187,12 +228,18 @@ export class SubjectsService {
     const code = dto.code?.toUpperCase();
 
     if (dto.name && dto.name !== subject.name) {
-      const existingName = await this.prisma.subject.findFirst({ where: { name: dto.name, id: { not: id } } });
-      if (existingName) throw new BadRequestException('Nama mata pelajaran sudah terdaftar');
+      const existingName = await this.prisma.subject.findFirst({
+        where: { name: dto.name, id: { not: id } },
+      });
+      if (existingName)
+        throw new BadRequestException('Nama mata pelajaran sudah terdaftar');
     }
     if (code && code !== subject.code) {
-      const existingCode = await this.prisma.subject.findFirst({ where: { code, id: { not: id } } });
-      if (existingCode) throw new BadRequestException('Kode mata pelajaran sudah terdaftar');
+      const existingCode = await this.prisma.subject.findFirst({
+        where: { code, id: { not: id } },
+      });
+      if (existingCode)
+        throw new BadRequestException('Kode mata pelajaran sudah terdaftar');
     }
 
     return this.prisma.subject.update({
@@ -209,8 +256,12 @@ export class SubjectsService {
           : undefined,
       },
       include: {
-        teachers: { select: { id: true, user: { select: { fullName: true } } } },
-        _count: { select: { questionBanks: true, exams: true, teachers: true } },
+        teachers: {
+          select: { id: true, user: { select: { fullName: true } } },
+        },
+        _count: {
+          select: { questionBanks: true, exams: true, teachers: true },
+        },
       },
     });
   }
@@ -218,7 +269,11 @@ export class SubjectsService {
   async remove(id: string) {
     const subject = await this.prisma.subject.findUnique({
       where: { id },
-      include: { _count: { select: { questionBanks: true, exams: true, teachers: true } } },
+      include: {
+        _count: {
+          select: { questionBanks: true, exams: true, teachers: true },
+        },
+      },
     });
     if (!subject) throw new NotFoundException('Mata pelajaran tidak ditemukan');
 
@@ -229,7 +284,7 @@ export class SubjectsService {
       if (questionBanks > 0) parts.push(`${questionBanks} bank soal`);
       if (teachers > 0) parts.push(`${teachers} guru`);
       throw new BadRequestException(
-        `Tidak dapat menghapus mapel ini. Hapus dulu ${parts.join(', ')} yang terhubung.`
+        `Tidak dapat menghapus mapel ini. Hapus dulu ${parts.join(', ')} yang terhubung.`,
       );
     }
 

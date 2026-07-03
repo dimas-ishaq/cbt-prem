@@ -13,8 +13,13 @@ describe('QuestionsImportService', () => {
 
   function makeService() {
     return Test.createTestingModule({
-      providers: [QuestionsImportService, { provide: PrismaService, useValue: prisma }],
-    }).compile().then(m => m.get(QuestionsImportService) as any);
+      providers: [
+        QuestionsImportService,
+        { provide: PrismaService, useValue: prisma },
+      ],
+    })
+      .compile()
+      .then((m) => m.get(QuestionsImportService));
   }
 
   beforeEach(() => jest.clearAllMocks());
@@ -94,16 +99,29 @@ describe('QuestionsImportService', () => {
     const service = await makeService();
     prisma.user.findUnique.mockResolvedValue({ id: 'u1', role: 'TEACHER' });
     prisma.teacher.findUnique.mockResolvedValue({ id: 't1' });
-    prisma.questionBank.findUnique.mockResolvedValue({ id: 'b1', teacherId: 't1', subject: { teachers: [] } });
-    (service as any).convertDocxToHtml = jest.fn().mockResolvedValue(`
+    prisma.questionBank.findUnique.mockResolvedValue({
+      id: 'b1',
+      teacherId: 't1',
+      subject: { teachers: [] },
+    });
+    service.convertDocxToHtml = jest.fn().mockResolvedValue(`
       <p>MULTIPLE CHOICE</p>
       <p>SQ</p><p>What is 2 + 2?</p><p>A. 3</p><p>B. 4</p><p>JAWABAN: B</p><p>EQ</p>
       <p>END MULTIPLE CHOICE</p>
     `);
-    const questionRecord = { id: 'q1', content: '<p>What is 2 + 2</p>', type: 'PILIHAN_GANDA', difficulty: 'MUDAH', points: 5, options: [] };
+    const questionRecord = {
+      id: 'q1',
+      content: '<p>What is 2 + 2</p>',
+      type: 'PILIHAN_GANDA',
+      difficulty: 'MUDAH',
+      points: 5,
+      options: [],
+    };
     prisma.question.create.mockResolvedValue(questionRecord);
 
-    const result = await service.importFromDocx('b1', 'u1', { buffer: Buffer.from('x') } as any);
+    const result = await service.importFromDocx('b1', 'u1', {
+      buffer: Buffer.from('x'),
+    } as any);
     expect(result.imported).toBe(1);
     expect(result.questions).toHaveLength(1);
     expect(prisma.question.create).toHaveBeenCalledTimes(1);

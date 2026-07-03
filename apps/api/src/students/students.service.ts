@@ -13,27 +13,35 @@ export class StudentsService {
     // Generate strong random temporary password
     const tempPassword = crypto.randomBytes(12).toString('hex');
     const hashedPassword = await bcrypt.hash(tempPassword, 10);
-    return this.prisma.user.create({
-      data: {
-        username: dto.username,
-        email: dto.email,
-        fullName: dto.fullName,
-        password: hashedPassword,
-        role: Role.SISWA,
-        student: {
-          create: {
-            nis: dto.nis,
-            ...(dto.rombelId
-              ? { rombel: { connect: { id: dto.rombelId } } }
-              : {}),
+    return this.prisma.user
+      .create({
+        data: {
+          username: dto.username,
+          email: dto.email,
+          fullName: dto.fullName,
+          password: hashedPassword,
+          role: Role.SISWA,
+          student: {
+            create: {
+              nis: dto.nis,
+              ...(dto.rombelId
+                ? { rombel: { connect: { id: dto.rombelId } } }
+                : {}),
+            },
           },
         },
-      },
-      include: { student: true },
-    }).then(user => ({ ...user, temporaryPassword: tempPassword }));
+        include: { student: true },
+      })
+      .then((user) => ({ ...user, temporaryPassword: tempPassword }));
   }
 
-  async findAll(majorId?: string, rombelId?: string, grade?: string, skip?: number, take?: number) {
+  async findAll(
+    majorId?: string,
+    rombelId?: string,
+    grade?: string,
+    skip?: number,
+    take?: number,
+  ) {
     const where: any = {};
     if (majorId) where.majorId = majorId;
     if (rombelId) {

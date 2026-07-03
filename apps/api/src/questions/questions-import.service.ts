@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as mammoth from 'mammoth';
 import { QuestionType, Difficulty } from '@prisma/client';
@@ -11,25 +16,45 @@ function isNonEmptyHtml(value?: string) {
   return (value || '').replace(/<[^>]*>/g, '').trim() !== '';
 }
 
-function assertQuestionValid(type: QuestionType, content: string, options: { content: string; isCorrect: boolean }[]) {
-  if (!isNonEmptyHtml(content)) throw new Error('Question content cannot be empty');
+function assertQuestionValid(
+  type: QuestionType,
+  content: string,
+  options: { content: string; isCorrect: boolean }[],
+) {
+  if (!isNonEmptyHtml(content))
+    throw new Error('Isi soal tidak boleh kosong');
   if (type === QuestionType.ESSAY) {
-    if (options.length > 0) throw new Error('Essay question cannot have options');
+    if (options.length > 0)
+      throw new Error('Soal essay tidak boleh punya opsi jawaban');
     return;
   }
-  if (options.length < 2) throw new Error('Question must have at least 2 options');
+  if (options.length < 2)
+    throw new Error('Soal harus memiliki minimal 2 opsi jawaban');
   const correctCount = options.filter((o) => o.isCorrect).length;
-  if (type === QuestionType.PILIHAN_GANDA || type === QuestionType.BENAR_SALAH) {
-    if (correctCount !== 1) throw new Error('Question must have exactly 1 correct answer');
+  if (
+    type === QuestionType.PILIHAN_GANDA ||
+    type === QuestionType.BENAR_SALAH
+  ) {
+    if (correctCount !== 1)
+      throw new Error('Soal harus memiliki tepat 1 jawaban benar');
   }
   if (type === QuestionType.MULTIPLE_RESPONSE) {
-    if (correctCount < 1) throw new Error('Question must have at least 1 correct answer');
+    if (correctCount < 1)
+      throw new Error('Soal harus memiliki minimal 1 jawaban benar');
   }
 }
 
 function sanitizeHtml(value: string) {
   return sanitizeHtmlLib(value, {
-    allowedTags: sanitizeHtmlLib.defaults.allowedTags.concat(['img', 'figure', 'figcaption', 'u', 'span', 'sub', 'sup']),
+    allowedTags: sanitizeHtmlLib.defaults.allowedTags.concat([
+      'img',
+      'figure',
+      'figcaption',
+      'u',
+      'span',
+      'sub',
+      'sup',
+    ]),
     allowedAttributes: {
       ...sanitizeHtmlLib.defaults.allowedAttributes,
       img: ['src', 'alt', 'width', 'height', 'class'],
@@ -83,46 +108,92 @@ export class QuestionsImportService {
   // ─── Public API ────────────────────────────────────────────────────────────
 
   /** Parse only — no DB write. Returns preview of what will be imported. */
-  async previewFromDocx(bankId: string, userId: string, file: Express.Multer.File): Promise<ImportPreviewResult> {
-    if (!bankId) throw new BadRequestException('Bank ID is required');
+  async previewFromDocx(
+    bankId: string,
+    userId: string,
+    file: Express.Multer.File,
+  ): Promise<ImportPreviewResult> {
+    if (!bankId) throw new BadRequestException('ID bank wajib diisi');
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new ForbiddenException('Only teachers or administrators can manage questions');
-    const isAdmin = user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_SEKOLAH';
-    const teacher = isAdmin ? null : await this.prisma.teacher.findUnique({ where: { userId } });
-    if (!isAdmin && !teacher) throw new ForbiddenException('Only teachers or administrators can manage questions');
+    if (!user)
+      throw new ForbiddenException(
+        'Hanya guru atau administrator yang bisa mengelola soal',
+      );
+    const isAdmin =
+      user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_SEKOLAH';
+    const teacher = isAdmin
+      ? null
+      : await this.prisma.teacher.findUnique({ where: { userId } });
+    if (!isAdmin && !teacher)
+      throw new ForbiddenException(
+        'Hanya guru atau administrator yang bisa mengelola soal',
+      );
     const bank = await this.prisma.questionBank.findUnique({
       where: { id: bankId },
       include: { subject: { include: { teachers: { select: { id: true } } } } },
     });
-    if (!bank) throw new NotFoundException('Question bank not found');
-    if (!isAdmin && !teacher) throw new ForbiddenException('Only teachers or administrators can manage questions');
-    if (!isAdmin && !new Set([bank.teacherId, ...bank.subject.teachers.map((t) => t.id)]).has(teacher.id)) throw new ForbiddenException('You do not own this question bank');
+    if (!bank) throw new NotFoundException('Bank soal tidak ditemukan');
+    if (!isAdmin && !teacher)
+      throw new ForbiddenException(
+        'Hanya guru atau administrator yang bisa mengelola soal',
+      );
+    if (
+      !isAdmin &&
+      !new Set([bank.teacherId, ...bank.subject.teachers.map((t) => t.id)]).has(
+        teacher.id,
+      )
+    )
+      throw new ForbiddenException('Anda tidak memiliki bank soal ini');
     const html = await this.convertDocxToHtml(file.buffer);
     return this.parseQuestions(html);
   }
 
   /** Full import: parse then save to DB inside a transaction. */
-  async importFromDocx(bankId: string, userId: string, file: Express.Multer.File) {
+  async importFromDocx(
+    bankId: string,
+    userId: string,
+    file: Express.Multer.File,
+  ) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new ForbiddenException('Only teachers or administrators can manage questions');
-    const isAdmin = user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_SEKOLAH';
-    const teacher = isAdmin ? null : await this.prisma.teacher.findUnique({ where: { userId } });
-    if (!isAdmin && !teacher) throw new ForbiddenException('Only teachers or administrators can manage questions');
+    if (!user)
+      throw new ForbiddenException(
+        'Hanya guru atau administrator yang bisa mengelola soal',
+      );
+    const isAdmin =
+      user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_SEKOLAH';
+    const teacher = isAdmin
+      ? null
+      : await this.prisma.teacher.findUnique({ where: { userId } });
+    if (!isAdmin && !teacher)
+      throw new ForbiddenException(
+        'Hanya guru atau administrator yang bisa mengelola soal',
+      );
     const bank = await this.prisma.questionBank.findUnique({
       where: { id: bankId },
       include: { subject: { include: { teachers: { select: { id: true } } } } },
     });
-    if (!bank) throw new NotFoundException('Question bank not found');
-    if (!isAdmin && !teacher) throw new ForbiddenException('Only teachers or administrators can manage questions');
-    if (!isAdmin && !new Set([bank.teacherId, ...bank.subject.teachers.map((t) => t.id)]).has(teacher.id)) throw new ForbiddenException('You do not own this question bank');
+    if (!bank) throw new NotFoundException('Bank soal tidak ditemukan');
+    if (!isAdmin && !teacher)
+      throw new ForbiddenException(
+        'Hanya guru atau administrator yang bisa mengelola soal',
+      );
+    if (
+      !isAdmin &&
+      !new Set([bank.teacherId, ...bank.subject.teachers.map((t) => t.id)]).has(
+        teacher.id,
+      )
+    )
+      throw new ForbiddenException('Anda tidak memiliki bank soal ini');
     const html = await this.convertDocxToHtml(file.buffer);
     const { success: questions, warnings } = this.parseQuestions(html);
 
     if (questions.length === 0) {
       throw new BadRequestException(
         'Tidak ada soal yang berhasil di-parse dari dokumen. ' +
-        'Pastikan Anda menggunakan template yang benar dan format [soal nomor X] sudah ada. ' +
-        (warnings.length > 0 ? `Detail error: ${warnings.map(w => w.reason).join('; ')}` : ''),
+          'Pastikan Anda menggunakan template yang benar dan format [soal nomor X] sudah ada. ' +
+          (warnings.length > 0
+            ? `Detail error: ${warnings.map((w) => w.reason).join('; ')}`
+            : ''),
       );
     }
 
@@ -177,7 +248,10 @@ export class QuestionsImportService {
       { buffer },
       {
         convertImage: mammoth.images.imgElement(async (image) => {
-          const ext = (image.contentType.split('/')[1] || 'png').replace('jpeg', 'jpg');
+          const ext = (image.contentType.split('/')[1] || 'png').replace(
+            'jpeg',
+            'jpg',
+          );
           const filename = `${randomUUID()}.${ext}`;
           const filePath = join(uploadDir, filename);
           const imageBuffer = await image.read();
@@ -220,7 +294,10 @@ export class QuestionsImportService {
         currentType = QuestionType.PILIHAN_GANDA;
         continue;
       }
-      if (plainText === 'END MULTIPLE CHOICE' || plainText === 'END PILIHAN GANDA') {
+      if (
+        plainText === 'END MULTIPLE CHOICE' ||
+        plainText === 'END PILIHAN GANDA'
+      ) {
         currentType = null;
         continue;
       }
@@ -232,7 +309,11 @@ export class QuestionsImportService {
         currentType = null;
         continue;
       }
-      if (plainText === 'BENAR SALAH' || plainText === 'TRUE FALSE' || plainText === 'BENAR_SALAH') {
+      if (
+        plainText === 'BENAR SALAH' ||
+        plainText === 'TRUE FALSE' ||
+        plainText === 'BENAR_SALAH'
+      ) {
         currentType = QuestionType.BENAR_SALAH;
         continue;
       }
@@ -240,11 +321,18 @@ export class QuestionsImportService {
         currentType = null;
         continue;
       }
-      if (plainText === 'MULTIPLE RESPONSE' || plainText === 'JAWABAN GANDA' || plainText === 'MULTIPLE_RESPONSE') {
+      if (
+        plainText === 'MULTIPLE RESPONSE' ||
+        plainText === 'JAWABAN GANDA' ||
+        plainText === 'MULTIPLE_RESPONSE'
+      ) {
         currentType = QuestionType.MULTIPLE_RESPONSE;
         continue;
       }
-      if (plainText === 'END MULTIPLE RESPONSE' || plainText === 'END JAWABAN GANDA') {
+      if (
+        plainText === 'END MULTIPLE RESPONSE' ||
+        plainText === 'END JAWABAN GANDA'
+      ) {
         currentType = null;
         continue;
       }
@@ -258,14 +346,21 @@ export class QuestionsImportService {
 
       if (plainText === 'EQ') {
         if (!isAccumulating) {
-          warnings.push({ line: `Baris ${i + 1}`, reason: 'Menemukan penanda EQ tanpa SQ sebelumnya.' });
+          warnings.push({
+            line: `Baris ${i + 1}`,
+            reason: 'Menemukan penanda EQ tanpa SQ sebelumnya.',
+          });
           continue;
         }
         isAccumulating = false;
 
         const activeType = currentType || QuestionType.PILIHAN_GANDA; // Default fallback
         try {
-          const parsed = this.parseQuestionBlock(accumulatedParagraphs, activeType, questionIndex);
+          const parsed = this.parseQuestionBlock(
+            accumulatedParagraphs,
+            activeType,
+            questionIndex,
+          );
           success.push(parsed);
           questionIndex++;
         } catch (err: any) {
@@ -293,13 +388,22 @@ export class QuestionsImportService {
       });
     }
 
-    return { success, warnings, totalParsed: success.length, totalWarnings: warnings.length };
+    return {
+      success,
+      warnings,
+      totalParsed: success.length,
+      totalWarnings: warnings.length,
+    };
   }
 
   /**
    * Parses the HTML paragraph elements gathered inside SQ...EQ boundaries.
    */
-  private parseQuestionBlock(paragraphs: string[], type: QuestionType, index: number): ParsedQuestion {
+  private parseQuestionBlock(
+    paragraphs: string[],
+    type: QuestionType,
+    index: number,
+  ): ParsedQuestion {
     let difficulty: Difficulty = Difficulty.SEDANG;
     let points = 10;
     let answerRaw: string | null = null;
@@ -328,7 +432,10 @@ export class QuestionsImportService {
         continue;
       }
 
-      if (plainTextUpper.startsWith('JAWABAN:') || plainTextUpper.startsWith('KUNCI:')) {
+      if (
+        plainTextUpper.startsWith('JAWABAN:') ||
+        plainTextUpper.startsWith('KUNCI:')
+      ) {
         answerRaw = plainText.split(':')[1]?.trim().toUpperCase() || null;
         continue;
       }
@@ -354,7 +461,10 @@ export class QuestionsImportService {
         }
 
         const isCorrect = answerRaw
-          ? answerRaw.split(',').map(a => a.trim()).includes(letter)
+          ? answerRaw
+              .split(',')
+              .map((a) => a.trim())
+              .includes(letter)
           : false;
 
         options.push({
@@ -380,11 +490,21 @@ export class QuestionsImportService {
     if (type === QuestionType.PILIHAN_GANDA && options.length < 2) {
       throw new Error(`Soal pilihan ganda butuh minimal 2 pilihan jawaban.`);
     }
-    if (type === QuestionType.PILIHAN_GANDA && !options.some(o => o.isCorrect)) {
-      throw new Error(`Soal pilihan ganda tidak memiliki kunci jawaban yang valid.`);
+    if (
+      type === QuestionType.PILIHAN_GANDA &&
+      !options.some((o) => o.isCorrect)
+    ) {
+      throw new Error(
+        `Soal pilihan ganda tidak memiliki kunci jawaban yang valid.`,
+      );
     }
-    if (type === QuestionType.MULTIPLE_RESPONSE && !options.some(o => o.isCorrect)) {
-      throw new Error(`Soal jawaban ganda (multiple response) harus memiliki minimal 1 jawaban benar.`);
+    if (
+      type === QuestionType.MULTIPLE_RESPONSE &&
+      !options.some((o) => o.isCorrect)
+    ) {
+      throw new Error(
+        `Soal jawaban ganda (multiple response) harus memiliki minimal 1 jawaban benar.`,
+      );
     }
 
     const finalContent = questionTextParts.join('\n').trim();
@@ -399,6 +519,9 @@ export class QuestionsImportService {
   }
 
   private stripHtml(html: string): string {
-    return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+    return html
+      .replace(/<[^>]*>/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .trim();
   }
 }

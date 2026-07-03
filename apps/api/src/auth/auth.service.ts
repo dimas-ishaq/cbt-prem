@@ -22,7 +22,12 @@ export class AuthService {
   }
 
   async login(user: any) {
-    const payload = { username: user.username, sub: user.id, role: user.role, authVersion: user.authVersion ?? 0 };
+    const payload = {
+      username: user.username,
+      sub: user.id,
+      role: user.role,
+      authVersion: user.authVersion ?? 0,
+    };
     return {
       access_token: this.jwtService.sign(payload),
       refresh_token: this.jwtService.sign(payload, {
@@ -47,15 +52,22 @@ export class AuthService {
       if (!user) throw new UnauthorizedException();
 
       if ((payload.authVersion ?? 0) !== user.authVersion) {
-        throw new UnauthorizedException('Token stale — re-login required');
+        throw new UnauthorizedException(
+          'Token sudah usang, silakan login ulang',
+        );
       }
 
-      const newPayload = { username: user.username, sub: user.id, role: user.role, authVersion: user.authVersion ?? 0 };
+      const newPayload = {
+        username: user.username,
+        sub: user.id,
+        role: user.role,
+        authVersion: user.authVersion ?? 0,
+      };
       return {
         access_token: this.jwtService.sign(newPayload),
       };
     } catch (e) {
-      throw new UnauthorizedException('Invalid refresh token');
+      throw new UnauthorizedException('Token refresh tidak valid');
     }
   }
 

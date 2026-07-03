@@ -1,4 +1,16 @@
-import { Controller, Get, Post, Put, Patch, Delete, Param, Body, UseGuards, Query, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Patch,
+  Delete,
+  Param,
+  Body,
+  UseGuards,
+  Query,
+  Request,
+} from '@nestjs/common';
 import { QuestionBankService } from './question-bank.service';
 import { CreateQuestionBankDto } from './dto/create-question-bank.dto';
 import { UpdateQuestionBankDto } from './dto/update-question-bank.dto';
@@ -12,7 +24,11 @@ export class QuestionBankController {
   @Get()
   @UseGuards(JwtAuthGuard)
   @Permissions('question:bank:view')
-  findAll(@Query('teacherId') teacherId?: string, @Query('skip') skip?: number, @Query('take') take?: number) {
+  findAll(
+    @Query('teacherId') teacherId?: string,
+    @Query('skip') skip?: number,
+    @Query('take') take?: number,
+  ) {
     return this.service.findAll(teacherId, skip, take);
   }
 
@@ -33,14 +49,22 @@ export class QuestionBankController {
   @Put(':id')
   @UseGuards(JwtAuthGuard)
   @Permissions('question:bank:update')
-  updatePut(@Param('id') id: string, @Body() dto: UpdateQuestionBankDto, @Request() req) {
+  updatePut(
+    @Param('id') id: string,
+    @Body() dto: UpdateQuestionBankDto,
+    @Request() req,
+  ) {
     return this.service.update(id, dto, req.user.userId);
   }
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard)
   @Permissions('question:bank:update')
-  updatePatch(@Param('id') id: string, @Body() dto: UpdateQuestionBankDto, @Request() req) {
+  updatePatch(
+    @Param('id') id: string,
+    @Body() dto: UpdateQuestionBankDto,
+    @Request() req,
+  ) {
     return this.service.update(id, dto, req.user.userId);
   }
 

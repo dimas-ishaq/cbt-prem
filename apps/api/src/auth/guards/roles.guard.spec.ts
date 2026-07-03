@@ -5,11 +5,12 @@ describe('RolesGuard', () => {
   const reflector = { getAllAndOverride: jest.fn() } as unknown as Reflector;
   const guard = new RolesGuard(reflector);
 
-  const ctx = (role: string | undefined) => ({
-    getHandler: () => ({}),
-    getClass: () => ({}),
-    switchToHttp: () => ({ getRequest: () => ({ user: { role } }) }),
-  }) as any;
+  const ctx = (role: string | undefined) =>
+    ({
+      getHandler: () => ({}),
+      getClass: () => ({}),
+      switchToHttp: () => ({ getRequest: () => ({ user: { role } }) }),
+    }) as any;
 
   beforeEach(() => jest.clearAllMocks());
 
@@ -24,7 +25,10 @@ describe('RolesGuard', () => {
   });
 
   it('allow when role match', () => {
-    (reflector.getAllAndOverride as jest.Mock).mockReturnValue(['GURU', 'SISWA']);
+    (reflector.getAllAndOverride as jest.Mock).mockReturnValue([
+      'GURU',
+      'SISWA',
+    ]);
     expect(guard.canActivate(ctx('SISWA'))).toBe(true);
   });
 });

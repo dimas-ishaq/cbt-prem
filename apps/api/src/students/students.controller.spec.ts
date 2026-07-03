@@ -5,8 +5,11 @@ import { StudentsService } from './students.service';
 describe('StudentsController', () => {
   let controller: StudentsController;
   const mockService = {
-    create: jest.fn(), findAll: jest.fn(), findOne: jest.fn(),
-    getMyProfile: jest.fn(), remove: jest.fn(),
+    create: jest.fn(),
+    findAll: jest.fn(),
+    findOne: jest.fn(),
+    getMyProfile: jest.fn(),
+    remove: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -26,7 +29,7 @@ describe('StudentsController', () => {
   });
 
   it('findAll should delegate with filters', () => {
-    controller.findAll({ skip: 0, take: 10 } as any, 'm1', 'r1', 'X');
+    controller.findAll({ skip: 0, take: 10 }, 'm1', 'r1', 'X');
     expect(mockService.findAll).toHaveBeenCalledWith('m1', 'r1', 'X', 0, 10);
   });
 

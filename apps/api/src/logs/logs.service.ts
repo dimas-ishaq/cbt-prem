@@ -15,24 +15,25 @@ export class LogsService {
       return [];
     }
     // Return log files sorted by modification time (newest first)
-    return fs.readdirSync(this.logsDir)
-      .filter(file => file.endsWith('.log'))
-      .map(file => ({
+    return fs
+      .readdirSync(this.logsDir)
+      .filter((file) => file.endsWith('.log'))
+      .map((file) => ({
         name: file,
         time: fs.statSync(path.join(this.logsDir, file)).mtime.getTime(),
       }))
       .sort((a, b) => b.time - a.time)
-      .map(item => item.name);
+      .map((item) => item.name);
   }
 
   getLogFileContent(filename: string): string {
     if (!/^[a-zA-Z0-9_-]+\.log$/.test(filename)) {
-      throw new Error('Invalid filename format');
+      throw new Error('Format nama file tidak valid');
     }
-    
+
     const filePath = path.join(this.logsDir, filename);
     if (!fs.existsSync(filePath)) {
-      throw new NotFoundException(`Log file ${filename} not found`);
+      throw new NotFoundException(`Berkas log ${filename} tidak ditemukan`);
     }
 
     return fs.readFileSync(filePath, 'utf-8');
@@ -40,22 +41,22 @@ export class LogsService {
 
   clearLogFile(filename: string): void {
     if (!/^[a-zA-Z0-9_-]+\.log$/.test(filename)) {
-      throw new Error('Invalid filename format');
+      throw new Error('Format nama file tidak valid');
     }
     const filePath = path.join(this.logsDir, filename);
     if (!fs.existsSync(filePath)) {
-      throw new NotFoundException(`Log file ${filename} not found`);
+      throw new NotFoundException(`Berkas log ${filename} tidak ditemukan`);
     }
     fs.writeFileSync(filePath, '', 'utf-8');
   }
 
   deleteLogFile(filename: string): void {
     if (!/^[a-zA-Z0-9_-]+\.log$/.test(filename)) {
-      throw new Error('Invalid filename format');
+      throw new Error('Format nama file tidak valid');
     }
     const filePath = path.join(this.logsDir, filename);
     if (!fs.existsSync(filePath)) {
-      throw new NotFoundException(`Log file ${filename} not found`);
+      throw new NotFoundException(`Berkas log ${filename} tidak ditemukan`);
     }
     fs.unlinkSync(filePath);
   }
@@ -65,7 +66,9 @@ export class LogsService {
       where: { key: 'logRetentionDays' },
     });
     return {
-      logRetentionDays: retentionSetting ? parseInt(retentionSetting.value, 10) : 0,
+      logRetentionDays: retentionSetting
+        ? parseInt(retentionSetting.value, 10)
+        : 0,
     };
   }
 
@@ -88,7 +91,9 @@ export class LogsService {
       if (!fs.existsSync(this.logsDir)) return;
 
       const now = Date.now();
-      const files = fs.readdirSync(this.logsDir).filter(file => file.endsWith('.log'));
+      const files = fs
+        .readdirSync(this.logsDir)
+        .filter((file) => file.endsWith('.log'));
       let deletedCount = 0;
 
       for (const file of files) {
@@ -102,7 +107,9 @@ export class LogsService {
         }
       }
 
-      console.log(`[Log Cleanup] Automated cleanup deleted ${deletedCount} files older than ${days} days.`);
+      console.log(
+        `[Log Cleanup] Automated cleanup deleted ${deletedCount} files older than ${days} days.`,
+      );
     } catch (error) {
       console.error('[Log Cleanup] Automated cleanup failed:', error);
     }

@@ -1,4 +1,17 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, UseInterceptors, UploadedFile, Res, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  Res,
+  Query,
+} from '@nestjs/common';
 import { RombelsService } from './rombels.service';
 import { CreateRombelDto } from './dto/create-rombel.dto';
 import { UpdateRombelDto } from './dto/update-rombel.dto';
@@ -32,8 +45,10 @@ export class RombelsController {
   async downloadTemplate(@Res() res: Response) {
     const buffer = await this.rombelsService.generateTemplate();
     res.set({
-      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'Content-Disposition': 'attachment; filename="template-import-rombel.xlsx"',
+      'Content-Type':
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition':
+        'attachment; filename="template-import-rombel.xlsx"',
       'Content-Length': buffer.length,
     });
     res.end(buffer);
@@ -68,7 +83,7 @@ export class RombelsController {
   @Roles(Role.SUPER_ADMIN, Role.ADMIN_SEKOLAH)
   updateStudents(
     @Param('id') id: string,
-    @Body('studentIds') studentIds: string[]
+    @Body('studentIds') studentIds: string[],
   ) {
     return this.rombelsService.updateStudents(id, studentIds);
   }

@@ -11,7 +11,11 @@ jest.mock('fs', () => ({
 
 describe('SettingsController', () => {
   let controller: SettingsController;
-  const mockService = { getAll: jest.fn(), updateMany: jest.fn(), update: jest.fn() };
+  const mockService = {
+    getAll: jest.fn(),
+    updateMany: jest.fn(),
+    update: jest.fn(),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -32,8 +36,11 @@ describe('SettingsController', () => {
 
   it('getPublicSettings should exclude sensitive fields', async () => {
     mockService.getAll.mockResolvedValue({
-      appName: 'CBT', redisHost: '127.0.0.1', redisPort: '6379',
-      redisPassword: 'secret', redisEnabled: 'true',
+      appName: 'CBT',
+      redisHost: '127.0.0.1',
+      redisPort: '6379',
+      redisPassword: 'secret',
+      redisEnabled: 'true',
     });
     const result = await controller.getPublicSettings();
     expect(result).not.toHaveProperty('redisHost');
@@ -49,29 +56,56 @@ describe('SettingsController', () => {
 
   describe('uploadFavicon', () => {
     it('should reject missing file', async () => {
-      await expect(controller.uploadFavicon(undefined as any)).rejects.toThrow(BadRequestException);
+      await expect(controller.uploadFavicon(undefined as any)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should reject invalid mime', async () => {
-      const file = { mimetype: 'text/plain', originalname: 'bad.txt', size: 100 } as any;
-      await expect(controller.uploadFavicon(file)).rejects.toThrow(BadRequestException);
+      const file = {
+        mimetype: 'text/plain',
+        originalname: 'bad.txt',
+        size: 100,
+      } as any;
+      await expect(controller.uploadFavicon(file)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should reject file too large', async () => {
-      const file = { mimetype: 'image/png', originalname: 'icon.png', size: 300 * 1024 } as any;
-      await expect(controller.uploadFavicon(file)).rejects.toThrow(BadRequestException);
+      const file = {
+        mimetype: 'image/png',
+        originalname: 'icon.png',
+        size: 300 * 1024,
+      } as any;
+      await expect(controller.uploadFavicon(file)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should accept and save valid favicon', async () => {
-      const file = { mimetype: 'image/png', originalname: 'favicon.png', size: 1024, buffer: Buffer.from('test') } as any;
+      const file = {
+        mimetype: 'image/png',
+        originalname: 'favicon.png',
+        size: 1024,
+        buffer: Buffer.from('test'),
+      } as any;
       mockService.update.mockResolvedValue({});
       const result = await controller.uploadFavicon(file);
-      expect(mockService.update).toHaveBeenCalledWith('faviconUrl', '/uploads/settings/favicon.png');
+      expect(mockService.update).toHaveBeenCalledWith(
+        'faviconUrl',
+        '/uploads/settings/favicon.png',
+      );
       expect(result.faviconUrl).toBe('/uploads/settings/favicon.png');
     });
 
     it('should accept .ico favicon', async () => {
-      const file = { mimetype: 'image/x-icon', originalname: 'icon.ico', size: 512, buffer: Buffer.from('ico') } as any;
+      const file = {
+        mimetype: 'image/x-icon',
+        originalname: 'icon.ico',
+        size: 512,
+        buffer: Buffer.from('ico'),
+      } as any;
       mockService.update.mockResolvedValue({});
       const result = await controller.uploadFavicon(file);
       expect(result.faviconUrl).toBe('/uploads/settings/favicon.ico');

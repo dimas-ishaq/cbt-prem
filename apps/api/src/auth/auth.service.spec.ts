@@ -50,9 +50,16 @@ describe('AuthService', () => {
   describe('refreshToken', () => {
     it('should reject stale token', async () => {
       mockJwtService.verify.mockReturnValue({ sub: '1', authVersion: 1 });
-      mockUsersService.findById.mockResolvedValue({ id: '1', username: 'u', role: 'SISWA', authVersion: 2 });
+      mockUsersService.findById.mockResolvedValue({
+        id: '1',
+        username: 'u',
+        role: 'SISWA',
+        authVersion: 2,
+      });
       mockConfigService.get.mockReturnValue('secret');
-      await expect(service.refreshToken('rt')).rejects.toThrow('Invalid refresh token');
+      await expect(service.refreshToken('rt')).rejects.toThrow(
+        'Invalid refresh token',
+      );
     });
   });
 });

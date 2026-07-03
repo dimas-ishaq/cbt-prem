@@ -1,30 +1,38 @@
-import { Injectable, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  ForbiddenException,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateExamDto } from './dto/create-exam.dto';
 
 @Injectable()
-
 export class ExamsService {
   constructor(private prisma: PrismaService) {}
 
   private async assertExamAccess(examId: string, userId: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new ForbiddenException('Exam access denied');
+    if (!user) throw new ForbiddenException('Akses ujian ditolak');
     const exam = await this.prisma.exam.findUnique({
       where: { id: examId },
       include: { subject: { include: { teachers: { select: { id: true } } } } },
     });
 
     if (!exam) {
-      throw new NotFoundException('Exam not found');
+      throw new NotFoundException('Ujian tidak ditemukan');
     }
 
-    if (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_SEKOLAH') return exam;
+    if (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_SEKOLAH')
+      return exam;
     const teacher = await this.prisma.teacher.findUnique({ where: { userId } });
-    if (!teacher) throw new ForbiddenException('Exam access denied');
-    const allowedTeacherIds = new Set([exam.teacherId, ...exam.subject.teachers.map((t) => t.id)]);
+    if (!teacher) throw new ForbiddenException('Akses ujian ditolak');
+    const allowedTeacherIds = new Set([
+      exam.teacherId,
+      ...exam.subject.teachers.map((t) => t.id),
+    ]);
     if (!allowedTeacherIds.has(teacher.id)) {
-      throw new ForbiddenException('You do not own this exam');
+      throw new ForbiddenException('Anda tidak memiliki ujian ini');
     }
 
     return exam;
@@ -40,7 +48,10 @@ export class ExamsService {
         startTime: new Date(dto.startTime),
         endTime: new Date(dto.endTime),
         examQuestions: {
-          create: questionIds?.map((id, index) => ({ questionId: id, order: index })),
+          create: questionIds?.map((id, index) => ({
+            questionId: id,
+            order: index,
+          })),
         },
         targetRombels: {
           create: rombelIds?.map((rombelId) => ({ rombelId })),
@@ -82,21 +93,29 @@ export class ExamsService {
             targetMajors: { none: {} },
           },
           // Targeted to student's rombel
-          ...(student.rombelId ? [{
-            targetRombels: {
-              some: {
-                rombelId: student.rombelId,
-              },
-            },
-          }] : []),
+          ...(student.rombelId
+            ? [
+                {
+                  targetRombels: {
+                    some: {
+                      rombelId: student.rombelId,
+                    },
+                  },
+                },
+              ]
+            : []),
           // Targeted to student's major
-          ...(student.majorId ? [{
-            targetMajors: {
-              some: {
-                majorId: student.majorId,
-              },
-            },
-          }] : []),
+          ...(student.majorId
+            ? [
+                {
+                  targetMajors: {
+                    some: {
+                      majorId: student.majorId,
+                    },
+                  },
+                },
+              ]
+            : []),
         ];
       }
     }
@@ -117,14 +136,14 @@ export class ExamsService {
       examQuestions: {
         include: {
           question: {
-            include: { options: true }
-          }
-        }
+            include: { options: true },
+          },
+        },
       },
       targetRombels: {
         include: {
-          rombel: true
-        }
+          rombel: true,
+        },
       },
       targetMajors: true,
     };
@@ -134,12 +153,12 @@ export class ExamsService {
         include: {
           student: {
             include: {
-              user: true
-            }
+              user: true,
+            },
           },
           violations: true,
-          answers: true
-        }
+          answers: true,
+        },
       };
     }
 
@@ -163,7 +182,7 @@ export class ExamsService {
       }
       let seed = (h ^ (h >>> 16)) >>> 0;
       return () => {
-        let t = seed += 0x6D2B79F5;
+        let t = (seed += 0x6d2b79f5);
         t = Math.imul(t ^ (t >>> 15), t | 1);
         t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
         return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
@@ -195,10 +214,10 @@ export class ExamsService {
       if (student) {
         // Separate essay questions from non-essay questions
         const nonEssayQuestions = examQuestions.filter(
-          (eq) => eq.question.type !== 'ESSAY'
+          (eq) => eq.question.type !== 'ESSAY',
         );
         const essayQuestions = examQuestions.filter(
-          (eq) => eq.question.type === 'ESSAY'
+          (eq) => eq.question.type === 'ESSAY',
         );
 
         // Seeded shuffle both arrays separately
@@ -213,10 +232,10 @@ export class ExamsService {
       } else {
         // Fallback: non-essay first, then essay (in original relative order)
         const nonEssayQuestions = examQuestions.filter(
-          (eq) => eq.question.type !== 'ESSAY'
+          (eq) => eq.question.type !== 'ESSAY',
         );
         const essayQuestions = examQuestions.filter(
-          (eq) => eq.question.type === 'ESSAY'
+          (eq) => eq.question.type === 'ESSAY',
         );
         (exam as any).examQuestions = [...nonEssayQuestions, ...essayQuestions];
       }
@@ -224,10 +243,10 @@ export class ExamsService {
       // For teachers/admins or when randomizeSoal is false,
       // still ensure Multiple Choice / non-essay questions are first, and Essay questions are at the end.
       const nonEssayQuestions = examQuestions.filter(
-        (eq) => eq.question.type !== 'ESSAY'
+        (eq) => eq.question.type !== 'ESSAY',
       );
       const essayQuestions = examQuestions.filter(
-        (eq) => eq.question.type === 'ESSAY'
+        (eq) => eq.question.type === 'ESSAY',
       );
       (exam as any).examQuestions = [...nonEssayQuestions, ...essayQuestions];
     }
@@ -240,14 +259,33 @@ export class ExamsService {
       await this.assertExamAccess(id, userId);
     }
 
-    const { questionIds, rombelIds, majorIds, startDate, startTimeField, endDate, endTimeField, ...examData } = data;
+    const {
+      questionIds,
+      rombelIds,
+      majorIds,
+      startDate,
+      startTimeField,
+      endDate,
+      endTimeField,
+      ...examData
+    } = data;
     const updateData: any = {
       ...examData,
-      ...(typeof data.requireSeb === 'boolean' && { requireSeb: data.requireSeb }),
-      ...(typeof data.blockKeyCopyPaste === 'boolean' && { blockKeyCopyPaste: data.blockKeyCopyPaste }),
-      ...(typeof data.forceFullscreen === 'boolean' && { forceFullscreen: data.forceFullscreen }),
-      ...(typeof data.randomizeSoal === 'boolean' && { randomizeSoal: data.randomizeSoal }),
-      ...(typeof data.randomizeOpsi === 'boolean' && { randomizeOpsi: data.randomizeOpsi }),
+      ...(typeof data.requireSeb === 'boolean' && {
+        requireSeb: data.requireSeb,
+      }),
+      ...(typeof data.blockKeyCopyPaste === 'boolean' && {
+        blockKeyCopyPaste: data.blockKeyCopyPaste,
+      }),
+      ...(typeof data.forceFullscreen === 'boolean' && {
+        forceFullscreen: data.forceFullscreen,
+      }),
+      ...(typeof data.randomizeSoal === 'boolean' && {
+        randomizeSoal: data.randomizeSoal,
+      }),
+      ...(typeof data.randomizeOpsi === 'boolean' && {
+        randomizeOpsi: data.randomizeOpsi,
+      }),
       ...(typeof data.showScore === 'boolean' && { showScore: data.showScore }),
     };
 
@@ -275,7 +313,9 @@ export class ExamsService {
           where: { examId: id },
           select: { questionId: true, order: true },
         });
-        const currentQuestionIds = new Set(currentQuestions.map((item) => item.questionId));
+        const currentQuestionIds = new Set(
+          currentQuestions.map((item) => item.questionId),
+        );
         const nextQuestionIds = new Set(questionIds);
         const removedQuestionIds = currentQuestions
           .map((item) => item.questionId)
@@ -318,7 +358,9 @@ export class ExamsService {
           where: { examId: id },
           select: { rombelId: true },
         });
-        const currentRombelIds = new Set(currentRombels.map((item) => item.rombelId));
+        const currentRombelIds = new Set(
+          currentRombels.map((item) => item.rombelId),
+        );
         const nextRombelIds = new Set(rombelIds);
         const removedRombelIds = currentRombels
           .map((item) => item.rombelId)
@@ -347,7 +389,9 @@ export class ExamsService {
           where: { examId: id },
           select: { majorId: true },
         });
-        const currentMajorIds = new Set(currentMajors.map((item) => item.majorId));
+        const currentMajorIds = new Set(
+          currentMajors.map((item) => item.majorId),
+        );
         const nextMajorIds = new Set(majorIds);
         const removedMajorIds = currentMajors
           .map((item) => item.majorId)
@@ -422,11 +466,23 @@ export class ExamsService {
     });
   }
 
-  async validateSeb(examId: string, userAgent: string, sebConfigKey: string, sebBrowserKey: string) {
+  async validateSeb(
+    examId: string,
+    userAgent: string,
+    sebConfigKey: string,
+    sebBrowserKey: string,
+  ) {
     const exam = await this.prisma.exam.findUnique({ where: { id: examId } });
     if (!exam) return false;
-    
-    return this.isSebAllowed(exam.requireSeb, userAgent, sebConfigKey, sebBrowserKey, exam.sebConfigKey, exam.sebBrowserKey);
+
+    return this.isSebAllowed(
+      exam.requireSeb,
+      userAgent,
+      sebConfigKey,
+      sebBrowserKey,
+      exam.sebConfigKey,
+      exam.sebBrowserKey,
+    );
   }
 
   async generatePdf(id: string): Promise<Buffer> {
@@ -444,7 +500,7 @@ export class ExamsService {
         },
       },
     });
-    if (!exam) throw new Error('Exam not found');
+    if (!exam) throw new Error('Ujian tidak ditemukan');
 
     return new Promise<Buffer>((resolve, reject) => {
       const doc = new pdfkit({ margin: 50 });
@@ -454,20 +510,40 @@ export class ExamsService {
       doc.on('error', reject);
 
       // School Branding Header
-      doc.fillColor('#1e1b4b').fontSize(11).font('Helvetica-Bold').text('LAPORAN HASIL UJIAN CBT', { align: 'left' });
-      doc.fontSize(8).font('Helvetica').fillColor('#6b7280').text('Sistem Ujian Premium & Professional', { align: 'left' });
-      doc.moveTo(50, 70).lineTo(562, 70).strokeColor('#e5e7eb').lineWidth(1).stroke();
+      doc
+        .fillColor('#1e1b4b')
+        .fontSize(11)
+        .font('Helvetica-Bold')
+        .text('LAPORAN HASIL UJIAN CBT', { align: 'left' });
+      doc
+        .fontSize(8)
+        .font('Helvetica')
+        .fillColor('#6b7280')
+        .text('Sistem Ujian Premium & Professional', { align: 'left' });
+      doc
+        .moveTo(50, 70)
+        .lineTo(562, 70)
+        .strokeColor('#e5e7eb')
+        .lineWidth(1)
+        .stroke();
       doc.moveDown(2);
 
       // Exam Details Header
-      let currentY = doc.y;
-      doc.fillColor('#1f2937').fontSize(15).font('Helvetica-Bold').text(exam.title, 50, currentY);
+      const currentY = doc.y;
+      doc
+        .fillColor('#1f2937')
+        .fontSize(15)
+        .font('Helvetica-Bold')
+        .text(exam.title, 50, currentY);
       doc.moveDown(0.3);
-      doc.fontSize(10).font('Helvetica').fillColor('#4b5563')
+      doc
+        .fontSize(10)
+        .font('Helvetica')
+        .fillColor('#4b5563')
         .text(`Mata Pelajaran : ${exam.subject.name}`)
         .text(`Guru Pengampu  : ${exam.teacher.user.fullName}`)
         .text(`KKM / Kelulusan : ${exam.passingGrade ?? 75}`);
-      
+
       doc.moveDown(1.5);
 
       // Table Header Layout
@@ -499,7 +575,7 @@ export class ExamsService {
         doc.text(`${s.student.user.fullName}`, 60, y);
         const scoreVal = s.score ?? 0;
         doc.text(`${s.score ?? '-'}`, 320, y, { width: 60, align: 'right' });
-        
+
         // Status Ujian
         let statusText = 'Mengerjakan';
         let statusColor = '#374151';
@@ -525,7 +601,12 @@ export class ExamsService {
         }
 
         // Draw light horizontal separator line
-        doc.moveTo(50, y + 14).lineTo(562, y + 14).strokeColor('#f3f4f6').lineWidth(0.5).stroke();
+        doc
+          .moveTo(50, y + 14)
+          .lineTo(562, y + 14)
+          .strokeColor('#f3f4f6')
+          .lineWidth(0.5)
+          .stroke();
         y += 20;
       });
 
@@ -545,26 +626,59 @@ export class ExamsService {
     const scores = exam.examSessions.map((s) => s.score ?? 0);
     const passed = scores.filter((s) => s >= exam.passingGrade).length;
     const failed = scores.length - passed;
-    const avg = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+    const avg = scores.length
+      ? scores.reduce((a, b) => a + b, 0) / scores.length
+      : 0;
     const buckets = [
       { label: '<50', count: scores.filter((s) => s < 50).length },
-      { label: '50-65', count: scores.filter((s) => s >= 50 && s <= 65).length },
-      { label: '66-80', count: scores.filter((s) => s >= 66 && s <= 80).length },
+      {
+        label: '50-65',
+        count: scores.filter((s) => s >= 50 && s <= 65).length,
+      },
+      {
+        label: '66-80',
+        count: scores.filter((s) => s >= 66 && s <= 80).length,
+      },
       { label: '81-100', count: scores.filter((s) => s >= 81).length },
     ];
     const cleanHtml = (html: string) => {
       if (!html) return '';
-      return html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+      return html
+        .replace(/<[^>]*>/g, '')
+        .replace(/&nbsp;/g, ' ')
+        .trim();
     };
 
     const itemAnalysis = exam.examQuestions.map((eq) => {
-      const answers = exam.examSessions.flatMap((s) => s.answers.filter((a) => a.questionId === eq.questionId));
+      const answers = exam.examSessions.flatMap((s) =>
+        s.answers.filter((a) => a.questionId === eq.questionId),
+      );
       const correct = answers.filter((a) => a.isCorrect).length;
       const plainContent = cleanHtml(eq.question.content);
-      const contentPreview = plainContent.length > 80 ? plainContent.slice(0, 80) + '...' : plainContent;
-      return { questionId: eq.questionId, content: contentPreview, correct, total: answers.length, difficulty: answers.length ? correct / answers.length : 0 };
+      const contentPreview =
+        plainContent.length > 80
+          ? plainContent.slice(0, 80) + '...'
+          : plainContent;
+      return {
+        questionId: eq.questionId,
+        content: contentPreview,
+        correct,
+        total: answers.length,
+        difficulty: answers.length ? correct / answers.length : 0,
+      };
     });
-    return { exam, summary: { passed, failed, highest: Math.max(...scores, 0), lowest: Math.min(...scores, 0), average: avg }, distribution: buckets, itemAnalysis };
+    return {
+      exam,
+      summary: {
+        passed,
+        failed,
+        highest: Math.max(...scores, 0),
+        lowest: Math.min(...scores, 0),
+        average: avg,
+      },
+      distribution: buckets,
+      itemAnalysis,
+    };
   }
 
   isSebAllowed(
@@ -581,8 +695,10 @@ export class ExamsService {
         return false;
       }
     }
-    if (expectedSebConfigKey && expectedSebConfigKey !== sebConfigKey) return false;
-    if (expectedSebBrowserKey && expectedSebBrowserKey !== sebBrowserKey) return false;
+    if (expectedSebConfigKey && expectedSebConfigKey !== sebConfigKey)
+      return false;
+    if (expectedSebBrowserKey && expectedSebBrowserKey !== sebBrowserKey)
+      return false;
     return true;
   }
 }

@@ -24,18 +24,30 @@ export class ReportsService {
     headerRow.height = 30;
     sheet.columns.forEach((_, colIdx) => {
       const cell = headerRow.getCell(colIdx + 1);
-      cell.style = this.headerStyle as ExcelJS.Style;
+      cell.style = this.headerStyle;
     });
   }
 
-  private async writeWorkbook(res: Response, workbook: ExcelJS.Workbook, filename: string) {
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  private async writeWorkbook(
+    res: Response,
+    workbook: ExcelJS.Workbook,
+    filename: string,
+  ) {
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     const buffer = await workbook.xlsx.writeBuffer();
     res.end(Buffer.from(buffer));
   }
 
-  private async writeEmptyWorkbook(res: Response, title: string, message: string, filename: string) {
+  private async writeEmptyWorkbook(
+    res: Response,
+    title: string,
+    message: string,
+    filename: string,
+  ) {
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet(title);
     sheet.columns = [{ header: 'Keterangan', key: 'info', width: 60 }];
@@ -73,14 +85,16 @@ export class ReportsService {
       {
         id: 'student-master',
         title: 'Data Master Siswa',
-        description: 'Daftar siswa aktif beserta NIS, rombel, jurusan, dan email.',
+        description:
+          'Daftar siswa aktif beserta NIS, rombel, jurusan, dan email.',
         criteria: 'Minimal 1 siswa terdaftar.',
         generateUrl: '/reports/student-master',
       },
       {
         id: 'student-achievement',
         title: 'Prestasi Siswa',
-        description: 'Siswa dengan rata-rata nilai tertinggi dan perbandingan antar rombel.',
+        description:
+          'Siswa dengan rata-rata nilai tertinggi dan perbandingan antar rombel.',
         criteria: 'Minimal 1 ujian selesai.',
         generateUrl: '/reports/achievement',
       },
@@ -94,7 +108,8 @@ export class ReportsService {
       {
         id: 'violation-report',
         title: 'Pelanggaran & Anti-Cheat',
-        description: 'Rekap pelanggaran proctoring berdasarkan tipe dan tingkat keparahan.',
+        description:
+          'Rekap pelanggaran proctoring berdasarkan tipe dan tingkat keparahan.',
         criteria: 'Minimal 1 pelanggaran tercatat.',
         generateUrl: '/reports/violations',
       },
@@ -120,14 +135,16 @@ export class ReportsService {
       {
         id: 'subscription',
         title: 'Status Langganan',
-        description: 'Detail paket langganan, masa berlaku, dan riwayat perpanjangan.',
+        description:
+          'Detail paket langganan, masa berlaku, dan riwayat perpanjangan.',
         criteria: 'Modul premium aktif.',
         generateUrl: '/reports/subscription',
       },
       {
         id: 'revenue',
         title: 'Laporan Pendapatan',
-        description: 'Total transaksi, pendapatan bulanan, dan proyeksi berdasarkan langganan aktif.',
+        description:
+          'Total transaksi, pendapatan bulanan, dan proyeksi berdasarkan langganan aktif.',
         criteria: 'Data transaksi pembayaran tersedia.',
         generateUrl: '/reports/revenue',
       },
@@ -135,14 +152,15 @@ export class ReportsService {
   }
 
   async getAllReports() {
-    const [exam, student, monitoring, operational, premium] =
-      await Promise.all([
+    const [exam, student, monitoring, operational, premium] = await Promise.all(
+      [
         this.getExamReports(),
         this.getStudentReports(),
         this.getMonitoringReports(),
         this.getOperationalReports(),
         this.getPremiumReports(),
-      ]);
+      ],
+    );
     return { exam, student, monitoring, operational, premium };
   }
 
@@ -193,11 +211,19 @@ export class ReportsService {
     });
 
     if (submittedCount === 0) {
-      return this.writeEmptyWorkbook(res, 'Tidak Ada Data', 'Belum ada ujian selesai.', 'achievement.xlsx');
+      return this.writeEmptyWorkbook(
+        res,
+        'Tidak Ada Data',
+        'Belum ada ujian selesai.',
+        'achievement.xlsx',
+      );
     }
 
     const sessions = await this.prisma.examSession.findMany({
-      where: { status: { in: ['SUBMITTED', 'FINISHED'] as any }, score: { not: null } },
+      where: {
+        status: { in: ['SUBMITTED', 'FINISHED'] as any },
+        score: { not: null },
+      },
       include: {
         student: {
           include: {
@@ -211,28 +237,35 @@ export class ReportsService {
       orderBy: { submittedAt: 'desc' },
     });
 
-    const studentMap = new Map<string, {
-      studentId: string;
-      fullName: string;
-      nis: string;
-      rombel: string;
-      major: string;
-      scores: number[];
-    }>();
+    const studentMap = new Map<
+      string,
+      {
+        studentId: string;
+        fullName: string;
+        nis: string;
+        rombel: string;
+        major: string;
+        scores: number[];
+      }
+    >();
 
-    const rombelMap = new Map<string, {
-      rombel: string;
-      major: string;
-      students: Set<string>;
-      scores: number[];
-    }>();
+    const rombelMap = new Map<
+      string,
+      {
+        rombel: string;
+        major: string;
+        students: Set<string>;
+        scores: number[];
+      }
+    >();
 
     for (const session of sessions) {
       const score = session.score;
       if (score == null) continue;
       const student = session.student;
       const rombelName = student.rombel?.name ?? '-';
-      const majorName = student.major?.name ?? student.rombel?.major?.name ?? '-';
+      const majorName =
+        student.major?.name ?? student.rombel?.major?.name ?? '-';
       const current = studentMap.get(student.id) ?? {
         studentId: student.id,
         fullName: student.user.fullName,
@@ -275,7 +308,9 @@ export class ReportsService {
       .map((student) => ({
         ...student,
         examCount: student.scores.length,
-        averageScore: student.scores.reduce((sum, score) => sum + score, 0) / student.scores.length,
+        averageScore:
+          student.scores.reduce((sum, score) => sum + score, 0) /
+          student.scores.length,
         highestScore: Math.max(...student.scores),
         lowestScore: Math.min(...student.scores),
       }))
@@ -310,7 +345,9 @@ export class ReportsService {
       .map((item) => ({
         ...item,
         studentCount: item.students.size,
-        classAverage: item.scores.reduce((sum, score) => sum + score, 0) / item.scores.length,
+        classAverage:
+          item.scores.reduce((sum, score) => sum + score, 0) /
+          item.scores.length,
         highestScore: Math.max(...item.scores),
         lowestScore: Math.min(...item.scores),
       }))
@@ -352,7 +389,12 @@ export class ReportsService {
     });
 
     if (!violations.length) {
-      return this.writeEmptyWorkbook(res, 'Tidak Ada Data', 'Belum ada pelanggaran tercatat.', 'violations.xlsx');
+      return this.writeEmptyWorkbook(
+        res,
+        'Tidak Ada Data',
+        'Belum ada pelanggaran tercatat.',
+        'violations.xlsx',
+      );
     }
 
     const workbook = new ExcelJS.Workbook();
@@ -397,10 +439,20 @@ export class ReportsService {
     this.applyHeaderStyle(summarySheet);
 
     const levelOrder = ['RINGAN', 'SEDANG', 'BERAT', 'KRITIS'] as const;
-    const typeMap = new Map<string, Record<(typeof levelOrder)[number], number> & { total: number }>();
+    const typeMap = new Map<
+      string,
+      Record<(typeof levelOrder)[number], number> & { total: number }
+    >();
     violations.forEach((violation) => {
-      const current = typeMap.get(violation.type) ?? { RINGAN: 0, SEDANG: 0, BERAT: 0, KRITIS: 0, total: 0 };
-      current[violation.level as keyof typeof current] = (current[violation.level as keyof typeof current] ?? 0) + 1;
+      const current = typeMap.get(violation.type) ?? {
+        RINGAN: 0,
+        SEDANG: 0,
+        BERAT: 0,
+        KRITIS: 0,
+        total: 0,
+      };
+      current[violation.level as keyof typeof current] =
+        (current[violation.level as keyof typeof current] ?? 0) + 1;
       current.total += 1;
       typeMap.set(violation.type, current);
     });
@@ -424,7 +476,9 @@ export class ReportsService {
   async exportUserAuditToExcel(res: Response) {
     const [auditLogs, roleAuditLogs] = await Promise.all([
       this.prisma.auditLog.findMany({
-        include: { user: { select: { fullName: true, username: true, role: true } } },
+        include: {
+          user: { select: { fullName: true, username: true, role: true } },
+        },
         orderBy: { createdAt: 'desc' },
       }),
       this.prisma.roleAuditLog.findMany({
@@ -433,7 +487,12 @@ export class ReportsService {
     ]);
 
     if (!auditLogs.length && !roleAuditLogs.length) {
-      return this.writeEmptyWorkbook(res, 'Tidak Ada Data', 'Belum ada log audit tercatat.', 'user-audit.xlsx');
+      return this.writeEmptyWorkbook(
+        res,
+        'Tidak Ada Data',
+        'Belum ada log audit tercatat.',
+        'user-audit.xlsx',
+      );
     }
 
     const workbook = new ExcelJS.Workbook();
@@ -493,10 +552,20 @@ export class ReportsService {
   }
 
   async exportSubscriptionToExcel(res: Response) {
-    return this.writeEmptyWorkbook(res, 'Tidak Ada Data', 'Modul langganan belum tersedia di schema saat ini.', 'subscription.xlsx');
+    return this.writeEmptyWorkbook(
+      res,
+      'Tidak Ada Data',
+      'Modul langganan belum tersedia di schema saat ini.',
+      'subscription.xlsx',
+    );
   }
 
   async exportRevenueToExcel(res: Response) {
-    return this.writeEmptyWorkbook(res, 'Tidak Ada Data', 'Modul pendapatan belum tersedia di schema saat ini.', 'revenue.xlsx');
+    return this.writeEmptyWorkbook(
+      res,
+      'Tidak Ada Data',
+      'Modul pendapatan belum tersedia di schema saat ini.',
+      'revenue.xlsx',
+    );
   }
 }

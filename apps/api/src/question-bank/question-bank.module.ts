@@ -4,6 +4,6 @@ import { QuestionBankController } from './question-bank.controller';
 
 @Module({
   providers: [QuestionBankService],
-  controllers: [QuestionBankController]
+  controllers: [QuestionBankController],
 })
 export class QuestionBankModule {}

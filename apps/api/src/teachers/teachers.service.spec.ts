@@ -12,10 +12,20 @@ describe('TeachersService', () => {
 
   it('create returns temporaryPassword', async () => {
     prisma.user.create.mockResolvedValue({ id: 'u1', teacher: { id: 't1' } });
-    const mod = await Test.createTestingModule({ providers: [TeachersService, { provide: PrismaService, useValue: prisma }] }).compile();
+    const mod = await Test.createTestingModule({
+      providers: [
+        TeachersService,
+        { provide: PrismaService, useValue: prisma },
+      ],
+    }).compile();
     const service = mod.get(TeachersService);
 
-    const res = await service.create({ username: 't', email: 't@example.com', fullName: 'T', nip: '123' } as any);
+    const res = await service.create({
+      username: 't',
+      email: 't@example.com',
+      fullName: 'T',
+      nip: '123',
+    });
     expect(res.temporaryPassword).toBeTruthy();
     expect(prisma.user.create).toHaveBeenCalled();
   });
@@ -23,7 +33,12 @@ describe('TeachersService', () => {
   it('remove delete user if teacher exists', async () => {
     prisma.teacher.findUnique.mockResolvedValue({ userId: 'u1' });
     prisma.user.delete.mockResolvedValue({ id: 'u1' });
-    const mod = await Test.createTestingModule({ providers: [TeachersService, { provide: PrismaService, useValue: prisma }] }).compile();
+    const mod = await Test.createTestingModule({
+      providers: [
+        TeachersService,
+        { provide: PrismaService, useValue: prisma },
+      ],
+    }).compile();
     const service = mod.get(TeachersService);
 
     await expect(service.remove('t1')).resolves.toEqual({ id: 'u1' });

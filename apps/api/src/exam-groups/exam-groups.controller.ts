@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query, Res } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  Query,
+  Res,
+} from '@nestjs/common';
 import type { Response } from 'express';
 import { ExamGroupsService } from './exam-groups.service';
 import { CreateExamGroupDto } from './dto/create-exam-group.dto';
@@ -44,7 +55,10 @@ export class ExamGroupsController {
 
   @Patch(':id')
   @Roles(Role.SUPER_ADMIN)
-  update(@Param('id') id: string, @Body() updateExamGroupDto: UpdateExamGroupDto) {
+  update(
+    @Param('id') id: string,
+    @Body() updateExamGroupDto: UpdateExamGroupDto,
+  ) {
     return this.examGroupsService.update(id, updateExamGroupDto);
   }
 

@@ -1,8 +1,17 @@
-import { Injectable, ForbiddenException, NotFoundException, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  ForbiddenException,
+  NotFoundException,
+  OnModuleInit,
+} from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateNotificationDto, NotificationTargetType, NotificationType } from './dto/create-notification.dto';
+import {
+  CreateNotificationDto,
+  NotificationTargetType,
+  NotificationType,
+} from './dto/create-notification.dto';
 import { Role } from '@prisma/client';
 import { NotificationPriority } from './dto/create-notification.dto';
 import { UpdateNotificationPolicyDto } from './dto/update-policy.dto';
@@ -18,7 +27,9 @@ export class NotificationsService implements OnModuleInit {
   ) {}
 
   onModuleInit() {
-    this.realtimeGateway = this.moduleRef.get(RealtimeGateway, { strict: false });
+    this.realtimeGateway = this.moduleRef.get(RealtimeGateway, {
+      strict: false,
+    });
   }
 
   // Get all policies
@@ -60,11 +71,17 @@ export class NotificationsService implements OnModuleInit {
 
   async create(dto: CreateNotificationDto, createdBy?: string) {
     if (!dto.targets?.length) {
-      throw new ForbiddenException('Minimal satu target notifikasi harus diisi');
+      throw new ForbiddenException(
+        'Minimal satu target notifikasi harus diisi',
+      );
     }
 
-    const resolvedTargets = await Promise.all(dto.targets.map((target) => this.resolveUserIdsByTarget(target)));
-    let recipientUserIds = Array.from(new Set(resolvedTargets.flat())).filter(Boolean);
+    const resolvedTargets = await Promise.all(
+      dto.targets.map((target) => this.resolveUserIdsByTarget(target)),
+    );
+    let recipientUserIds = Array.from(new Set(resolvedTargets.flat())).filter(
+      Boolean,
+    );
 
     if (recipientUserIds.length === 0) {
       throw new NotFoundException('Tidak ada penerima notifikasi yang valid');
@@ -85,7 +102,10 @@ export class NotificationsService implements OnModuleInit {
 
     // Tentukan context ujian jika tipe notifikasi berkaitan dengan ujian
     let examTeacherId: string | null = null;
-    if (dto.type === NotificationType.EXAM_SUBMITTED || dto.type === NotificationType.VIOLATION_DETECTED) {
+    if (
+      dto.type === NotificationType.EXAM_SUBMITTED ||
+      dto.type === NotificationType.VIOLATION_DETECTED
+    ) {
       if (dto.referenceId) {
         if (dto.referenceType === 'exam_session') {
           const session = await this.prisma.examSession.findUnique({
@@ -109,15 +129,17 @@ export class NotificationsService implements OnModuleInit {
     for (const u of usersWithRoles) {
       // Check Superadmin Policy
       let isAllowedByPolicy = true;
-      
+
       // Kumpulkan semua custom role user
-      const userCustomRoles = u.roles.map(r => r.role);
-      
+      const userCustomRoles = u.roles.map((r) => r.role);
+
       if (userCustomRoles.length > 0) {
         // Cari apakah ada kebijakan yang menonaktifkan tipe ini untuk salah satu role user
         // (Sifat kebijakan mutlak: jika salah satu role user melarang tipe ini, maka dilarang)
         const isBlockedByAnyRole = userCustomRoles.some((role) => {
-          const policy = role.notificationPolicies.find((p) => p.type === dto.type);
+          const policy = role.notificationPolicies.find(
+            (p) => p.type === dto.type,
+          );
           return policy && policy.isEnabled === false;
         });
 
@@ -139,7 +161,10 @@ export class NotificationsService implements OnModuleInit {
       }
 
       // Check Ownership Filter
-      if (dto.type === NotificationType.EXAM_SUBMITTED || dto.type === NotificationType.VIOLATION_DETECTED) {
+      if (
+        dto.type === NotificationType.EXAM_SUBMITTED ||
+        dto.type === NotificationType.VIOLATION_DETECTED
+      ) {
         // Jika user adalah GURU, pastikan dia adalah guru pengampu ujian tersebut
         if (u.role === 'GURU') {
           const teacherRecord = await this.prisma.teacher.findUnique({
@@ -158,7 +183,11 @@ export class NotificationsService implements OnModuleInit {
 
     if (recipientUserIds.length === 0) {
       // Mengembalikan success: true (atau notifikasi kosong) alih-alih melempar error agar sistem pengerjaan ujian siswa tidak macet gara-gara notifikasi tidak dikirim
-      return { success: true, message: 'Notifikasi tidak dikirim karena kebijakan pembatasan role / kepemilikan.' };
+      return {
+        success: true,
+        message:
+          'Notifikasi tidak dikirim karena kebijakan pembatasan role / kepemilikan.',
+      };
     }
 
     const notification = await (this.prisma as any).notification.create({
@@ -169,25 +198,30 @@ export class NotificationsService implements OnModuleInit {
         message: dto.message,
         referenceId: dto.referenceId ?? null,
         referenceType: dto.referenceType ?? null,
-        ...(createdBy
-          ? { createdByUser: { connect: { id: createdBy } } }
-          : {}),
+        ...(createdBy ? { createdByUser: { connect: { id: createdBy } } } : {}),
       },
     });
 
     await (this.prisma as any).notificationRecipient.createMany({
-      data: recipientUserIds.map((userId) => ({ notificationId: notification.id, userId })),
+      data: recipientUserIds.map((userId) => ({
+        notificationId: notification.id,
+        userId,
+      })),
     });
 
-    const fullNotification = await (this.prisma as any).notification.findUnique({
-      where: { id: notification.id },
-    });
+    const fullNotification = await (this.prisma as any).notification.findUnique(
+      {
+        where: { id: notification.id },
+      },
+    );
 
     if (!fullNotification) {
       throw new NotFoundException('Notifikasi gagal dimuat ulang');
     }
 
-    const recipients = await (this.prisma as any).notificationRecipient.findMany({
+    const recipients = await (
+      this.prisma as any
+    ).notificationRecipient.findMany({
       where: { notificationId: notification.id },
     });
 
@@ -233,7 +267,9 @@ export class NotificationsService implements OnModuleInit {
   }
 
   async markRead(notificationId: string, userId: string) {
-    const recipient = await (this.prisma as any).notificationRecipient.findUnique({
+    const recipient = await (
+      this.prisma as any
+    ).notificationRecipient.findUnique({
       where: {
         notificationId_userId: {
           notificationId,
@@ -243,7 +279,7 @@ export class NotificationsService implements OnModuleInit {
     });
 
     if (!recipient) {
-      throw new NotFoundException('Notification not found');
+      throw new NotFoundException('Notifikasi tidak ditemukan');
     }
 
     if (recipient.isRead) {
@@ -289,11 +325,16 @@ export class NotificationsService implements OnModuleInit {
     };
   }
 
-  async updateNotificationRetentionSettings(dto: { notificationRetentionDays: number }) {
+  async updateNotificationRetentionSettings(dto: {
+    notificationRetentionDays: number;
+  }) {
     return this.prisma.setting.upsert({
       where: { key: 'notificationRetentionDays' },
       update: { value: String(dto.notificationRetentionDays) },
-      create: { key: 'notificationRetentionDays', value: String(dto.notificationRetentionDays) },
+      create: {
+        key: 'notificationRetentionDays',
+        value: String(dto.notificationRetentionDays),
+      },
     });
   }
 
@@ -313,13 +354,18 @@ export class NotificationsService implements OnModuleInit {
         },
       });
 
-      console.log(`[Notification Cleanup] Automated cleanup deleted ${result.count} notifications older than ${days} days.`);
+      console.log(
+        `[Notification Cleanup] Automated cleanup deleted ${result.count} notifications older than ${days} days.`,
+      );
     } catch (error) {
       console.error('[Notification Cleanup] Automated cleanup failed:', error);
     }
   }
 
-  private async resolveUserIdsByTarget(target: { type: NotificationTargetType; id: string }): Promise<string[]> {
+  private async resolveUserIdsByTarget(target: {
+    type: NotificationTargetType;
+    id: string;
+  }): Promise<string[]> {
     switch (target.type) {
       case NotificationTargetType.USER:
         return [target.id];
@@ -332,7 +378,7 @@ export class NotificationsService implements OnModuleInit {
       case NotificationTargetType.EXAM:
         return this.getParticipantUserIdsByExam(target.id);
       default:
-        throw new ForbiddenException('Unsupported notification target type');
+        throw new ForbiddenException('Jenis target notifikasi tidak didukung');
     }
   }
 

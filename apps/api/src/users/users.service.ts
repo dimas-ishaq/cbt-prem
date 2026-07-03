@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { User, Prisma, Role } from '@prisma/client';
@@ -10,7 +16,10 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService, private auditService: AuditService) {}
+  constructor(
+    private prisma: PrismaService,
+    private auditService: AuditService,
+  ) {}
 
   // ─── Auth helpers ─────────────────────────────────────────────────────────
   async findOne(username: string): Promise<User | null> {
@@ -38,10 +47,19 @@ export class UsersService {
           isActive: true,
           createdAt: true,
           student: {
-            select: { id: true, nis: true, rombel: { select: { id: true, name: true } }, major: { select: { name: true, code: true } } },
+            select: {
+              id: true,
+              nis: true,
+              rombel: { select: { id: true, name: true } },
+              major: { select: { name: true, code: true } },
+            },
           },
           teacher: {
-            select: { id: true, nip: true, subjects: { select: { id: true, name: true } } },
+            select: {
+              id: true,
+              nip: true,
+              subjects: { select: { id: true, name: true } },
+            },
           },
         },
         orderBy: [{ role: 'asc' }, { createdAt: 'desc' }],
@@ -65,10 +83,19 @@ export class UsersService {
         isActive: true,
         createdAt: true,
         student: {
-          select: { id: true, nis: true, rombel: { select: { id: true, name: true } }, major: { select: { id: true, name: true, code: true } } },
+          select: {
+            id: true,
+            nis: true,
+            rombel: { select: { id: true, name: true } },
+            major: { select: { id: true, name: true, code: true } },
+          },
         },
         teacher: {
-          select: { id: true, nip: true, subjects: { select: { id: true, name: true } } },
+          select: {
+            id: true,
+            nip: true,
+            subjects: { select: { id: true, name: true } },
+          },
         },
       },
     });
@@ -78,11 +105,16 @@ export class UsersService {
 
   /** Create a new user (any role) with profile */
   async createUser(dto: CreateUserDto) {
-    const existingUsername = await this.prisma.user.findUnique({ where: { username: dto.username } });
-    if (existingUsername) throw new ConflictException('Username sudah digunakan');
+    const existingUsername = await this.prisma.user.findUnique({
+      where: { username: dto.username },
+    });
+    if (existingUsername)
+      throw new ConflictException('Username sudah digunakan');
 
     if (dto.email) {
-      const existingEmail = await this.prisma.user.findUnique({ where: { email: dto.email } });
+      const existingEmail = await this.prisma.user.findUnique({
+        where: { email: dto.email },
+      });
       if (existingEmail) throw new ConflictException('Email sudah digunakan');
     }
 
@@ -101,11 +133,16 @@ export class UsersService {
               student: {
                 create: {
                   nis: (dto as any).nis || `NIS-${Date.now()}`,
-                  ...(dto.rombelId ? { rombel: { connect: { id: dto.rombelId } } } : {}),
+                  ...(dto.rombelId
+                    ? { rombel: { connect: { id: dto.rombelId } } }
+                    : {}),
                 },
               },
             }
-          : role === Role.GURU || role === Role.ADMIN_SEKOLAH || role === Role.PENGAWAS || role === Role.SUPER_ADMIN
+          : role === Role.GURU ||
+              role === Role.ADMIN_SEKOLAH ||
+              role === Role.PENGAWAS ||
+              role === Role.SUPER_ADMIN
             ? { teacher: { create: { nip: (dto as any).nip || null } } }
             : {}),
       },
@@ -119,31 +156,49 @@ export class UsersService {
         createdAt: true,
       },
     });
-    await this.auditService.write({ action: 'USER_CREATE', resource: 'User', resourceId: created.id, after: created });
+    await this.auditService.write({
+      action: 'USER_CREATE',
+      resource: 'User',
+      resourceId: created.id,
+      after: created,
+    });
     return created;
   }
 
-  private async assertRoleUpdateAllowed(actorRole: Role, targetUser: User, nextRole?: Role) {
+  private async assertRoleUpdateAllowed(
+    actorRole: Role,
+    targetUser: User,
+    nextRole?: Role,
+  ) {
     if (!nextRole || nextRole === targetUser.role) return;
     if (targetUser.id === targetUser.id && nextRole !== targetUser.role) {
       // ponytail: actor context not passed yet; block self-role edits at controller/service boundary.
-      if (nextRole !== targetUser.role) throw new ForbiddenException('Tidak boleh ubah role sendiri');
+      if (nextRole !== targetUser.role)
+        throw new ForbiddenException('Tidak boleh ubah role sendiri');
     }
     if (actorRole !== Role.SUPER_ADMIN) {
-      if (nextRole === Role.SUPER_ADMIN) throw new ForbiddenException('Tidak boleh assign Super Admin');
-      if (actorRole !== Role.ADMIN_SEKOLAH) throw new ForbiddenException('Tidak punya izin ubah role');
+      if (nextRole === Role.SUPER_ADMIN)
+        throw new ForbiddenException('Tidak boleh assign Super Admin');
+      if (actorRole !== Role.ADMIN_SEKOLAH)
+        throw new ForbiddenException('Tidak punya izin ubah role');
     }
   }
 
   /** Update user profile (name, email) */
-  async updateUser(id: string, dto: UpdateUserDto, actorRole?: Role, actorUserId?: string) {
+  async updateUser(
+    id: string,
+    dto: UpdateUserDto,
+    actorRole?: Role,
+    actorUserId?: string,
+  ) {
     const user = await this.findUserById(id);
 
     if (dto.email) {
       const existing = await this.prisma.user.findFirst({
         where: { email: dto.email, id: { not: id } },
       });
-      if (existing) throw new ConflictException('Email sudah digunakan oleh pengguna lain');
+      if (existing)
+        throw new ConflictException('Email sudah digunakan oleh pengguna lain');
     }
 
     if (actorUserId && actorUserId === id) {
@@ -184,19 +239,34 @@ export class UsersService {
         isActive: true,
       },
     });
-    await this.auditService.write({ userId: id, action: 'USER_UPDATE', resource: 'User', resourceId: id, after: updated });
+    await this.auditService.write({
+      userId: id,
+      action: 'USER_UPDATE',
+      resource: 'User',
+      resourceId: id,
+      after: updated,
+    });
     return updated;
   }
 
   /** Update self profile (name, email, password) */
-  async updateSelfProfile(id: string, dto: { fullName?: string; email?: string; password?: string; photo?: string }) {
+  async updateSelfProfile(
+    id: string,
+    dto: {
+      fullName?: string;
+      email?: string;
+      password?: string;
+      photo?: string;
+    },
+  ) {
     const user = await this.findUserById(id);
 
     if (dto.email) {
       const existing = await this.prisma.user.findFirst({
         where: { email: dto.email, id: { not: id } },
       });
-      if (existing) throw new ConflictException('Email sudah digunakan oleh pengguna lain');
+      if (existing)
+        throw new ConflictException('Email sudah digunakan oleh pengguna lain');
     }
 
     const data: Prisma.UserUpdateInput = {};
@@ -230,7 +300,13 @@ export class UsersService {
       data: { isActive: !user.isActive, authVersion: { increment: 1 } },
       select: { id: true, isActive: true },
     });
-    await this.auditService.write({ userId: id, action: 'USER_TOGGLE_ACTIVE', resource: 'User', resourceId: id, after: updated });
+    await this.auditService.write({
+      userId: id,
+      action: 'USER_TOGGLE_ACTIVE',
+      resource: 'User',
+      resourceId: id,
+      after: updated,
+    });
     return updated;
   }
 
@@ -238,8 +314,16 @@ export class UsersService {
   async resetPassword(id: string, dto: ResetPasswordDto) {
     await this.findUserById(id);
     const hashed = await bcrypt.hash(dto.newPassword, 10);
-    await this.prisma.user.update({ where: { id }, data: { password: hashed, authVersion: { increment: 1 } } });
-    await this.auditService.write({ userId: id, action: 'USER_RESET_PASSWORD', resource: 'User', resourceId: id });
+    await this.prisma.user.update({
+      where: { id },
+      data: { password: hashed, authVersion: { increment: 1 } },
+    });
+    await this.auditService.write({
+      userId: id,
+      action: 'USER_RESET_PASSWORD',
+      resource: 'User',
+      resourceId: id,
+    });
     return { success: true, message: 'Password berhasil direset' };
   }
 
@@ -248,9 +332,13 @@ export class UsersService {
     const user = await this.findUserById(id);
 
     if (user.role === Role.SUPER_ADMIN) {
-      const count = await this.prisma.user.count({ where: { role: Role.SUPER_ADMIN } });
+      const count = await this.prisma.user.count({
+        where: { role: Role.SUPER_ADMIN },
+      });
       if (count <= 1) {
-        throw new BadRequestException('Tidak dapat menghapus Super Admin terakhir dalam sistem');
+        throw new BadRequestException(
+          'Tidak dapat menghapus Super Admin terakhir dalam sistem',
+        );
       }
     }
 
@@ -271,10 +359,16 @@ export class UsersService {
       // 2. Clean up teacher data
       if (user.teacher) {
         // Check for active exams or question banks
-        const examCount = await tx.exam.count({ where: { teacherId: user.teacher.id } });
-        const qbCount = await tx.questionBank.count({ where: { teacherId: user.teacher.id } });
+        const examCount = await tx.exam.count({
+          where: { teacherId: user.teacher.id },
+        });
+        const qbCount = await tx.questionBank.count({
+          where: { teacherId: user.teacher.id },
+        });
         if (examCount > 0 || qbCount > 0) {
-          throw new BadRequestException('Tidak dapat menghapus Guru yang memiliki data ujian atau bank soal aktif');
+          throw new BadRequestException(
+            'Tidak dapat menghapus Guru yang memiliki data ujian atau bank soal aktif',
+          );
         }
 
         // Delete the Teacher profile
@@ -297,7 +391,14 @@ export class UsersService {
 
       // 5. Finally delete the User (this cascades to UserRole, NotificationRecipient, NotificationPreference)
       const deleted = await tx.user.delete({ where: { id } });
-      await tx.auditLog.create({ data: { userId: id, action: 'USER_DELETE', resource: 'User', resourceId: id } });
+      await tx.auditLog.create({
+        data: {
+          userId: id,
+          action: 'USER_DELETE',
+          resource: 'User',
+          resourceId: id,
+        },
+      });
       return deleted;
     });
   }
@@ -305,7 +406,9 @@ export class UsersService {
   // ─── Legacy create for auth service ──────────────────────────────────────
   async create(data: Prisma.UserCreateInput): Promise<User> {
     const hashedPassword = await bcrypt.hash(data.password, 10);
-    return this.prisma.user.create({ data: { ...data, password: hashedPassword } });
+    return this.prisma.user.create({
+      data: { ...data, password: hashedPassword },
+    });
   }
 
   // ─── Export / Import ──────────────────────────────────────────────────────
@@ -315,7 +418,15 @@ export class UsersService {
       orderBy: { createdAt: 'desc' },
     });
 
-    const headers = ['username', 'email', 'fullName', 'role', 'nis', 'nip', 'rombel'];
+    const headers = [
+      'username',
+      'email',
+      'fullName',
+      'role',
+      'nis',
+      'nip',
+      'rombel',
+    ];
     const escapeCsv = (str: string | null | undefined) => {
       if (str === null || str === undefined) return '';
       const s = String(str);
@@ -327,15 +438,17 @@ export class UsersService {
 
     const csvRows = [headers.join(',')];
     for (const u of users) {
-      csvRows.push([
-        escapeCsv(u.username),
-        escapeCsv(u.email),
-        escapeCsv(u.fullName),
-        escapeCsv(u.role),
-        escapeCsv(u.student?.nis),
-        escapeCsv(u.teacher?.nip),
-        escapeCsv((u.student as any)?.rombel?.name),
-      ].join(','));
+      csvRows.push(
+        [
+          escapeCsv(u.username),
+          escapeCsv(u.email),
+          escapeCsv(u.fullName),
+          escapeCsv(u.role),
+          escapeCsv(u.student?.nis),
+          escapeCsv(u.teacher?.nip),
+          escapeCsv((u.student as any)?.rombel?.name),
+        ].join(','),
+      );
     }
     return csvRows.join('\n');
   }
@@ -347,14 +460,24 @@ export class UsersService {
     for (const u of users) {
       try {
         if (!u.username || !u.fullName || !u.role) {
-          results.errors.push(`Username, Nama Lengkap, dan Role wajib diisi untuk data: ${JSON.stringify(u)}`);
+          results.errors.push(
+            `Username, Nama Lengkap, dan Role wajib diisi untuk data: ${JSON.stringify(u)}`,
+          );
           continue;
         }
 
         const roleValue = u.role.toUpperCase();
-        const validRoles = ['SUPER_ADMIN', 'ADMIN_SEKOLAH', 'GURU', 'PENGAWAS', 'SISWA'];
+        const validRoles = [
+          'SUPER_ADMIN',
+          'ADMIN_SEKOLAH',
+          'GURU',
+          'PENGAWAS',
+          'SISWA',
+        ];
         if (!validRoles.includes(roleValue)) {
-          results.errors.push(`Role tidak valid '${u.role}' untuk user ${u.username}`);
+          results.errors.push(
+            `Role tidak valid '${u.role}' untuk user ${u.username}`,
+          );
           continue;
         }
 
@@ -375,25 +498,34 @@ export class UsersService {
             data: {
               email: u.email || existingUser.email,
               fullName: u.fullName,
-              role: roleValue as any,
+              role: roleValue,
               ...(hashedPassword ? { password: hashedPassword } : {}),
             },
           });
           if (roleValue === 'SISWA') {
             let rombelConnect = {};
             if (u.rombel) {
-              const r = await this.prisma.rombel.findFirst({ where: { name: u.rombel } });
+              const r = await this.prisma.rombel.findFirst({
+                where: { name: u.rombel },
+              });
               if (r) rombelConnect = { rombel: { connect: { id: r.id } } };
             }
 
             if (existingUser.student) {
               await this.prisma.student.update({
                 where: { id: existingUser.student.id },
-                data: { nis: u.nis || existingUser.student.nis, ...rombelConnect },
+                data: {
+                  nis: u.nis || existingUser.student.nis,
+                  ...rombelConnect,
+                },
               });
             } else {
               await this.prisma.student.create({
-                data: { userId: existingUser.id, nis: u.nis || `NIS-${Date.now()}`, ...rombelConnect },
+                data: {
+                  userId: existingUser.id,
+                  nis: u.nis || `NIS-${Date.now()}`,
+                  ...rombelConnect,
+                },
               });
             }
           } else {
@@ -403,14 +535,18 @@ export class UsersService {
                 data: { nip: u.nip || existingUser.teacher.nip },
               });
             } else {
-              await this.prisma.teacher.create({ data: { userId: existingUser.id, nip: u.nip || null } });
+              await this.prisma.teacher.create({
+                data: { userId: existingUser.id, nip: u.nip || null },
+              });
             }
           }
           results.updated++;
         } else {
           let rombelConnect = {};
           if (roleValue === 'SISWA' && u.rombel) {
-            const r = await this.prisma.rombel.findFirst({ where: { name: u.rombel } });
+            const r = await this.prisma.rombel.findFirst({
+              where: { name: u.rombel },
+            });
             if (r) rombelConnect = { rombel: { connect: { id: r.id } } };
           }
 
@@ -419,10 +555,17 @@ export class UsersService {
               username: u.username,
               email: u.email || `${u.username}@cbt.enterprise`,
               fullName: u.fullName,
-              password: hashedPassword!,
-              role: roleValue as any,
+              password: hashedPassword,
+              role: roleValue,
               ...(roleValue === 'SISWA'
-                ? { student: { create: { nis: u.nis || `NIS-${Date.now()}`, ...rombelConnect } } }
+                ? {
+                    student: {
+                      create: {
+                        nis: u.nis || `NIS-${Date.now()}`,
+                        ...rombelConnect,
+                      },
+                    },
+                  }
                 : roleValue === 'GURU'
                   ? { teacher: { create: { nip: u.nip || null } } }
                   : {}),
@@ -431,7 +574,9 @@ export class UsersService {
           results.created++;
         }
       } catch (err: any) {
-        results.errors.push(`Gagal memproses user ${u.username || 'unknown'}: ${err.message}`);
+        results.errors.push(
+          `Gagal memproses user ${u.username || 'unknown'}: ${err.message}`,
+        );
       }
     }
     return results;

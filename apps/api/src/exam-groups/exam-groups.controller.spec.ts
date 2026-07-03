@@ -5,7 +5,11 @@ import { ExamGroupsService } from './exam-groups.service';
 describe('ExamGroupsController', () => {
   let controller: ExamGroupsController;
   const mockService = {
-    create: jest.fn(), findAll: jest.fn(), findOne: jest.fn(), update: jest.fn(), remove: jest.fn(),
+    create: jest.fn(),
+    findAll: jest.fn(),
+    findOne: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -21,13 +25,13 @@ describe('ExamGroupsController', () => {
 
   it('create should delegate', () => {
     mockService.create.mockResolvedValue({ id: 'g1' });
-    controller.create({ name: 'UTS' } as any);
+    controller.create({ name: 'UTS' });
     expect(mockService.create).toHaveBeenCalledWith({ name: 'UTS' });
   });
 
   it('findAll should delegate with pagination', () => {
     mockService.findAll.mockResolvedValue({ data: [], total: 0 });
-    controller.findAll({ skip: 0, take: 10 } as any);
+    controller.findAll({ skip: 0, take: 10 });
     expect(mockService.findAll).toHaveBeenCalledWith(0, 10);
   });
 
@@ -37,7 +41,7 @@ describe('ExamGroupsController', () => {
   });
 
   it('update should delegate', () => {
-    controller.update('g1', { name: 'Updated' } as any);
+    controller.update('g1', { name: 'Updated' });
     expect(mockService.update).toHaveBeenCalledWith('g1', { name: 'Updated' });
   });
 

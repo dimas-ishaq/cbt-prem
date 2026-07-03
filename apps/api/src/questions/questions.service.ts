@@ -1,4 +1,10 @@
-import { Injectable, ForbiddenException, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  ForbiddenException,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateQuestionDto } from './dto/create-question.dto';
 import { UpdateQuestionDto } from './dto/update-question.dto';
@@ -13,7 +19,15 @@ function normalizeHtml(value?: string) {
 
 function sanitizeHtml(value: string) {
   return sanitizeHtmlLib(value, {
-    allowedTags: sanitizeHtmlLib.defaults.allowedTags.concat(['img', 'figure', 'figcaption', 'u', 'span', 'sub', 'sup']),
+    allowedTags: sanitizeHtmlLib.defaults.allowedTags.concat([
+      'img',
+      'figure',
+      'figcaption',
+      'u',
+      'span',
+      'sub',
+      'sup',
+    ]),
     allowedAttributes: {
       ...sanitizeHtmlLib.defaults.allowedAttributes,
       img: ['src', 'alt', 'width', 'height', 'class'],
@@ -31,51 +45,100 @@ function isNonEmptyHtml(value?: string) {
   return plain !== '' && plain !== '<p></p>';
 }
 
-function validateQuestionPayload(type: QuestionType, content: string, options: { content: string; isCorrect: boolean }[]) {
-  if (!isNonEmptyHtml(content)) throw new BadRequestException('Question content cannot be empty');
+function validateQuestionPayload(
+  type: QuestionType,
+  content: string,
+  options: { content: string; isCorrect: boolean }[],
+) {
+  if (!isNonEmptyHtml(content))
+    throw new BadRequestException('Isi soal tidak boleh kosong');
   if (type === QuestionType.ESSAY) {
-    if (options.length > 0) throw new BadRequestException('Essay question cannot have options');
+    if (options.length > 0)
+      throw new BadRequestException(
+        'Soal essay tidak boleh punya opsi jawaban',
+      );
     return;
   }
-  if (options.length < 2) throw new BadRequestException('Question must have at least 2 options');
+  if (options.length < 2)
+    throw new BadRequestException('Soal harus memiliki minimal 2 opsi jawaban');
   const correctCount = options.filter((o) => o.isCorrect).length;
-  if (type === QuestionType.PILIHAN_GANDA || type === QuestionType.BENAR_SALAH) {
-    if (correctCount !== 1) throw new BadRequestException('Question must have exactly 1 correct answer');
+  if (
+    type === QuestionType.PILIHAN_GANDA ||
+    type === QuestionType.BENAR_SALAH
+  ) {
+    if (correctCount !== 1)
+      throw new BadRequestException(
+        'Soal harus memiliki tepat 1 jawaban benar',
+      );
   }
   if (type === QuestionType.MULTIPLE_RESPONSE) {
-    if (correctCount < 1) throw new BadRequestException('Question must have at least 1 correct answer');
+    if (correctCount < 1)
+      throw new BadRequestException(
+        'Soal harus memiliki minimal 1 jawaban benar',
+      );
   }
 }
 
 async function canManageQuestions(prisma: PrismaService, userId: string) {
   const user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user) throw new ForbiddenException('Only teachers or administrators can manage questions');
-  if (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_SEKOLAH') return { admin: true } as const;
+  if (!user)
+    throw new ForbiddenException(
+      'Only teachers or administrators can manage questions',
+    );
+  if (user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_SEKOLAH')
+    return { admin: true } as const;
   const teacher = await prisma.teacher.findUnique({ where: { userId } });
-  if (!teacher) throw new ForbiddenException('Only teachers can manage questions');
+  if (!teacher)
+    throw new ForbiddenException('Hanya guru yang bisa mengelola soal');
   return { admin: false, teacher } as const;
 }
 
-async function assertBankAccess(prisma: PrismaService, bankId: string, userId: string) {
+async function assertBankAccess(
+  prisma: PrismaService,
+  bankId: string,
+  userId: string,
+) {
   const access = await canManageQuestions(prisma, userId);
   const bank = await prisma.questionBank.findUnique({
     where: { id: bankId },
     include: { subject: { include: { teachers: { select: { id: true } } } } },
   });
-  if (!bank) throw new NotFoundException('Question bank not found');
+  if (!bank) throw new NotFoundException('Bank soal tidak ditemukan');
   if (access.admin) return bank;
-  const allowedTeacherIds = new Set([bank.teacherId, ...bank.subject.teachers.map((t) => t.id)]);
-  if (!allowedTeacherIds.has(access.teacher.id)) throw new ForbiddenException('You do not own this question bank');
+  const allowedTeacherIds = new Set([
+    bank.teacherId,
+    ...bank.subject.teachers.map((t) => t.id),
+  ]);
+  if (!allowedTeacherIds.has(access.teacher.id))
+    throw new ForbiddenException('Anda tidak memiliki bank soal ini');
   return bank;
 }
 
-async function assertQuestionOwnedByTeacher(prisma: PrismaService, questionId: string, userId: string) {
+async function assertQuestionOwnedByTeacher(
+  prisma: PrismaService,
+  questionId: string,
+  userId: string,
+) {
   const access = await canManageQuestions(prisma, userId);
-  const question = await prisma.question.findUnique({ where: { id: questionId }, include: { questionBank: { include: { subject: { include: { teachers: { select: { id: true } } } } } }, options: true } });
-  if (!question) throw new NotFoundException('Question not found');
+  const question = await prisma.question.findUnique({
+    where: { id: questionId },
+    include: {
+      questionBank: {
+        include: {
+          subject: { include: { teachers: { select: { id: true } } } },
+        },
+      },
+      options: true,
+    },
+  });
+  if (!question) throw new NotFoundException('Soal tidak ditemukan');
   if (access.admin) return question;
-  const allowedTeacherIds = new Set([question.questionBank.teacherId, ...question.questionBank.subject.teachers.map((t) => t.id)]);
-  if (!allowedTeacherIds.has(access.teacher.id)) throw new ForbiddenException('You do not own this question');
+  const allowedTeacherIds = new Set([
+    question.questionBank.teacherId,
+    ...question.questionBank.subject.teachers.map((t) => t.id),
+  ]);
+  if (!allowedTeacherIds.has(access.teacher.id))
+    throw new ForbiddenException('Anda tidak memiliki soal ini');
   return question;
 }
 
@@ -108,7 +171,13 @@ export class QuestionsService {
   constructor(private prisma: PrismaService) {}
 
   async create(dto: CreateQuestionDto, userId: string) {
-    const { options = [], content, questionBankId, type, ...questionData } = dto as any;
+    const {
+      options = [],
+      content,
+      questionBankId,
+      type,
+      ...questionData
+    } = dto as any;
     await assertBankAccess(this.prisma, questionBankId, userId);
     validateQuestionPayload(type, content, options);
     return this.prisma.question.create({
@@ -117,7 +186,12 @@ export class QuestionsService {
         questionBankId,
         content: sanitizeHtml(content),
         type,
-        options: { create: options.map((option) => ({ ...option, content: sanitizeHtml(option.content) })) },
+        options: {
+          create: options.map((option) => ({
+            ...option,
+            content: sanitizeHtml(option.content),
+          })),
+        },
       },
       include: { options: true },
     });
@@ -127,10 +201,7 @@ export class QuestionsService {
     return this.prisma.question.findMany({
       where: { questionBankId: bankId },
       include: { options: true },
-      orderBy: [
-        { order: 'asc' },
-        { createdAt: 'asc' },
-      ],
+      orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
     });
   }
 
@@ -139,7 +210,13 @@ export class QuestionsService {
     const { options, content, type, ...questionData } = dto as any;
     const nextType = type || current.type;
     const nextContent = content ?? current.content;
-    const nextOptions = options ?? current.options?.map((o) => ({ content: o.content, isCorrect: o.isCorrect })) ?? [];
+    const nextOptions =
+      options ??
+      current.options?.map((o) => ({
+        content: o.content,
+        isCorrect: o.isCorrect,
+      })) ??
+      [];
     validateQuestionPayload(nextType, nextContent, nextOptions);
     return this.prisma.$transaction(async (tx) => {
       if (options) {
@@ -151,7 +228,16 @@ export class QuestionsService {
           ...questionData,
           ...(content !== undefined ? { content: sanitizeHtml(content) } : {}),
           ...(type !== undefined ? { type } : {}),
-          ...(options ? { options: { create: options.map((option: any) => ({ ...option, content: sanitizeHtml(option.content) })) } } : {}),
+          ...(options
+            ? {
+                options: {
+                  create: options.map((option: any) => ({
+                    ...option,
+                    content: sanitizeHtml(option.content),
+                  })),
+                },
+              }
+            : {}),
         },
         include: { options: true },
       });
@@ -159,12 +245,17 @@ export class QuestionsService {
   }
 
   async remove(id: string, userId: string) {
-    const question = await assertQuestionOwnedByTeacher(this.prisma, id, userId);
+    const question = await assertQuestionOwnedByTeacher(
+      this.prisma,
+      id,
+      userId,
+    );
 
     // Collect file paths to clean up
     const filesToDelete: string[] = [];
     if (question.mediaUrl) filesToDelete.push(question.mediaUrl);
-    if (question.content) filesToDelete.push(...extractFilePaths(question.content));
+    if (question.content)
+      filesToDelete.push(...extractFilePaths(question.content));
     for (const opt of question.options ?? []) {
       if (opt.content) filesToDelete.push(...extractFilePaths(opt.content));
     }
@@ -172,7 +263,9 @@ export class QuestionsService {
     const result = await this.prisma.question.delete({ where: { id } });
     if (filesToDelete.length > 0) {
       await unlinkUploadedFiles(...filesToDelete).catch((err) =>
-        this.logger.warn(`Failed to cleanup files for question ${id}: ${err.message}`),
+        this.logger.warn(
+          `Failed to cleanup files for question ${id}: ${err.message}`,
+        ),
       );
     }
     return result;
@@ -213,7 +306,9 @@ export class QuestionsService {
 
     if (filesToDelete.length > 0) {
       await unlinkUploadedFiles(...filesToDelete).catch((err) =>
-        this.logger.warn(`Failed to cleanup files for bank ${id}: ${err.message}`),
+        this.logger.warn(
+          `Failed to cleanup files for bank ${id}: ${err.message}`,
+        ),
       );
     }
     return result;

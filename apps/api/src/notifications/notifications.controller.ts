@@ -1,6 +1,18 @@
-import { Controller, Post, Get, Patch, Param, Body, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Patch,
+  Param,
+  Body,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
-import { CreateNotificationDto, NotificationTargetType } from './dto/create-notification.dto';
+import {
+  CreateNotificationDto,
+  NotificationTargetType,
+} from './dto/create-notification.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -31,7 +43,9 @@ export class NotificationsController {
   @Get('me/count')
   @ApiOperation({ summary: 'Hitung notifikasi belum dibaca' })
   async countUnread(@Request() req) {
-    return { count: await this.notificationsService.findUnreadCount(req.user.userId) };
+    return {
+      count: await this.notificationsService.findUnreadCount(req.user.userId),
+    };
   }
 
   @Patch('me/read-all')
@@ -56,7 +70,9 @@ export class NotificationsController {
   @Post('settings')
   @Roles(Role.SUPER_ADMIN)
   @ApiOperation({ summary: 'Update pengaturan retensi notifikasi' })
-  async updateRetentionSettings(@Body() dto: { notificationRetentionDays: number }) {
+  async updateRetentionSettings(
+    @Body() dto: { notificationRetentionDays: number },
+  ) {
     return this.notificationsService.updateNotificationRetentionSettings(dto);
   }
 }

@@ -27,10 +27,14 @@ describe('ExamsController', () => {
   it('should be defined', () => expect(controller).toBeDefined());
 
   it('creates exam for teacher user', async () => {
-    examsServiceMock.prisma.teacher.findUnique.mockResolvedValue({ id: 'teacher-1' });
+    examsServiceMock.prisma.teacher.findUnique.mockResolvedValue({
+      id: 'teacher-1',
+    });
     examsServiceMock.create.mockResolvedValue({ id: 'exam-1' });
     const dto = { title: 'UTS' };
     const req = { user: { userId: 'user-1', role: Role.GURU } };
-    await expect(controller.create(dto as any, req as any)).resolves.toEqual({ id: 'exam-1' });
+    await expect(controller.create(dto as any, req as any)).resolves.toEqual({
+      id: 'exam-1',
+    });
   });
 });

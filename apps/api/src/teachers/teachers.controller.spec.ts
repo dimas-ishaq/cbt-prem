@@ -7,8 +7,13 @@ describe('TeachersController', () => {
 
   it('findAll delegates', async () => {
     service.findAll.mockResolvedValue({ data: [], total: 0 });
-    const mod = await Test.createTestingModule({ controllers: [TeachersController], providers: [{ provide: TeachersService, useValue: service }] }).compile();
+    const mod = await Test.createTestingModule({
+      controllers: [TeachersController],
+      providers: [{ provide: TeachersService, useValue: service }],
+    }).compile();
     const controller = mod.get(TeachersController);
-    await expect(controller.findAll({ skip: 0, take: 10 } as any, 'abc')).resolves.toEqual({ data: [], total: 0 });
+    await expect(
+      controller.findAll({ skip: 0, take: 10 } as any, 'abc'),
+    ).resolves.toEqual({ data: [], total: 0 });
   });
 });

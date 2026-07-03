@@ -36,7 +36,10 @@ import { ExamAttendanceModule } from './exam-attendance/exam-attendance.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: [join(process.cwd(), 'apps/api/.env'), join(process.cwd(), '.env')],
+      envFilePath: [
+        join(process.cwd(), 'apps/api/.env'),
+        join(process.cwd(), '.env'),
+      ],
     }),
     ScheduleModule.forRoot(),
     ThrottlerModule.forRoot([
@@ -81,9 +84,6 @@ import { ExamAttendanceModule } from './exam-attendance/exam-attendance.module';
     ExamAttendanceModule,
   ],
   controllers: [AppController],
-  providers: [
-    AppService,
-    { provide: APP_GUARD, useClass: ThrottlerGuard },
-  ],
+  providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}

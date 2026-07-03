@@ -1,18 +1,28 @@
 import { Test } from '@nestjs/testing';
 import { ExamAttendanceService } from './exam-attendance.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 
 describe('ExamAttendanceService', () => {
   const mockStudent = {
-    id: 's1', nis: '12345', userId: 'u1',
+    id: 's1',
+    nis: '12345',
+    userId: 'u1',
     user: { fullName: 'Siswa Satu', username: 'siswa1' },
     rombel: { name: 'XII-A' },
     major: { name: 'IPA' },
   };
   const mockExam = { id: 'e1', title: 'UTS', status: 'PUBLISHED' };
   const prisma = {
-    examAttendance: { findUnique: jest.fn(), create: jest.fn(), findMany: jest.fn() },
+    examAttendance: {
+      findUnique: jest.fn(),
+      create: jest.fn(),
+      findMany: jest.fn(),
+    },
     exam: { findUnique: jest.fn() },
     student: { findUnique: jest.fn(), findMany: jest.fn() },
     examTargetRombel: { findMany: jest.fn() },
@@ -22,7 +32,10 @@ describe('ExamAttendanceService', () => {
 
   beforeAll(async () => {
     const mod = await Test.createTestingModule({
-      providers: [ExamAttendanceService, { provide: PrismaService, useValue: prisma }],
+      providers: [
+        ExamAttendanceService,
+        { provide: PrismaService, useValue: prisma },
+      ],
     }).compile();
     service = mod.get(ExamAttendanceService);
   });
@@ -38,10 +51,18 @@ describe('ExamAttendanceService', () => {
       prisma.examTargetMajor.findMany.mockResolvedValue([]);
       prisma.examAttendance.findUnique.mockResolvedValue(null);
       prisma.examAttendance.create.mockResolvedValue({
-        id: 'a1', studentId: 's1', checkedInBy: 'u2', qrPayload: '{}', status: 'HADIR', checkedInAt: new Date(),
+        id: 'a1',
+        studentId: 's1',
+        checkedInBy: 'u2',
+        qrPayload: '{}',
+        status: 'HADIR',
+        checkedInAt: new Date(),
       });
 
-      const result = await service.checkIn({ examId: 'e1', qrPayload: '{"studentId":"s1"}' }, 'u2');
+      const result = await service.checkIn(
+        { examId: 'e1', qrPayload: '{"studentId":"s1"}' },
+        'u2',
+      );
       expect(result.success).toBe(true);
       expect(result.attendance.studentName).toBe('Siswa Satu');
     });
@@ -61,14 +82,23 @@ describe('ExamAttendanceService', () => {
     it('rejects nonexistent exam', async () => {
       prisma.exam.findUnique.mockResolvedValue(null);
       await expect(
-        service.checkIn({ examId: 'e1', qrPayload: '{"studentId":"s1"}' }, 'u2'),
+        service.checkIn(
+          { examId: 'e1', qrPayload: '{"studentId":"s1"}' },
+          'u2',
+        ),
       ).rejects.toThrow(NotFoundException);
     });
 
     it('rejects DRAFT exam', async () => {
-      prisma.exam.findUnique.mockResolvedValue({ ...mockExam, status: 'DRAFT' });
+      prisma.exam.findUnique.mockResolvedValue({
+        ...mockExam,
+        status: 'DRAFT',
+      });
       await expect(
-        service.checkIn({ examId: 'e1', qrPayload: '{"studentId":"s1"}' }, 'u2'),
+        service.checkIn(
+          { examId: 'e1', qrPayload: '{"studentId":"s1"}' },
+          'u2',
+        ),
       ).rejects.toThrow('belum aktif');
     });
 
@@ -76,18 +106,28 @@ describe('ExamAttendanceService', () => {
       prisma.exam.findUnique.mockResolvedValue(mockExam);
       prisma.student.findUnique.mockResolvedValue(null);
       await expect(
-        service.checkIn({ examId: 'e1', qrPayload: '{"studentId":"s1"}' }, 'u2'),
+        service.checkIn(
+          { examId: 'e1', qrPayload: '{"studentId":"s1"}' },
+          'u2',
+        ),
       ).rejects.toThrow(NotFoundException);
     });
 
     it('rejects student not targeted by exam', async () => {
       prisma.exam.findUnique.mockResolvedValue(mockExam);
       prisma.student.findUnique.mockResolvedValue(mockStudent);
-      prisma.student.findMany.mockResolvedValue([{ ...mockStudent, id: 'other-s1' }]);
-      prisma.examTargetRombel.findMany.mockResolvedValue([{ rombelId: 'other-rombel' }]);
+      prisma.student.findMany.mockResolvedValue([
+        { ...mockStudent, id: 'other-s1' },
+      ]);
+      prisma.examTargetRombel.findMany.mockResolvedValue([
+        { rombelId: 'other-rombel' },
+      ]);
       prisma.examTargetMajor.findMany.mockResolvedValue([]);
       await expect(
-        service.checkIn({ examId: 'e1', qrPayload: '{"studentId":"s1"}' }, 'u2'),
+        service.checkIn(
+          { examId: 'e1', qrPayload: '{"studentId":"s1"}' },
+          'u2',
+        ),
       ).rejects.toThrow('tidak terdaftar');
     });
 
@@ -100,7 +140,10 @@ describe('ExamAttendanceService', () => {
       prisma.examTargetMajor.findMany.mockResolvedValue([]);
       prisma.examAttendance.findUnique.mockResolvedValue({ id: 'a1' });
       await expect(
-        service.checkIn({ examId: 'e1', qrPayload: '{"studentId":"s1"}' }, 'u2'),
+        service.checkIn(
+          { examId: 'e1', qrPayload: '{"studentId":"s1"}' },
+          'u2',
+        ),
       ).rejects.toThrow(ConflictException);
     });
   });
@@ -111,11 +154,28 @@ describe('ExamAttendanceService', () => {
       prisma.examTargetRombel.findMany.mockResolvedValue([{ rombelId: 'r1' }]);
       prisma.examTargetMajor.findMany.mockResolvedValue([]);
       prisma.student.findMany.mockResolvedValue([
-        { id: 's1', nis: '123', user: { fullName: 'A', username: 'a' }, rombel: { name: 'XII-A' }, major: { name: 'IPA' } },
-        { id: 's2', nis: '456', user: { fullName: 'B', username: 'b' }, rombel: { name: 'XII-A' }, major: { name: 'IPA' } },
+        {
+          id: 's1',
+          nis: '123',
+          user: { fullName: 'A', username: 'a' },
+          rombel: { name: 'XII-A' },
+          major: { name: 'IPA' },
+        },
+        {
+          id: 's2',
+          nis: '456',
+          user: { fullName: 'B', username: 'b' },
+          rombel: { name: 'XII-A' },
+          major: { name: 'IPA' },
+        },
       ]);
       prisma.examAttendance.findMany.mockResolvedValue([
-        { studentId: 's1', status: 'HADIR', checkedInAt: new Date(), checkedInByUser: { fullName: 'Guru' } },
+        {
+          studentId: 's1',
+          status: 'HADIR',
+          checkedInAt: new Date(),
+          checkedInByUser: { fullName: 'Guru' },
+        },
       ]);
 
       const result = await service.getAttendanceByExam('e1');
@@ -127,7 +187,9 @@ describe('ExamAttendanceService', () => {
 
     it('rejects nonexistent exam', async () => {
       prisma.exam.findUnique.mockResolvedValue(null);
-      await expect(service.getAttendanceByExam('e1')).rejects.toThrow(NotFoundException);
+      await expect(service.getAttendanceByExam('e1')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

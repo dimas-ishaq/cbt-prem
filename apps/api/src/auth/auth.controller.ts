@@ -1,4 +1,16 @@
-import { Controller, Post, Put, Body, UnauthorizedException, UseGuards, Get, Request, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Put,
+  Body,
+  UnauthorizedException,
+  UseGuards,
+  Get,
+  Request,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
+} from '@nestjs/common';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { AuditService } from '../audit/audit.service';
 import { AuthService } from './auth.service';
@@ -9,15 +21,36 @@ import * as path from 'path';
 
 const isValidImageBuffer = (file: Express.Multer.File) => {
   const buf = file.buffer;
-  if (file.mimetype === 'image/jpeg') return buf.length > 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[buf.length - 2] === 0xff && buf[buf.length - 1] === 0xd9;
-  if (file.mimetype === 'image/png') return buf.length > 8 && buf.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
-  if (file.mimetype === 'image/webp') return buf.length > 12 && buf.subarray(0, 4).toString('ascii') === 'RIFF' && buf.subarray(8, 12).toString('ascii') === 'WEBP';
+  if (file.mimetype === 'image/jpeg')
+    return (
+      buf.length > 3 &&
+      buf[0] === 0xff &&
+      buf[1] === 0xd8 &&
+      buf[buf.length - 2] === 0xff &&
+      buf[buf.length - 1] === 0xd9
+    );
+  if (file.mimetype === 'image/png')
+    return (
+      buf.length > 8 &&
+      buf
+        .subarray(0, 8)
+        .equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))
+    );
+  if (file.mimetype === 'image/webp')
+    return (
+      buf.length > 12 &&
+      buf.subarray(0, 4).toString('ascii') === 'RIFF' &&
+      buf.subarray(8, 12).toString('ascii') === 'WEBP'
+    );
   return false;
 };
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService, private auditService: AuditService) {}
+  constructor(
+    private authService: AuthService,
+    private auditService: AuditService,
+  ) {}
 
   @Post('login')
   @UseGuards(ThrottlerGuard)
@@ -25,13 +58,27 @@ export class AuthController {
   async login(@Body() body: any, @Request() req: any) {
     const ip = req.ip || req.connection?.remoteAddress;
     const userAgent = req.headers?.['user-agent'];
-    const user = await this.authService.validateUser(body.username, body.password);
+    const user = await this.authService.validateUser(
+      body.username,
+      body.password,
+    );
     if (!user) {
-      await this.auditService.write({ action: 'LOGIN_FAILED', resource: 'Auth', ip, userAgent });
+      await this.auditService.write({
+        action: 'LOGIN_FAILED',
+        resource: 'Auth',
+        ip,
+        userAgent,
+      });
       throw new UnauthorizedException('Kredensial tidak valid');
     }
     const result = await this.authService.login(user);
-    await this.auditService.write({ userId: user.id, action: 'LOGIN_SUCCESS', resource: 'Auth', ip, userAgent });
+    await this.auditService.write({
+      userId: user.id,
+      action: 'LOGIN_SUCCESS',
+      resource: 'Auth',
+      ip,
+      userAgent,
+    });
     return result;
   }
 
@@ -60,7 +107,9 @@ export class AuthController {
 
     const allowedMimes = ['image/jpeg', 'image/png', 'image/webp'];
     if (!allowedMimes.includes(file.mimetype)) {
-      throw new BadRequestException('Hanya format JPEG, PNG, atau WebP yang diizinkan');
+      throw new BadRequestException(
+        'Hanya format JPEG, PNG, atau WebP yang diizinkan',
+      );
     }
 
     if (file.size > 2 * 1024 * 1024) {
@@ -85,7 +134,8 @@ export class AuthController {
 
     for (const oldExt of allowedExt) {
       const oldPath = path.join(destDir, `user-${req.user.userId}${oldExt}`);
-      if (oldPath !== path.join(destDir, filename) && fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      if (oldPath !== path.join(destDir, filename) && fs.existsSync(oldPath))
+        fs.unlinkSync(oldPath);
     }
 
     const newPath = path.join(destDir, filename);

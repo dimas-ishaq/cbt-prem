@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, Param, Delete, UseGuards, Query, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Delete,
+  UseGuards,
+  Query,
+  Request,
+} from '@nestjs/common';
 import { StudentsService } from './students.service';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
@@ -26,7 +36,13 @@ export class StudentsController {
     @Query('rombelId') rombelId?: string,
     @Query('grade') grade?: string,
   ) {
-    return this.studentsService.findAll(majorId, rombelId, grade, pagination.skip, pagination.take);
+    return this.studentsService.findAll(
+      majorId,
+      rombelId,
+      grade,
+      pagination.skip,
+      pagination.take,
+    );
   }
 
   @Get('me')

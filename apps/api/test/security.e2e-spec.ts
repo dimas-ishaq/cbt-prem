@@ -7,7 +7,9 @@ describe('Security headers / CORS (e2e)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
-    const mod = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    const mod = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
     app = mod.createNestApplication();
     app.setGlobalPrefix('api');
     await app.init();
@@ -24,6 +26,8 @@ describe('Security headers / CORS (e2e)', () => {
       .set('Origin', 'http://evil.local')
       .set('Access-Control-Request-Method', 'POST');
 
-    expect(res.headers['access-control-allow-origin']).not.toBe('http://evil.local');
+    expect(res.headers['access-control-allow-origin']).not.toBe(
+      'http://evil.local',
+    );
   });
 });

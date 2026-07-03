@@ -7,5 +7,4 @@ export class StartSessionDto {
   @IsString()
   @IsOptional()
   token?: string;
-
 }

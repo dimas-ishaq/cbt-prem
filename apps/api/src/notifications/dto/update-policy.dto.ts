@@ -1,4 +1,10 @@
-import { IsEnum, IsBoolean, IsArray, ValidateNested, IsString } from 'class-validator';
+import {
+  IsEnum,
+  IsBoolean,
+  IsArray,
+  ValidateNested,
+  IsString,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { NotificationType } from '@prisma/client';
 

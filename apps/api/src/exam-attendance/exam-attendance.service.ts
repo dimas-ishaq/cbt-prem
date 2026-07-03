@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CheckInDto } from './dto/check-in.dto';
 
@@ -9,7 +14,11 @@ export class ExamAttendanceService {
   private parsePayload(qrPayload: string) {
     try {
       // ponytail: payload shape must match exam-card-template.tsx QR generation
-      return JSON.parse(qrPayload) as { studentId?: string; nis?: string; rombelName?: string };
+      return JSON.parse(qrPayload) as {
+        studentId?: string;
+        nis?: string;
+        rombelName?: string;
+      };
     } catch {
       throw new BadRequestException('QR payload tidak valid');
     }
@@ -17,8 +26,14 @@ export class ExamAttendanceService {
 
   private async getTargetStudentIds(examId: string) {
     const [rombelTargets, majorTargets] = await Promise.all([
-      this.prisma.examTargetRombel.findMany({ where: { examId }, select: { rombelId: true } }),
-      this.prisma.examTargetMajor.findMany({ where: { examId }, select: { majorId: true } }),
+      this.prisma.examTargetRombel.findMany({
+        where: { examId },
+        select: { rombelId: true },
+      }),
+      this.prisma.examTargetMajor.findMany({
+        where: { examId },
+        select: { majorId: true },
+      }),
     ]);
 
     const rombelIds = rombelTargets.map((t) => t.rombelId);
@@ -60,7 +75,8 @@ export class ExamAttendanceService {
       select: { id: true, title: true, status: true },
     });
     if (!exam) throw new NotFoundException('Ujian tidak ditemukan');
-    if (exam.status === 'DRAFT') throw new BadRequestException('Ujian belum aktif');
+    if (exam.status === 'DRAFT')
+      throw new BadRequestException('Ujian belum aktif');
 
     const student = await this.prisma.student.findUnique({
       where: { id: payload.studentId },
